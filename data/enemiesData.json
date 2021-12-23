@@ -1,0 +1,70 @@
+{
+    "Barbar": {
+        "class": "Barbar",
+        "AHP": 30,
+        "Dodge": 0,
+        "Prot": 0,
+        "Spd": 5,
+        "maxMove": 1,
+        "botType": 1,
+        "iconURL": "images/Barbar.png",
+        "portraitURL": "images/Barbar.png",
+        "weapons": [
+            {
+                "Name": "Bite",
+                "Acc": 95,
+                "Damage": [
+                    5,
+                    6
+                ],
+                "Range": [
+                    1,
+                    1
+                ],
+                "Readiness": 15,
+                "sword": 1,
+                "shield": 0,
+                "sprint": 0,
+                "Crit": 0,
+                "Spd": 1,
+                "lifesteal": 0,
+                "targetting": {
+                    "target": 1,
+                    "AOE": "single"
+                },
+				"CD": 0,
+                "UPT": 255
+            }
+        ]
+    },
+    "Barcher": {
+        "class": "Barcher",
+        "AHP": 15,
+        "Dodge": 0,
+        "Prot": 0.2,
+        "Spd": 5,
+        "maxMove": 1,
+        "botType": 1,
+        "iconURL": "images/Barcher.png",
+        "portraitURL": "images/Barbar.png",
+        "weapons": [
+            {
+                "Name": "Arrow Shot",
+                "Acc": 85,
+                "Damage": [3, 5],
+                "Range": [2, 3],
+                "Readiness": 15,
+                "sword": 1,
+                "shield": 0,
+                "sprint": 0,
+                "lifesteal": 0,
+                "Crit": 0,
+                "Spd": 0,
+                "targetting": {
+                    "target": 1,
+                    "AOE": "single"
+                }
+            }
+        ]
+    }
+}

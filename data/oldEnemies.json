@@ -1,0 +1,150 @@
+{
+    "C-Farmhand": {
+        "name": "Farmhand",
+        "AHP": 35,
+        "Dodge": 5,
+        "Prot": 0.1,
+        "Spd": 6,
+        "weapons": [
+            {
+                "Name": "Harvest",
+                "Acc": 85,
+                "Damage": [
+                    6,
+                    9
+                ],
+                "Range": [
+                    1,
+                    1
+                ],
+                "Readiness": 15,
+                "Crit": 0,
+                "CritScale": 0.1,
+                "targetting": {
+                    "target": "o",
+                    "type": "single"
+                }
+            }
+        ],
+        "bot": {
+            "type": "aggression"
+        },
+        "emoteID": "002"
+    },
+    "C-Chicken": {
+        "name": "Meat",
+        "AHP": 5,
+        "Dodge": 20,
+        "Prot": 0,
+        "Spd": 10,
+        "weapons": [
+            {
+                "Name": "Strangle",
+                "Acc": 100,
+                "Damage": [
+                    0,
+                    1
+                ],
+                "Range": [
+                    1,
+                    1
+                ],
+                "Readiness": 5,
+                "Crit": 15,
+                "CritScale": 0.1,
+                "targetting": {
+                    "target": "o",
+                    "type": "single"
+                }
+            }
+        ],
+        "bot": {
+            "type": "hivemind"
+        },
+        "emoteID": "003"
+    },
+    "C-Lump": {
+        "name": "The Thing",
+        "AHP": 25,
+        "Dodge": 0,
+        "Prot": 0,
+        "Spd": 10,
+        "weapons": [
+            {
+                "Name": "Absorbing Strangle",
+                "Acc": 115,
+                "Damage": [
+                    8,
+                    10
+                ],
+                "Range": [
+                    0,
+                    1,
+                    1
+                ],
+                "Readiness": 5,
+                "Crit": 0,
+                "CritScale": 0.1,
+                "targetting": {
+                    "target": "o",
+                    "type": "sAOE"
+                }
+            }
+        ],
+        "bot": {
+            "type": "aggression"
+        },
+        "emoteID": "005"
+    },
+    "Sentry": {
+        "name": "Phantom Sentry",
+        "AHP": 15,
+        "Dodge": 0,
+        "Prot": 0.2,
+        "Spd": 5,
+        "weapons": [
+            {
+                "Name": "Spear Shot",
+                "Acc": 85,
+                "Damage": [
+                    5,
+                    7
+                ],
+                "Range": [
+                    2,
+                    3
+                ],
+                "Readiness": 15,
+                "Crit": 0,
+                "CritScale": 0.1,
+                "targetting": {
+                    "target": "o",
+                    "type": "single"
+                }
+            },
+            {
+                "Name": "Spear",
+                "Acc": 95,
+                "Damage": [
+                    7,
+                    9
+                ],
+                "Range": [
+                    1,
+                    1.5
+                ],
+                "Readiness": 15,
+                "Crit": 0,
+                "CritScale": 0.1,
+                "targetting": {
+                    "target": "o",
+                    "type": "single"
+                }
+            }
+        ],
+        "bot": {
+            "type": "tower"
+        },
+        "emoteID": "004"
+    }
+}

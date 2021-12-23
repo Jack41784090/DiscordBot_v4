@@ -1,0 +1,66 @@
+{
+	"Block": {
+		"name": "Block",
+		"class": "Block",
+		"AHP": 100,
+		"Dodge": 0,
+		"Prot": 0.9,
+		"Spd": 0,
+		"iconURL": "images/black.jpg",
+		"portraitURL": "images/black.jpg",
+		"weapons": [],
+		"botType": 1
+	},
+	"Hercules": {
+		"name": "Hercules",
+		"class": "Hercules",
+		"AHP": 60,
+		"Dodge": 10,
+		"Prot": 0.2,
+		"Spd": 5.5,
+		"maxMove": 1,
+		"iconURL": "images/Hercules.png",
+		"portraitURL": "images/Kruger.png",
+		"weapons": [
+			{
+				"Name": "Obliterate",
+				"Acc": 85,
+				"Damage": [10, 18],
+				"Range": [0, 5],
+				"Readiness": 15,
+				"sword": 1,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 5,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 1,
+					"AOE": "single"
+				},
+				"CD": 0,
+				"UPT": 255
+			},
+			{
+				"Name": "Sweep",
+				"Acc": 80,
+				"Damage": [15, 20],
+				"Range": [1, 1.5],
+				"Readiness": 30,
+				"sword": 1,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 5,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 1,
+					"AOE": "single"
+				},
+				"CD": 0,
+				"UPT": 255
+			}
+		],
+		"botType": 0
+	}
+}
