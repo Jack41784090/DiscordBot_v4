@@ -408,9 +408,9 @@ export function getDirection(axis: 'x' | 'y', moveMagnitude: number) {
 //     console.log(message.embeds[0].image);
 // }
 
-export function getMoveAction(stat: Stat, action: string, priority: number, moveMagnitude: number): MoveAction | null;
-export function getMoveAction(stat: Stat, magnitude: number, priority: number, axis: "x" | "y"): MoveAction | null;
-export function getMoveAction(stat: Stat, args2: string | number, priority: number, args4: number | "x" | "y"): MoveAction | null {
+export function getMoveAction(stat: Stat, action: string, priority: number, moveMagnitude: number): MoveAction;
+export function getMoveAction(stat: Stat, magnitude: number, priority: number, axis: "x" | "y"): MoveAction;
+export function getMoveAction(stat: Stat, args2: string | number, priority: number, args4: number | "x" | "y"): MoveAction {
     const movetype: ActionType = "Move";
     const moveAction: MoveAction = {
         executed: false,
@@ -459,7 +459,7 @@ export function getMoveAction(stat: Stat, args2: string | number, priority: numb
                 axis = 'x';
                 break;
             default:
-                return null;
+                throw Error("Fatal error at getMoveAction: invalid actionName is invalid.")
         }
         moveAction.axis = axis;
         moveAction.magnitude = magnitude;
@@ -519,156 +519,7 @@ export function getDashAction(stat: Stat, _target: Coordinate, priority: number,
 }
 
 export async function Test() {
-    const CSMap = getMapFromCS({
-        "0": {
-            "7": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 0,
-                "y": 7
-            },
-            "8": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 0,
-                "y": 8
-            }
-        },
-        "1": {
-            "7": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 1,
-                "y": 7
-            },
-            "8": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 1,
-                "y": 8
-            }
-        },
-        "2": {},
-        "3": {},
-        "4": {},
-        "5": {
-            "8": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 5,
-                "y": 8
-            },
-            "9": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 5,
-                "y": 9
-            },
-            "10": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 5,
-                "y": 10
-            }
-        },
-        "6": {
-            "8": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 6,
-                "y": 8
-            },
-            "9": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 6,
-                "y": 9
-            },
-            "10": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 6,
-                "y": 10
-            }
-        },
-        "7": {
-            "9": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 7,
-                "y": 9
-            },
-            "10": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 7,
-                "y": 10
-            }
-        },
-        "8": {
-            "9": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 8,
-                "y": 9
-            },
-            "10": {
-                "class": Class.Block,
-                "team": "block",
-                "botType": 1,
-                "x": 8,
-                "y": 10
-            }
-        }
-    });
-    const AINodeMap = new Map<string, AINode>();
-    const nodePriorQueue = new MinHeap<AINode>(n => n?.totalC || null);
-    for (let x = 0; x < 11; x++) {
-        for (let y = 0; y < 11; y++) {
-            const coordString = getCoordString({ x: x, y: y });
-            if (!CSMap.has(coordString)) {
-                const node = getNewNode(x, y, { x: 3, y: 2 }, Number.POSITIVE_INFINITY);
-                AINodeMap.set(coordString, node);
-                nodePriorQueue.insert(node);
-            }
-        }
-    }
-
-    const results = [];
-    let AINode = nodePriorQueue.remove();
-    const ax = [1, -1, 0, 0];
-    const ay = [0, 0, 1, -1];
-    while (AINode) {
-        for (let i = 0; i < 4; i++) {
-            const coordString = getCoordString({ x: AINode.x + ax[i], y: AINode.y + ay[i] });
-            if (AINodeMap.has(coordString)) {
-                const node = AINodeMap.get(coordString)!;
-                if (node.totalC > AINode.disC + 1 + node.desC) {
-                    node.disC = AINode.disC + 1;
-                    node.totalC = node.desC + node.disC;
-                    node.lastNode = AINode;
-                    AINode.nextNode = node;
-                }
-            }
-        }
-        results.push(AINode);
-        AINode = nodePriorQueue.remove();
-    }
-
-    nodePriorQueue.print();
+    
 }
 
 export function setUpInteractionCollect(msg: Message, cb: (itr: Interaction) => void, collectCount = 1) {

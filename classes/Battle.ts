@@ -1,5 +1,4 @@
 import { CategoryChannel, Client, DiscordAPIError, Guild, GuildMember, Message, MessageAttachment, MessageCollector, MessageEditOptions, MessageEmbed, MessageEmbedImage, MessageOptions, MessagePayload, OverwriteData, TextChannel, User } from "discord.js";
-import Cytoscape from "cytoscape";
 import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getActionsTranslate, getAHP, getDirection, getLoadingEmbed, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, capitalize, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getCSFromMap, printCSMap, getNewObject, startDrawing, dealWithAction, printAction, sendToSandbox, getRandomCode, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getWithSign, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens as HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getBufferFromImage, getFileImage, getIcon, getUserData, saveBattle } from "./Database";
@@ -7,7 +6,8 @@ import enemiesData from "../data/enemiesData.json";
 
 import fs from 'fs';
 import { MinHeap } from "./MinHeap";
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, PriorityRound, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponAOE, WeaponTarget } from "../typedef";
+import { Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, PriorityRound, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponAOE, WeaponTarget } from "../typedef";
+import { hGraph } from "./hGraphTheory";
 
 export class Battle {
     static readonly MOVE_READINESS = 10;
@@ -227,19 +227,19 @@ export class Battle {
         const reportPromises: Promise<unknown>[] = []; // to save the promises waiting for player responses
 
         log("Playing phase!");
-        for (const rstat of allStats) {
+        for (const realStat of allStats) {
             // if the entity is dead or is just an inanimate block, skip turn
-            if (rstat.HP <= 0 || rstat.team === "block") continue;
+            if (realStat.HP <= 0 || realStat.team === "block") continue;
 
             // reset weapon uses for entity
-            rstat.weaponUses.forEach(wU => wU = 0);
+            realStat.weaponUses.forEach(wU => wU = 0);
             // reset moved
-            rstat.moved = false;
+            realStat.moved = false;
 
             //#region PLAYER CONTROL
-            if (rstat.botType === BotType.naught) {
+            if (realStat.botType === BotType.naught) {
                 // fetch the Discord.User 
-                const user: User | null = await this.client.users.fetch(rstat.owner)
+                const user: User | null = await this.client.users.fetch(realStat.owner)
                     .then(u => u)
                     .catch(err => {
                         console.log(err);
@@ -247,14 +247,20 @@ export class Battle {
                     });
 
                 // get a copy of stat (main reference in player control) from the CSMap
-                const stat: Stat = getNewObject(rstat, { username: (user ? user.username : rstat.owner) });
+                const virtualStat: Stat = getNewObject(realStat,
+                    {
+                        username: (user?
+                            user.username:
+                            realStat.owner)
+                    }
+                );
 
                 // creating channel
-                const channelAlreadyExist = this.guild.channels.cache.find(c => c.name === stat.owner && c.type === 'GUILD_TEXT') as TextChannel;
-                const createdChannel = channelAlreadyExist || await this.guild.channels.create(`${stat.owner}`, { type: 'GUILD_TEXT' });
+                const channelAlreadyExist = this.guild.channels.cache.find(c => c.name === virtualStat.owner && c.type === 'GUILD_TEXT') as TextChannel;
+                const createdChannel = channelAlreadyExist || await this.guild.channels.create(`${virtualStat.owner}`, { type: 'GUILD_TEXT' });
                 createdChannel.setParent(commandCategory.id);
                 const existingPermissions_everyone = createdChannel.permissionOverwrites.cache.get(this.guild.roles.everyone.id)?.deny.toArray();
-                const existingPermissions_author = createdChannel.permissionOverwrites.cache.get(stat.owner)?.allow.toArray();
+                const existingPermissions_author = createdChannel.permissionOverwrites.cache.get(virtualStat.owner)?.allow.toArray();
                 if (
                     !channelAlreadyExist||
                     !existingPermissions_author||
@@ -267,7 +273,7 @@ export class Battle {
                 {
                     const overWrites: Array<OverwriteData> = [
                         { id: this.guild.roles.everyone, deny: 'VIEW_CHANNEL' },
-                        { id: stat.owner, allow: 'VIEW_CHANNEL' }
+                        { id: virtualStat.owner, allow: 'VIEW_CHANNEL' }
                     ];
                     createdChannel.permissionOverwrites.set(overWrites);
                 }
@@ -278,10 +284,10 @@ export class Battle {
                 // send time, player embed, and input manual
                 createdChannel.send("``` ```");
                 // const timerMessage: Message = await createdChannel.send({ embeds: [this.getTimerEmbed(stat, timeLeft, getActionsTranslate(this.getStatActions(stat)).join(''))] });
-                const playerInfoMessage: Message = await createdChannel.send(await this.getFullPlayerEmbedMessageOptions(stat));
+                const playerInfoMessage: Message = await createdChannel.send(await this.getFullPlayerEmbedMessageOptions(virtualStat));
 
                 // listen to actions with collector
-                const readingPlayerPromise = this.readActions(120, playerInfoMessage, stat).then(() => {
+                const readingPlayerPromise = this.readActions(120, playerInfoMessage, virtualStat, realStat).then(() => {
                     createdChannel.send({ embeds: [new MessageEmbed().setTitle("Your turn has ended.")] });
                 });
                 reportPromises.push(readingPlayerPromise);
@@ -289,8 +295,8 @@ export class Battle {
             //#endregion
 
             //#region AI
-            if (rstat.botType === BotType.enemy) {
-                const virtualStat = getNewObject<Stat, unknown>(rstat);
+            if (realStat.botType === BotType.enemy) {
+                const virtualStat = getNewObject<Stat, unknown>(realStat);
 
                 // target selection
                 // option 1: select the closest target
@@ -303,31 +309,28 @@ export class Battle {
                     const weaponSelected: Weapon = virtualStat.base.weapons[0];
 
                     // 2. move to preferred location
-                    const path: Array<Coordinate> = this.startPathFinding(rstat, selectedTarget);
-                    const moveActionArray: Array<MoveAction> = this.getMoveActionListFromCoordArray(rstat, path);
+                    const path: Array<Coordinate> = this.startPathFinding(realStat, selectedTarget);
+                    const moveActionArray: Array<MoveAction> = this.getMoveActionListFromCoordArray(realStat, path);
                     const fullActions: Array<Action> = [];
 
                     let i = 0;
                     // while the enemy has not moved or has enough sprint to make additional moves
                     // Using (rstat.sprint - i) because rstat is by reference and modification is only legal in execution.
                     while (i < moveActionArray.length && (virtualStat.moved === false || virtualStat.sprint > 0)) {
-                        // debug(`(${virtualStat.index}) moved`, virtualStat.moved);
-                        // debug(`(${virtualStat.index}) sprint`, virtualStat.sprint);
                         const moveAction = moveActionArray[i];
                         const moveMagnitude = Math.abs(moveAction.magnitude);
-                        // log(`move checking for ${rstat.base.class} (${rstat.index}): ${moveAction.magnitude} ${moveAction.axis}`)
                         if (moveMagnitude > 0) {
                             moveAction.sprint = Number(virtualStat.moved);
-                            const result = this.executeVirtualMovement(moveAction, virtualStat);
-                            if ((result as MoveAction).magnitude !== undefined) {
+                            const valid = this.executeVirtualMovement(moveAction, virtualStat);
+                            if (valid) {
                                 virtualStat.moved = true;
-                                if ((result as MoveAction).magnitude !== undefined) {
+                                if (moveAction.magnitude !== undefined) {
                                     fullActions.push(moveAction);
                                 }
                             }
-                            else if (result !== null) {
-                                const errorEmbed = result as MessageEmbed;
-                                log(`Failed to move. Reason: ${errorEmbed.title} (${errorEmbed.description})`);
+                            else {
+                                const error = this.validateMovement(virtualStat, moveAction);
+                                log(`Failed to move. Reason: ${error?.reason} (${error?.value})`);
                             }
                         }
                         i++;
@@ -335,13 +338,10 @@ export class Battle {
 
                     // 3. attack with selected weapon
                     if (checkWithinDistance(weaponSelected, getDistance(virtualStat, selectedTarget))) {
-                        const attackCheck = this.validateTarget(virtualStat, weaponSelected, selectedTarget);
-                        if (attackCheck === null) {
-                            const attackAction = getAttackAction(virtualStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length);
-                            const result = this.executeVirtualAttack(attackAction, virtualStat);
-                            if ((result as AttackAction).weapon !== undefined) {
-                                fullActions.push(attackAction);
-                            }
+                        const attackAction = getAttackAction(virtualStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length);
+                        const valid = this.executeVirtualAttack(attackAction, virtualStat);
+                        if (valid) {
+                            fullActions.push(getAttackAction(realStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length));
                         }
                     }
 
@@ -572,97 +572,64 @@ export class Battle {
     }
 
     executeVirtualAttack(attackAction: AttackAction, virtualStat: Stat) {
-        const realStat = this.allStats(true).find(s => s.index === virtualStat.index)!;
         const target = attackAction.affected;
         const weapon = attackAction.weapon;
         const check: TargetingError | null = this.validateTarget(virtualStat, attackAction.weapon, target);
 
         if (check === null) { // attack goes through
             virtualStat.weaponUses[getWeaponIndex(weapon, virtualStat)]++;
-            const action: AttackAction = {
-                executed: false,
 
-                type: "Attack",
-                from: realStat,
-                affected: target!,
-                readiness: weapon.Readiness,
-
-                sword: weapon.sword,
-                shield: weapon.shield,
-                sprint: weapon.sprint,
-
-                priority: attackAction.priority,
-
-                weapon: weapon,
-                coordinate: { x: target!.x, y: target!.y },
-            };
-
-            virtualStat.readiness -= action.readiness;
+            virtualStat.readiness -= attackAction.readiness;
             HandleTokens(virtualStat, (p, t) => {
-                virtualStat[t] -= action[t];
+                virtualStat[t] -= attackAction[t];
             });
-
-            return action;
         }
         else { // attack cannot go through
             log(`Failed to target. Reason: ${check.reason} (${check.value})`);
-            return new MessageEmbed({
-                title: check.reason,
-                description: `Failed to target. Reason: ${check.reason} (${check.value})`,
-            });
         }
+        return check === null;
     };
-    executeVirtualMovement (moveAction: MoveAction, virtualStat: Stat): MoveAction | MessageEmbed | null {
-        if (Math.abs(moveAction.magnitude) > 0) {
-            const realStat = this.allStats(true).find(s => s.index === virtualStat.index)!;
-            moveAction.affected = realStat;
-            moveAction.from = realStat;
-            if (moveAction !== null) {
-                const check: MovingError | null = this.validateMovement(virtualStat, moveAction);
+    executeVirtualMovement (moveAction: MoveAction, virtualStat: Stat): boolean {
+        log(`\tExecuting virtual movement for ${virtualStat.base.class} (${virtualStat.index}).`)
+        const check: MovingError | null = this.validateMovement(virtualStat, moveAction);
 
-                if (check === null) {
-                    log("\t\tMoved!");
+        if (check === null) {
+            log("\t\tMoved!");
 
-                    // second (or above) move
-                    if (virtualStat.moved === true) {
-                        HandleTokens(moveAction, (p, type) => {
-                            if (type === "sprint") {
-                                virtualStat.sprint -= p;
-                            }
-                        });
+            // spending sprint to move
+            if (virtualStat.moved === true) {
+                HandleTokens(moveAction, (p, type) => {
+                    if (type === "sprint") {
+                        virtualStat.sprint -= p;
                     }
-                    // other resource drain
-                    virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(moveAction.magnitude);
-                    virtualStat.moved = true;
-                    
-                    return moveAction;
-                }
-                else {
-                    log(`\t\tFailed to move. Reason: ${check.reason} (${check.value})`);
-
-                    // no target warning
-                    return new MessageEmbed({
-                        title: check.reason,
-                        description: `Failed to move. Reference value: __${check.value}__`,
-                    });
-                }
+                });
             }
+            // other resource drain
+            virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(moveAction.magnitude);
+            virtualStat.moved = true;
         }
-        return null;
+        else {
+            log(`\t\tFailed to move. Reason: ${check.reason} (${check.value})`);
+        }
+        return check === null;
     };
 
     // action reader methods
-    readActions(time: number, infoMessage: Message, virtualStat: Stat) {
+    readActions(time: number, infoMessage: Message, virtualStat: Stat, realStat: Stat) {
+        if (realStat === undefined) {
+            throw Error(`Fatal error at readActions: cannot find realStat. (${virtualStat.base.class} (${virtualStat.index}))`)
+        }
         // returns a Promise that resolves when the player is finished with their moves
         return new Promise((resolve) => {
             let currentListener: NodeJS.Timer;
             const responseQueue: Message[] = [];
             const { x, y, readiness, sword, shield, sprint } = virtualStat;
 
-            let actions: Action[] = [];
+            let executingActions: Action[] = [];
             let infoMessagesQueue: Message[] = [infoMessage];
             const channel = infoMessage.channel;
 
+            /** Listens to the responseQueue every 300ms, clears the interval and handles the request when detected. */
             const listenToQueue = () => {
                 log("\tListening to queue...");
                 if (currentListener) {
@@ -675,177 +642,182 @@ export class Battle {
                     }
                 }, 300);
             }
+            /** Handles the response (response is Discord.Message) */
             const handleQueue = async () => {
                 log("\tHandling queue...");
-                const mes = responseQueue.shift()!;
-                const sections = extractCommands(mes.content);
-                const actionName = sections[0].toLocaleLowerCase();
-                const actionArgs = sections.slice(1, sections.length);
-                const moveMagnitude = parseInt(actionArgs[0]) || 1;
-
-                // log(`\t${actionName} `+actionArgs.toString());
-
-                let valid: Action | MessageEmbed | null = null;
-                switch (actionName) {
-                    case "up":
-                    case "v":
-                    case "down":
-                    case "right":
-                    case "h":
-                    case "r":
-                    case "left":
-                    case "l":
-                        // get moveAction based on input (blackboxed)
-                        const moveAction = getMoveAction(virtualStat, actionName, infoMessagesQueue.length, moveMagnitude);
-
-                        // debug("actionName", actionName);
-                        // debug("axis", moveAction?.axis);
-                        // debug("magnitude", moveAction?.magnitude);
-
-                        // validate + act on (if valid) movement on virtual map
-                        valid = this.executeVirtualMovement(moveAction!, virtualStat);
-
-                        // movement is permitted
-                        if ((valid as MoveAction).magnitude !== undefined) {
-                            mes.react('✅');
-                            actions.push(valid as MoveAction);
-                        }
-                        else {
-                            mes.react('❎');
-                            if (valid !== null) {
-                                channel.send({
-                                    embeds: [(valid as MessageEmbed)]
-                                });
-                            }
-                        }
-                        break;
-
-                    // attack
-                    case "attack":
-                        const attackTarget = this.findEntity_byArgs(actionArgs, virtualStat);
-                        const range = attackTarget?
-                            getDistance(attackTarget, virtualStat):
-                            0;
-                        const listOfWeaponsInRange = attackTarget?
-                            virtualStat.base.weapons.filter(w => {
-                                return w.Range[0] <= range&&
-                                w.Range[1] >= range&&
-                                w.targetting.target === WeaponTarget.enemy;
-                            }):
-                            [];
-                        const weaponChosen = attackTarget?
-                            listOfWeaponsInRange[random(0, listOfWeaponsInRange.length - 1)]:
-                            null;
-
-                        if (attackTarget === null || weaponChosen === null) {
-                            valid = null;
-                        }
-                        else {
-                            const attackAction = getAttackAction(virtualStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
-                            valid = attackAction?
-                                this.executeVirtualAttack(attackAction, virtualStat):
-                                null;
-                        }
-
-                        if ((valid as AttackAction).weapon !== undefined) {
-                            mes.react('✅');
-                            actions.push((valid as AttackAction));
-                        }
-                        else {
-                            mes.react('❎');
-                            if (valid !== null) {
-                                channel.send({
-                                    embeds: [(valid as MessageEmbed)]
-                                });
-                            }
-                        }
-                        break;
-                    
-                    // clear
-                    case "clear":
-                    case "cr":
-                        actions = [];
-                        infoMessagesQueue = [infoMessage];
-                        Object.assign(virtualStat, { x: x, y: y, readiness: readiness, sword: sword, shield: shield, sprint: sprint });
-                        await clearChannel(channel as TextChannel, infoMessage);
-                        break;
-
-                    case "end":
-                        newCollector.stop();
-                        log(`Ended turn for "${virtualStat.name}" (${virtualStat.base.class})`);
-                        break;
-
-                    case "log":
-                        log(...this.allStats().filter(s => s.team !== "block").map(s => {
-                            let string = `${s.base.class} (${s.index}) (${s.team}) ${s.HP}/${getAHP(s)} (${s.x}, ${s.y})`
-                            return string;
-                        }));
-                        break;
-
-                    case "undo":
-                        if (infoMessagesQueue.length > 1) {
-                            const undoAction = actions.pop();
-                            dealWithUndoAction(virtualStat, undoAction!);
-                            infoMessagesQueue.pop();
-                            await clearChannel(channel as TextChannel, getLastElement(infoMessagesQueue));
-                        }
-                        break;
-
-                    default:
-                        const targetedWeapon = virtualStat.base.weapons.find(w => w.Name.toLowerCase().search(actionName) !== -1);
-                        if (targetedWeapon) {
-                            mes.react('✅');
-                            const victim = this.findEntity_byArgs(actionArgs, virtualStat, targetedWeapon);
-                            if (victim === null) {
-                                valid = null;
-                            }
-                            else {
-                                let coord: Coordinate;
-                                const AOE = targetedWeapon.targetting.AOE;
-                                if (AOE === "self" || AOE === "selfCircle") {
-                                    coord = {
-                                        x: virtualStat.x,
-                                        y: virtualStat.y,
-                                    }
-                                }
-                                else {
-                                    coord = {
-                                        x: victim.x,
-                                        y: victim.y
-                                    }
-                                }
-
-                                const attackAction = getAttackAction(virtualStat, victim, targetedWeapon, coord, infoMessagesQueue.length);
-                                valid = this.executeVirtualAttack(attackAction, virtualStat);
-                            }
-                        }
-                        else {
-                            mes.react('❎');
-                            setTimeout(() => mes.delete().catch(console.log), 10 * 1000);
-                        }
-                        break;
-                }
-
-                debug("\tvalid", valid !== null);
-
-                if (valid !== null) {
-                    // send the predicted map of the next move to channel
-                    const messageOptions = await this.getFullPlayerEmbedMessageOptions(virtualStat, actions);
-                    channel.send(messageOptions)
-                        .then(m => {
-                            if ((valid as Action).priority !== undefined) {
-                                infoMessagesQueue.push(m);
-                            }
-                            if (responseQueue[0]) {
-                                handleQueue();
-                            }
-                            else {
-                                listenToQueue();
-                            }
-                        })
+                const mes = responseQueue.shift();
+                if (mes === undefined) {
+                    throw Error("HandleQueue received an undefined message.")
                 }
                 else {
-                    listenToQueue();
+                    const sections = extractCommands(mes.content);
+                    const actionName = sections[0].toLocaleLowerCase();
+                    const actionArgs = sections.slice(1, sections.length);
+                    const moveMagnitude = parseInt(actionArgs[0]) || 1;
+
+                    let valid: boolean = false;
+                    switch (actionName) {
+                        case "up":
+                        case "v":
+                        case "down":
+                        case "right":
+                        case "h":
+                        case "r":
+                        case "left":
+                        case "l":
+                            // get moveAction based on input (blackboxed)
+                            const moveAction = getMoveAction(virtualStat, actionName, infoMessagesQueue.length, moveMagnitude);
+
+                            // validate + act on (if valid) movement on virtual map
+                            valid = this.executeVirtualMovement(moveAction!, virtualStat);
+
+                            // movement is permitted
+                            if (valid) {
+                                const realMoveStat = getMoveAction(realStat, actionName, infoMessagesQueue.length, moveMagnitude);
+                                mes.react('✅');
+                                executingActions.push(realMoveStat);
+                            }
+                            else {
+                                mes.react('❎');
+                                const check = this.validateMovement(virtualStat, moveAction)!;
+                                channel.send({
+                                    embeds: [new MessageEmbed({
+                                        title: check.reason,
+                                        description: `Failed to move. Reference value: __${check.value}__`,
+                                    })]
+                                });
+                            }
+                            break;
+
+                        // attack
+                        case "attack":
+                            const attackTarget = this.findEntity_args(actionArgs, virtualStat);
+                            if (attackTarget === null) {
+                                mes.react('❎');
+                                const check = this.validateTarget(virtualStat, null, attackTarget)!;
+                                channel.send({
+                                    embeds: [new MessageEmbed({
+                                        title: check.reason,
+                                        description: `Failed to move. Reference value: __${check.value}__`,
+                                    })]
+                                });
+                            }
+                            else {
+                                const range = getDistance(attackTarget, virtualStat);
+                                const listOfWeaponsInRange = virtualStat.base.weapons.filter(w => (
+                                    w.Range[0] <= range &&
+                                    w.Range[1] >= range &&
+                                    w.targetting.target === WeaponTarget.enemy
+                                ));
+                                const weaponChosen = listOfWeaponsInRange[0];
+
+                                const virtualAttackAction = getAttackAction(virtualStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
+                                this.executeVirtualAttack(virtualAttackAction, virtualStat);
+
+                                if (valid) {
+                                    mes.react('✅');
+                                    const realAttackAction = getAttackAction(realStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
+                                    executingActions.push(realAttackAction);
+                                }
+                                else {
+                                    mes.react('❎');
+                                    const check = this.validateTarget(virtualStat, weaponChosen, attackTarget)!;
+                                    channel.send({
+                                        embeds: [new MessageEmbed({
+                                            title: check.reason,
+                                            description: `Failed to move. Reference value: __${check.value}__`,
+                                        })]
+                                    });
+                                }
+                            }
+                            break;
+
+                        // clear
+                        case "clear":
+                        case "cr":
+                            executingActions = [];
+                            infoMessagesQueue = [infoMessage];
+                            Object.assign(virtualStat, { x: x, y: y, readiness: readiness, sword: sword, shield: shield, sprint: sprint });
+                            await clearChannel(channel as TextChannel, infoMessage);
+                            break;
+
+                        case "end":
+                            newCollector.stop();
+                            log(`Ended turn for "${virtualStat.name}" (${virtualStat.base.class})`);
+                            break;
+
+                        case "log":
+                            log(...this.allStats().filter(s => s.team !== "block").map(s => {
+                                let string = `${s.base.class} (${s.index}) (${s.team}) ${s.HP}/${getAHP(s)} (${s.x}, ${s.y})`
+                                return string;
+                            }));
+                            break;
+
+                        case "undo":
+                            if (infoMessagesQueue.length > 1) {
+                                const undoAction = executingActions.pop();
+                                dealWithUndoAction(virtualStat, undoAction!);
+                                infoMessagesQueue.pop();
+                                await clearChannel(channel as TextChannel, getLastElement(infoMessagesQueue));
+                            }
+                            break;
+
+                        default:
+                            const targetedWeapon = virtualStat.base.weapons.find(w => w.Name.toLowerCase().search(actionName) !== -1);
+                            if (targetedWeapon) {
+                                mes.react('✅');
+                                const victim = this.findEntity_args(actionArgs, virtualStat, targetedWeapon);
+                                if (victim === null) {
+                                    valid = false;
+                                }
+                                else {
+                                    let coord: Coordinate;
+                                    const AOE = targetedWeapon.targetting.AOE;
+                                    if (AOE === "self" || AOE === "selfCircle") {
+                                        coord = {
+                                            x: virtualStat.x,
+                                            y: virtualStat.y,
+                                        }
+                                    }
+                                    else {
+                                        coord = {
+                                            x: victim.x,
+                                            y: victim.y
+                                        }
+                                    }
+
+                                    const attackAction = getAttackAction(virtualStat, victim, targetedWeapon, coord, infoMessagesQueue.length);
+                                    valid = this.executeVirtualAttack(attackAction, virtualStat);
+                                }
+                            }
+                            else {
+                                mes.react('❎');
+                                setTimeout(() => mes.delete().catch(console.log), 10 * 1000);
+                            }
+                            break;
+                    }
+
+                    debug("\tvalid", valid !== null);
+
+                    if (valid) {
+                        // send the predicted map of the next move to channel
+                        const messageOptions = await this.getFullPlayerEmbedMessageOptions(virtualStat, executingActions);
+                        channel.send(messageOptions)
+                            .then(m => {
+                                if (valid) {
+                                    infoMessagesQueue.push(m);
+                                }
+                                if (responseQueue[0]) {
+                                    handleQueue();
+                                }
+                                else {
+                                    listenToQueue();
+                                }
+                            })
+                    }
+                    else {
+                        listenToQueue();
+                    }
                 }
             }
 
@@ -853,9 +825,6 @@ export class Battle {
                 filter: m => m.author.id === virtualStat.owner,
                 time: time * 1000,
             });
-
-            listenToQueue();
-
             newCollector.on('collect', mes => {
                 if (responseQueue.length < 3) {
                     responseQueue.push(mes);
@@ -869,9 +838,11 @@ export class Battle {
                 for (let i = 0; i < responseQueue.length; i++) {
                     await handleQueue();
                 }
-                this.roundActionsArray.push(...actions);
+                this.roundActionsArray.push(...executingActions);
                 resolve(void 0);
             });
+
+            listenToQueue();
         })
     }
 
@@ -1097,9 +1068,9 @@ export class Battle {
             }
         }
     }
+    getGreaterPrio = (a: Action) => (1000 * (20 - a.priority)) + (a.from.readiness - a.readiness);
     sortActionsByGreaterPrior(actions: Action[]) {
-        const getGreaterPrio = (a: Action) => (1000 * (20 - a.priority)) + (a.from.readiness - a.readiness);
-        const sortedActions = actions.sort((a, b) => getGreaterPrio(b) - getGreaterPrio(a));
+        const sortedActions = actions.sort((a, b) => this.getGreaterPrio(b) - this.getGreaterPrio(a));
         return sortedActions;
     }
     executeActions(actions: Action[]) {
@@ -1459,23 +1430,12 @@ export class Battle {
             drawPriorityText(priority, toBattleCoord);
         }
 
-        const encodeCoordinate = ({x, y}: Coordinate) => {
-            return (x << Math.ceil(Math.log2(this.height))) + y;
-        }
-        const getActualCoordinate = (encodedCoordinate: number) => {
-            const yShift = Math.ceil(Math.log2(this.height));
-            const xMask = (Math.pow(2, this.width)-1) << yShift;
-            const yMask = (Math.pow(2, this.height)-1);
-            const x = encodedCoordinate & xMask;
-            const y = encodedCoordinate & yMask;
-            return {
-                x: x,
-                y: y
-            };
+        const appendGraph = (action: Action, from: Coordinate, to: Coordinate) => {
+            graph.connectNodes(from, to, action);
         }
 
         const virtualCoordsMap = new Map<number, Coordinate>();
-        const graph: Array<{ [key: number]: number }> = [];
+        const graph = new hGraph<null, Action>(true);
         
         for (let i = 0; i < _actions.length; i++) {
             const action = _actions[i];
@@ -1496,7 +1456,7 @@ export class Battle {
                     switch (weapon.targetting.AOE) {
                         case "single":
                         case "touch":
-                            await drawAttackAction(aA, attacker_beforeCoords, aA.affected, i+1);
+                            appendGraph(aA, attacker_beforeCoords, victim_beforeCoords);
                             break;
 
                         case "circle":
@@ -1515,11 +1475,13 @@ export class Battle {
                                 // ** technically from "action.from", but for the sake of visual effects, the epicenter
                                 // coords will be fed instead.
                                 const singleTarget: AttackAction = getNewObject(aA, { from: epicenterCoord, affected: af });
-                                await drawAttackAction(singleTarget, epicenterCoord, af, i+1);
+                                appendGraph(singleTarget, epicenterCoord, af);
+                                // await drawAttackAction(singleTarget, epicenterCoord, af, i+1);
                             }
                             if (weapon.targetting.AOE === "circle") {
                                 // show AOE throw trajectory
-                                await drawAttackAction(aA, attacker_beforeCoords, epicenterCoord, i+1);
+                                appendGraph(aA, attacker_beforeCoords, epicenterCoord);
+                                // await drawAttackAction(aA, attacker_beforeCoords, epicenterCoord, i+1);
                             }
 
                             // draw explosion range
@@ -1541,17 +1503,22 @@ export class Battle {
                 (mA: MoveAction) => {
                     const beforeBattleCoord = victim_beforeCoords;
                     victim_beforeCoords[mA.axis] += mA.magnitude * Math.pow(-1, Number(action.executed));
+                    // victim_beforeCoords[mA.axis] += mA.magnitude;
                     const afterBattleCoord = victim_beforeCoords;
 
                     // connect to graph
-                    drawMoveAction(beforeBattleCoord, afterBattleCoord, i+1);
+                    // drawMoveAction(beforeBattleCoord, afterBattleCoord, i+1);
+                    appendGraph(mA, beforeBattleCoord, afterBattleCoord);
                 }
             );
         }
-
-        for (let i = 0; i < _actions.length; i++) {
-            const action = _actions[i];
-            
+        
+        for (const [key, value] of graph.adjGraph.entries()) {
+            log(`Node ${key}`);
+            for (let o = 0; o < value.length; o++) {
+                const edge = value[o];
+                edge.print();
+            }
         }
 
         return canvas;
@@ -1630,7 +1597,7 @@ export class Battle {
     }
 
     // find entities
-    findEntity_byArgs(args: Array<string>, stat: Stat, weapon?: Weapon): Stat | null {
+    findEntity_args(args: Array<string>, stat: Stat, weapon?: Weapon): Stat | null {
         const allStats = this.allStats();
         const ignore: Team[] = ["block"];
         const targetNotInIgnore = (c:Stat) => !ignore.includes(c.team);
@@ -1720,6 +1687,11 @@ export class Battle {
             return closestDistance > newDistance ? s : closest;
         }, null);
         return closestR;
+    }
+    findEntity_index(index: number): Stat | undefined {
+        return this.allStats().find(s => (
+            s.index === index
+        ));
     }
     findEntities_allInAxis(attacker: Stat, axis: 'x' | 'y', magnitude: number, ignore: Team[] = []): Array<Stat> {
         const allStats = this.allStats();
@@ -1882,6 +1854,12 @@ export class Battle {
             movingError = {
                 reason: "Movement is escaping the bounds of the battlefield.",
                 value: coord.x + coord.y * Math.pow(10, -1)
+            };
+        }
+        else if (Math.abs(moveAction.magnitude) < 1) {
+            movingError = {
+                reason: "Movement magnitude most be at least 1 (or -1).",
+                value: moveAction.magnitude
             };
         }
 

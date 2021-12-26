@@ -84,9 +84,11 @@ var enemiesData_json_1 = __importDefault(require("../data/enemiesData.json"));
 var fs_1 = __importDefault(require("fs"));
 var MinHeap_1 = require("./MinHeap");
 var typedef_1 = require("../typedef");
+var hGraphTheory_1 = require("./hGraphTheory");
 var Battle = /** @class */ (function () {
     function Battle(_mapData, _author, _message, _client) {
         var _this = this;
+        this.getGreaterPrio = function (a) { return (1000 * (20 - a.priority)) + (a.from.readiness - a.readiness); };
         this.author = _author;
         this.message = _message;
         this.channel = _message.channel;
@@ -1162,8 +1164,8 @@ var Battle = /** @class */ (function () {
         });
     };
     Battle.prototype.sortActionsByGreaterPrior = function (actions) {
-        var getGreaterPrio = function (a) { return (1000 * (20 - a.priority)) + (a.from.readiness - a.readiness); };
-        var sortedActions = actions.sort(function (a, b) { return getGreaterPrio(b) - getGreaterPrio(a); });
+        var _this = this;
+        var sortedActions = actions.sort(function (a, b) { return _this.getGreaterPrio(b) - _this.getGreaterPrio(a); });
         return sortedActions;
     };
     Battle.prototype.executeActions = function (actions) {
@@ -1416,7 +1418,7 @@ var Battle = /** @class */ (function () {
             });
         });
     };
-    Battle.prototype.getActionArrowsCanvas = function (actions, style) {
+    Battle.prototype.getActionArrowsCanvas = function (_actions, style) {
         if (style === void 0) { style = {
             r: 0,
             g: 0,
@@ -1424,37 +1426,39 @@ var Battle = /** @class */ (function () {
             alpha: 1
         }; }
         return __awaiter(this, void 0, void 0, function () {
-            var canvas, ctx, drawPriorityText, drawAttackAction, virtualCoordsMap, _loop_5, i;
+            var canvas, ctx, drawPriorityText, drawAttackAction, drawMoveAction, appendGraph, virtualCoordsMap, graph, _loop_5, i, _a, _b, _c, key, value, o, edge;
+            var e_3, _d;
             var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_e) {
+                switch (_e.label) {
                     case 0:
                         canvas = new canvas_1.Canvas(this.width * 50, this.height * 50);
                         ctx = canvas.getContext("2d");
                         style = (0, Utility_1.normaliseRGBA)(style);
                         ctx.fillStyle = (0, Utility_1.stringifyRGBA)(style);
                         ctx.strokeStyle = (0, Utility_1.stringifyRGBA)(style);
-                        drawPriorityText = function (priority, coord, angle) {
+                        drawPriorityText = function (priority, canvasCoord, angle) {
+                            if (angle === void 0) { angle = 0; }
                             ctx.save();
                             ctx.font = "15px Verdana";
                             ctx.lineWidth = 0.5;
                             ctx.fillStyle = "white";
                             ctx.strokeStyle = "black";
                             ctx.textAlign = "center";
-                            ctx.translate(coord.x, coord.y);
+                            ctx.translate(canvasCoord.x, canvasCoord.y);
                             ctx.rotate(angle);
                             ctx.fillText("" + priority, 0, 0);
                             ctx.strokeText("" + priority, 0, 0);
                             ctx.restore();
                         };
-                        drawAttackAction = function (action, fromCoord, toCoord, priority) { return __awaiter(_this, void 0, void 0, function () {
+                        drawAttackAction = function (action, fromBattleCoord, toBattleCoord, priority) { return __awaiter(_this, void 0, void 0, function () {
                             var victimWithinDistance, fromCanvasCoord, toCanvasCoord, textCanvasCoordinate, x, y, angle, victimDead, greenBarPercentage, targetCanvasCoords, image, reversedY, edgeDistance, barStartingCanvasPosition, barEndingCanvasPosition, greenLineLength;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
                                         (0, Utility_1.log)("Drawing attack action...");
-                                        (0, Utility_1.debug)("\tfromCoord", { x: fromCoord.x, y: fromCoord.y });
-                                        (0, Utility_1.debug)("\ttoCoord", { x: toCoord.x, y: toCoord.y });
+                                        (0, Utility_1.debug)("\tfromCoord", { x: fromBattleCoord.x, y: fromBattleCoord.y });
+                                        (0, Utility_1.debug)("\ttoCoord", { x: toBattleCoord.x, y: toBattleCoord.y });
                                         ctx.save();
                                         victimWithinDistance = (0, Utility_1.checkWithinDistance)(action.weapon, (0, Utility_1.getDistance)(action.from, action.affected));
                                         ctx.beginPath();
@@ -1462,20 +1466,20 @@ var Battle = /** @class */ (function () {
                                             "red" :
                                             "black";
                                         ctx.lineWidth = 5;
-                                        fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(fromCoord);
+                                        fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
                                         ctx.moveTo(fromCanvasCoord.x, fromCanvasCoord.y);
-                                        toCanvasCoord = this.getCanvasCoordsFromBattleCoord(toCoord);
+                                        toCanvasCoord = this.getCanvasCoordsFromBattleCoord(toBattleCoord);
                                         ctx.lineTo(toCanvasCoord.x, toCanvasCoord.y);
                                         ctx.stroke();
                                         ctx.closePath();
                                         (0, Utility_1.debug)("\tfromCanvasCoord", { x: fromCanvasCoord.x, y: fromCanvasCoord.y });
                                         (0, Utility_1.debug)("\ttoCanvasCoord", { x: toCanvasCoord.x, y: toCanvasCoord.y });
                                         textCanvasCoordinate = this.getCanvasCoordsFromBattleCoord({
-                                            x: (fromCoord.x + toCoord.x) / 2,
-                                            y: (fromCoord.y + toCoord.y) / 2
+                                            x: (fromBattleCoord.x + toBattleCoord.x) / 2,
+                                            y: (fromBattleCoord.y + toBattleCoord.y) / 2
                                         });
-                                        x = toCoord.x - fromCoord.x;
-                                        y = toCoord.y - fromCoord.y;
+                                        x = toBattleCoord.x - fromBattleCoord.x;
+                                        y = toBattleCoord.y - fromBattleCoord.y;
                                         angle = Math.atan2(y, x);
                                         drawPriorityText(priority, textCanvasCoordinate, -1 * angle);
                                         (0, Utility_1.debug)("\ttextCanvasCoord", textCanvasCoordinate);
@@ -1526,13 +1530,34 @@ var Battle = /** @class */ (function () {
                                 }
                             });
                         }); };
+                        drawMoveAction = function (fromBattleCoord, toBattleCoord, priority) {
+                            ctx.lineWidth = 10;
+                            // get position before move
+                            var beforeCanvasCoord = _this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
+                            ctx.moveTo(beforeCanvasCoord.x, beforeCanvasCoord.y);
+                            // draw a line to the coord after move action
+                            var afterCanvasCoord = _this.getCanvasCoordsFromBattleCoord(toBattleCoord);
+                            ctx.beginPath();
+                            ctx.lineTo(afterCanvasCoord.x, afterCanvasCoord.y);
+                            ctx.stroke();
+                            ctx.closePath();
+                            // draw circle
+                            ctx.arc(toBattleCoord.x, toBattleCoord.y, _this.pixelsPerTile / 5, 0, Math.PI * 2);
+                            ctx.fill();
+                            // priority text
+                            drawPriorityText(priority, toBattleCoord);
+                        };
+                        appendGraph = function (action, from, to) {
+                            graph.connectNodes(from, to, action);
+                        };
                         virtualCoordsMap = new Map();
+                        graph = new hGraphTheory_1.hGraph(true);
                         _loop_5 = function (i) {
                             var action, attackerIndex, victimIndex, victim_beforeCoords, attacker_beforeCoords;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
+                            return __generator(this, function (_f) {
+                                switch (_f.label) {
                                     case 0:
-                                        action = actions[i];
+                                        action = _actions[i];
                                         attackerIndex = action.from.index;
                                         victimIndex = action.affected.index;
                                         if (!virtualCoordsMap.has(victimIndex)) {
@@ -1543,60 +1568,38 @@ var Battle = /** @class */ (function () {
                                         }
                                         victim_beforeCoords = virtualCoordsMap.get(victimIndex);
                                         attacker_beforeCoords = virtualCoordsMap.get(attackerIndex);
-                                        // printAction(action);
-                                        // log("   Dealing with Action...")
                                         return [4 /*yield*/, (0, Utility_1.dealWithAction)(action, function (aA) { return __awaiter(_this, void 0, void 0, function () {
-                                                var weapon, _a, epicenterCoord, affecteds, i_2, af, singleTarget, _b, _c, coord;
-                                                var e_3, _d;
-                                                return __generator(this, function (_e) {
-                                                    switch (_e.label) {
-                                                        case 0:
-                                                            weapon = aA.weapon;
-                                                            _a = weapon.targetting.AOE;
-                                                            switch (_a) {
-                                                                case "single": return [3 /*break*/, 1];
-                                                                case "touch": return [3 /*break*/, 1];
-                                                                case "circle": return [3 /*break*/, 3];
-                                                                case "selfCircle": return [3 /*break*/, 3];
-                                                                case "line": return [3 /*break*/, 10];
-                                                            }
-                                                            return [3 /*break*/, 11];
-                                                        case 1: return [4 /*yield*/, drawAttackAction(aA, attacker_beforeCoords, aA.affected, i)];
-                                                        case 2:
-                                                            _e.sent();
-                                                            return [3 /*break*/, 11];
-                                                        case 3:
+                                                var weapon, epicenterCoord, affecteds, i_2, af, singleTarget, _a, _b, coord;
+                                                var e_4, _c;
+                                                return __generator(this, function (_d) {
+                                                    weapon = aA.weapon;
+                                                    switch (weapon.targetting.AOE) {
+                                                        case "single":
+                                                        case "touch":
+                                                            appendGraph(aA, attacker_beforeCoords, victim_beforeCoords);
+                                                            break;
+                                                        case "circle":
+                                                        case "selfCircle":
                                                             epicenterCoord = weapon.targetting.AOE === "circle" ?
                                                                 aA.coordinate :
                                                                 victim_beforeCoords;
                                                             affecteds = this.findEntities_radius((0, Utility_1.getNewObject)(epicenterCoord, { index: victimIndex }), // assign victim
                                                             weapon.Range[2], weapon.targetting.AOE === "circle");
-                                                            i_2 = 0;
-                                                            _e.label = 4;
-                                                        case 4:
-                                                            if (!(i_2 < affecteds.length)) return [3 /*break*/, 7];
-                                                            af = affecteds[i_2];
-                                                            singleTarget = (0, Utility_1.getNewObject)(aA, { from: epicenterCoord, affected: af });
-                                                            return [4 /*yield*/, drawAttackAction(singleTarget, epicenterCoord, af, i_2)];
-                                                        case 5:
-                                                            _e.sent();
-                                                            _e.label = 6;
-                                                        case 6:
-                                                            i_2++;
-                                                            return [3 /*break*/, 4];
-                                                        case 7:
-                                                            if (!(weapon.targetting.AOE === "circle")) return [3 /*break*/, 9];
-                                                            // show AOE throw trajectory
-                                                            return [4 /*yield*/, drawAttackAction(aA, attacker_beforeCoords, epicenterCoord, i)];
-                                                        case 8:
-                                                            // show AOE throw trajectory
-                                                            _e.sent();
-                                                            _e.label = 9;
-                                                        case 9:
+                                                            for (i_2 = 0; i_2 < affecteds.length; i_2++) {
+                                                                af = affecteds[i_2];
+                                                                singleTarget = (0, Utility_1.getNewObject)(aA, { from: epicenterCoord, affected: af });
+                                                                appendGraph(singleTarget, epicenterCoord, af);
+                                                                // await drawAttackAction(singleTarget, epicenterCoord, af, i+1);
+                                                            }
+                                                            if (weapon.targetting.AOE === "circle") {
+                                                                // show AOE throw trajectory
+                                                                appendGraph(aA, attacker_beforeCoords, epicenterCoord);
+                                                                // await drawAttackAction(aA, attacker_beforeCoords, epicenterCoord, i+1);
+                                                            }
                                                             try {
                                                                 // draw explosion range
-                                                                for (_b = __values((0, Utility_1.getCoordsWithinRadius)(weapon.Range[2], epicenterCoord, true)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                                                                    coord = _c.value;
+                                                                for (_a = __values((0, Utility_1.getCoordsWithinRadius)(weapon.Range[2], epicenterCoord, true)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                                                                    coord = _b.value;
                                                                     this.drawSquareOnBattleCoords(ctx, coord, {
                                                                         r: 255,
                                                                         b: 0,
@@ -1605,112 +1608,68 @@ var Battle = /** @class */ (function () {
                                                                     });
                                                                 }
                                                             }
-                                                            catch (e_3_1) { e_3 = { error: e_3_1 }; }
+                                                            catch (e_4_1) { e_4 = { error: e_4_1 }; }
                                                             finally {
                                                                 try {
-                                                                    if (_c && !_c.done && (_d = _b.return)) _d.call(_b);
+                                                                    if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
                                                                 }
-                                                                finally { if (e_3) throw e_3.error; }
+                                                                finally { if (e_4) throw e_4.error; }
                                                             }
-                                                            return [3 /*break*/, 11];
-                                                        case 10: throw new Error("Line-drawing not implemented");
-                                                        case 11: return [2 /*return*/];
+                                                            break;
+                                                        case "line":
+                                                            throw new Error("Line-drawing not implemented");
+                                                            break;
                                                     }
+                                                    return [2 /*return*/];
                                                 });
                                             }); }, function (mA) {
-                                                // draw move trail
-                                                ctx.beginPath();
-                                                ctx.lineWidth = 10;
-                                                // get position before move
-                                                var move = _this.getCanvasCoordsFromBattleCoord(victim_beforeCoords);
-                                                ctx.moveTo(move.x, move.y);
-                                                // moved after action
+                                                var beforeBattleCoord = victim_beforeCoords;
                                                 victim_beforeCoords[mA.axis] += mA.magnitude * Math.pow(-1, Number(action.executed));
-                                                // draw a line to the coord after move action
-                                                var line = _this.getCanvasCoordsFromBattleCoord(victim_beforeCoords);
-                                                ctx.lineTo(line.x, line.y);
-                                                ctx.stroke();
-                                                ctx.closePath();
-                                                // draw circle
-                                                ctx.beginPath();
-                                                var coord = action.executed ?
-                                                    move :
-                                                    line;
-                                                ctx.arc(coord.x, coord.y, _this.pixelsPerTile / 5, 0, Math.PI * 2);
-                                                ctx.fill();
-                                                // priority text
-                                                drawPriorityText(i, coord, 90);
+                                                // victim_beforeCoords[mA.axis] += mA.magnitude;
+                                                var afterBattleCoord = victim_beforeCoords;
+                                                // connect to graph
+                                                // drawMoveAction(beforeBattleCoord, afterBattleCoord, i+1);
+                                                appendGraph(mA, beforeBattleCoord, afterBattleCoord);
                                             })];
                                     case 1:
-                                        // printAction(action);
-                                        // log("   Dealing with Action...")
-                                        _b.sent();
+                                        _f.sent();
                                         return [2 /*return*/];
                                 }
                             });
                         };
                         i = 0;
-                        _a.label = 1;
+                        _e.label = 1;
                     case 1:
-                        if (!(i < actions.length)) return [3 /*break*/, 4];
+                        if (!(i < _actions.length)) return [3 /*break*/, 4];
                         return [5 /*yield**/, _loop_5(i)];
                     case 2:
-                        _a.sent();
-                        _a.label = 3;
+                        _e.sent();
+                        _e.label = 3;
                     case 3:
                         i++;
                         return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/, canvas];
+                    case 4:
+                        try {
+                            for (_a = __values(graph.adjGraph.entries()), _b = _a.next(); !_b.done; _b = _a.next()) {
+                                _c = __read(_b.value, 2), key = _c[0], value = _c[1];
+                                (0, Utility_1.log)("Node " + key);
+                                for (o = 0; o < value.length; o++) {
+                                    edge = value[o];
+                                    edge.print();
+                                }
+                            }
+                        }
+                        catch (e_3_1) { e_3 = { error: e_3_1 }; }
+                        finally {
+                            try {
+                                if (_b && !_b.done && (_d = _a.return)) _d.call(_a);
+                            }
+                            finally { if (e_3) throw e_3.error; }
+                        }
+                        return [2 /*return*/, canvas];
                 }
             });
         });
-    };
-    Battle.prototype.getMoveActionArrowsCanvas = function (mActions, style) {
-        if (style === void 0) { style = {
-            r: 0,
-            g: 0,
-            b: 0,
-            alpha: 1
-        }; }
-        var canvas = new canvas_1.Canvas(this.width * 50, this.height * 50);
-        var ctx = canvas.getContext("2d");
-        style = (0, Utility_1.normaliseRGBA)(style);
-        ctx.fillStyle = (0, Utility_1.stringifyRGBA)(style);
-        ctx.strokeStyle = (0, Utility_1.stringifyRGBA)(style);
-        var virtualCoordsMap = new Map();
-        for (var i = 0; i < mActions.length; i++) {
-            var action = mActions[i];
-            var victimIndex = action.affected.index;
-            if (!virtualCoordsMap.has(victimIndex)) {
-                virtualCoordsMap.set(victimIndex, { x: action.affected.x, y: action.affected.y });
-            }
-            var beforeActionsCoords = virtualCoordsMap.get(victimIndex);
-            // draw move trail
-            ctx.beginPath();
-            ctx.lineWidth = 10;
-            // get position before move
-            var move = this.getCanvasCoordsFromBattleCoord(beforeActionsCoords);
-            ctx.moveTo(move.x, move.y);
-            // moved after action
-            beforeActionsCoords[action.axis] += action.magnitude * Math.pow(-1, Number(action.executed));
-            // draw a line to the coord after move action
-            var line = this.getCanvasCoordsFromBattleCoord(beforeActionsCoords);
-            ctx.lineTo(line.x, line.y);
-            ctx.stroke();
-            ctx.closePath();
-            // draw circle
-            ctx.beginPath();
-            var coord = action.executed ?
-                move :
-                line;
-            ctx.arc(coord.x, coord.y, this.pixelsPerTile / 5, 0, Math.PI * 2);
-            ctx.fill();
-            // priority text
-            ctx.font = "30px Arial";
-            ctx.fillText("" + i, coord.x, coord.y);
-            // log("   Done with Action.")
-        }
-        return canvas;
     };
     Battle.prototype.getActionArrowsBuffer = function (actions) {
         return __awaiter(this, void 0, void 0, function () {
@@ -2048,7 +2007,7 @@ var Battle = /** @class */ (function () {
         this.allIndex.delete(s.index);
     };
     Battle.prototype.checkDeath = function (allStats) {
-        var e_4, _a;
+        var e_5, _a;
         if (allStats === void 0) { allStats = this.allStats(true); }
         var deathCount = 0;
         try {
@@ -2062,12 +2021,12 @@ var Battle = /** @class */ (function () {
                     this.enemyCount--;
             }
         }
-        catch (e_4_1) { e_4 = { error: e_4_1 }; }
+        catch (e_5_1) { e_5 = { error: e_5_1 }; }
         finally {
             try {
                 if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
             }
-            finally { if (e_4) throw e_4.error; }
+            finally { if (e_5) throw e_5.error; }
         }
         return deathCount;
     };
