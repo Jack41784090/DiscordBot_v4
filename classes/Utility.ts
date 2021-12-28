@@ -497,26 +497,26 @@ export function getAttackAction(attacker: Stat, victim: Stat, weapon: Weapon, co
     return attackAction;
 }
 
-export function getDashAction(stat: Stat, _target: Coordinate, priority: number, sprint: number): DashAction {
-    const movetype: ActionType = "Dash";
-    const magnitude: number = getDistance(stat, _target);
-    return {
-        executed: false,
+// export function getDashAction(stat: Stat, _target: Coordinate, priority: number, sprint: number): DashAction {
+//     const movetype: ActionType = "Dash";
+//     const magnitude: number = getDistance(stat, _target);
+//     return {
+//         executed: false,
 
-        type: movetype,
-        from: stat,
-        affected: stat,
-        readiness: Battle.MOVE_READINESS * Math.abs(magnitude),
+//         type: movetype,
+//         from: stat,
+//         affected: stat,
+//         readiness: Battle.MOVE_READINESS * Math.abs(magnitude),
 
-        sword: 0,
-        shield: 0,
-        sprint: sprint,
+//         sword: 0,
+//         shield: 0,
+//         sprint: sprint,
 
-        priority: priority,
+//         priority: priority,
 
-        target: _target,
-    };
-}
+//         target: _target,
+//     };
+// }
 
 export async function Test() {
     

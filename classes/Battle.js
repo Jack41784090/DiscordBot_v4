@@ -88,7 +88,6 @@ var hGraphTheory_1 = require("./hGraphTheory");
 var Battle = /** @class */ (function () {
     function Battle(_mapData, _author, _message, _client) {
         var _this = this;
-        this.getGreaterPrio = function (a) { return (1000 * (20 - a.priority)) + (a.from.readiness - a.readiness); };
         this.author = _author;
         this.message = _message;
         this.channel = _message.channel;
@@ -183,7 +182,7 @@ var Battle = /** @class */ (function () {
     Battle.prototype.StartRound = function () {
         var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
-            var allStats, _loop_1, i, existingCategory, commandCategory, _d, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_2, this_1, allStats_1, allStats_1_1, rstat, e_2_1, _loop_3, i, allPromise, players, endEmbedFields_1;
+            var allStats, _loop_1, i, existingCategory, commandCategory, _d, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_2, this_1, allStats_1, allStats_1_1, realStat, e_2_1, _loop_3, i, allPromise, players, endEmbedFields_1;
             var e_2, _e;
             var _this = this;
             return __generator(this, function (_f) {
@@ -275,21 +274,21 @@ var Battle = /** @class */ (function () {
                         _f.sent();
                         reportPromises = [];
                         (0, Utility_1.log)("Playing phase!");
-                        _loop_2 = function (rstat) {
-                            var user, stat_1, channelAlreadyExist, createdChannel_1, _g, existingPermissions_everyone_1, existingPermissions_author, overWrites, playerInfoMessage, _h, _j, readingPlayerPromise, virtualStat, selectedTarget, weaponSelected, path, moveActionArray, fullActions, i, moveAction, moveMagnitude, result, errorEmbed, attackCheck, attackAction, result;
+                        _loop_2 = function (realStat) {
+                            var user, virtualStat_1, channelAlreadyExist, createdChannel_1, _g, existingPermissions_everyone_1, existingPermissions_author, overWrites, playerInfoMessage, _h, _j, readingPlayerPromise, virtualStat, selectedTarget, weaponSelected, path, moveActionArray, fullActions, i, moveAction, moveMagnitude, valid, error, attackAction, valid;
                             var _k;
                             return __generator(this, function (_l) {
                                 switch (_l.label) {
                                     case 0:
                                         // if the entity is dead or is just an inanimate block, skip turn
-                                        if (rstat.HP <= 0 || rstat.team === "block")
+                                        if (realStat.HP <= 0 || realStat.team === "block")
                                             return [2 /*return*/, "continue"];
                                         // reset weapon uses for entity
-                                        rstat.weaponUses.forEach(function (wU) { return wU = 0; });
+                                        realStat.weaponUses.forEach(function (wU) { return wU = 0; });
                                         // reset moved
-                                        rstat.moved = false;
-                                        if (!(rstat.botType === typedef_1.BotType.naught)) return [3 /*break*/, 6];
-                                        return [4 /*yield*/, this_1.client.users.fetch(rstat.owner)
+                                        realStat.moved = false;
+                                        if (!(realStat.botType === typedef_1.BotType.naught)) return [3 /*break*/, 6];
+                                        return [4 /*yield*/, this_1.client.users.fetch(realStat.owner)
                                                 .then(function (u) { return u; })
                                                 .catch(function (err) {
                                                 console.log(err);
@@ -297,11 +296,15 @@ var Battle = /** @class */ (function () {
                                             })];
                                     case 1:
                                         user = _l.sent();
-                                        stat_1 = (0, Utility_1.getNewObject)(rstat, { username: (user ? user.username : rstat.owner) });
-                                        channelAlreadyExist = this_1.guild.channels.cache.find(function (c) { return c.name === stat_1.owner && c.type === 'GUILD_TEXT'; });
+                                        virtualStat_1 = (0, Utility_1.getNewObject)(realStat, {
+                                            username: (user ?
+                                                user.username :
+                                                realStat.owner)
+                                        });
+                                        channelAlreadyExist = this_1.guild.channels.cache.find(function (c) { return c.name === virtualStat_1.owner && c.type === 'GUILD_TEXT'; });
                                         _g = channelAlreadyExist;
                                         if (_g) return [3 /*break*/, 3];
-                                        return [4 /*yield*/, this_1.guild.channels.create("" + stat_1.owner, { type: 'GUILD_TEXT' })];
+                                        return [4 /*yield*/, this_1.guild.channels.create("" + virtualStat_1.owner, { type: 'GUILD_TEXT' })];
                                     case 2:
                                         _g = (_l.sent());
                                         _l.label = 3;
@@ -309,7 +312,7 @@ var Battle = /** @class */ (function () {
                                         createdChannel_1 = _g;
                                         createdChannel_1.setParent(commandCategory.id);
                                         existingPermissions_everyone_1 = (_b = createdChannel_1.permissionOverwrites.cache.get(this_1.guild.roles.everyone.id)) === null || _b === void 0 ? void 0 : _b.deny.toArray();
-                                        existingPermissions_author = (_c = createdChannel_1.permissionOverwrites.cache.get(stat_1.owner)) === null || _c === void 0 ? void 0 : _c.allow.toArray();
+                                        existingPermissions_author = (_c = createdChannel_1.permissionOverwrites.cache.get(virtualStat_1.owner)) === null || _c === void 0 ? void 0 : _c.allow.toArray();
                                         if (!channelAlreadyExist ||
                                             !existingPermissions_author ||
                                             !existingPermissions_everyone_1 ||
@@ -319,7 +322,7 @@ var Battle = /** @class */ (function () {
                                             !existingPermissions_everyone_1.includes('VIEW_CHANNEL')) {
                                             overWrites = [
                                                 { id: this_1.guild.roles.everyone, deny: 'VIEW_CHANNEL' },
-                                                { id: stat_1.owner, allow: 'VIEW_CHANNEL' }
+                                                { id: virtualStat_1.owner, allow: 'VIEW_CHANNEL' }
                                             ];
                                             createdChannel_1.permissionOverwrites.set(overWrites);
                                         }
@@ -328,11 +331,11 @@ var Battle = /** @class */ (function () {
                                         // send time, player embed, and input manual
                                         createdChannel_1.send("``` ```");
                                         _j = (_h = createdChannel_1).send;
-                                        return [4 /*yield*/, this_1.getFullPlayerEmbedMessageOptions(stat_1)];
+                                        return [4 /*yield*/, this_1.getFullPlayerEmbedMessageOptions(virtualStat_1)];
                                     case 4: return [4 /*yield*/, _j.apply(_h, [_l.sent()])];
                                     case 5:
                                         playerInfoMessage = _l.sent();
-                                        readingPlayerPromise = this_1.readActions(120, playerInfoMessage, stat_1).then(function () {
+                                        readingPlayerPromise = this_1.readActions(120, playerInfoMessage, virtualStat_1, realStat).then(function () {
                                             createdChannel_1.send({ embeds: [new discord_js_1.MessageEmbed().setTitle("Your turn has ended.")] });
                                         });
                                         reportPromises.push(readingPlayerPromise);
@@ -340,15 +343,15 @@ var Battle = /** @class */ (function () {
                                     case 6:
                                         //#endregion
                                         //#region AI
-                                        if (rstat.botType === typedef_1.BotType.enemy) {
-                                            virtualStat = (0, Utility_1.getNewObject)(rstat);
+                                        if (realStat.botType === typedef_1.BotType.enemy) {
+                                            virtualStat = (0, Utility_1.getNewObject)(realStat);
                                             selectedTarget = this_1.findEntity_closest(virtualStat, ["block", virtualStat.team]);
                                             // option 2: select the weakest target
                                             // if found a target
                                             if (selectedTarget !== null) {
                                                 weaponSelected = virtualStat.base.weapons[0];
-                                                path = this_1.startPathFinding(rstat, selectedTarget);
-                                                moveActionArray = this_1.getMoveActionListFromCoordArray(rstat, path);
+                                                path = this_1.startPathFinding(realStat, selectedTarget);
+                                                moveActionArray = this_1.getMoveActionListFromCoordArray(realStat, path);
                                                 fullActions = [];
                                                 i = 0;
                                                 // while the enemy has not moved or has enough sprint to make additional moves
@@ -356,32 +359,28 @@ var Battle = /** @class */ (function () {
                                                 while (i < moveActionArray.length && (virtualStat.moved === false || virtualStat.sprint > 0)) {
                                                     moveAction = moveActionArray[i];
                                                     moveMagnitude = Math.abs(moveAction.magnitude);
-                                                    // log(`move checking for ${rstat.base.class} (${rstat.index}): ${moveAction.magnitude} ${moveAction.axis}`)
                                                     if (moveMagnitude > 0) {
                                                         moveAction.sprint = Number(virtualStat.moved);
-                                                        result = this_1.executeVirtualMovement(moveAction, virtualStat);
-                                                        if (result.magnitude !== undefined) {
+                                                        valid = this_1.executeVirtualMovement(moveAction, virtualStat);
+                                                        if (valid) {
                                                             virtualStat.moved = true;
-                                                            if (result.magnitude !== undefined) {
+                                                            if (moveAction.magnitude !== undefined) {
                                                                 fullActions.push(moveAction);
                                                             }
                                                         }
-                                                        else if (result !== null) {
-                                                            errorEmbed = result;
-                                                            (0, Utility_1.log)("Failed to move. Reason: " + errorEmbed.title + " (" + errorEmbed.description + ")");
+                                                        else {
+                                                            error = this_1.validateMovement(virtualStat, moveAction);
+                                                            (0, Utility_1.log)("Failed to move. Reason: " + (error === null || error === void 0 ? void 0 : error.reason) + " (" + (error === null || error === void 0 ? void 0 : error.value) + ")");
                                                         }
                                                     }
                                                     i++;
                                                 }
                                                 // 3. attack with selected weapon
                                                 if ((0, Utility_1.checkWithinDistance)(weaponSelected, (0, Utility_1.getDistance)(virtualStat, selectedTarget))) {
-                                                    attackCheck = this_1.validateTarget(virtualStat, weaponSelected, selectedTarget);
-                                                    if (attackCheck === null) {
-                                                        attackAction = (0, Utility_1.getAttackAction)(virtualStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length);
-                                                        result = this_1.executeVirtualAttack(attackAction, virtualStat);
-                                                        if (result.weapon !== undefined) {
-                                                            fullActions.push(attackAction);
-                                                        }
+                                                    attackAction = (0, Utility_1.getAttackAction)(virtualStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length + 1);
+                                                    valid = this_1.executeVirtualAttack(attackAction, virtualStat);
+                                                    if (valid) {
+                                                        fullActions.push((0, Utility_1.getAttackAction)(realStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length + 1));
                                                     }
                                                 }
                                                 (_k = this_1.roundActionsArray).push.apply(_k, __spreadArray([], __read(fullActions), false));
@@ -399,8 +398,8 @@ var Battle = /** @class */ (function () {
                         _f.label = 7;
                     case 7:
                         if (!!allStats_1_1.done) return [3 /*break*/, 10];
-                        rstat = allStats_1_1.value;
-                        return [5 /*yield**/, _loop_2(rstat)];
+                        realStat = allStats_1_1.value;
+                        return [5 /*yield**/, _loop_2(realStat)];
                     case 8:
                         _f.sent();
                         _f.label = 9;
@@ -640,86 +639,60 @@ var Battle = /** @class */ (function () {
         ctx.fillRect(canvasCoord.x, canvasCoord.y, this.pixelsPerTile, this.pixelsPerTile);
     };
     Battle.prototype.executeVirtualAttack = function (attackAction, virtualStat) {
-        var realStat = this.allStats(true).find(function (s) { return s.index === virtualStat.index; });
         var target = attackAction.affected;
         var weapon = attackAction.weapon;
         var check = this.validateTarget(virtualStat, attackAction.weapon, target);
         if (check === null) { // attack goes through
             virtualStat.weaponUses[(0, Utility_1.getWeaponIndex)(weapon, virtualStat)]++;
-            var action_1 = {
-                executed: false,
-                type: "Attack",
-                from: realStat,
-                affected: target,
-                readiness: weapon.Readiness,
-                sword: weapon.sword,
-                shield: weapon.shield,
-                sprint: weapon.sprint,
-                priority: attackAction.priority,
-                weapon: weapon,
-                coordinate: { x: target.x, y: target.y },
-            };
-            virtualStat.readiness -= action_1.readiness;
+            virtualStat.readiness -= attackAction.readiness;
             (0, Utility_1.HandleTokens)(virtualStat, function (p, t) {
-                virtualStat[t] -= action_1[t];
+                virtualStat[t] -= attackAction[t];
             });
-            return action_1;
         }
         else { // attack cannot go through
             (0, Utility_1.log)("Failed to target. Reason: " + check.reason + " (" + check.value + ")");
-            return new discord_js_1.MessageEmbed({
-                title: check.reason,
-                description: "Failed to target. Reason: " + check.reason + " (" + check.value + ")",
-            });
         }
+        return check === null;
     };
     ;
     Battle.prototype.executeVirtualMovement = function (moveAction, virtualStat) {
-        if (Math.abs(moveAction.magnitude) > 0) {
-            var realStat = this.allStats(true).find(function (s) { return s.index === virtualStat.index; });
-            moveAction.affected = realStat;
-            moveAction.from = realStat;
-            if (moveAction !== null) {
-                var check = this.validateMovement(virtualStat, moveAction);
-                if (check === null) {
-                    (0, Utility_1.log)("\t\tMoved!");
-                    // second (or above) move
-                    if (virtualStat.moved === true) {
-                        (0, Utility_1.HandleTokens)(moveAction, function (p, type) {
-                            if (type === "sprint") {
-                                virtualStat.sprint -= p;
-                            }
-                        });
+        (0, Utility_1.log)("\tExecuting virtual movement for " + virtualStat.base.class + " (" + virtualStat.index + ").");
+        var check = this.validateMovement(virtualStat, moveAction);
+        if (check === null) {
+            (0, Utility_1.log)("\t\tMoved!");
+            // spending sprint to move
+            if (virtualStat.moved === true) {
+                (0, Utility_1.HandleTokens)(moveAction, function (p, type) {
+                    if (type === "sprint") {
+                        virtualStat.sprint -= p;
                     }
-                    // other resource drain
-                    virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(moveAction.magnitude);
-                    virtualStat.moved = true;
-                    return moveAction;
-                }
-                else {
-                    (0, Utility_1.log)("\t\tFailed to move. Reason: " + check.reason + " (" + check.value + ")");
-                    // no target warning
-                    return new discord_js_1.MessageEmbed({
-                        title: check.reason,
-                        description: "Failed to move. Reference value: __" + check.value + "__",
-                    });
-                }
+                });
             }
+            // other resource drain
+            virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(moveAction.magnitude);
+            virtualStat.moved = true;
         }
-        return null;
+        else {
+            (0, Utility_1.log)("\t\tFailed to move. Reason: " + check.reason + " (" + check.value + ")");
+        }
+        return check === null;
     };
     ;
     // action reader methods
-    Battle.prototype.readActions = function (time, infoMessage, virtualStat) {
+    Battle.prototype.readActions = function (time, infoMessage, virtualStat, realStat) {
         var _this = this;
+        if (realStat === undefined) {
+            throw Error("Fatal error at readActions: cannot find realStat. (" + virtualStat.base.class + " (" + virtualStat.index + "))");
+        }
         // returns a Promise that resolves when the player is finished with their moves
         return new Promise(function (resolve) {
             var currentListener;
             var responseQueue = [];
             var x = virtualStat.x, y = virtualStat.y, readiness = virtualStat.readiness, sword = virtualStat.sword, shield = virtualStat.shield, sprint = virtualStat.sprint;
-            var actions = [];
+            var executingActions = [];
             var infoMessagesQueue = [infoMessage];
             var channel = infoMessage.channel;
+            /** Listens to the responseQueue every 300ms, clears the interval and handles the request when detected. */
             var listenToQueue = function () {
                 (0, Utility_1.log)("\tListening to queue...");
                 if (currentListener) {
@@ -735,129 +708,139 @@ var Battle = /** @class */ (function () {
                     });
                 }); }, 300);
             };
+            /** Handles the response (response is Discord.Message) */
             var handleQueue = function () { return __awaiter(_this, void 0, void 0, function () {
-                var mes, sections, actionName, actionArgs, moveMagnitude, valid, _a, moveAction, attackTarget, range_1, listOfWeaponsInRange, weaponChosen, attackAction, undoAction, targetedWeapon, victim, coord, AOE, attackAction, messageOptions;
+                var mes, sections, actionName_1, actionArgs, moveMagnitude, valid_1, _a, moveAction, realMoveStat, check, attackTarget, check, range_1, listOfWeaponsInRange, weaponChosen, virtualAttackAction, realAttackAction, check, undoAction, targetedWeapon, victim, coord, AOE, attackAction, messageOptions;
                 return __generator(this, function (_b) {
                     switch (_b.label) {
                         case 0:
                             (0, Utility_1.log)("\tHandling queue...");
                             mes = responseQueue.shift();
+                            if (!(mes === undefined)) return [3 /*break*/, 1];
+                            throw Error("HandleQueue received an undefined message.");
+                        case 1:
                             sections = (0, Utility_1.extractCommands)(mes.content);
-                            actionName = sections[0].toLocaleLowerCase();
+                            actionName_1 = sections[0].toLocaleLowerCase();
                             actionArgs = sections.slice(1, sections.length);
                             moveMagnitude = parseInt(actionArgs[0]) || 1;
-                            valid = null;
-                            _a = actionName;
+                            valid_1 = false;
+                            _a = actionName_1;
                             switch (_a) {
-                                case "up": return [3 /*break*/, 1];
-                                case "v": return [3 /*break*/, 1];
-                                case "down": return [3 /*break*/, 1];
-                                case "right": return [3 /*break*/, 1];
-                                case "h": return [3 /*break*/, 1];
-                                case "r": return [3 /*break*/, 1];
-                                case "left": return [3 /*break*/, 1];
-                                case "l": return [3 /*break*/, 1];
-                                case "attack": return [3 /*break*/, 2];
-                                case "clear": return [3 /*break*/, 3];
-                                case "cr": return [3 /*break*/, 3];
-                                case "end": return [3 /*break*/, 5];
-                                case "log": return [3 /*break*/, 6];
-                                case "undo": return [3 /*break*/, 7];
-                            }
-                            return [3 /*break*/, 10];
-                        case 1:
-                            moveAction = (0, Utility_1.getMoveAction)(virtualStat, actionName, infoMessagesQueue.length, moveMagnitude);
-                            // debug("actionName", actionName);
-                            // debug("axis", moveAction?.axis);
-                            // debug("magnitude", moveAction?.magnitude);
-                            // validate + act on (if valid) movement on virtual map
-                            valid = this.executeVirtualMovement(moveAction, virtualStat);
-                            // movement is permitted
-                            if (valid.magnitude !== undefined) {
-                                mes.react('✅');
-                                actions.push(valid);
-                            }
-                            else {
-                                mes.react('❎');
-                                if (valid !== null) {
-                                    channel.send({
-                                        embeds: [valid]
-                                    });
-                                }
+                                case "up": return [3 /*break*/, 2];
+                                case "v": return [3 /*break*/, 2];
+                                case "down": return [3 /*break*/, 2];
+                                case "right": return [3 /*break*/, 2];
+                                case "h": return [3 /*break*/, 2];
+                                case "r": return [3 /*break*/, 2];
+                                case "left": return [3 /*break*/, 2];
+                                case "l": return [3 /*break*/, 2];
+                                case "attack": return [3 /*break*/, 3];
+                                case "clear": return [3 /*break*/, 4];
+                                case "cr": return [3 /*break*/, 4];
+                                case "end": return [3 /*break*/, 6];
+                                case "log": return [3 /*break*/, 7];
+                                case "undo": return [3 /*break*/, 8];
                             }
                             return [3 /*break*/, 11];
                         case 2:
-                            attackTarget = this.findEntity_byArgs(actionArgs, virtualStat);
-                            range_1 = attackTarget ?
-                                (0, Utility_1.getDistance)(attackTarget, virtualStat) :
-                                0;
-                            listOfWeaponsInRange = attackTarget ?
-                                virtualStat.base.weapons.filter(function (w) {
-                                    return w.Range[0] <= range_1 &&
-                                        w.Range[1] >= range_1 &&
-                                        w.targetting.target === typedef_1.WeaponTarget.enemy;
-                                }) :
-                                [];
-                            weaponChosen = attackTarget ?
-                                listOfWeaponsInRange[(0, Utility_1.random)(0, listOfWeaponsInRange.length - 1)] :
-                                null;
-                            if (attackTarget === null || weaponChosen === null) {
-                                valid = null;
-                            }
-                            else {
-                                attackAction = (0, Utility_1.getAttackAction)(virtualStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
-                                valid = attackAction ?
-                                    this.executeVirtualAttack(attackAction, virtualStat) :
-                                    null;
-                            }
-                            if (valid.weapon !== undefined) {
+                            moveAction = (0, Utility_1.getMoveAction)(virtualStat, actionName_1, infoMessagesQueue.length, moveMagnitude);
+                            // validate + act on (if valid) movement on virtual map
+                            valid_1 = this.executeVirtualMovement(moveAction, virtualStat);
+                            // movement is permitted
+                            if (valid_1) {
+                                realMoveStat = (0, Utility_1.getMoveAction)(realStat, actionName_1, infoMessagesQueue.length, moveMagnitude);
                                 mes.react('✅');
-                                actions.push(valid);
+                                executingActions.push(realMoveStat);
                             }
                             else {
                                 mes.react('❎');
-                                if (valid !== null) {
+                                check = this.validateMovement(virtualStat, moveAction);
+                                if (check) {
                                     channel.send({
-                                        embeds: [valid]
+                                        embeds: [new discord_js_1.MessageEmbed({
+                                                title: check.reason,
+                                                description: "Failed to move. Reference value: __" + check.value + "__",
+                                            })]
                                     });
                                 }
                             }
-                            return [3 /*break*/, 11];
+                            return [3 /*break*/, 12];
                         case 3:
-                            actions = [];
+                            attackTarget = this.findEntity_args(actionArgs, virtualStat);
+                            if (attackTarget === null) {
+                                mes.react('❎');
+                                check = this.validateTarget(virtualStat, null, attackTarget);
+                                if (check) {
+                                    channel.send({
+                                        embeds: [new discord_js_1.MessageEmbed({
+                                                title: check.reason,
+                                                description: "Failed to move. Reference value: __" + check.value + "__",
+                                            })]
+                                    });
+                                }
+                            }
+                            else {
+                                range_1 = (0, Utility_1.getDistance)(attackTarget, virtualStat);
+                                listOfWeaponsInRange = virtualStat.base.weapons.filter(function (w) { return (w.Range[0] <= range_1 &&
+                                    w.Range[1] >= range_1 &&
+                                    w.targetting.target === typedef_1.WeaponTarget.enemy); });
+                                weaponChosen = listOfWeaponsInRange[0];
+                                virtualAttackAction = (0, Utility_1.getAttackAction)(virtualStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
+                                valid_1 = this.executeVirtualAttack(virtualAttackAction, virtualStat);
+                                if (valid_1) {
+                                    mes.react('✅');
+                                    realAttackAction = (0, Utility_1.getAttackAction)(realStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
+                                    executingActions.push(realAttackAction);
+                                }
+                                else {
+                                    mes.react('❎');
+                                    check = this.validateTarget(virtualStat, weaponChosen, attackTarget);
+                                    if (check) {
+                                        channel.send({
+                                            embeds: [new discord_js_1.MessageEmbed({
+                                                    title: check.reason,
+                                                    description: "Failed to move. Reference value: __" + check.value + "__",
+                                                })]
+                                        });
+                                    }
+                                }
+                            }
+                            return [3 /*break*/, 12];
+                        case 4:
+                            executingActions = [];
                             infoMessagesQueue = [infoMessage];
                             Object.assign(virtualStat, { x: x, y: y, readiness: readiness, sword: sword, shield: shield, sprint: sprint });
                             return [4 /*yield*/, (0, Utility_1.clearChannel)(channel, infoMessage)];
-                        case 4:
-                            _b.sent();
-                            return [3 /*break*/, 11];
                         case 5:
+                            _b.sent();
+                            return [3 /*break*/, 12];
+                        case 6:
                             newCollector.stop();
                             (0, Utility_1.log)("Ended turn for \"" + virtualStat.name + "\" (" + virtualStat.base.class + ")");
-                            return [3 /*break*/, 11];
-                        case 6:
+                            return [3 /*break*/, 12];
+                        case 7:
                             Utility_1.log.apply(void 0, __spreadArray([], __read(this.allStats().filter(function (s) { return s.team !== "block"; }).map(function (s) {
                                 var string = s.base.class + " (" + s.index + ") (" + s.team + ") " + s.HP + "/" + (0, Utility_1.getAHP)(s) + " (" + s.x + ", " + s.y + ")";
                                 return string;
                             })), false));
-                            return [3 /*break*/, 11];
-                        case 7:
-                            if (!(infoMessagesQueue.length > 1)) return [3 /*break*/, 9];
-                            undoAction = actions.pop();
+                            return [3 /*break*/, 12];
+                        case 8:
+                            if (!(infoMessagesQueue.length > 1)) return [3 /*break*/, 10];
+                            undoAction = executingActions.pop();
                             (0, Utility_1.dealWithUndoAction)(virtualStat, undoAction);
                             infoMessagesQueue.pop();
                             return [4 /*yield*/, (0, Utility_1.clearChannel)(channel, (0, Utility_1.getLastElement)(infoMessagesQueue))];
-                        case 8:
+                        case 9:
                             _b.sent();
-                            _b.label = 9;
-                        case 9: return [3 /*break*/, 11];
-                        case 10:
-                            targetedWeapon = virtualStat.base.weapons.find(function (w) { return w.Name.toLowerCase().search(actionName) !== -1; });
+                            _b.label = 10;
+                        case 10: return [3 /*break*/, 12];
+                        case 11:
+                            targetedWeapon = virtualStat.base.weapons.find(function (w) { return w.Name.toLowerCase().search(actionName_1) !== -1; });
                             if (targetedWeapon) {
                                 mes.react('✅');
-                                victim = this.findEntity_byArgs(actionArgs, virtualStat, targetedWeapon);
+                                victim = this.findEntity_args(actionArgs, virtualStat, targetedWeapon);
                                 if (victim === null) {
-                                    valid = null;
+                                    valid_1 = false;
                                 }
                                 else {
                                     coord = void 0;
@@ -875,23 +858,23 @@ var Battle = /** @class */ (function () {
                                         };
                                     }
                                     attackAction = (0, Utility_1.getAttackAction)(virtualStat, victim, targetedWeapon, coord, infoMessagesQueue.length);
-                                    valid = this.executeVirtualAttack(attackAction, virtualStat);
+                                    valid_1 = this.executeVirtualAttack(attackAction, virtualStat);
                                 }
                             }
                             else {
                                 mes.react('❎');
                                 setTimeout(function () { return mes.delete().catch(console.log); }, 10 * 1000);
                             }
-                            return [3 /*break*/, 11];
-                        case 11:
-                            (0, Utility_1.debug)("\tvalid", valid !== null);
-                            if (!(valid !== null)) return [3 /*break*/, 13];
-                            return [4 /*yield*/, this.getFullPlayerEmbedMessageOptions(virtualStat, actions)];
+                            return [3 /*break*/, 12];
                         case 12:
+                            (0, Utility_1.debug)("\tvalid", valid_1 !== null);
+                            if (!valid_1) return [3 /*break*/, 14];
+                            return [4 /*yield*/, this.getFullPlayerEmbedMessageOptions(virtualStat, executingActions)];
+                        case 13:
                             messageOptions = _b.sent();
                             channel.send(messageOptions)
                                 .then(function (m) {
-                                if (valid.priority !== undefined) {
+                                if (valid_1) {
                                     infoMessagesQueue.push(m);
                                 }
                                 if (responseQueue[0]) {
@@ -901,11 +884,11 @@ var Battle = /** @class */ (function () {
                                     listenToQueue();
                                 }
                             });
-                            return [3 /*break*/, 14];
-                        case 13:
+                            return [3 /*break*/, 15];
+                        case 14:
                             listenToQueue();
-                            _b.label = 14;
-                        case 14: return [2 /*return*/];
+                            _b.label = 15;
+                        case 15: return [2 /*return*/];
                     }
                 });
             }); };
@@ -913,7 +896,6 @@ var Battle = /** @class */ (function () {
                 filter: function (m) { return m.author.id === virtualStat.owner; },
                 time: time * 1000,
             });
-            listenToQueue();
             newCollector.on('collect', function (mes) {
                 if (responseQueue.length < 3) {
                     responseQueue.push(mes);
@@ -941,12 +923,13 @@ var Battle = /** @class */ (function () {
                             i++;
                             return [3 /*break*/, 1];
                         case 4:
-                            (_a = this.roundActionsArray).push.apply(_a, __spreadArray([], __read(actions), false));
+                            (_a = this.roundActionsArray).push.apply(_a, __spreadArray([], __read(executingActions), false));
                             resolve(void 0);
                             return [2 /*return*/];
                     }
                 });
             }); });
+            listenToQueue();
         });
     };
     // index manipulation
@@ -1163,6 +1146,8 @@ var Battle = /** @class */ (function () {
             });
         });
     };
+    Battle.prototype.getGreaterPrio = function (a) { return (1000 * (20 - a.priority)) + (a.from.readiness - a.readiness); };
+    ;
     Battle.prototype.sortActionsByGreaterPrior = function (actions) {
         var _this = this;
         var sortedActions = actions.sort(function (a, b) { return _this.getGreaterPrio(b) - _this.getGreaterPrio(a); });
@@ -1426,7 +1411,7 @@ var Battle = /** @class */ (function () {
             alpha: 1
         }; }
         return __awaiter(this, void 0, void 0, function () {
-            var canvas, ctx, drawPriorityText, drawAttackAction, drawMoveAction, appendGraph, virtualCoordsMap, graph, _loop_5, i, _a, _b, _c, key, value, o, edge;
+            var canvas, ctx, drawPriorityText, drawAttackAction, drawMoveAction, appendGraph, virtualCoordsMap, graph, _loop_5, i, _a, _b, _c, key, value, solidColumns, columns, columnWidth, o, widthStart, widthEnd, edge, connectingAction, isXtransition, isYtransition;
             var e_3, _d;
             var _this = this;
             return __generator(this, function (_e) {
@@ -1451,98 +1436,111 @@ var Battle = /** @class */ (function () {
                             ctx.strokeText("" + priority, 0, 0);
                             ctx.restore();
                         };
-                        drawAttackAction = function (action, fromBattleCoord, toBattleCoord, priority) { return __awaiter(_this, void 0, void 0, function () {
-                            var victimWithinDistance, fromCanvasCoord, toCanvasCoord, textCanvasCoordinate, x, y, angle, victimDead, greenBarPercentage, targetCanvasCoords, image, reversedY, edgeDistance, barStartingCanvasPosition, barEndingCanvasPosition, greenLineLength;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        (0, Utility_1.log)("Drawing attack action...");
-                                        (0, Utility_1.debug)("\tfromCoord", { x: fromBattleCoord.x, y: fromBattleCoord.y });
-                                        (0, Utility_1.debug)("\ttoCoord", { x: toBattleCoord.x, y: toBattleCoord.y });
-                                        ctx.save();
-                                        victimWithinDistance = (0, Utility_1.checkWithinDistance)(action.weapon, (0, Utility_1.getDistance)(action.from, action.affected));
-                                        ctx.beginPath();
-                                        ctx.strokeStyle = victimWithinDistance ?
-                                            "red" :
-                                            "black";
-                                        ctx.lineWidth = 5;
-                                        fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
-                                        ctx.moveTo(fromCanvasCoord.x, fromCanvasCoord.y);
-                                        toCanvasCoord = this.getCanvasCoordsFromBattleCoord(toBattleCoord);
-                                        ctx.lineTo(toCanvasCoord.x, toCanvasCoord.y);
-                                        ctx.stroke();
-                                        ctx.closePath();
-                                        (0, Utility_1.debug)("\tfromCanvasCoord", { x: fromCanvasCoord.x, y: fromCanvasCoord.y });
-                                        (0, Utility_1.debug)("\ttoCanvasCoord", { x: toCanvasCoord.x, y: toCanvasCoord.y });
-                                        textCanvasCoordinate = this.getCanvasCoordsFromBattleCoord({
-                                            x: (fromBattleCoord.x + toBattleCoord.x) / 2,
-                                            y: (fromBattleCoord.y + toBattleCoord.y) / 2
-                                        });
-                                        x = toBattleCoord.x - fromBattleCoord.x;
-                                        y = toBattleCoord.y - fromBattleCoord.y;
-                                        angle = Math.atan2(y, x);
-                                        drawPriorityText(priority, textCanvasCoordinate, -1 * angle);
-                                        (0, Utility_1.debug)("\ttextCanvasCoord", textCanvasCoordinate);
-                                        if (!victimWithinDistance) return [3 /*break*/, 2];
-                                        victimDead = action.affected.HP <= 0;
-                                        greenBarPercentage = victimDead ?
-                                            1 :
-                                            action.affected.HP / action.affected.base.AHP;
-                                        ctx.lineWidth = 10;
-                                        targetCanvasCoords = this.getCanvasCoordsFromBattleCoord(action.affected);
-                                        return [4 /*yield*/, (0, Database_1.getFileImage)('./images/Hit.png')];
-                                    case 1:
-                                        image = _a.sent();
-                                        reversedY = (this.height - 1 - action.affected.y);
-                                        ctx.drawImage(image, action.affected.x * this.pixelsPerTile, reversedY * this.pixelsPerTile, this.pixelsPerTile * 0.7, this.pixelsPerTile * 0.7);
-                                        edgeDistance = this.pixelsPerTile * (1 / 3);
-                                        barStartingCanvasPosition = {
-                                            x: targetCanvasCoords.x - edgeDistance,
-                                            y: targetCanvasCoords.y - edgeDistance,
-                                        };
-                                        barEndingCanvasPosition = {
-                                            x: targetCanvasCoords.x + edgeDistance,
-                                            y: targetCanvasCoords.y - edgeDistance,
-                                        };
-                                        // draw red bar
-                                        ctx.beginPath();
-                                        // shift 1/3 of a block top and left from the center
-                                        ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y);
-                                        ctx.strokeStyle = "red";
-                                        // 1/3 to the top right
-                                        ctx.lineTo(barEndingCanvasPosition.x, barEndingCanvasPosition.y);
-                                        ctx.stroke();
-                                        ctx.closePath();
-                                        // draw green bar
-                                        ctx.beginPath();
-                                        ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y);
-                                        ctx.strokeStyle = victimDead ?
-                                            "black" :
-                                            "green";
-                                        greenLineLength = 2 * edgeDistance * greenBarPercentage;
-                                        ctx.lineTo(barStartingCanvasPosition.x + greenLineLength, barEndingCanvasPosition.y);
-                                        ctx.stroke();
-                                        ctx.closePath();
-                                        _a.label = 2;
-                                    case 2:
-                                        ctx.restore();
-                                        return [2 /*return*/];
-                                }
+                        drawAttackAction = function (action, fromBattleCoord, toBattleCoord, priority, width, offset) {
+                            if (width === void 0) { width = 5; }
+                            if (offset === void 0) { offset = {
+                                x: 0,
+                                y: 0
+                            }; }
+                            return __awaiter(_this, void 0, void 0, function () {
+                                var victimWithinDistance, fromCanvasCoord, toCanvasCoord, textCanvasCoordinate, x, y, angle, victimDead, greenBarPercentage, targetCanvasCoords, image, reversedY, edgeDistance, barStartingCanvasPosition, barEndingCanvasPosition, greenLineLength;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            (0, Utility_1.log)("Drawing attack action...");
+                                            (0, Utility_1.debug)("\tfromCoord", { x: fromBattleCoord.x, y: fromBattleCoord.y });
+                                            (0, Utility_1.debug)("\ttoCoord", { x: toBattleCoord.x, y: toBattleCoord.y });
+                                            ctx.save();
+                                            victimWithinDistance = (0, Utility_1.checkWithinDistance)(action.weapon, (0, Utility_1.getDistance)(action.from, action.affected));
+                                            ctx.beginPath();
+                                            ctx.strokeStyle = victimWithinDistance ?
+                                                "red" :
+                                                "black";
+                                            ctx.lineWidth = width;
+                                            fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
+                                            ctx.moveTo(fromCanvasCoord.x + offset.x, fromCanvasCoord.y + offset.y);
+                                            toCanvasCoord = this.getCanvasCoordsFromBattleCoord(toBattleCoord);
+                                            ctx.lineTo(toCanvasCoord.x + offset.x, toCanvasCoord.y + offset.y);
+                                            ctx.stroke();
+                                            ctx.closePath();
+                                            (0, Utility_1.debug)("\tfromCanvasCoord", { x: fromCanvasCoord.x, y: fromCanvasCoord.y });
+                                            (0, Utility_1.debug)("\ttoCanvasCoord", { x: toCanvasCoord.x, y: toCanvasCoord.y });
+                                            textCanvasCoordinate = this.getCanvasCoordsFromBattleCoord({
+                                                x: (fromBattleCoord.x + toBattleCoord.x) / 2,
+                                                y: (fromBattleCoord.y + toBattleCoord.y) / 2
+                                            });
+                                            x = toBattleCoord.x - fromBattleCoord.x;
+                                            y = toBattleCoord.y - fromBattleCoord.y;
+                                            angle = Math.atan2(y, x);
+                                            drawPriorityText(priority, textCanvasCoordinate, -1 * angle);
+                                            (0, Utility_1.debug)("\ttextCanvasCoord", textCanvasCoordinate);
+                                            if (!victimWithinDistance) return [3 /*break*/, 2];
+                                            victimDead = action.affected.HP <= 0;
+                                            greenBarPercentage = victimDead ?
+                                                1 :
+                                                action.affected.HP / action.affected.base.AHP;
+                                            ctx.lineWidth = 10;
+                                            targetCanvasCoords = this.getCanvasCoordsFromBattleCoord(action.affected);
+                                            return [4 /*yield*/, (0, Database_1.getFileImage)('./images/Hit.png')];
+                                        case 1:
+                                            image = _a.sent();
+                                            reversedY = (this.height - 1 - action.affected.y);
+                                            ctx.drawImage(image, action.affected.x * this.pixelsPerTile, reversedY * this.pixelsPerTile, this.pixelsPerTile * 0.7, this.pixelsPerTile * 0.7);
+                                            edgeDistance = this.pixelsPerTile * (1 / 3);
+                                            barStartingCanvasPosition = {
+                                                x: targetCanvasCoords.x - edgeDistance,
+                                                y: targetCanvasCoords.y - edgeDistance,
+                                            };
+                                            barEndingCanvasPosition = {
+                                                x: targetCanvasCoords.x + edgeDistance,
+                                                y: targetCanvasCoords.y - edgeDistance,
+                                            };
+                                            // draw red bar
+                                            ctx.beginPath();
+                                            // shift 1/3 of a block top and left from the center
+                                            ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y);
+                                            ctx.strokeStyle = "red";
+                                            // 1/3 to the top right
+                                            ctx.lineTo(barEndingCanvasPosition.x, barEndingCanvasPosition.y);
+                                            ctx.stroke();
+                                            ctx.closePath();
+                                            // draw green bar
+                                            ctx.beginPath();
+                                            ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y);
+                                            ctx.strokeStyle = victimDead ?
+                                                "black" :
+                                                "green";
+                                            greenLineLength = 2 * edgeDistance * greenBarPercentage;
+                                            ctx.lineTo(barStartingCanvasPosition.x + greenLineLength, barEndingCanvasPosition.y);
+                                            ctx.stroke();
+                                            ctx.closePath();
+                                            _a.label = 2;
+                                        case 2:
+                                            ctx.restore();
+                                            return [2 /*return*/];
+                                    }
+                                });
                             });
-                        }); };
-                        drawMoveAction = function (fromBattleCoord, toBattleCoord, priority) {
-                            ctx.lineWidth = 10;
+                        };
+                        drawMoveAction = function (fromBattleCoord, toBattleCoord, priority, width, offset) {
+                            if (width === void 0) { width = 5; }
+                            if (offset === void 0) { offset = {
+                                x: 0,
+                                y: 0
+                            }; }
+                            (0, Utility_1.log)("Drawing move action: (" + fromBattleCoord.x + "," + fromBattleCoord.y + ")=>(" + toBattleCoord.x + "," + toBattleCoord.y + ") (width:" + width + ")(offset x:" + offset.x + " y:" + offset.y + ")");
+                            ctx.lineWidth = width;
                             // get position before move
                             var beforeCanvasCoord = _this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
+                            ctx.beginPath();
                             ctx.moveTo(beforeCanvasCoord.x, beforeCanvasCoord.y);
                             // draw a line to the coord after move action
                             var afterCanvasCoord = _this.getCanvasCoordsFromBattleCoord(toBattleCoord);
-                            ctx.beginPath();
                             ctx.lineTo(afterCanvasCoord.x, afterCanvasCoord.y);
                             ctx.stroke();
                             ctx.closePath();
                             // draw circle
-                            ctx.arc(toBattleCoord.x, toBattleCoord.y, _this.pixelsPerTile / 5, 0, Math.PI * 2);
+                            ctx.arc(afterCanvasCoord.x, afterCanvasCoord.y, _this.pixelsPerTile / 5, 0, Math.PI * 2);
                             ctx.fill();
                             // priority text
                             drawPriorityText(priority, toBattleCoord);
@@ -1623,10 +1621,12 @@ var Battle = /** @class */ (function () {
                                                     return [2 /*return*/];
                                                 });
                                             }); }, function (mA) {
-                                                var beforeBattleCoord = victim_beforeCoords;
-                                                victim_beforeCoords[mA.axis] += mA.magnitude * Math.pow(-1, Number(action.executed));
-                                                // victim_beforeCoords[mA.axis] += mA.magnitude;
-                                                var afterBattleCoord = victim_beforeCoords;
+                                                var beforeBattleCoord = (0, Utility_1.getNewObject)(victim_beforeCoords);
+                                                (0, Utility_1.log)("BeforeBattleCoord: " + beforeBattleCoord.x + ", " + beforeBattleCoord.y);
+                                                victim_beforeCoords[mA.axis] += mA.magnitude * Math.pow(-1, Number(mA.executed));
+                                                (0, Utility_1.log)("Action: " + mA.magnitude + " (" + mA.executed + ")");
+                                                var afterBattleCoord = (0, Utility_1.getNewObject)(victim_beforeCoords);
+                                                (0, Utility_1.log)("AfterBattleCoord: " + afterBattleCoord.x + ", " + afterBattleCoord.y);
                                                 // connect to graph
                                                 // drawMoveAction(beforeBattleCoord, afterBattleCoord, i+1);
                                                 appendGraph(mA, beforeBattleCoord, afterBattleCoord);
@@ -1653,9 +1653,58 @@ var Battle = /** @class */ (function () {
                             for (_a = __values(graph.adjGraph.entries()), _b = _a.next(); !_b.done; _b = _a.next()) {
                                 _c = __read(_b.value, 2), key = _c[0], value = _c[1];
                                 (0, Utility_1.log)("Node " + key);
-                                for (o = 0; o < value.length; o++) {
-                                    edge = value[o];
-                                    edge.print();
+                                solidColumns = (0, Utility_1.clamp)(value.length, 0, 10);
+                                columns = 2 * solidColumns + 1;
+                                columnWidth = Math.floor(this.pixelsPerTile / columns);
+                                for (o = 1; o <= columns; o++) {
+                                    widthStart = (o - 1) * columnWidth;
+                                    widthEnd = widthStart + columnWidth;
+                                    /**
+                                     * eg:
+                                     * columnWidth: 5
+                                     * 0th pixel => ||[-==========-]|| <= 5th pixel
+                                     *                [-==========-]  [-==========-]
+                                     *                [-==========-]  [-==========-]
+                                     *                [-==========-]  [-==========-]
+                                     *                [-==========-]  [-==========-]
+                                     *                [-==========-]  [-==========-]
+                                     *                [-==========-]  [-==========-]
+                                     *                [-==========-]  [-==========-]
+                                     *                [-==========-]  [-==========-]
+                                     */
+                                    // is solid column
+                                    if (o % 2 === 0) {
+                                        (0, Utility_1.log)("Solid edge #" + o / 2);
+                                        edge = value[(o / 2) - 1];
+                                        edge.print();
+                                        connectingAction = edge.weight;
+                                        isXtransition = edge.from.position.x !== edge.to.position.x;
+                                        isYtransition = edge.from.position.y !== edge.to.position.y;
+                                        if (connectingAction.type === "Attack") {
+                                            drawAttackAction(connectingAction, edge.from.position, edge.to.position, connectingAction.priority, columnWidth, {
+                                                x: isYtransition ?
+                                                    ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2) :
+                                                    0,
+                                                y: isXtransition ?
+                                                    ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2) :
+                                                    0,
+                                            });
+                                        }
+                                        else if (connectingAction.type === "Move") {
+                                            drawMoveAction(edge.from.position, edge.to.position, connectingAction.priority, columnWidth, {
+                                                x: isYtransition ?
+                                                    ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2) :
+                                                    0,
+                                                y: isXtransition ?
+                                                    ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2) :
+                                                    0,
+                                            });
+                                        }
+                                    }
+                                    // is gap column
+                                    else {
+                                        (0, Utility_1.log)("Gap edge #" + o / 2);
+                                    }
                                 }
                             }
                         }
@@ -1764,7 +1813,7 @@ var Battle = /** @class */ (function () {
         });
     };
     // find entities
-    Battle.prototype.findEntity_byArgs = function (args, stat, weapon) {
+    Battle.prototype.findEntity_args = function (args, stat, weapon) {
         var allStats = this.allStats();
         var ignore = ["block"];
         var targetNotInIgnore = function (c) { return !ignore.includes(c.team); };
@@ -1848,6 +1897,9 @@ var Battle = /** @class */ (function () {
             return closestDistance > newDistance ? s : closest;
         }, null);
         return closestR;
+    };
+    Battle.prototype.findEntity_index = function (index) {
+        return this.allStats().find(function (s) { return (s.index === index); });
     };
     Battle.prototype.findEntities_allInAxis = function (attacker, axis, magnitude, ignore) {
         if (ignore === void 0) { ignore = []; }
@@ -1989,6 +2041,12 @@ var Battle = /** @class */ (function () {
             movingError = {
                 reason: "Movement is escaping the bounds of the battlefield.",
                 value: coord.x + coord.y * Math.pow(10, -1)
+            };
+        }
+        else if (Math.abs(moveAction.magnitude) < 1) {
+            movingError = {
+                reason: "Movement magnitude most be at least 1 (or -1).",
+                value: moveAction.magnitude
             };
         }
         return movingError;

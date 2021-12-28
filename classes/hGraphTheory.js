@@ -6,6 +6,7 @@ var hNode = /** @class */ (function () {
     function hNode(_pos, _data) {
         this.data = _data;
         this.id = "" + (0, Utility_1.random)(0.0, 100000.5);
+        (0, Utility_1.debug)("Created node with id", this.id + " @ (" + _pos.x + ", " + _pos.y + ")");
         this.position = {
             x: _pos.x, y: _pos.y
         };
@@ -21,7 +22,7 @@ var hEdge = /** @class */ (function () {
     }
     hEdge.prototype.print = function (stringPlus) {
         // console.log(this.weight);
-        console.log((stringPlus || "") + ("(" + this.from.position.x + "," + this.from.position.y + ")=>(" + this.to.position.x + "," + this.to.position.x + ")"));
+        console.log((stringPlus || "") + ("(" + this.from.position.x + "," + this.from.position.y + ")[" + this.from.id + "]=>(" + this.to.position.x + "," + this.to.position.y + ")[" + this.to.id + "]"));
     };
     return hEdge;
 }());
@@ -63,12 +64,16 @@ var hGraph = /** @class */ (function () {
         var fromNode = this.addNode(_from);
         var toNode = this.addNode(_to);
         var edge = new hEdge(fromNode, toNode, _weight);
-        var edgeArray = this.adjGraph.get(fromNode.id);
-        if (edgeArray === undefined) {
+        var from_edgeArray = this.adjGraph.get(fromNode.id);
+        var to_edgeArray = this.adjGraph.get(toNode.id);
+        if (from_edgeArray === undefined) {
             throw Error("FromNode should already have an array initialised.");
         }
+        else if (to_edgeArray !== undefined && to_edgeArray.length > 0) {
+            to_edgeArray.push(edge);
+        }
         else {
-            edgeArray.push(edge);
+            from_edgeArray.push(edge);
         }
     };
     return hGraph;

@@ -1,5 +1,5 @@
 import { Coordinate } from "../typedef";
-import { random } from "./Utility";
+import { debug, random } from "./Utility";
 
 export class hNode<dataType> {
     data?: dataType;
@@ -7,7 +7,9 @@ export class hNode<dataType> {
     position: Coordinate;
     constructor(_pos: Coordinate, _data?: dataType) {
         this.data = _data;
+        
         this.id = `${random(0.0, 100000.5)}`;
+        debug("Created node with id", `${this.id} @ (${_pos.x}, ${_pos.y})`);
 
         this.position = {
             x: _pos.x, y: _pos.y
@@ -28,7 +30,7 @@ export class hEdge<nodeDataType, weightType> {
 
     print(stringPlus?: string) {
         // console.log(this.weight);
-        console.log((stringPlus||"") + `(${this.from.position.x},${this.from.position.y})=>(${this.to.position.x},${this.to.position.x})`);
+        console.log((stringPlus||"") + `(${this.from.position.x},${this.from.position.y})[${this.from.id}]=>(${this.to.position.x},${this.to.position.y})[${this.to.id}]`);
     }
 }
 
@@ -59,11 +61,11 @@ export class hGraph<nodeDataType, weightType> {
 
         // decide if input is a Node or a type of data for the node
         const inputNode: hNode<nodeDataType> =
-        data !== undefined && (data as hNode<nodeDataType>).data === undefined? // not node, is data
-            new hNode<nodeDataType>(pos, data as nodeDataType):
-            data === undefined?
-                new hNode<nodeDataType>(pos): // no data
-                data as hNode<nodeDataType>; // data is node
+            data !== undefined && (data as hNode<nodeDataType>).data === undefined? // not node, is data
+                new hNode<nodeDataType>(pos, data as nodeDataType):
+                data === undefined?
+                    new hNode<nodeDataType>(pos): // no data
+                    data as hNode<nodeDataType>; // data is node
 
         // find out if there is already data for the node
         const existingNode = this.nodeList.find(_n => (
@@ -87,12 +89,16 @@ export class hGraph<nodeDataType, weightType> {
         const fromNode = this.addNode(_from);
         const toNode = this.addNode(_to);
         const edge = new hEdge<nodeDataType, weightType>(fromNode, toNode, _weight);
-        const edgeArray = this.adjGraph.get(fromNode.id);
-        if (edgeArray === undefined) {
+        const from_edgeArray = this.adjGraph.get(fromNode.id);
+        const to_edgeArray = this.adjGraph.get(toNode.id);
+        if (from_edgeArray === undefined) {
             throw Error("FromNode should already have an array initialised.");
         }
+        else if (to_edgeArray !== undefined && to_edgeArray.length > 0) {
+            to_edgeArray.push(edge);
+        }
         else {
-            edgeArray.push(edge);
+            from_edgeArray.push(edge);
         }
     }
 }

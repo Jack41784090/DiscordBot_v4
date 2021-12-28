@@ -338,10 +338,10 @@ export class Battle {
 
                     // 3. attack with selected weapon
                     if (checkWithinDistance(weaponSelected, getDistance(virtualStat, selectedTarget))) {
-                        const attackAction = getAttackAction(virtualStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length);
+                        const attackAction = getAttackAction(virtualStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length+1);
                         const valid = this.executeVirtualAttack(attackAction, virtualStat);
                         if (valid) {
-                            fullActions.push(getAttackAction(realStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length));
+                            fullActions.push(getAttackAction(realStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length+1));
                         }
                     }
 
@@ -680,12 +680,14 @@ export class Battle {
                             else {
                                 mes.react('❎');
                                 const check = this.validateMovement(virtualStat, moveAction)!;
-                                channel.send({
-                                    embeds: [new MessageEmbed({
-                                        title: check.reason,
-                                        description: `Failed to move. Reference value: __${check.value}__`,
-                                    })]
-                                });
+                                if (check) {
+                                    channel.send({
+                                        embeds: [new MessageEmbed({
+                                            title: check.reason,
+                                            description: `Failed to move. Reference value: __${check.value}__`,
+                                        })]
+                                    });
+                                }
                             }
                             break;
 
@@ -695,12 +697,14 @@ export class Battle {
                             if (attackTarget === null) {
                                 mes.react('❎');
                                 const check = this.validateTarget(virtualStat, null, attackTarget)!;
-                                channel.send({
-                                    embeds: [new MessageEmbed({
-                                        title: check.reason,
-                                        description: `Failed to move. Reference value: __${check.value}__`,
-                                    })]
-                                });
+                                if (check) {
+                                    channel.send({
+                                        embeds: [new MessageEmbed({
+                                            title: check.reason,
+                                            description: `Failed to move. Reference value: __${check.value}__`,
+                                        })]
+                                    });
+                                }
                             }
                             else {
                                 const range = getDistance(attackTarget, virtualStat);
@@ -712,7 +716,7 @@ export class Battle {
                                 const weaponChosen = listOfWeaponsInRange[0];
 
                                 const virtualAttackAction = getAttackAction(virtualStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
-                                this.executeVirtualAttack(virtualAttackAction, virtualStat);
+                                valid = this.executeVirtualAttack(virtualAttackAction, virtualStat);
 
                                 if (valid) {
                                     mes.react('✅');
@@ -722,12 +726,14 @@ export class Battle {
                                 else {
                                     mes.react('❎');
                                     const check = this.validateTarget(virtualStat, weaponChosen, attackTarget)!;
-                                    channel.send({
-                                        embeds: [new MessageEmbed({
-                                            title: check.reason,
-                                            description: `Failed to move. Reference value: __${check.value}__`,
-                                        })]
-                                    });
+                                    if (check) {
+                                        channel.send({
+                                            embeds: [new MessageEmbed({
+                                                title: check.reason,
+                                                description: `Failed to move. Reference value: __${check.value}__`,
+                                            })]
+                                        });
+                                    }
                                 }
                             }
                             break;
@@ -1068,7 +1074,7 @@ export class Battle {
             }
         }
     }
-    getGreaterPrio = (a: Action) => (1000 * (20 - a.priority)) + (a.from.readiness - a.readiness);
+    getGreaterPrio (a: Action){ return (1000 * (20 - a.priority)) + (a.from.readiness - a.readiness)};
     sortActionsByGreaterPrior(actions: Action[]) {
         const sortedActions = actions.sort((a, b) => this.getGreaterPrio(b) - this.getGreaterPrio(a));
         return sortedActions;
@@ -1318,7 +1324,19 @@ export class Battle {
             ctx.strokeText(`${priority}`, 0, 0);
             ctx.restore();
         }
-        const drawAttackAction = async (action: AttackAction, fromBattleCoord: Coordinate, toBattleCoord: Coordinate, priority: number) => {
+        /**
+         * @param action 
+         * @param fromBattleCoord 
+         * @param toBattleCoord 
+         * @param priority 
+         * @param width 
+         * @param offset default: half of this.pixelsPerTile
+         */
+        const drawAttackAction = async (action: AttackAction, fromBattleCoord: Coordinate, toBattleCoord: Coordinate, priority: number, width: number = 5, offset: Coordinate = {
+            x: 0,
+            y: 0
+        }) => {
+            
             log("Drawing attack action...")
             debug("\tfromCoord", { x: fromBattleCoord.x, y: fromBattleCoord.y });
             debug("\ttoCoord", { x: toBattleCoord.x, y: toBattleCoord.y });
@@ -1331,12 +1349,12 @@ export class Battle {
             ctx.strokeStyle = victimWithinDistance?
                                 "red":
                                 "black";
-            ctx.lineWidth = 5;
+            ctx.lineWidth = width;
             const fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
-            ctx.moveTo(fromCanvasCoord.x, fromCanvasCoord.y);
+            ctx.moveTo(fromCanvasCoord.x + offset.x, fromCanvasCoord.y + offset.y);
 
             const toCanvasCoord = this.getCanvasCoordsFromBattleCoord(toBattleCoord);
-            ctx.lineTo(toCanvasCoord.x, toCanvasCoord.y);
+            ctx.lineTo(toCanvasCoord.x + offset.x, toCanvasCoord.y + offset.y);
             ctx.stroke();
             ctx.closePath();
 
@@ -1408,22 +1426,26 @@ export class Battle {
 
             ctx.restore();
         }
-        const drawMoveAction = (fromBattleCoord: Coordinate, toBattleCoord: Coordinate, priority: number) => {
-            ctx.lineWidth = 10;
+        const drawMoveAction = (fromBattleCoord: Coordinate, toBattleCoord: Coordinate, priority: number, width: number = 5, offset: Coordinate = {
+            x: 0,
+            y: 0
+        }) => {
+            log(`Drawing move action: (${fromBattleCoord.x},${fromBattleCoord.y})=>(${toBattleCoord.x},${toBattleCoord.y}) (width:${width})(offset x:${offset.x} y:${offset.y})`)
+            ctx.lineWidth = width;
 
             // get position before move
             const beforeCanvasCoord = this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
+            ctx.beginPath();
             ctx.moveTo(beforeCanvasCoord.x, beforeCanvasCoord.y);
 
             // draw a line to the coord after move action
             const afterCanvasCoord = this.getCanvasCoordsFromBattleCoord(toBattleCoord);
-            ctx.beginPath();
             ctx.lineTo(afterCanvasCoord.x, afterCanvasCoord.y);
             ctx.stroke();
             ctx.closePath();
 
             // draw circle
-            ctx.arc(toBattleCoord.x, toBattleCoord.y, this.pixelsPerTile / 5, 0, Math.PI * 2);
+            ctx.arc(afterCanvasCoord.x, afterCanvasCoord.y, this.pixelsPerTile / 5, 0, Math.PI * 2);
             ctx.fill();
 
             // priority text
@@ -1501,10 +1523,14 @@ export class Battle {
                     }
                 },
                 (mA: MoveAction) => {
-                    const beforeBattleCoord = victim_beforeCoords;
-                    victim_beforeCoords[mA.axis] += mA.magnitude * Math.pow(-1, Number(action.executed));
-                    // victim_beforeCoords[mA.axis] += mA.magnitude;
-                    const afterBattleCoord = victim_beforeCoords;
+                    const beforeBattleCoord = getNewObject(victim_beforeCoords);
+                    log(`BeforeBattleCoord: ${beforeBattleCoord.x}, ${beforeBattleCoord.y}`);
+
+                    victim_beforeCoords[mA.axis] += mA.magnitude * Math.pow(-1, Number(mA.executed));
+                    log(`Action: ${mA.magnitude} (${mA.executed})`);
+                    
+                    const afterBattleCoord = getNewObject(victim_beforeCoords);
+                    log(`AfterBattleCoord: ${afterBattleCoord.x}, ${afterBattleCoord.y}`);
 
                     // connect to graph
                     // drawMoveAction(beforeBattleCoord, afterBattleCoord, i+1);
@@ -1515,9 +1541,73 @@ export class Battle {
         
         for (const [key, value] of graph.adjGraph.entries()) {
             log(`Node ${key}`);
-            for (let o = 0; o < value.length; o++) {
-                const edge = value[o];
-                edge.print();
+            const solidColumns = clamp(value.length, 0, 10);
+            const columns = 2 * solidColumns + 1;
+            const columnWidth = Math.floor(this.pixelsPerTile / columns);
+            for (let o = 1; o <= columns; o++) {
+                const widthStart = (o-1) * columnWidth;
+                const widthEnd = widthStart + columnWidth;
+                /**
+                 * eg:
+                 * columnWidth: 5
+                 * 0th pixel => ||[-==========-]|| <= 5th pixel
+                 *                [-==========-]  [-==========-]
+                 *                [-==========-]  [-==========-]
+                 *                [-==========-]  [-==========-]
+                 *                [-==========-]  [-==========-]
+                 *                [-==========-]  [-==========-]
+                 *                [-==========-]  [-==========-]
+                 *                [-==========-]  [-==========-]
+                 *                [-==========-]  [-==========-]
+                 */
+
+                // is solid column
+                if (o % 2 === 0) {
+                    log(`Solid edge #${o/2}`);
+                    const edge = value[(o/2)-1]; edge.print();
+                    const connectingAction = edge.weight;
+
+                    const isXtransition = edge.from.position.x !== edge.to.position.x; // change y
+                    const isYtransition = edge.from.position.y !== edge.to.position.y; // change x
+
+                    if (connectingAction.type === "Attack") {
+                        drawAttackAction(
+                            connectingAction as AttackAction,
+                            edge.from.position,
+                            edge.to.position,
+                            connectingAction.priority,
+                            columnWidth,
+                            {
+                                x: isYtransition?
+                                    ((widthEnd + widthStart)/2) - (this.pixelsPerTile/2):
+                                    0,
+                                y: isXtransition?
+                                    ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2):
+                                    0,
+                            }
+                        );
+                    }
+                    else if (connectingAction.type === "Move") {
+                        drawMoveAction(
+                            edge.from.position,
+                            edge.to.position,
+                            connectingAction.priority,
+                            columnWidth,
+                            {
+                                x: isYtransition ?
+                                    ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2) :
+                                    0,
+                                y: isXtransition ?
+                                    ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2) :
+                                    0,
+                            }
+                        );
+                    }
+                }
+                // is gap column
+                else {
+                    log(`Gap edge #${o / 2}`);
+                }
             }
         }
 

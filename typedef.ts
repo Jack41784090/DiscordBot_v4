@@ -7,7 +7,7 @@ export type OwnerID = string;
 export const preludeQuotes = ["Life slips away...", "You've breathed your last...", "Misfortune comes...", "You release your grip...", "You yearn for rest...", "The cold embrace..."];
 export const deathQuotes = ["Survival is a tenuous proposition in this sprawling tomb.", "More blood soaks the soil, feeding the evil therein.", "Another life wasted in the pursuit of glory and gold.", "This is no place for the weak, or the foolhardy.", "More dust, more ashes, more disappointment.", "Driven into the mud and bit the dust.", "Another pawn falls, in the grand scheme of things."];
 
-export type ActionType = 'Attack' | 'Move' | 'Dash'
+export type ActionType = 'Attack' | 'Move'
 export type Direction = 'up' | 'down' | 'left' | 'right'
 
 export interface RGBA {

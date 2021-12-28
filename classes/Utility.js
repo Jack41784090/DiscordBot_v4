@@ -77,8 +77,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getWeaponUses = exports.getLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.Test = exports.getDashAction = exports.getAttackAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = void 0;
+exports.printCSMap = exports.getWeaponUses = exports.getLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.Test = exports.getAttackAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
+exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var classData_json_1 = __importDefault(require("../data/classData.json"));
@@ -445,7 +445,7 @@ function getMoveAction(stat, args2, priority, args4) {
                 axis = 'x';
                 break;
             default:
-                return null;
+                throw Error("Fatal error at getMoveAction: invalid actionName is invalid.");
         }
         moveAction.axis = axis;
         moveAction.magnitude = magnitude;
@@ -479,23 +479,22 @@ function getAttackAction(attacker, victim, weapon, coords, priority) {
     return attackAction;
 }
 exports.getAttackAction = getAttackAction;
-function getDashAction(stat, _target, priority, sprint) {
-    var movetype = "Dash";
-    var magnitude = getDistance(stat, _target);
-    return {
-        executed: false,
-        type: movetype,
-        from: stat,
-        affected: stat,
-        readiness: Battle_1.Battle.MOVE_READINESS * Math.abs(magnitude),
-        sword: 0,
-        shield: 0,
-        sprint: sprint,
-        priority: priority,
-        target: _target,
-    };
-}
-exports.getDashAction = getDashAction;
+// export function getDashAction(stat: Stat, _target: Coordinate, priority: number, sprint: number): DashAction {
+//     const movetype: ActionType = "Dash";
+//     const magnitude: number = getDistance(stat, _target);
+//     return {
+//         executed: false,
+//         type: movetype,
+//         from: stat,
+//         affected: stat,
+//         readiness: Battle.MOVE_READINESS * Math.abs(magnitude),
+//         sword: 0,
+//         shield: 0,
+//         sprint: sprint,
+//         priority: priority,
+//         target: _target,
+//     };
+// }
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
