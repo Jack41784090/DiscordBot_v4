@@ -746,7 +746,7 @@ export class Battle {
                     let valid: boolean = false;
                     switch (actionName) {
                         case "up":
-                        case "v":
+                        case "u":
                         case "down":
                         case "d":
                         case "right":
@@ -790,15 +790,12 @@ export class Battle {
                             const attackTarget = this.findEntity_args(actionArgs, virtualStat);
                             if (attackTarget === null) {
                                 mes.react('❎');
-                                const check = this.validateTarget(virtualStat, null, attackTarget)!;
-                                if (check) {
-                                    channel.send({
-                                        embeds: [new MessageEmbed({
-                                            title: check.reason,
-                                            description: `Failed to attack. Reference value: __${check.value}__`,
-                                        })]
-                                    });
-                                }
+                                channel.send({
+                                    embeds: [new MessageEmbed({
+                                        title: `Invalid arguments given.`,
+                                        description: `Failed to attack.`,
+                                    })]
+                                });
                             }
                             else {
                                 const range = getDistance(attackTarget, virtualStat);
@@ -865,37 +862,61 @@ export class Battle {
                             }
                             break;
 
+                        case "reckless":
+                        case "reck":
+                            // 2 shields => 1 sword
+                            break;
+
+                        case "smash":
+                        case "sm":
+                            // use 2 sprints to perform an attack
+                            break;
+
+                        case "brace":
+                        case "defend":
+                        case "br":
+                        case "df":
+                            // no drawing next turn. +1 shield.
+                            break;
+
                         default:
-                            const targetedWeapon = virtualStat.base.weapons.find(w => w.Name.toLowerCase().search(actionName) !== -1);
-                            if (targetedWeapon) {
-                                mes.react('✅');
-                                const victim = this.findEntity_args(actionArgs, virtualStat, targetedWeapon);
-                                if (victim === null) {
-                                    valid = false;
-                                }
-                                else {
-                                    let coord: Coordinate;
-                                    const AOE = targetedWeapon.targetting.AOE;
-                                    if (AOE === "self" || AOE === "selfCircle") {
-                                        coord = {
-                                            x: virtualStat.x,
-                                            y: virtualStat.y,
-                                        }
+                            if (actionName.length >= 3) {
+                                const targetedWeapon = virtualStat.base.weapons.find(w => {
+                                    return w.Name.toLowerCase().search(actionName) !== -1;
+                                });
+                                if (targetedWeapon) {
+                                    mes.react('✅');
+                                    const victim = this.findEntity_args(actionArgs, virtualStat, targetedWeapon);
+                                    if (victim === null) {
+                                        valid = false;
                                     }
                                     else {
-                                        coord = {
-                                            x: victim.x,
-                                            y: victim.y
+                                        let coord: Coordinate;
+                                        const AOE = targetedWeapon.targetting.AOE;
+                                        if (AOE === "self" || AOE === "selfCircle") {
+                                            coord = {
+                                                x: virtualStat.x,
+                                                y: virtualStat.y,
+                                            }
                                         }
-                                    }
+                                        else {
+                                            coord = {
+                                                x: victim.x,
+                                                y: victim.y
+                                            }
+                                        }
 
-                                    const attackAction = getAttackAction(virtualStat, victim, targetedWeapon, coord, infoMessagesQueue.length);
-                                    valid = this.executeVirtualAttack(attackAction, virtualStat);
+                                        const attackAction = getAttackAction(virtualStat, victim, targetedWeapon, coord, infoMessagesQueue.length);
+                                        valid = this.executeVirtualAttack(attackAction, virtualStat);
+                                    }
+                                }
+                                else {
+                                    mes.react('❎');
+                                    setTimeout(() => mes.delete().catch(console.log), 10 * 1000);
                                 }
                             }
                             else {
                                 mes.react('❎');
-                                setTimeout(() => mes.delete().catch(console.log), 10 * 1000);
                             }
                             break;
                     }
@@ -1000,40 +1021,57 @@ export class Battle {
     }
 
     // clash methods
-    applyClash(clashResult: ClashResult, attacker: Stat, target: Stat, weapon: Weapon): string;
-    applyClash(clashResult: ClashResult, attackAction: AttackAction): string;
-    applyClash(clashResult: ClashResult, attacker_attackAction: Stat | AttackAction, _target?: Stat, _weapon?: Weapon): string {
-        const attacker = (attacker_attackAction as AttackAction).from || attacker_attackAction as Stat;
-        const target = (attacker_attackAction as AttackAction).affected || _target;
-        const weapon = (attacker_attackAction as AttackAction).weapon || _weapon;
+    applyClash(_cR: ClashResult, _aA: AttackAction): string {
         let returnString = '';
+        const target = _aA.affected;
 
         // vantage
 
         // effects
 
+        // reduce shielding
+        if (_cR.fate !== "Miss" && target.shield > 0) {
+            target.shield--;
+        }
+
         // apply basic weapon damage
-        returnString += this.applyDamage(attacker, target, weapon, clashResult);
+        returnString += this.applyDamage(_aA, _cR);
 
         // retaliation
 
         return returnString;
     }
-    applyDamage(attacker: Stat, target: Stat, weapon: Weapon, clashResult: ClashResult) {
+    applyDamage(_aA: AttackAction, clashResult: ClashResult) {
         let returnString = '';
+
         const CR_damage = clashResult.damage;
         const CR_fate = clashResult.fate;
-        const CR_roll = clashResult.roll;
+
+        const attacker = _aA.from;
+        const target = _aA.affected;
+        const weapon = _aA.weapon;
+
+        const attackerClass = attacker.base.class;
+        const targetClass = target.base.class;
         switch (weapon.targetting.target) {
             // damaging
             case WeaponTarget.enemy:
-                const hitRate = (getAcc(attacker, weapon) - getDodge(target)) < 100 ? getAcc(attacker, weapon) - getDodge(target) : 100;
-                const critRate = (getAcc(attacker, weapon) - getDodge(target)) * 0.1 + getCrit(attacker, weapon);
+                const hitRate =
+                    (getAcc(attacker, weapon) - getDodge(target)) < 100?
+                        getAcc(attacker, weapon) - getDodge(target):
+                        100;
+                const critRate =
+                    (getAcc(attacker, weapon) - getDodge(target)) * 0.1 + getCrit(attacker, weapon);
 
                 dealWithAccolade(clashResult, attacker, target);
+                returnString +=
+                    `**${attackerClass}** (${attacker.index}) ⚔️ **${targetClass}** (${target.index})
+                    __*${weapon.Name}*__ ${hitRate}% (${roundToDecimalPlace(critRate)}%)
+                    **${CR_fate}!** -**${roundToDecimalPlace(CR_damage)}** (${roundToDecimalPlace(clashResult.u_damage)})`
+                if (target.HP > 0 && target.HP - CR_damage <= 0) {
+                    returnString += "\n__**KILLING BLOW!**__";
+                }
 
-                returnString += `**${attacker.base.class}** (${attacker.index}) ⚔️ **${target.base.class}** (${target.index}) __*${weapon.Name}*__\n${hitRate}% (${roundToDecimalPlace(critRate)}% Crit) **${CR_fate}!** -**${roundToDecimalPlace(CR_damage)}** HP`;
-                if (target.HP > 0 && target.HP - CR_damage <= 0) returnString += "**KILLING BLOW!**";
                 const LS = getLifesteal(attacker, weapon);
                 if (LS > 0) {
                     returnString += this.heal(attacker, CR_damage * LS);
@@ -1043,26 +1081,31 @@ export class Battle {
 
             // non-damaging
             case WeaponTarget.ally:
-                returnString += `**${attacker.base.class}** 🛡️ **${target && target.index !== attacker.index ? target.base.class : ""}** (*${weapon.Name}*)`;
-                returnString += "";
+                returnString +=
+                    `**${attackerClass}** (${attacker.index}) 🛡️ **${targetClass}** (${target.index})
+                    __*${weapon.Name}*__`;
+                // returningString += abilityEffect();
                 break;
         }
         return returnString;
     }
-    clash(attacker: Stat, defender: Stat, weapon: Weapon): ClashResult {
+    clash(_aA: AttackAction): ClashResult {
         let fate: ClashResultFate = 'Miss';
-        let roll: number, damage: number, u_damage: number = 0;
+        let damage: number, u_damage: number = 0;
+
+        const attacker = _aA.from;
+        const weapon = _aA.weapon;
+        const target = _aA.affected;
 
         // define constants
-        const hitChance = getAcc(attacker, weapon) - getDodge(defender);
+        const hitChance = getAcc(attacker, weapon) - getDodge(target);
         const crit = getCrit(attacker, weapon);
         const minDamage = getDamage(attacker, weapon)[0];
         const maxDamage = getDamage(attacker, weapon)[1];
-        const prot = getProt(defender);
+        const prot = getProt(target);
 
         // roll
         const hit = random(1, 100);
-        roll = hit;
 
         // see if it crits
         if (hit <= hitChance) {
@@ -1078,16 +1121,16 @@ export class Battle {
             }
         }
 
-        if (u_damage < 0) u_damage = 0;
+        u_damage = clamp(u_damage, 0, 1000);
 
         // apply protections
-        damage = u_damage * (1 - prot);
+        damage = clamp(u_damage * (1 - (prot * target.shield / 3)), 0, 999);
 
         return {
             damage: damage,
             u_damage: u_damage,
             fate: fate,
-            roll: roll,
+            roll: hit,
         };
     }
 
@@ -1167,21 +1210,21 @@ export class Battle {
             this.executeMoveAction(mAction);
     }
     executeSingleTargetAttackAction(_aA: AttackAction) {
+        const eM = this.validateTarget(_aA);
         const attacker = _aA.from;
         const target = _aA.affected;
-        const weapon = _aA.weapon;
-        const eM = this.validateTarget(attacker, weapon, target);
         let string = '';
 
         if (eM) {
-            log(`${attacker.base.class} failed to attack ${target.base.class}. Reason: ${eM.reason}`);
-            string = `**${attacker.base.class}** (${attacker.index}) ⚔️ **${target.base.class}** (${target.index})\n❌${eM.reason}${eM.value !== null ? ` ( ${eM.value} )` : ""}`;
+            log(`\t${attacker.base.class} failed to attack ${target.base.class}. Reason: ${eM.reason}`);
+            string =
+                `${attacker.base.class} failed to attack ${target.base.class}. Reason: ${eM.reason}`;
         }
         else {
             // valid attack
-            const clashResult = this.clash(attacker, target, weapon);
-            const clashAfterMathString = this.applyClash(clashResult, attacker, target, weapon);
-            string = clashAfterMathString + "";
+            const clashResult = this.clash(_aA);
+            const clashAfterMathString = this.applyClash(clashResult, _aA);
+            string = clashAfterMathString;
         }
         return string;
     };
@@ -1972,11 +2015,27 @@ export class Battle {
     }
 
     // validation
-    validateTarget(attackerStat: Stat | null, weapon: Weapon | null, targetStat: Stat | null): TargetingError | null {
+    validateTarget(_attacker: Stat, _weapon: Weapon, _target: Stat): TargetingError | null;
+    validateTarget(_aA: AttackAction, _?: null, __?: null): TargetingError | null;
+    validateTarget(_stat_aa: Stat | AttackAction, _weapon_null?: Weapon | null, _target_null?: Stat | null): TargetingError | null {
         const eM: TargetingError = {
             reason: "",
             value: null,
         };
+
+        let attackerStat, targetStat, weapon;
+        if ((_stat_aa as Stat).index === undefined) // is aa
+        {
+            const aa = _stat_aa as AttackAction;
+            attackerStat = aa.from;
+            targetStat = aa.affected;
+            weapon = aa.weapon;
+        }
+        else { // is stat
+            attackerStat = _stat_aa as Stat;
+            targetStat = _target_null as Stat;
+            weapon = _weapon_null as Weapon;
+        }
 
         // ~~~~~~ UNIVERSAL ~~~~~~ //
         // undefined target

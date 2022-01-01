@@ -1,4 +1,5 @@
 import { Client, Guild, GuildMember, Message, TextChannel, User } from "discord.js";
+import { StatusEffect } from "./classes/StatusEffect";
 
 export type Round = number;
 export type Priority = number;
@@ -40,9 +41,6 @@ export interface AttackAction extends Action {
 export interface MoveAction extends Action {
     axis: 'x' | 'y',
     magnitude: number,
-}
-export interface DashAction extends Action {
-    target: Coordinate,
 }
 
 export interface TargetingError {
@@ -150,6 +148,7 @@ export enum BotType {
     sentry
 }
 
+// weapons
 export enum WeaponTarget {
     ally,
     enemy,
@@ -175,6 +174,7 @@ export interface Weapon {
     UPT: number,
 }
 
+// classes
 export type Class = "Block" | "Hercules";
 export type EnemyClass = "Barbar" | "Barcher";
 export interface Buffs {
@@ -198,6 +198,16 @@ export interface Accolade {
     clashNo: number,
     rollAverage: number,
     rollNo: number,
+}
+export type StatusEffectType =
+    "bleed"|
+    "tired"|
+    "powerful"|
+    "weak"|
+    "protected"|
+    "armorbreak"
+export interface StatusEffectEffect {
+    (_statusEffect: StatusEffect): void;
 }
 
 export type ClashResultFate = "Miss" | "Hit" | "Crit"

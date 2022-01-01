@@ -15,7 +15,7 @@
 		"class": "Hercules",
 		"AHP": 60,
 		"Dodge": 10,
-		"Prot": 0.2,
+		"Prot": 0.5,
 		"Spd": 5.5,
 		"maxMove": 1,
 		"iconURL": "images/Rommel.png",
