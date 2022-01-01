@@ -1,8 +1,11 @@
 import { Client, Guild, GuildMember, Message, TextChannel, User } from "discord.js";
 
-export type PriorityRound = number;
+export type Round = number;
+export type Priority = number;
 export type StringCoordinate = string;
 export type OwnerID = string;
+
+export const COMMAND_CALL = ";"
 
 export const preludeQuotes = ["Life slips away...", "You've breathed your last...", "Misfortune comes...", "You release your grip...", "You yearn for rest...", "The cold embrace..."];
 export const deathQuotes = ["Survival is a tenuous proposition in this sprawling tomb.", "More blood soaks the soil, feeding the evil therein.", "Another life wasted in the pursuit of glory and gold.", "This is no place for the weak, or the foolhardy.", "More dust, more ashes, more disappointment.", "Driven into the mud and bit the dust.", "Another pawn falls, in the grand scheme of things."];
@@ -18,7 +21,8 @@ export interface RGBA {
 }
 
 export interface Action {
-    priority: number,
+    round: Round,
+    priority: Priority,
     from: Stat,
     affected: Stat,
     readiness: number,
@@ -75,7 +79,6 @@ export interface BaseStat {
     maxMove: number,
     weapons: Array<Weapon>,
     iconURL: string,
-    portraitURL: string,
     botType: BotType,
 }
 export interface Stat extends Coordinate {
@@ -86,6 +89,7 @@ export interface Stat extends Coordinate {
     index: number,
 
     weaponUses: number[],
+    actionsAssociatedStrings: { [key: number]: string[] },
     moved: boolean,
 
     HP: number,
@@ -136,11 +140,7 @@ export interface UserData {
     settings: Object,
     status: UserStatus
 }
-export enum UserStatus {
-    idle,
-    inBattle,
-    choosingClass
-}
+export type UserStatus = "idle" | "busy"; 
 
 export type Team = "block" | "player" | "enemy";
 
@@ -175,14 +175,8 @@ export interface Weapon {
     UPT: number,
 }
 
-export enum Class {
-    Block = "Block",
-    Hercules = "Hercules",
-}
-export enum EnemyClass {
-    Barbar = "Barbar",
-    Barcher = "Barcher",
-}
+export type Class = "Block" | "Hercules";
+export type EnemyClass = "Barbar" | "Barcher";
 export interface Buffs {
     AHP: number,
     Damage: number,
@@ -220,7 +214,7 @@ export interface CommandModule {
     expectedArgs: string,
     minArgs: number,
     maxArgs: number,
-    callback: (author: User, content: string, channel: TextChannel, guild: Guild, args: Array<string>, message: Message, client: Client) => any,
+    callback: (author: User, authorUserData: UserData, content: string, channel: TextChannel, guild: Guild, args: Array<string>, message: Message, client: Client) => any,
 }
 
 export interface AINode extends Coordinate {

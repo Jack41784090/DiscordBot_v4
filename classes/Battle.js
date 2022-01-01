@@ -109,7 +109,7 @@ var Battle = /** @class */ (function () {
         this.roundSavedCanvasMap = new Map();
         var allStats = this.allStats(true);
         // fixing spawning
-        this.enemiesToBeSpawnedArray = [];
+        this.tobespawnedArray = [];
         this.totalEnemyCount = 0;
         this.enemyCount = 0;
         this.playerCount = 0;
@@ -128,31 +128,31 @@ var Battle = /** @class */ (function () {
     /** Main function to access in order to start a thread of battle */
     Battle.Start = function (_mapData, _author, _message, _party, _client) {
         return __awaiter(this, void 0, void 0, function () {
-            var battle, i, ownerID, userData, blankStat, _a, _b, _c, key, value, Eclass, mod, enemyBase, spawnCount, i;
-            var e_1, _d;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            var battle, i, ownerID, userData, blankStat, _b, _c, _d, key, value, Eclass, mod, enemyBase, spawnCount, i;
+            var e_1, _e;
+            return __generator(this, function (_f) {
+                switch (_f.label) {
                     case 0:
                         battle = new Battle(_mapData, _author, _message, _client);
                         i = 0;
-                        _e.label = 1;
+                        _f.label = 1;
                     case 1:
                         if (!(i < _party.length)) return [3 /*break*/, 4];
                         ownerID = _party[i];
                         return [4 /*yield*/, (0, Database_1.getUserData)(ownerID)];
                     case 2:
-                        userData = _e.sent();
+                        userData = _f.sent();
                         blankStat = (0, Utility_1.getStat)((0, Utility_1.getBaseStat)(userData.equippedClass), ownerID);
-                        battle.enemiesToBeSpawnedArray.push(blankStat);
-                        _e.label = 3;
+                        battle.tobespawnedArray.push(blankStat);
+                        _f.label = 3;
                     case 3:
                         i++;
                         return [3 /*break*/, 1];
                     case 4:
                         try {
                             // add enemies to the spawning list
-                            for (_a = __values(Object.entries(_mapData.enemiesInfo)), _b = _a.next(); !_b.done; _b = _a.next()) {
-                                _c = __read(_b.value, 2), key = _c[0], value = _c[1];
+                            for (_b = __values(Object.entries(_mapData.enemiesInfo)), _c = _b.next(); !_c.done; _c = _b.next()) {
+                                _d = __read(_c.value, 2), key = _d[0], value = _d[1];
                                 Eclass = key;
                                 mod = { name: "" + Eclass };
                                 enemyBase = (0, Utility_1.getNewObject)(enemiesData_json_1.default[Eclass], mod);
@@ -160,14 +160,14 @@ var Battle = /** @class */ (function () {
                                 for (i = 0; i < spawnCount; i++) {
                                     battle.totalEnemyCount++;
                                     battle.enemyCount++;
-                                    battle.enemiesToBeSpawnedArray.push((0, Utility_1.getStat)(enemyBase));
+                                    battle.tobespawnedArray.push((0, Utility_1.getStat)(enemyBase));
                                 }
                             }
                         }
                         catch (e_1_1) { e_1 = { error: e_1_1 }; }
                         finally {
                             try {
-                                if (_b && !_b.done && (_d = _a.return)) _d.call(_a);
+                                if (_c && !_c.done && (_e = _b.return)) _e.call(_b);
                             }
                             finally { if (e_1) throw e_1.error; }
                         }
@@ -180,24 +180,29 @@ var Battle = /** @class */ (function () {
     /** Begin a new round
         Recurses into another StartRound until all enemies / players are defeated (HP <= 0). */
     Battle.prototype.StartRound = function () {
-        var _a, _b, _c;
+        var _b, _c, _d;
         return __awaiter(this, void 0, void 0, function () {
-            var allStats, _loop_1, i, existingCategory, commandCategory, _d, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_2, this_1, allStats_1, allStats_1_1, realStat, e_2_1, _loop_3, i, allPromise, players, endEmbedFields_1;
-            var e_2, _e;
+            var i, spawning, allStats, _loop_1, i, existingCategory, commandCategory, _e, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_2, this_1, allStats_1, allStats_1_1, realStat, e_2_1, priorityActionMap, i, act, actionListThisRound, latestPrio, i, expectedActions, canvas, ctx, _f, _g, executedActions, actualCanvas, _loop_3, i, allPromise, players, endEmbedFields_1;
+            var e_2, _h;
             var _this = this;
-            return __generator(this, function (_f) {
-                switch (_f.label) {
+            return __generator(this, function (_j) {
+                switch (_j.label) {
                     case 0:
                         (0, Utility_1.log)("======= New Round =======");
                         // resetting action list and round current maps
                         this.roundActionsArray = [];
                         this.roundSavedCanvasMap = new Map();
                         // SPAWNING
+                        (0, Utility_1.log)("Currently waiting to be spawned...");
+                        for (i = 0; i < this.tobespawnedArray.length; i++) {
+                            spawning = this.tobespawnedArray[i];
+                            (0, Utility_1.log)("\t{ index:" + spawning.index + ", class:" + spawning.base.class + " }");
+                        }
                         (0, Utility_1.log)("Spawning...");
                         this.SpawnOnSpawner();
                         return [4 /*yield*/, (0, Database_1.saveBattle)(this)];
                     case 1:
-                        _f.sent();
+                        _j.sent();
                         allStats = this.allStats();
                         //#region COUNT LIVES
                         (0, Utility_1.log)("Counting lives...");
@@ -243,15 +248,15 @@ var Battle = /** @class */ (function () {
                             _loop_1(i);
                         }
                         existingCategory = this.guild.channels.cache.find(function (gC) { return gC.name === 'CommandRooms' + _this.guild.id && gC.type === 'GUILD_CATEGORY'; });
-                        _d = existingCategory;
-                        if (_d) return [3 /*break*/, 3];
+                        _e = existingCategory;
+                        if (_e) return [3 /*break*/, 3];
                         return [4 /*yield*/, this.guild.channels.create('CommandRooms' + this.guild.id, { type: 'GUILD_CATEGORY' })];
                     case 2:
-                        _d = (_f.sent());
-                        _f.label = 3;
+                        _e = (_j.sent());
+                        _j.label = 3;
                     case 3:
-                        commandCategory = _d;
-                        existingPermissions_everyone = (_a = commandCategory.permissionOverwrites.cache.get(this.guild.roles.everyone.id)) === null || _a === void 0 ? void 0 : _a.deny.toArray();
+                        commandCategory = _e;
+                        existingPermissions_everyone = (_b = commandCategory.permissionOverwrites.cache.get(this.guild.roles.everyone.id)) === null || _b === void 0 ? void 0 : _b.deny.toArray();
                         if (!(existingPermissions_everyone === null || existingPermissions_everyone === void 0 ? void 0 : existingPermissions_everyone.includes("VIEW_CHANNEL"))) {
                             commandCategory.permissionOverwrites.set([{ id: this.guild.roles.everyone.id, deny: 'VIEW_CHANNEL' }]);
                         }
@@ -263,30 +268,37 @@ var Battle = /** @class */ (function () {
                         (0, Utility_1.log)("Saving current map to local...");
                         return [4 /*yield*/, this.getNewCanvasMap()];
                     case 4:
-                        currentMapDataURL = (_f.sent()).toDataURL();
+                        currentMapDataURL = (_j.sent()).toDataURL();
                         return [4 /*yield*/, new Promise(function (resolve) {
                                 var thePath = "./maps/battle-" + _this.author.id + ".txt";
                                 fs_1.default.writeFile(thePath, currentMapDataURL, 'utf8', function () {
+                                    clearTimeout(saveFailedErrorTimeout);
                                     resolve(void 0);
                                 });
+                                var saveFailedErrorTimeout = setTimeout(function () {
+                                    resolve(void 0);
+                                }, 10 * 1000);
                             })];
                     case 5:
-                        _f.sent();
+                        _j.sent();
+                        (0, Utility_1.log)("||=> Success.");
                         reportPromises = [];
                         (0, Utility_1.log)("Playing phase!");
                         _loop_2 = function (realStat) {
-                            var user, virtualStat_1, channelAlreadyExist, createdChannel_1, _g, existingPermissions_everyone_1, existingPermissions_author, overWrites, playerInfoMessage, _h, _j, readingPlayerPromise, virtualStat, selectedTarget, weaponSelected, path, moveActionArray, fullActions, i, moveAction, moveMagnitude, valid, error, attackAction, valid;
-                            var _k;
-                            return __generator(this, function (_l) {
-                                switch (_l.label) {
+                            var user, virtualStat_1, channelAlreadyExist, createdChannel_1, _k, existingPermissions_everyone_1, existingPermissions_author, newChannel, noExistingPermission, extraPermissions, missingPermissions, overWrites, playerInfoMessage, _l, _m, readingPlayerPromise, virtualStat, selectedTarget, weaponSelected, path, moveActionArray, fullActions, i, moveAction, moveMagnitude, valid, error, attackAction, valid;
+                            var _o;
+                            return __generator(this, function (_p) {
+                                switch (_p.label) {
                                     case 0:
                                         // if the entity is dead or is just an inanimate block, skip turn
                                         if (realStat.HP <= 0 || realStat.team === "block")
                                             return [2 /*return*/, "continue"];
                                         // reset weapon uses for entity
-                                        realStat.weaponUses.forEach(function (wU) { return wU = 0; });
+                                        realStat.weaponUses.forEach(function (_wU) { return _wU = 0; });
                                         // reset moved
                                         realStat.moved = false;
+                                        // reset associatedStrings
+                                        realStat.actionsAssociatedStrings = {};
                                         if (!(realStat.botType === typedef_1.BotType.naught)) return [3 /*break*/, 6];
                                         return [4 /*yield*/, this_1.client.users.fetch(realStat.owner)
                                                 .then(function (u) { return u; })
@@ -295,31 +307,40 @@ var Battle = /** @class */ (function () {
                                                 return null;
                                             })];
                                     case 1:
-                                        user = _l.sent();
+                                        user = _p.sent();
                                         virtualStat_1 = (0, Utility_1.getNewObject)(realStat, {
                                             username: (user ?
                                                 user.username :
                                                 realStat.owner)
                                         });
                                         channelAlreadyExist = this_1.guild.channels.cache.find(function (c) { return c.name === virtualStat_1.owner && c.type === 'GUILD_TEXT'; });
-                                        _g = channelAlreadyExist;
-                                        if (_g) return [3 /*break*/, 3];
+                                        _k = channelAlreadyExist;
+                                        if (_k) return [3 /*break*/, 3];
                                         return [4 /*yield*/, this_1.guild.channels.create("" + virtualStat_1.owner, { type: 'GUILD_TEXT' })];
                                     case 2:
-                                        _g = (_l.sent());
-                                        _l.label = 3;
+                                        _k = (_p.sent());
+                                        _p.label = 3;
                                     case 3:
-                                        createdChannel_1 = _g;
-                                        createdChannel_1.setParent(commandCategory.id);
-                                        existingPermissions_everyone_1 = (_b = createdChannel_1.permissionOverwrites.cache.get(this_1.guild.roles.everyone.id)) === null || _b === void 0 ? void 0 : _b.deny.toArray();
-                                        existingPermissions_author = (_c = createdChannel_1.permissionOverwrites.cache.get(virtualStat_1.owner)) === null || _c === void 0 ? void 0 : _c.allow.toArray();
-                                        if (!channelAlreadyExist ||
-                                            !existingPermissions_author ||
-                                            !existingPermissions_everyone_1 ||
-                                            existingPermissions_author.length > 1 ||
-                                            existingPermissions_everyone_1.length > 1 ||
-                                            !existingPermissions_author.includes('VIEW_CHANNEL') ||
-                                            !existingPermissions_everyone_1.includes('VIEW_CHANNEL')) {
+                                        createdChannel_1 = _k;
+                                        if (!createdChannel_1.parent || createdChannel_1.parent.name !== commandCategory.name) {
+                                            createdChannel_1.setParent(commandCategory.id);
+                                        }
+                                        existingPermissions_everyone_1 = (_c = createdChannel_1.permissionOverwrites.cache.get(this_1.guild.roles.everyone.id)) === null || _c === void 0 ? void 0 : _c.deny.toArray();
+                                        existingPermissions_author = (_d = createdChannel_1.permissionOverwrites.cache.get(virtualStat_1.owner)) === null || _d === void 0 ? void 0 : _d.allow.toArray();
+                                        newChannel = !channelAlreadyExist;
+                                        noExistingPermission = (!existingPermissions_author || !existingPermissions_everyone_1);
+                                        extraPermissions = existingPermissions_author && existingPermissions_everyone_1 && (existingPermissions_author.length > 1 || existingPermissions_everyone_1.length > 1);
+                                        missingPermissions = existingPermissions_author && existingPermissions_everyone_1 && (!existingPermissions_author.includes('VIEW_CHANNEL') || !existingPermissions_everyone_1.includes('VIEW_CHANNEL'));
+                                        // log(newChannel, noExistingPermission, extraPermissions, missingPermissions);
+                                        if (newChannel ||
+                                            // new channel, set permission
+                                            noExistingPermission ||
+                                            // no existing permissions
+                                            extraPermissions ||
+                                            // extra permissions
+                                            missingPermissions
+                                        // missing permissions
+                                        ) {
                                             overWrites = [
                                                 { id: this_1.guild.roles.everyone, deny: 'VIEW_CHANNEL' },
                                                 { id: virtualStat_1.owner, allow: 'VIEW_CHANNEL' }
@@ -330,16 +351,16 @@ var Battle = /** @class */ (function () {
                                         createdChannel_1.send("<@" + (user === null || user === void 0 ? void 0 : user.id) + ">").then(function (mes) { return mes.delete().catch(console.log); });
                                         // send time, player embed, and input manual
                                         createdChannel_1.send("``` ```");
-                                        _j = (_h = createdChannel_1).send;
+                                        _m = (_l = createdChannel_1).send;
                                         return [4 /*yield*/, this_1.getFullPlayerEmbedMessageOptions(virtualStat_1)];
-                                    case 4: return [4 /*yield*/, _j.apply(_h, [_l.sent()])];
+                                    case 4: return [4 /*yield*/, _m.apply(_l, [_p.sent()])];
                                     case 5:
-                                        playerInfoMessage = _l.sent();
+                                        playerInfoMessage = _p.sent();
                                         readingPlayerPromise = this_1.readActions(120, playerInfoMessage, virtualStat_1, realStat).then(function () {
                                             createdChannel_1.send({ embeds: [new discord_js_1.MessageEmbed().setTitle("Your turn has ended.")] });
                                         });
                                         reportPromises.push(readingPlayerPromise);
-                                        _l.label = 6;
+                                        _p.label = 6;
                                     case 6:
                                         //#endregion
                                         //#region AI
@@ -383,7 +404,7 @@ var Battle = /** @class */ (function () {
                                                         fullActions.push((0, Utility_1.getAttackAction)(realStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length + 1));
                                                     }
                                                 }
-                                                (_k = this_1.roundActionsArray).push.apply(_k, __spreadArray([], __read(fullActions), false));
+                                                (_o = this_1.roundActionsArray).push.apply(_o, __spreadArray([], __read(fullActions), false));
                                             }
                                         }
                                         return [2 /*return*/];
@@ -391,29 +412,29 @@ var Battle = /** @class */ (function () {
                             });
                         };
                         this_1 = this;
-                        _f.label = 6;
+                        _j.label = 6;
                     case 6:
-                        _f.trys.push([6, 11, 12, 13]);
+                        _j.trys.push([6, 11, 12, 13]);
                         allStats_1 = __values(allStats), allStats_1_1 = allStats_1.next();
-                        _f.label = 7;
+                        _j.label = 7;
                     case 7:
                         if (!!allStats_1_1.done) return [3 /*break*/, 10];
                         realStat = allStats_1_1.value;
                         return [5 /*yield**/, _loop_2(realStat)];
                     case 8:
-                        _f.sent();
-                        _f.label = 9;
+                        _j.sent();
+                        _j.label = 9;
                     case 9:
                         allStats_1_1 = allStats_1.next();
                         return [3 /*break*/, 7];
                     case 10: return [3 /*break*/, 13];
                     case 11:
-                        e_2_1 = _f.sent();
+                        e_2_1 = _j.sent();
                         e_2 = { error: e_2_1 };
                         return [3 /*break*/, 13];
                     case 12:
                         try {
-                            if (allStats_1_1 && !allStats_1_1.done && (_e = allStats_1.return)) _e.call(allStats_1);
+                            if (allStats_1_1 && !allStats_1_1.done && (_h = allStats_1.return)) _h.call(allStats_1);
                         }
                         finally { if (e_2) throw e_2.error; }
                         return [7 /*endfinally*/];
@@ -424,15 +445,48 @@ var Battle = /** @class */ (function () {
                     case 14:
                         //#endregion
                         //#region WAIT FOR PLAYER INPUTS
-                        _f.sent();
+                        _j.sent();
                         (0, Utility_1.log)("Players are all ready!");
-                        //#endregion
-                        //#region EXECUTING ACTIONS
-                        return [4 /*yield*/, this.totalExecution()];
+                        priorityActionMap = new Map();
+                        for (i = 0; i < this.roundActionsArray.length; i++) {
+                            act = this.roundActionsArray[i];
+                            actionListThisRound = priorityActionMap.get(act.round);
+                            if (actionListThisRound)
+                                actionListThisRound.push(act);
+                            else
+                                priorityActionMap.set(act.round, [act]);
+                        }
+                        latestPrio = (0, Utility_1.getLargestInArray)(this.roundActionsArray.map(function (a) { return a.round; }));
+                        i = 0;
+                        _j.label = 15;
                     case 15:
-                        //#endregion
-                        //#region EXECUTING ACTIONS
-                        _f.sent();
+                        if (!(i <= latestPrio)) return [3 /*break*/, 19];
+                        expectedActions = priorityActionMap.get(i);
+                        if (!expectedActions) return [3 /*break*/, 18];
+                        this.sortActionsByGreaterPrior(expectedActions);
+                        canvas = this.roundSavedCanvasMap.get(i);
+                        if (!canvas) {
+                            canvas = new canvas_1.Canvas(this.width * 50, this.height * 50);
+                            if (canvas)
+                                this.roundSavedCanvasMap.set(i, canvas);
+                        }
+                        ctx = canvas.getContext("2d");
+                        _g = (_f = ctx).drawImage;
+                        return [4 /*yield*/, this.getNewCanvasMap()];
+                    case 16:
+                        _g.apply(_f, [_j.sent(), 0, 0, canvas.width, canvas.height]);
+                        executedActions = this.executeActions(expectedActions);
+                        return [4 /*yield*/, this.getActionArrowsCanvas(executedActions)];
+                    case 17:
+                        actualCanvas = _j.sent();
+                        ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
+                        // update the final canvas
+                        this.roundSavedCanvasMap.set(i, canvas);
+                        _j.label = 18;
+                    case 18:
+                        i++;
+                        return [3 /*break*/, 15];
+                    case 19:
                         _loop_3 = function (i) {
                             var s = allStats[i];
                             (0, Utility_1.HandleTokens)(s, function (p, t) {
@@ -442,6 +496,7 @@ var Battle = /** @class */ (function () {
                             });
                         };
                         //#endregion
+                        // limit token count
                         for (i = 0; i < allStats.length; i++) {
                             _loop_3(i);
                         }
@@ -454,7 +509,7 @@ var Battle = /** @class */ (function () {
                         players = allStats.filter(function (s) { return s.botType === typedef_1.BotType.naught; });
                         players.forEach(function (stat) { return __awaiter(_this, void 0, void 0, function () {
                             var greatestRoundNumber, commandRoomReport;
-                            return __generator(this, function (_a) {
+                            return __generator(this, function (_b) {
                                 greatestRoundNumber = (0, Utility_1.getLargestInArray)(Array.from(this.roundSavedCanvasMap.keys()));
                                 commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
                                 allPromise.push(commandRoomReport);
@@ -468,9 +523,9 @@ var Battle = /** @class */ (function () {
                                     resolve(void 0);
                                 }, 150 * 1000);
                             })];
-                    case 16:
+                    case 20:
                         // wait for all players to finish reading the reports
-                        _f.sent();
+                        _j.sent();
                         (0, Utility_1.log)("Reporting phase finished.");
                         // allPromise.forEach(console.log);
                         //#endregion
@@ -571,33 +626,43 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.sendReportToCommand = function (roomID, round) {
         return __awaiter(this, void 0, void 0, function () {
-            var embed, menuOptions, chosenCanvas, messageOption, promisedMsg_1;
+            var chosenCanvas, menuOptions, embed, messageOption, associatedStat, promisedMsg_1;
             var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        embed = new discord_js_1.MessageEmbed({ title: "Round " + round, }).setImage("attachment://map.png");
+                        chosenCanvas = this.roundSavedCanvasMap.get(round);
+                        if (!chosenCanvas) return [3 /*break*/, 2];
                         menuOptions = Array.from(this.roundSavedCanvasMap.keys()).map(function (rn) {
                             return {
                                 label: "Round " + rn,
                                 value: "" + rn,
                             };
                         });
-                        chosenCanvas = this.roundSavedCanvasMap.get(round);
-                        if (!chosenCanvas) return [3 /*break*/, 2];
+                        embed = new discord_js_1.MessageEmbed({
+                            title: "Round " + round,
+                            description: ""
+                        }).setImage("attachment://map.png");
                         messageOption = {
                             embeds: [embed],
                             components: [(0, Utility_1.getSelectMenuActionRow)(menuOptions)],
                             files: [{ attachment: chosenCanvas.toBuffer(), name: 'map.png' }]
                         };
+                        associatedStat = this.allStats(true).find(function (_s) { return _s.owner === roomID; });
+                        if (associatedStat && associatedStat.actionsAssociatedStrings[round] !== undefined) {
+                            embed.description = (0, Utility_1.shortenString)(associatedStat.actionsAssociatedStrings[round].join('\n'));
+                        }
+                        if (embed.description === "") {
+                            embed.description = "*(No Actions this Round )*";
+                        }
                         return [4 /*yield*/, this.sendToCommand(roomID, messageOption)];
                     case 1:
-                        promisedMsg_1 = _a.sent();
+                        promisedMsg_1 = _b.sent();
                         if (promisedMsg_1) {
                             return [2 /*return*/, new Promise(function (resolve) {
                                     var itrCollector = (0, Utility_1.setUpInteractionCollect)(promisedMsg_1, function (itr) { return __awaiter(_this, void 0, void 0, function () {
                                         var selectedRound;
-                                        return __generator(this, function (_a) {
+                                        return __generator(this, function (_b) {
                                             if (itr.isSelectMenu()) {
                                                 selectedRound = parseInt(itr.values[0]);
                                                 clearTimeout(timeOut);
@@ -607,6 +672,7 @@ var Battle = /** @class */ (function () {
                                             return [2 /*return*/];
                                         });
                                     }); });
+                                    // timeout: done checking round
                                     var timeOut = setTimeout(function () {
                                         itrCollector.stop();
                                         resolve(true);
@@ -616,7 +682,7 @@ var Battle = /** @class */ (function () {
                         else {
                             return [2 /*return*/, true];
                         }
-                        _a.label = 2;
+                        _b.label = 2;
                     case 2: return [2 /*return*/, false];
                 }
             });
@@ -625,10 +691,11 @@ var Battle = /** @class */ (function () {
     Battle.prototype.getStatsRoundActions = function (stat) {
         return this.roundActionsArray.filter(function (a) { return a.from.index === stat.index; });
     };
-    Battle.prototype.getCanvasCoordsFromBattleCoord = function (s) {
+    Battle.prototype.getCanvasCoordsFromBattleCoord = function (s, shift) {
+        if (shift === void 0) { shift = true; }
         return {
-            x: s.x * this.pixelsPerTile + this.pixelsPerTile / 2,
-            y: (this.height - s.y) * this.pixelsPerTile - this.pixelsPerTile / 2
+            x: s.x * this.pixelsPerTile + (this.pixelsPerTile / 2 * Number(shift)),
+            y: (this.height - s.y - 1) * this.pixelsPerTile + (this.pixelsPerTile / 2 * Number(shift))
         };
     };
     Battle.prototype.drawSquareOnBattleCoords = function (ctx, coord, rgba) {
@@ -671,6 +738,7 @@ var Battle = /** @class */ (function () {
             // other resource drain
             virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(moveAction.magnitude);
             virtualStat.moved = true;
+            virtualStat[moveAction.axis] += moveAction.magnitude;
         }
         else {
             (0, Utility_1.log)("\t\tFailed to move. Reason: " + check.reason + " (" + check.value + ")");
@@ -699,7 +767,7 @@ var Battle = /** @class */ (function () {
                     clearInterval(currentListener);
                 }
                 currentListener = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
-                    return __generator(this, function (_a) {
+                    return __generator(this, function (_b) {
                         if (responseQueue[0]) {
                             clearInterval(currentListener);
                             handleQueue();
@@ -710,9 +778,9 @@ var Battle = /** @class */ (function () {
             };
             /** Handles the response (response is Discord.Message) */
             var handleQueue = function () { return __awaiter(_this, void 0, void 0, function () {
-                var mes, sections, actionName_1, actionArgs, moveMagnitude, valid_1, _a, moveAction, realMoveStat, check, attackTarget, check, range_1, listOfWeaponsInRange, weaponChosen, virtualAttackAction, realAttackAction, check, undoAction, targetedWeapon, victim, coord, AOE, attackAction, messageOptions;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
+                var mes, sections, actionName_1, actionArgs, moveMagnitude, valid_1, _b, moveAction, realMoveStat, check, attackTarget, check, range_1, listOfWeaponsInRange, weaponChosen, virtualAttackAction, realAttackAction, check, undoAction, targetedWeapon, victim, coord, AOE, attackAction, messageOptions;
+                return __generator(this, function (_c) {
+                    switch (_c.label) {
                         case 0:
                             (0, Utility_1.log)("\tHandling queue...");
                             mes = responseQueue.shift();
@@ -724,13 +792,13 @@ var Battle = /** @class */ (function () {
                             actionArgs = sections.slice(1, sections.length);
                             moveMagnitude = parseInt(actionArgs[0]) || 1;
                             valid_1 = false;
-                            _a = actionName_1;
-                            switch (_a) {
+                            _b = actionName_1;
+                            switch (_b) {
                                 case "up": return [3 /*break*/, 2];
                                 case "v": return [3 /*break*/, 2];
                                 case "down": return [3 /*break*/, 2];
+                                case "d": return [3 /*break*/, 2];
                                 case "right": return [3 /*break*/, 2];
-                                case "h": return [3 /*break*/, 2];
                                 case "r": return [3 /*break*/, 2];
                                 case "left": return [3 /*break*/, 2];
                                 case "l": return [3 /*break*/, 2];
@@ -741,7 +809,7 @@ var Battle = /** @class */ (function () {
                                 case "log": return [3 /*break*/, 7];
                                 case "undo": return [3 /*break*/, 8];
                             }
-                            return [3 /*break*/, 11];
+                            return [3 /*break*/, 12];
                         case 2:
                             moveAction = (0, Utility_1.getMoveAction)(virtualStat, actionName_1, infoMessagesQueue.length, moveMagnitude);
                             // validate + act on (if valid) movement on virtual map
@@ -749,6 +817,9 @@ var Battle = /** @class */ (function () {
                             // movement is permitted
                             if (valid_1) {
                                 realMoveStat = (0, Utility_1.getMoveAction)(realStat, actionName_1, infoMessagesQueue.length, moveMagnitude);
+                                if (virtualStat.moved) {
+                                    realMoveStat.sprint = 1;
+                                }
                                 mes.react('✅');
                                 executingActions.push(realMoveStat);
                             }
@@ -764,7 +835,7 @@ var Battle = /** @class */ (function () {
                                     });
                                 }
                             }
-                            return [3 /*break*/, 12];
+                            return [3 /*break*/, 13];
                         case 3:
                             attackTarget = this.findEntity_args(actionArgs, virtualStat);
                             if (attackTarget === null) {
@@ -774,7 +845,7 @@ var Battle = /** @class */ (function () {
                                     channel.send({
                                         embeds: [new discord_js_1.MessageEmbed({
                                                 title: check.reason,
-                                                description: "Failed to move. Reference value: __" + check.value + "__",
+                                                description: "Failed to attack. Reference value: __" + check.value + "__",
                                             })]
                                     });
                                 }
@@ -799,31 +870,31 @@ var Battle = /** @class */ (function () {
                                         channel.send({
                                             embeds: [new discord_js_1.MessageEmbed({
                                                     title: check.reason,
-                                                    description: "Failed to move. Reference value: __" + check.value + "__",
+                                                    description: "Failed to attack. Reference value: __" + check.value + "__",
                                                 })]
                                         });
                                     }
                                 }
                             }
-                            return [3 /*break*/, 12];
+                            return [3 /*break*/, 13];
                         case 4:
                             executingActions = [];
                             infoMessagesQueue = [infoMessage];
                             Object.assign(virtualStat, { x: x, y: y, readiness: readiness, sword: sword, shield: shield, sprint: sprint });
                             return [4 /*yield*/, (0, Utility_1.clearChannel)(channel, infoMessage)];
                         case 5:
-                            _b.sent();
-                            return [3 /*break*/, 12];
+                            _c.sent();
+                            return [3 /*break*/, 13];
                         case 6:
                             newCollector.stop();
-                            (0, Utility_1.log)("Ended turn for \"" + virtualStat.name + "\" (" + virtualStat.base.class + ")");
-                            return [3 /*break*/, 12];
+                            (0, Utility_1.log)("\tEnded turn for \"" + virtualStat.name + "\" (" + virtualStat.base.class + ")");
+                            return [3 /*break*/, 13];
                         case 7:
                             Utility_1.log.apply(void 0, __spreadArray([], __read(this.allStats().filter(function (s) { return s.team !== "block"; }).map(function (s) {
                                 var string = s.base.class + " (" + s.index + ") (" + s.team + ") " + s.HP + "/" + (0, Utility_1.getAHP)(s) + " (" + s.x + ", " + s.y + ")";
                                 return string;
                             })), false));
-                            return [3 /*break*/, 12];
+                            return [3 /*break*/, 13];
                         case 8:
                             if (!(infoMessagesQueue.length > 1)) return [3 /*break*/, 10];
                             undoAction = executingActions.pop();
@@ -831,10 +902,13 @@ var Battle = /** @class */ (function () {
                             infoMessagesQueue.pop();
                             return [4 /*yield*/, (0, Utility_1.clearChannel)(channel, (0, Utility_1.getLastElement)(infoMessagesQueue))];
                         case 9:
-                            _b.sent();
-                            _b.label = 10;
-                        case 10: return [3 /*break*/, 12];
-                        case 11:
+                            _c.sent();
+                            return [3 /*break*/, 11];
+                        case 10:
+                            mes.react('❎');
+                            _c.label = 11;
+                        case 11: return [3 /*break*/, 13];
+                        case 12:
                             targetedWeapon = virtualStat.base.weapons.find(function (w) { return w.Name.toLowerCase().search(actionName_1) !== -1; });
                             if (targetedWeapon) {
                                 mes.react('✅');
@@ -865,13 +939,13 @@ var Battle = /** @class */ (function () {
                                 mes.react('❎');
                                 setTimeout(function () { return mes.delete().catch(console.log); }, 10 * 1000);
                             }
-                            return [3 /*break*/, 12];
-                        case 12:
-                            (0, Utility_1.debug)("\tvalid", valid_1 !== null);
-                            if (!valid_1) return [3 /*break*/, 14];
-                            return [4 /*yield*/, this.getFullPlayerEmbedMessageOptions(virtualStat, executingActions)];
+                            return [3 /*break*/, 13];
                         case 13:
-                            messageOptions = _b.sent();
+                            (0, Utility_1.debug)("\tvalid", valid_1 !== null);
+                            if (!valid_1) return [3 /*break*/, 15];
+                            return [4 /*yield*/, this.getFullPlayerEmbedMessageOptions(virtualStat, executingActions)];
+                        case 14:
+                            messageOptions = _c.sent();
                             channel.send(messageOptions)
                                 .then(function (m) {
                                 if (valid_1) {
@@ -884,11 +958,11 @@ var Battle = /** @class */ (function () {
                                     listenToQueue();
                                 }
                             });
-                            return [3 /*break*/, 15];
-                        case 14:
+                            return [3 /*break*/, 16];
+                        case 15:
                             listenToQueue();
-                            _b.label = 15;
-                        case 15: return [2 /*return*/];
+                            _c.label = 16;
+                        case 16: return [2 /*return*/];
                     }
                 });
             }); };
@@ -906,24 +980,24 @@ var Battle = /** @class */ (function () {
             });
             newCollector.on('end', function () { return __awaiter(_this, void 0, void 0, function () {
                 var i;
-                var _a;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
+                var _b;
+                return __generator(this, function (_c) {
+                    switch (_c.label) {
                         case 0:
                             clearInterval(currentListener);
                             i = 0;
-                            _b.label = 1;
+                            _c.label = 1;
                         case 1:
                             if (!(i < responseQueue.length)) return [3 /*break*/, 4];
                             return [4 /*yield*/, handleQueue()];
                         case 2:
-                            _b.sent();
-                            _b.label = 3;
+                            _c.sent();
+                            _c.label = 3;
                         case 3:
                             i++;
                             return [3 /*break*/, 1];
                         case 4:
-                            (_a = this.roundActionsArray).push.apply(_a, __spreadArray([], __read(executingActions), false));
+                            (_b = this.roundActionsArray).push.apply(_b, __spreadArray([], __read(executingActions), false));
                             resolve(void 0);
                             return [2 /*return*/];
                     }
@@ -973,9 +1047,11 @@ var Battle = /** @class */ (function () {
         return exemption(coord) || !this.CSMap.has((0, Utility_1.getCoordString)(coord));
     };
     Battle.prototype.checkWithinWorld = function (coord) {
+        (0, Utility_1.log)("\t\tChecking within world:");
+        (0, Utility_1.log)("\t\t\tw\\" + this.width + " h\\" + this.height + " " + JSON.stringify(coord));
         return this.width > coord.x && this.height > coord.y && coord.x >= 0 && coord.y >= 0;
     };
-    Battle.prototype.clashAfterMath = function (clashResult, attacker_attackAction, _target, _weapon) {
+    Battle.prototype.applyClash = function (clashResult, attacker_attackAction, _target, _weapon) {
         var attacker = attacker_attackAction.from || attacker_attackAction;
         var target = attacker_attackAction.affected || _target;
         var weapon = attacker_attackAction.weapon || _weapon;
@@ -998,7 +1074,7 @@ var Battle = /** @class */ (function () {
                 var hitRate = ((0, Utility_1.getAcc)(attacker, weapon) - (0, Utility_1.getDodge)(target)) < 100 ? (0, Utility_1.getAcc)(attacker, weapon) - (0, Utility_1.getDodge)(target) : 100;
                 var critRate = ((0, Utility_1.getAcc)(attacker, weapon) - (0, Utility_1.getDodge)(target)) * 0.1 + (0, Utility_1.getCrit)(attacker, weapon);
                 (0, Utility_1.dealWithAccolade)(clashResult, attacker, target);
-                returnString += "**" + attacker.base.class + "** (" + attacker.index + ") \u2694\uFE0F **" + target.base.class + "** (" + target.index + ") __*" + weapon.Name + "*__" + hitRate + "% (" + (0, Utility_1.roundToDecimalPlace)(critRate) + "% Crit)**" + CR_fate + "!** -**" + (0, Utility_1.roundToDecimalPlace)(CR_damage) + "** HP";
+                returnString += "**" + attacker.base.class + "** (" + attacker.index + ") \u2694\uFE0F **" + target.base.class + "** (" + target.index + ") __*" + weapon.Name + "*__\n" + hitRate + "% (" + (0, Utility_1.roundToDecimalPlace)(critRate) + "% Crit) **" + CR_fate + "!** -**" + (0, Utility_1.roundToDecimalPlace)(CR_damage) + "** HP";
                 if (target.HP > 0 && target.HP - CR_damage <= 0)
                     returnString += "**KILLING BLOW!**";
                 var LS = (0, Utility_1.getLifesteal)(attacker, weapon);
@@ -1054,6 +1130,7 @@ var Battle = /** @class */ (function () {
     // spawning methods
     Battle.prototype.Spawn = function (unit, coords) {
         this.setIndex(unit);
+        (0, Utility_1.debug)("Spawning", unit.base.class + " (" + unit.index + ")");
         unit.x = coords.x;
         unit.y = coords.y;
         this.CSMap.set((0, Utility_1.getCoordString)(coords), unit);
@@ -1062,91 +1139,35 @@ var Battle = /** @class */ (function () {
         var _this = this;
         // adding addition units to be spawned this round.
         if (unit) {
-            this.enemiesToBeSpawnedArray = this.enemiesToBeSpawnedArray.concat(unit);
+            this.tobespawnedArray = this.tobespawnedArray.concat(unit);
         }
+        var failedToSpawn = [];
         var _loop_4 = function () {
-            var stat = this_2.enemiesToBeSpawnedArray.shift();
+            var stat = this_2.tobespawnedArray.shift();
             // 1. look for spawner
-            var possibleCoords = this_2.mapData.map.spawners.filter(function (s) { return s.spawns === stat.team; }).map(function (s) {
-                return { x: s.x, y: s.y };
-            });
+            var possibleCoords = this_2.mapData.map.spawners
+                .filter(function (s) { return s.spawns === stat.team; })
+                .map(function (s) { return ({ x: s.x, y: s.y }); });
             // 2. look for coords if occupied and spawn if not
             var availableCoords = possibleCoords.filter(function (c) { return !_this.CSMap.has((0, Utility_1.getCoordString)(c)); });
             // 3. Spawn on Coords
             if (availableCoords.length > 0) {
                 var c = availableCoords[(0, Utility_1.random)(0, availableCoords.length - 1)];
                 this_2.Spawn(stat, c);
-                // log(stat.base.class + " @ " + c.x + "," + c.y);
+            }
+            else {
+                failedToSpawn.push(stat);
             }
         };
         var this_2 = this;
-        while (this.enemiesToBeSpawnedArray[0]) {
+        while (this.tobespawnedArray[0]) {
             _loop_4();
         }
+        for (var i = 0; i < failedToSpawn.length; i++) {
+            this.tobespawnedArray.push(failedToSpawn[i]);
+        }
     };
-    // execute actions
-    Battle.prototype.totalExecution = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var priorityActionMap, i, act, actionListThisRound, latestPrio, i, expectedActions, canvas, ctx, _a, _b, expectedCanvas, executedActions, actualCanvas;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0:
-                        priorityActionMap = new Map();
-                        for (i = 0; i < this.roundActionsArray.length; i++) {
-                            act = this.roundActionsArray[i];
-                            actionListThisRound = priorityActionMap.get(act.priority);
-                            if (actionListThisRound)
-                                actionListThisRound.push(act);
-                            else
-                                priorityActionMap.set(act.priority, [act]);
-                        }
-                        latestPrio = (0, Utility_1.getLargestInArray)(this.roundActionsArray.map(function (a) { return a.priority; }));
-                        i = 0;
-                        _c.label = 1;
-                    case 1:
-                        if (!(i <= latestPrio)) return [3 /*break*/, 6];
-                        expectedActions = priorityActionMap.get(i);
-                        if (!expectedActions) return [3 /*break*/, 5];
-                        this.sortActionsByGreaterPrior(expectedActions);
-                        canvas = this.roundSavedCanvasMap.get(i);
-                        if (!canvas) {
-                            canvas = new canvas_1.Canvas(this.width * 50, this.height * 50);
-                            if (canvas)
-                                this.roundSavedCanvasMap.set(i, canvas);
-                        }
-                        ctx = canvas.getContext("2d");
-                        _b = (_a = ctx).drawImage;
-                        return [4 /*yield*/, this.getNewCanvasMap()];
-                    case 2:
-                        _b.apply(_a, [_c.sent(), 0, 0, canvas.width, canvas.height]);
-                        return [4 /*yield*/, this.getActionArrowsCanvas(expectedActions, {
-                                r: 255,
-                                g: 0,
-                                b: 0,
-                                alpha: 0.25
-                            })];
-                    case 3:
-                        expectedCanvas = _c.sent();
-                        executedActions = this.executeActions(expectedActions);
-                        return [4 /*yield*/, this.getActionArrowsCanvas(executedActions)];
-                    case 4:
-                        actualCanvas = _c.sent();
-                        // draw executed actions
-                        ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
-                        // draw the arrows of expected actions on top
-                        // ctx.drawImage(expectedCanvas, 0, 0, canvas.width, canvas.height);
-                        // update the final canvas
-                        this.roundSavedCanvasMap.set(i, canvas);
-                        _c.label = 5;
-                    case 5:
-                        i++;
-                        return [3 /*break*/, 1];
-                    case 6: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    Battle.prototype.getGreaterPrio = function (a) { return (1000 * (20 - a.priority)) + (a.from.readiness - a.readiness); };
+    Battle.prototype.getGreaterPrio = function (a) { return (1000 * (20 - a.round)) + (a.from.readiness - a.readiness); };
     ;
     Battle.prototype.sortActionsByGreaterPrior = function (actions) {
         var _this = this;
@@ -1164,22 +1185,9 @@ var Battle = /** @class */ (function () {
         }
         return returning;
     };
-    Battle.prototype.executeOneAction = function (action, show) {
-        if (show === void 0) { show = true; }
-        var stat = action.from;
+    Battle.prototype.executeOneAction = function (action) {
         var mAction = action;
         var aAction = action;
-        // =========LOG=========
-        if (show && 'axis' in action) {
-            (0, Utility_1.log)("\tmove: " + mAction.axis + " " + mAction.magnitude);
-        }
-        else if (show) {
-            (0, Utility_1.log)("\tattack: " + aAction.affected.base.class + " (" + aAction.affected.index + ") using " + aAction.weapon.Name);
-        }
-        // =========LOG=========
-        action.executed = true;
-        stat.readiness -= action.readiness;
-        (0, Utility_1.HandleTokens)(stat, function (p, t) { return stat[t] -= action[t]; });
         return action.type === 'Attack' ?
             this.executeAttackAction(aAction) :
             this.executeMoveAction(mAction);
@@ -1194,16 +1202,18 @@ var Battle = /** @class */ (function () {
             if (gStat === void 0) { gStat = attacker; }
             if (gTarget === void 0) { gTarget = target; }
             var eM = _this.validateTarget(attacker, weapon, target);
+            var string = '';
             if (eM) {
                 (0, Utility_1.log)(attacker.base.class + " failed to attack " + target.base.class + ". Reason: " + eM.reason);
-                // return `**${attacker.base.class}** (${attacker.index}) ⚔️ **${target.base.class}** (${target.index}) ❌${eM.reason}${eM.value !== null ? ` ( ${eM.value} )` : ""}`;
+                string = "**" + attacker.base.class + "** (" + attacker.index + ") \u2694\uFE0F **" + target.base.class + "** (" + target.index + ") \u274C" + eM.reason + (eM.value !== null ? " ( " + eM.value + " )" : "");
             }
             else {
                 // valid attack
                 var clashResult = _this.clash(gStat, gTarget, weapon);
-                var clashAfterMathString = _this.clashAfterMath(clashResult, gStat, gTarget, weapon);
-                // return clashAfterMathString + "";
+                var clashAfterMathString = _this.applyClash(clashResult, gStat, gTarget, weapon);
+                string = clashAfterMathString + "";
             }
+            return string;
         };
         var AOE = function (center, inclusive) {
             var enemiesInRadius = _this.findEntities_radius(center, weapon.Range[2] || weapon.Range[1], inclusive);
@@ -1214,15 +1224,15 @@ var Battle = /** @class */ (function () {
                 string += SAResult;
                 arrayOfResults.push(SAResult);
             }
-            // return string;
+            return string;
         };
         var line = function () {
             var yDif = target.y - attacker.y;
             var xDif = target.x - attacker.x;
             var slope = yDif / xDif;
-            (0, Utility_1.log)("   slope: " + slope);
+            (0, Utility_1.log)("\tslope: " + slope);
             var enemiesInLine = _this.findEntities_inLine(attacker, target);
-            (0, Utility_1.log)("   " + enemiesInLine.length + " enemies in line");
+            (0, Utility_1.log)("\t" + enemiesInLine.length + " enemies in line");
             var string = '';
             var arrayOfResults = [];
             for (var i = 0; i < enemiesInLine.length; i++) {
@@ -1230,22 +1240,35 @@ var Battle = /** @class */ (function () {
                 string += SAResult;
                 arrayOfResults.push(SAResult);
             }
+            return string;
         };
+        var attackResult = "";
         switch (weapon.targetting.AOE) {
             case "single":
             case "touch":
-                SA();
+                attackResult = SA();
                 break;
             case "circle":
-                AOE(attackAction.coordinate, true);
+                attackResult = AOE(attackAction.coordinate, true);
                 break;
             case "selfCircle":
-                AOE(attacker, false);
+                attackResult = AOE(attacker, false);
                 break;
             case "line":
-                line();
+                attackResult = line();
                 break;
         }
+        if (attackAction.from.actionsAssociatedStrings[attackAction.round] === undefined) {
+            attackAction.from.actionsAssociatedStrings[attackAction.round] = [];
+        }
+        attackAction.from.actionsAssociatedStrings[attackAction.round].push(attackResult);
+        if (attackAction.affected.actionsAssociatedStrings[attackAction.round] === undefined) {
+            attackAction.affected.actionsAssociatedStrings[attackAction.round] = [];
+        }
+        attackAction.affected.actionsAssociatedStrings[attackAction.round].push(attackResult);
+        attackAction.executed = true;
+        attackAction.from.readiness -= attackAction.readiness;
+        (0, Utility_1.HandleTokens)(attackAction.from, function (p, t) { return attackAction.from[t] -= attackAction[t]; });
         return attackAction;
     };
     Battle.prototype.executeMoveAction = function (moveAction) {
@@ -1259,6 +1282,9 @@ var Battle = /** @class */ (function () {
         stat[axis] += newMagnitude;
         this.CSMap = this.CSMap.set((0, Utility_1.getCoordString)(stat), stat);
         console.log(moveAction.from.base.class + " (" + moveAction.from.index + ") \uD83D\uDC62" + (0, Utility_1.formalize)(direction) + " " + Math.abs(newMagnitude) + " blocks.");
+        moveAction.executed = true;
+        moveAction.from.readiness -= moveAction.readiness;
+        (0, Utility_1.HandleTokens)(moveAction.from, function (p, t) { return moveAction.from[t] -= moveAction[t]; });
         return (0, Utility_1.getNewObject)(moveAction, { magnitude: newMagnitude });
     };
     Battle.prototype.heal = function (stat, value) {
@@ -1291,29 +1317,48 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.getNewCanvasMap = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var allStats, groundImage, canvas, ctx, i, stat, X, Y, iconImage;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var allStats, groundImage, canvas, ctx, iconCache, i, stat, X, Y, baseClass, iconCanvas, iconSize, iconCtx, imageCanvasCoord;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         allStats = this.allStats();
                         return [4 /*yield*/, (0, Database_1.getFileImage)(this.mapData.map.groundURL)];
                     case 1:
-                        groundImage = _a.sent();
+                        groundImage = _b.sent();
                         canvas = (0, Utility_1.returnGridCanvas)(this.height, this.width, this.pixelsPerTile, groundImage);
                         ctx = canvas.getContext('2d');
+                        iconCache = new Map();
                         i = 0;
-                        _a.label = 2;
+                        _b.label = 2;
                     case 2:
                         if (!(i < allStats.length)) return [3 /*break*/, 5];
                         stat = allStats[i];
                         X = stat.x;
                         Y = stat.y;
+                        baseClass = stat.base.class;
                         return [4 /*yield*/, (0, Database_1.getIcon)(stat)];
                     case 3:
-                        iconImage = _a.sent();
-                        // log(`   ||=> Done.`);
-                        ctx.drawImage(iconImage, X * this.pixelsPerTile, (this.height - 1 - Y) * this.pixelsPerTile, this.pixelsPerTile, this.pixelsPerTile);
-                        _a.label = 4;
+                        iconCanvas = _b.sent();
+                        iconSize = iconCanvas.width;
+                        iconCtx = iconCanvas.getContext("2d");
+                        // if (iconCache.get(baseClass) === undefined) {
+                        //     iconCache.set(baseClass, iconCanvas);
+                        // }
+                        // attach index
+                        (0, Utility_1.drawCircle)(iconCtx, {
+                            x: iconSize * 9 / 10,
+                            y: iconSize * 1 / 5
+                        }, iconSize / 6, false);
+                        (0, Utility_1.drawText)(iconCtx, "" + stat.index, iconSize / 3, {
+                            x: iconSize * 9 / 10,
+                            y: iconSize * 1 / 5
+                        });
+                        imageCanvasCoord = this.getCanvasCoordsFromBattleCoord({
+                            x: X,
+                            y: Y
+                        }, false);
+                        ctx.drawImage(iconCanvas, imageCanvasCoord.x, imageCanvasCoord.y, Math.min(iconCanvas.width, this.pixelsPerTile), Math.min(iconCanvas.height, this.pixelsPerTile));
+                        _b.label = 4;
                     case 4:
                         i++;
                         return [3 /*break*/, 2];
@@ -1327,31 +1372,31 @@ var Battle = /** @class */ (function () {
     Battle.prototype.getCurrentMapCanvas = function () {
         return __awaiter(this, void 0, void 0, function () {
             var thePath, image, src, readsrc, err_1, newMap, dataBuffer;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         thePath = "./maps/battle-" + this.author.id + ".txt";
                         image = new canvas_1.Image();
-                        _a.label = 1;
+                        _b.label = 1;
                     case 1:
-                        _a.trys.push([1, 2, , 4]);
+                        _b.trys.push([1, 2, , 4]);
                         readsrc = fs_1.default.readFileSync(thePath, 'utf8');
                         // log("|| Finish reading.")
                         src = readsrc;
                         return [3 /*break*/, 4];
                     case 2:
-                        err_1 = _a.sent();
+                        err_1 = _b.sent();
                         (0, Utility_1.log)("|| Creating new file...");
                         return [4 /*yield*/, this.getNewCanvasMap()];
                     case 3:
-                        newMap = _a.sent();
+                        newMap = _b.sent();
                         dataBuffer = newMap.toDataURL();
                         fs_1.default.writeFileSync(thePath, dataBuffer);
                         src = dataBuffer;
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/, new Promise(function (resolve) {
                             image.onload = function () {
-                                var _a = (0, Utility_1.startDrawing)(image.width, image.height), canvas = _a.canvas, ctx = _a.ctx;
+                                var _b = (0, Utility_1.startDrawing)(image.width, image.height), canvas = _b.canvas, ctx = _b.ctx;
                                 ctx.drawImage(image, 0, 0, image.width, image.height);
                                 // log("||=> Success. Canvas returned.")
                                 resolve(canvas);
@@ -1365,27 +1410,27 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.getCurrentMapBuffer = function () {
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0: return [4 /*yield*/, this.getCurrentMapCanvas()];
-                    case 1: return [2 /*return*/, (_a.sent()).toBuffer()];
+                    case 1: return [2 /*return*/, (_b.sent()).toBuffer()];
                 }
             });
         });
     };
     Battle.prototype.getCurrentMapWithArrowsCanvas = function (stat, actions) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, canvas, ctx, baseImage, arrowsCanvas;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, canvas, ctx, baseImage, arrowsCanvas;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = (0, Utility_1.startDrawing)(this.width * 50, this.height * 50), canvas = _a.canvas, ctx = _a.ctx;
+                        _b = (0, Utility_1.startDrawing)(this.width * 50, this.height * 50), canvas = _b.canvas, ctx = _b.ctx;
                         return [4 /*yield*/, this.getCurrentMapCanvas()];
                     case 1:
-                        baseImage = _b.sent();
+                        baseImage = _c.sent();
                         return [4 /*yield*/, this.getActionArrowsCanvas(actions || this.getStatsRoundActions(stat))];
                     case 2:
-                        arrowsCanvas = _b.sent();
+                        arrowsCanvas = _c.sent();
                         ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
                         ctx.drawImage(arrowsCanvas, 0, 0, canvas.width, canvas.height);
                         return [2 /*return*/, canvas];
@@ -1395,97 +1440,91 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.getCurrentMapWithArrowsBuffer = function (stat) {
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0: return [4 /*yield*/, this.getCurrentMapWithArrowsCanvas(stat)];
-                    case 1: return [2 /*return*/, (_a.sent()).toBuffer()];
+                    case 1: return [2 /*return*/, (_b.sent()).toBuffer()];
                 }
             });
         });
     };
-    Battle.prototype.getActionArrowsCanvas = function (_actions, style) {
-        if (style === void 0) { style = {
-            r: 0,
-            g: 0,
-            b: 0,
-            alpha: 1
-        }; }
+    Battle.prototype.getActionArrowsCanvas = function (_actions) {
         return __awaiter(this, void 0, void 0, function () {
-            var canvas, ctx, drawPriorityText, drawAttackAction, drawMoveAction, appendGraph, virtualCoordsMap, graph, _loop_5, i, _a, _b, _c, key, value, solidColumns, columns, columnWidth, o, widthStart, widthEnd, edge, connectingAction, isXtransition, isYtransition;
-            var e_3, _d;
+            var actions, canvas, ctx, style, drawAttackAction, drawMoveAction, appendGraph, virtualCoordsMap, graph, _loop_5, i, _b, _c, _d, key, value, solidColumns, columns, columnWidth, o, widthStart, widthEnd, edgeIndex, edge, connectingAction, isXtransition, isYtransition;
+            var e_3, _e;
             var _this = this;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            return __generator(this, function (_f) {
+                switch (_f.label) {
                     case 0:
+                        actions = _actions.map(function (_a, _index) {
+                            _a.priority = _index + 1;
+                            return _a;
+                        });
                         canvas = new canvas_1.Canvas(this.width * 50, this.height * 50);
                         ctx = canvas.getContext("2d");
-                        style = (0, Utility_1.normaliseRGBA)(style);
+                        style = {
+                            r: 0,
+                            g: 0,
+                            b: 0,
+                            alpha: 1
+                        };
                         ctx.fillStyle = (0, Utility_1.stringifyRGBA)(style);
                         ctx.strokeStyle = (0, Utility_1.stringifyRGBA)(style);
-                        drawPriorityText = function (priority, canvasCoord, angle) {
-                            if (angle === void 0) { angle = 0; }
-                            ctx.save();
-                            ctx.font = "15px Verdana";
-                            ctx.lineWidth = 0.5;
-                            ctx.fillStyle = "white";
-                            ctx.strokeStyle = "black";
-                            ctx.textAlign = "center";
-                            ctx.translate(canvasCoord.x, canvasCoord.y);
-                            ctx.rotate(angle);
-                            ctx.fillText("" + priority, 0, 0);
-                            ctx.strokeText("" + priority, 0, 0);
-                            ctx.restore();
-                        };
-                        drawAttackAction = function (action, fromBattleCoord, toBattleCoord, priority, width, offset) {
-                            if (width === void 0) { width = 5; }
-                            if (offset === void 0) { offset = {
+                        drawAttackAction = function (_aA, _fromBattleCoord, _toBattleCoord, _width, _offset) {
+                            if (_width === void 0) { _width = 5; }
+                            if (_offset === void 0) { _offset = {
                                 x: 0,
                                 y: 0
                             }; }
                             return __awaiter(_this, void 0, void 0, function () {
-                                var victimWithinDistance, fromCanvasCoord, toCanvasCoord, textCanvasCoordinate, x, y, angle, victimDead, greenBarPercentage, targetCanvasCoords, image, reversedY, edgeDistance, barStartingCanvasPosition, barEndingCanvasPosition, greenLineLength;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
+                                var victimWithinDistance, fromCanvasCoord, toCanvasCoord, textCanvasCoordinate, x, y, angle, victimDead, greenBarPercentage, targetCanvasCoords, hitImage, imageWidth, imageHeight, edgeDistance, barStartingCanvasPosition, barEndingCanvasPosition;
+                                return __generator(this, function (_b) {
+                                    switch (_b.label) {
                                         case 0:
                                             (0, Utility_1.log)("Drawing attack action...");
-                                            (0, Utility_1.debug)("\tfromCoord", { x: fromBattleCoord.x, y: fromBattleCoord.y });
-                                            (0, Utility_1.debug)("\ttoCoord", { x: toBattleCoord.x, y: toBattleCoord.y });
+                                            (0, Utility_1.debug)("\tfromCoord", { x: _fromBattleCoord.x, y: _fromBattleCoord.y });
+                                            (0, Utility_1.debug)("\ttoCoord", { x: _toBattleCoord.x, y: _toBattleCoord.y });
                                             ctx.save();
-                                            victimWithinDistance = (0, Utility_1.checkWithinDistance)(action.weapon, (0, Utility_1.getDistance)(action.from, action.affected));
+                                            style.r = 255;
+                                            style.g = 0;
+                                            style.b = 0;
+                                            ctx.strokeStyle = (0, Utility_1.stringifyRGBA)((0, Utility_1.normaliseRGBA)(style));
+                                            victimWithinDistance = (0, Utility_1.checkWithinDistance)(_aA.weapon, (0, Utility_1.getDistance)(_aA.from, _aA.affected));
                                             ctx.beginPath();
                                             ctx.strokeStyle = victimWithinDistance ?
                                                 "red" :
                                                 "black";
-                                            ctx.lineWidth = width;
-                                            fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
-                                            ctx.moveTo(fromCanvasCoord.x + offset.x, fromCanvasCoord.y + offset.y);
-                                            toCanvasCoord = this.getCanvasCoordsFromBattleCoord(toBattleCoord);
-                                            ctx.lineTo(toCanvasCoord.x + offset.x, toCanvasCoord.y + offset.y);
+                                            ctx.lineWidth = _width;
+                                            fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(_fromBattleCoord);
+                                            ctx.moveTo(fromCanvasCoord.x + _offset.x, fromCanvasCoord.y + _offset.y);
+                                            toCanvasCoord = this.getCanvasCoordsFromBattleCoord(_toBattleCoord);
+                                            ctx.lineTo(toCanvasCoord.x + _offset.x, toCanvasCoord.y + _offset.y);
                                             ctx.stroke();
                                             ctx.closePath();
-                                            (0, Utility_1.debug)("\tfromCanvasCoord", { x: fromCanvasCoord.x, y: fromCanvasCoord.y });
-                                            (0, Utility_1.debug)("\ttoCanvasCoord", { x: toCanvasCoord.x, y: toCanvasCoord.y });
                                             textCanvasCoordinate = this.getCanvasCoordsFromBattleCoord({
-                                                x: (fromBattleCoord.x + toBattleCoord.x) / 2,
-                                                y: (fromBattleCoord.y + toBattleCoord.y) / 2
+                                                x: (_fromBattleCoord.x + _toBattleCoord.x) / 2,
+                                                y: (_fromBattleCoord.y + _toBattleCoord.y) / 2
                                             });
-                                            x = toBattleCoord.x - fromBattleCoord.x;
-                                            y = toBattleCoord.y - fromBattleCoord.y;
+                                            x = _toBattleCoord.x - _fromBattleCoord.x;
+                                            y = _toBattleCoord.y - _fromBattleCoord.y;
                                             angle = Math.atan2(y, x);
-                                            drawPriorityText(priority, textCanvasCoordinate, -1 * angle);
-                                            (0, Utility_1.debug)("\ttextCanvasCoord", textCanvasCoordinate);
+                                            (0, Utility_1.drawText)(ctx, "" + _aA.priority, this.pixelsPerTile / 3, {
+                                                x: textCanvasCoordinate.x + _offset.x,
+                                                y: textCanvasCoordinate.y + _offset.y,
+                                            }, -1 * angle);
                                             if (!victimWithinDistance) return [3 /*break*/, 2];
-                                            victimDead = action.affected.HP <= 0;
+                                            victimDead = _aA.affected.HP <= 0;
                                             greenBarPercentage = victimDead ?
                                                 1 :
-                                                action.affected.HP / action.affected.base.AHP;
+                                                _aA.affected.HP / _aA.affected.base.AHP;
                                             ctx.lineWidth = 10;
-                                            targetCanvasCoords = this.getCanvasCoordsFromBattleCoord(action.affected);
+                                            targetCanvasCoords = this.getCanvasCoordsFromBattleCoord(_aA.affected);
                                             return [4 /*yield*/, (0, Database_1.getFileImage)('./images/Hit.png')];
                                         case 1:
-                                            image = _a.sent();
-                                            reversedY = (this.height - 1 - action.affected.y);
-                                            ctx.drawImage(image, action.affected.x * this.pixelsPerTile, reversedY * this.pixelsPerTile, this.pixelsPerTile * 0.7, this.pixelsPerTile * 0.7);
+                                            hitImage = _b.sent();
+                                            imageWidth = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile / 3));
+                                            imageHeight = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile / 3));
+                                            ctx.drawImage(hitImage, toCanvasCoord.x + _offset.x - (imageWidth / 2), toCanvasCoord.y + _offset.y - (imageHeight / 2), imageWidth, imageHeight);
                                             edgeDistance = this.pixelsPerTile * (1 / 3);
                                             barStartingCanvasPosition = {
                                                 x: targetCanvasCoords.x - edgeDistance,
@@ -1495,26 +1534,7 @@ var Battle = /** @class */ (function () {
                                                 x: targetCanvasCoords.x + edgeDistance,
                                                 y: targetCanvasCoords.y - edgeDistance,
                                             };
-                                            // draw red bar
-                                            ctx.beginPath();
-                                            // shift 1/3 of a block top and left from the center
-                                            ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y);
-                                            ctx.strokeStyle = "red";
-                                            // 1/3 to the top right
-                                            ctx.lineTo(barEndingCanvasPosition.x, barEndingCanvasPosition.y);
-                                            ctx.stroke();
-                                            ctx.closePath();
-                                            // draw green bar
-                                            ctx.beginPath();
-                                            ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y);
-                                            ctx.strokeStyle = victimDead ?
-                                                "black" :
-                                                "green";
-                                            greenLineLength = 2 * edgeDistance * greenBarPercentage;
-                                            ctx.lineTo(barStartingCanvasPosition.x + greenLineLength, barEndingCanvasPosition.y);
-                                            ctx.stroke();
-                                            ctx.closePath();
-                                            _a.label = 2;
+                                            _b.label = 2;
                                         case 2:
                                             ctx.restore();
                                             return [2 /*return*/];
@@ -1522,40 +1542,57 @@ var Battle = /** @class */ (function () {
                                 });
                             });
                         };
-                        drawMoveAction = function (fromBattleCoord, toBattleCoord, priority, width, offset) {
-                            if (width === void 0) { width = 5; }
-                            if (offset === void 0) { offset = {
+                        drawMoveAction = function (_mA, _fromBattleCoord, _toBattleCoord, _width, _offsetCanvas) {
+                            if (_width === void 0) { _width = 5; }
+                            if (_offsetCanvas === void 0) { _offsetCanvas = {
                                 x: 0,
                                 y: 0
                             }; }
-                            (0, Utility_1.log)("Drawing move action: (" + fromBattleCoord.x + "," + fromBattleCoord.y + ")=>(" + toBattleCoord.x + "," + toBattleCoord.y + ") (width:" + width + ")(offset x:" + offset.x + " y:" + offset.y + ")");
-                            ctx.lineWidth = width;
+                            ctx.save();
+                            style.r = 0;
+                            style.g = 0;
+                            style.b = 0;
+                            ctx.strokeStyle = (0, Utility_1.stringifyRGBA)((0, Utility_1.normaliseRGBA)(style));
+                            (0, Utility_1.log)("Drawing move action: (" + _fromBattleCoord.x + "," + _fromBattleCoord.y + ")=>(" + _toBattleCoord.x + "," + _toBattleCoord.y + ") (width:" + _width + ")(offset x:" + _offsetCanvas.x + " y:" + _offsetCanvas.y + ")");
+                            ctx.lineWidth = _width;
                             // get position before move
-                            var beforeCanvasCoord = _this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
+                            var beforeCanvasCoord = _this.getCanvasCoordsFromBattleCoord(_fromBattleCoord);
                             ctx.beginPath();
                             ctx.moveTo(beforeCanvasCoord.x, beforeCanvasCoord.y);
                             // draw a line to the coord after move action
-                            var afterCanvasCoord = _this.getCanvasCoordsFromBattleCoord(toBattleCoord);
+                            var afterCanvasCoord = _this.getCanvasCoordsFromBattleCoord(_toBattleCoord);
                             ctx.lineTo(afterCanvasCoord.x, afterCanvasCoord.y);
                             ctx.stroke();
                             ctx.closePath();
                             // draw circle
-                            ctx.arc(afterCanvasCoord.x, afterCanvasCoord.y, _this.pixelsPerTile / 5, 0, Math.PI * 2);
-                            ctx.fill();
+                            var arrivingCanvasCoord = _mA.executed ?
+                                beforeCanvasCoord :
+                                afterCanvasCoord;
+                            (0, Utility_1.drawCircle)(ctx, arrivingCanvasCoord, _this.pixelsPerTile / 5, false);
                             // priority text
-                            drawPriorityText(priority, toBattleCoord);
+                            var middleCanvasCoord = {
+                                x: (beforeCanvasCoord.x + afterCanvasCoord.x) / 2,
+                                y: (beforeCanvasCoord.y + afterCanvasCoord.y) / 2,
+                            };
+                            (0, Utility_1.drawText)(ctx, "" + _mA.priority, _this.pixelsPerTile / 3, {
+                                x: middleCanvasCoord.x + _offsetCanvas.x,
+                                y: middleCanvasCoord.y + _offsetCanvas.x,
+                            });
+                            ctx.restore();
                         };
-                        appendGraph = function (action, from, to) {
-                            graph.connectNodes(from, to, action);
+                        appendGraph = function (action, from, to, _iVal) {
+                            var fromNode = new hGraphTheory_1.hNode(from, _iVal);
+                            var toNode = new hGraphTheory_1.hNode(to, _iVal);
+                            graph.connectNodes(fromNode, toNode, action);
                         };
                         virtualCoordsMap = new Map();
                         graph = new hGraphTheory_1.hGraph(true);
                         _loop_5 = function (i) {
                             var action, attackerIndex, victimIndex, victim_beforeCoords, attacker_beforeCoords;
-                            return __generator(this, function (_f) {
-                                switch (_f.label) {
+                            return __generator(this, function (_g) {
+                                switch (_g.label) {
                                     case 0:
-                                        action = _actions[i];
+                                        action = actions[i];
                                         attackerIndex = action.from.index;
                                         victimIndex = action.affected.index;
                                         if (!virtualCoordsMap.has(victimIndex)) {
@@ -1567,14 +1604,14 @@ var Battle = /** @class */ (function () {
                                         victim_beforeCoords = virtualCoordsMap.get(victimIndex);
                                         attacker_beforeCoords = virtualCoordsMap.get(attackerIndex);
                                         return [4 /*yield*/, (0, Utility_1.dealWithAction)(action, function (aA) { return __awaiter(_this, void 0, void 0, function () {
-                                                var weapon, epicenterCoord, affecteds, i_2, af, singleTarget, _a, _b, coord;
-                                                var e_4, _c;
-                                                return __generator(this, function (_d) {
+                                                var weapon, epicenterCoord, affecteds, i_2, af, singleTarget, _b, _c, coord;
+                                                var e_4, _d;
+                                                return __generator(this, function (_e) {
                                                     weapon = aA.weapon;
                                                     switch (weapon.targetting.AOE) {
                                                         case "single":
                                                         case "touch":
-                                                            appendGraph(aA, attacker_beforeCoords, victim_beforeCoords);
+                                                            appendGraph(aA, attacker_beforeCoords, victim_beforeCoords, i + 1);
                                                             break;
                                                         case "circle":
                                                         case "selfCircle":
@@ -1586,18 +1623,16 @@ var Battle = /** @class */ (function () {
                                                             for (i_2 = 0; i_2 < affecteds.length; i_2++) {
                                                                 af = affecteds[i_2];
                                                                 singleTarget = (0, Utility_1.getNewObject)(aA, { from: epicenterCoord, affected: af });
-                                                                appendGraph(singleTarget, epicenterCoord, af);
-                                                                // await drawAttackAction(singleTarget, epicenterCoord, af, i+1);
+                                                                appendGraph(singleTarget, epicenterCoord, af, i_2 + 1);
                                                             }
                                                             if (weapon.targetting.AOE === "circle") {
                                                                 // show AOE throw trajectory
-                                                                appendGraph(aA, attacker_beforeCoords, epicenterCoord);
-                                                                // await drawAttackAction(aA, attacker_beforeCoords, epicenterCoord, i+1);
+                                                                appendGraph(aA, attacker_beforeCoords, epicenterCoord, i + 1);
                                                             }
                                                             try {
                                                                 // draw explosion range
-                                                                for (_a = __values((0, Utility_1.getCoordsWithinRadius)(weapon.Range[2], epicenterCoord, true)), _b = _a.next(); !_b.done; _b = _a.next()) {
-                                                                    coord = _b.value;
+                                                                for (_b = __values((0, Utility_1.getCoordsWithinRadius)(weapon.Range[2], epicenterCoord, true)), _c = _b.next(); !_c.done; _c = _b.next()) {
+                                                                    coord = _c.value;
                                                                     this.drawSquareOnBattleCoords(ctx, coord, {
                                                                         r: 255,
                                                                         b: 0,
@@ -1609,7 +1644,7 @@ var Battle = /** @class */ (function () {
                                                             catch (e_4_1) { e_4 = { error: e_4_1 }; }
                                                             finally {
                                                                 try {
-                                                                    if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
+                                                                    if (_c && !_c.done && (_d = _b.return)) _d.call(_b);
                                                                 }
                                                                 finally { if (e_4) throw e_4.error; }
                                                             }
@@ -1629,29 +1664,29 @@ var Battle = /** @class */ (function () {
                                                 (0, Utility_1.log)("AfterBattleCoord: " + afterBattleCoord.x + ", " + afterBattleCoord.y);
                                                 // connect to graph
                                                 // drawMoveAction(beforeBattleCoord, afterBattleCoord, i+1);
-                                                appendGraph(mA, beforeBattleCoord, afterBattleCoord);
+                                                appendGraph(mA, beforeBattleCoord, afterBattleCoord, i + 1);
                                             })];
                                     case 1:
-                                        _f.sent();
+                                        _g.sent();
                                         return [2 /*return*/];
                                 }
                             });
                         };
                         i = 0;
-                        _e.label = 1;
+                        _f.label = 1;
                     case 1:
-                        if (!(i < _actions.length)) return [3 /*break*/, 4];
+                        if (!(i < actions.length)) return [3 /*break*/, 4];
                         return [5 /*yield**/, _loop_5(i)];
                     case 2:
-                        _e.sent();
-                        _e.label = 3;
+                        _f.sent();
+                        _f.label = 3;
                     case 3:
                         i++;
                         return [3 /*break*/, 1];
                     case 4:
                         try {
-                            for (_a = __values(graph.adjGraph.entries()), _b = _a.next(); !_b.done; _b = _a.next()) {
-                                _c = __read(_b.value, 2), key = _c[0], value = _c[1];
+                            for (_b = __values(graph.adjGraph.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
+                                _d = __read(_c.value, 2), key = _d[0], value = _d[1];
                                 (0, Utility_1.log)("Node " + key);
                                 solidColumns = (0, Utility_1.clamp)(value.length, 0, 10);
                                 columns = 2 * solidColumns + 1;
@@ -1662,26 +1697,26 @@ var Battle = /** @class */ (function () {
                                     /**
                                      * eg:
                                      * columnWidth: 5
-                                     * 0th pixel => ||[-==========-]|| <= 5th pixel
-                                     *                [-==========-]  [-==========-]
-                                     *                [-==========-]  [-==========-]
-                                     *                [-==========-]  [-==========-]
-                                     *                [-==========-]  [-==========-]
-                                     *                [-==========-]  [-==========-]
-                                     *                [-==========-]  [-==========-]
-                                     *                [-==========-]  [-==========-]
-                                     *                [-==========-]  [-==========-]
+                                     * 0th pixel =>   ||==========|| <= 5th pixel
+                                     *                [-==========-][-==========-]
+                                     *                [-==========-][-==========-]
+                                     *                [-==========-][-==========-]
+                                     *                [-==========-][-==========-]
+                                     *                [-==========-][-==========-]
+                                     *                [-==========-][-==========-]
+                                     *                [-==========-][-==========-]
+                                     *                [-==========-][-==========-]
                                      */
                                     // is solid column
                                     if (o % 2 === 0) {
-                                        (0, Utility_1.log)("Solid edge #" + o / 2);
-                                        edge = value[(o / 2) - 1];
+                                        edgeIndex = (o / 2) - 1;
+                                        edge = value[edgeIndex];
                                         edge.print();
                                         connectingAction = edge.weight;
                                         isXtransition = edge.from.position.x !== edge.to.position.x;
                                         isYtransition = edge.from.position.y !== edge.to.position.y;
                                         if (connectingAction.type === "Attack") {
-                                            drawAttackAction(connectingAction, edge.from.position, edge.to.position, connectingAction.priority, columnWidth, {
+                                            drawAttackAction(connectingAction, edge.from.position, edge.to.position, columnWidth, {
                                                 x: isYtransition ?
                                                     ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2) :
                                                     0,
@@ -1691,7 +1726,7 @@ var Battle = /** @class */ (function () {
                                             });
                                         }
                                         else if (connectingAction.type === "Move") {
-                                            drawMoveAction(edge.from.position, edge.to.position, connectingAction.priority, columnWidth, {
+                                            drawMoveAction(connectingAction, edge.from.position, edge.to.position, columnWidth, {
                                                 x: isYtransition ?
                                                     ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2) :
                                                     0,
@@ -1703,7 +1738,7 @@ var Battle = /** @class */ (function () {
                                     }
                                     // is gap column
                                     else {
-                                        (0, Utility_1.log)("Gap edge #" + o / 2);
+                                        // log(`Gap edge #${o / 2}`);
                                     }
                                 }
                             }
@@ -1711,7 +1746,7 @@ var Battle = /** @class */ (function () {
                         catch (e_3_1) { e_3 = { error: e_3_1 }; }
                         finally {
                             try {
-                                if (_b && !_b.done && (_d = _a.return)) _d.call(_a);
+                                if (_c && !_c.done && (_e = _b.return)) _e.call(_b);
                             }
                             finally { if (e_3) throw e_3.error; }
                         }
@@ -1722,30 +1757,30 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.getActionArrowsBuffer = function (actions) {
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0: return [4 /*yield*/, this.getActionArrowsCanvas(actions)];
-                    case 1: return [2 /*return*/, (_a.sent()).toBuffer()];
+                    case 1: return [2 /*return*/, (_b.sent()).toBuffer()];
                 }
             });
         });
     };
     Battle.prototype.getFullPlayerEmbedMessageOptions = function (stat, actions) {
         return __awaiter(this, void 0, void 0, function () {
-            var mapCanvas, map, frameImage, characterBaseImage, _a, canvas, ctx, embed;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var mapCanvas, map, frameImage, characterBaseImage, _b, canvas, ctx, embed;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getCurrentMapWithArrowsCanvas(stat, actions)];
                     case 1:
-                        mapCanvas = _b.sent();
+                        mapCanvas = _c.sent();
                         map = mapCanvas.toBuffer();
                         return [4 /*yield*/, (0, Database_1.getFileImage)('images/frame.png')];
                     case 2:
-                        frameImage = _b.sent();
-                        return [4 /*yield*/, (0, Database_1.getFileImage)(stat.base.portraitURL)];
+                        frameImage = _c.sent();
+                        return [4 /*yield*/, (0, Database_1.getFileImage)(stat.base.iconURL)];
                     case 3:
-                        characterBaseImage = _b.sent();
-                        _a = (0, Utility_1.startDrawing)(frameImage.width * 3, frameImage.height * 3), canvas = _a.canvas, ctx = _a.ctx;
+                        characterBaseImage = _c.sent();
+                        _b = (0, Utility_1.startDrawing)(frameImage.width * 3, frameImage.height * 3), canvas = _b.canvas, ctx = _b.ctx;
                         ctx.drawImage(characterBaseImage, 20, 20, characterBaseImage.width * 3, characterBaseImage.height * 3);
                         ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
                         ctx.textAlign = "center";
@@ -1755,7 +1790,7 @@ var Battle = /** @class */ (function () {
                         ctx.strokeText(stat.base.class, canvas.width / 2, canvas.height * 0.95);
                         return [4 /*yield*/, this.getFullPlayerEmbed(stat)];
                     case 4:
-                        embed = _b.sent();
+                        embed = _c.sent();
                         // sendToSandbox({ files: [{ attachment: map, name: `map.png`},] });
                         return [2 /*return*/, {
                                 embeds: [embed],
@@ -1771,7 +1806,7 @@ var Battle = /** @class */ (function () {
     Battle.prototype.getFullPlayerEmbed = function (stat) {
         return __awaiter(this, void 0, void 0, function () {
             var HP, HealthBar, ReadinessBar, explorerEmbed, green, red, num;
-            return __generator(this, function (_a) {
+            return __generator(this, function (_b) {
                 HP = (stat.HP / (0, Utility_1.getAHP)(stat)) * 50;
                 HealthBar = "" + '`' + (0, Utility_1.addHPBar)(50, HP) + '`';
                 ReadinessBar = "" + '`' + (0, Utility_1.addHPBar)(50, stat.readiness) + '`';
@@ -1966,7 +2001,13 @@ var Battle = /** @class */ (function () {
             eM.reason = "No weapon detected.";
             return eM;
         }
-        (0, Utility_1.log)("\tname: " + weapon.Name, "\tdamage: " + weapon.Damage, "\trange: " + weapon.Range, "\tattacker: " + attackerStat.base.class + " (" + attackerStat.index + ")", "\ttarget: " + targetStat.base.class + " (" + targetStat.index + ")");
+        // log(
+        //     `\tname: ${weapon.Name}`,
+        //     `\tdamage: ${weapon.Damage}`,
+        //     `\trange: ${weapon.Range}`,
+        //     `\tattacker: ${attackerStat.base.class} (${attackerStat.index})`,
+        //     `\ttarget: ${targetStat.base.class} (${targetStat.index})`
+        // );
         // location
         // if (targetStat.base.class === "location") {
         //     eM.reason = "You are targetting an empty location.";
@@ -1979,6 +2020,22 @@ var Battle = /** @class */ (function () {
         if (attackerStat.readiness < 0) {
             eM.reason = "Not enough readiness.";
             eM.value = attackerStat.readiness;
+            return eM;
+        }
+        // tokens
+        if (attackerStat.sword < weapon.sword) {
+            eM.reason = "Not enough Sword (🗡️) tokens.";
+            eM.value = attackerStat.sword;
+            return eM;
+        }
+        if (attackerStat.shield < weapon.shield) {
+            eM.reason = "Not enough Shield (🛡️) tokens.";
+            eM.value = attackerStat.shield;
+            return eM;
+        }
+        if (attackerStat.sprint < weapon.sprint) {
+            eM.reason = "Not enough Sprint (👢) tokens.";
+            eM.value = attackerStat.sprint;
             return eM;
         }
         // weapon uses
@@ -2065,12 +2122,12 @@ var Battle = /** @class */ (function () {
         this.allIndex.delete(s.index);
     };
     Battle.prototype.checkDeath = function (allStats) {
-        var e_5, _a;
+        var e_5, _b;
         if (allStats === void 0) { allStats = this.allStats(true); }
         var deathCount = 0;
         try {
-            for (var _b = __values(allStats.filter(function (p) { return p.HP <= 0; })), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var deadPerson = _c.value;
+            for (var _c = __values(allStats.filter(function (p) { return p.HP <= 0; })), _d = _c.next(); !_d.done; _d = _c.next()) {
+                var deadPerson = _d.value;
                 deathCount++;
                 this.handleDeath(deadPerson);
                 if (deadPerson.team === "player")
@@ -2082,7 +2139,7 @@ var Battle = /** @class */ (function () {
         catch (e_5_1) { e_5 = { error: e_5_1 }; }
         finally {
             try {
-                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+                if (_d && !_d.done && (_b = _c.return)) _b.call(_c);
             }
             finally { if (e_5) throw e_5.error; }
         }

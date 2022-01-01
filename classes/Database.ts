@@ -5,7 +5,7 @@ import * as admin from 'firebase-admin'
 import * as serviceAccount from '../serviceAccount.json'
 import { Canvas, Image } from "canvas";
 import { ServiceAccount } from "firebase-admin";
-import { getBaseStat, getCSFromMap, getStat, log, startDrawing } from "./Utility";
+import { drawCircle, drawText, getBaseStat, getCSFromMap, getStat, log, startDrawing, stringifyRGBA } from "./Utility";
 import { Battle } from "./Battle";
 import { BotClient } from "..";
 
@@ -21,12 +21,20 @@ export async function getAnyData(collection: string, doc: string, failureCB?: (d
     const docRef = database.collection(collection).doc(doc);
     const snapShot = await docRef.get();
 
-    if (snapShot.exists) {
-        return snapShot.data();
+    if (snapShot.exists === false && failureCB !== undefined) {
+        failureCB(docRef, snapShot);
     }
-    else {
-        if (failureCB) failureCB(docRef, snapShot);
-        return null;
+
+    return snapShot.exists?
+        snapShot.data():
+        null;
+}
+export async function saveUserData(_userData: UserData) {
+    const docRef = database.collection("Users").doc(_userData.party[0]);
+    const snapShot = await docRef.get();
+
+    if (snapShot.exists) {
+        docRef.update(_userData);
     }
 }
 
@@ -61,15 +69,15 @@ export async function createNewUser(author: User): Promise<UserData> {
 }
 
 export function getDefaultUserData(author: User) {
-    const _classes: Class[] = [Class.Hercules];
+    const _classes: Class[] = ["Hercules"];
     return {
         classes: _classes,
         money: 0,
         name: author.username,
         party: [author.id],
         settings: getDefaultSettings(),
-        status: UserStatus.idle,
-        equippedClass: Class.Hercules,
+        status: "idle" as UserStatus,
+        equippedClass: "Hercules" as Class,
     };
 }
 
@@ -102,15 +110,65 @@ export function getFileImage(path: string): Promise<Image> {
         image.src = path;
     });
 }
-export function getIcon(stat: Stat): Promise<Image>
+export function getIcon(_stat: Stat): Promise<Canvas>
 {
-    const imageURL = stat.base.iconURL;
+    const iconURL = _stat.base.iconURL;
     const image = new Image();
     return new Promise((resolve) => {
         image.onload = () => {
-            resolve(image);
+            clearTimeout(invalidURLTimeout);
+
+            const squaredSize = Math.min(image.width, image.height);
+            const { canvas, ctx } = startDrawing(squaredSize, squaredSize);
+
+            ctx.save();
+
+            // draw image
+            const halfedImage = image.height / 2;
+            const halfedSquare = squaredSize / 2;
+            const increasing = Math.abs(halfedImage - halfedSquare);
+            ctx.drawImage(image, 0, increasing, squaredSize, squaredSize, 0, 0, squaredSize, squaredSize);
+
+            // crop
+            ctx.globalCompositeOperation = 'destination-in';
+            
+            ctx.fillStyle = "#000";
+            ctx.beginPath();
+            ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.closePath();
+
+            // team color (green/red)
+            ctx.globalCompositeOperation = "source-over";
+
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = stringifyRGBA({
+                r: 255 * Number(_stat.team === "enemy"),
+                g: 255 * Number(_stat.team === "player"),
+                b: 0,
+                alpha: 1
+            });
+            drawCircle(ctx, {
+                    x: squaredSize / 2,
+                    y: squaredSize / 2
+                },
+            squaredSize/2);
+
+            ctx.restore();
+
+            resolve(canvas);
         };
-        image.src = imageURL;
+        if (_stat.owner) {
+            BotClient.users.fetch(_stat.owner).then(u => {
+                image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(".webp", ".png");
+            })
+        }
+        else {
+            image.src = iconURL;
+        }
+        const invalidURLTimeout = setTimeout(() => {
+            image.src = "https://cdn.discordapp.com/embed/avatars/0.png";
+        }, 10 * 1000);
     });
 }
 export function getBufferFromImage(image: Image): Buffer {

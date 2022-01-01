@@ -3,8 +3,9 @@ import { Client, Intents, TextChannel } from "discord.js";
 import * as fs from "fs";
 import * as path from "path";
 import { Battle } from "./classes/Battle.js";
+import { getDefaultUserData, getUserData } from "./classes/Database.js";
 import { extractCommands, Test } from "./classes/Utility.js";
-import { CommandModule } from "./typedef.js";
+import { CommandModule, COMMAND_CALL } from "./typedef.js";
 
 const commandReferral: { [key: string]: CommandModule } = {};
 
@@ -15,7 +16,7 @@ async function quickEmbark() {
     const channel = await BotClient.channels.fetch("900951147391623259").then(c => c as TextChannel);
     const server = await BotClient.guilds.fetch("828827482785579038").then(g => g);
     const message = await channel.send("hi world");
-    embark.callback(Ike, "go exp", channel, server, ["test2"], message, BotClient);
+    embark.callback(Ike, getDefaultUserData(Ike), "go exp", channel, server, ["test2"], message, BotClient);
 }
 
 function importCommands() {
@@ -44,7 +45,7 @@ BotClient.on('ready', async () => {
     BotClient.setMaxListeners(15);
     console.log("Ready.");
     importCommands();
-    quickEmbark();
+    // quickEmbark();
     // Test();
 });
 
@@ -53,11 +54,12 @@ BotClient.on('messageCreate', async m => {
 
     if (author.bot === true) return;
 
-    if (content[0] + content[1] === "//") {
+    if (content[0] === COMMAND_CALL) {
+        const firebaseAuthor = await getUserData(author);
         const sections = extractCommands(content);
         const command = sections[0];
         if (commandReferral[command]) {
-            commandReferral[command].callback(author, content, channel as TextChannel, guild!, sections, m, BotClient);
+            commandReferral[command].callback(author, firebaseAuthor, content, channel as TextChannel, guild!, sections, m, BotClient);
         }
     }
 });

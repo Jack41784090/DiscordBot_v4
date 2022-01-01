@@ -71,7 +71,9 @@ require('dotenv').config();
 var discord_js_1 = require("discord.js");
 var fs = __importStar(require("fs"));
 var path = __importStar(require("path"));
+var Database_js_1 = require("./classes/Database.js");
 var Utility_js_1 = require("./classes/Utility.js");
+var typedef_js_1 = require("./typedef.js");
 var commandReferral = {};
 exports.BotClient = new discord_js_1.Client({ intents: [discord_js_1.Intents.FLAGS.GUILDS, discord_js_1.Intents.FLAGS.GUILD_MESSAGES, discord_js_1.Intents.FLAGS.GUILD_MESSAGE_REACTIONS, discord_js_1.Intents.FLAGS.DIRECT_MESSAGES, discord_js_1.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS] });
 function quickEmbark() {
@@ -93,7 +95,7 @@ function quickEmbark() {
                     return [4 /*yield*/, channel.send("hi world")];
                 case 4:
                     message = _a.sent();
-                    embark.callback(Ike, "go exp", channel, server, ["test2"], message, exports.BotClient);
+                    embark.callback(Ike, (0, Database_js_1.getDefaultUserData)(Ike), "go exp", channel, server, ["test2"], message, exports.BotClient);
                     return [2 /*return*/];
             }
         });
@@ -138,24 +140,29 @@ exports.BotClient.on('ready', function () { return __awaiter(void 0, void 0, voi
         exports.BotClient.setMaxListeners(15);
         console.log("Ready.");
         importCommands();
-        quickEmbark();
         return [2 /*return*/];
     });
 }); });
 exports.BotClient.on('messageCreate', function (m) { return __awaiter(void 0, void 0, void 0, function () {
-    var author, content, channel, member, guild, sections, command;
+    var author, content, channel, member, guild, firebaseAuthor, sections, command;
     return __generator(this, function (_a) {
-        author = m.author, content = m.content, channel = m.channel, member = m.member, guild = m.guild;
-        if (author.bot === true)
-            return [2 /*return*/];
-        if (content[0] + content[1] === "//") {
-            sections = (0, Utility_js_1.extractCommands)(content);
-            command = sections[0];
-            if (commandReferral[command]) {
-                commandReferral[command].callback(author, content, channel, guild, sections, m, exports.BotClient);
-            }
+        switch (_a.label) {
+            case 0:
+                author = m.author, content = m.content, channel = m.channel, member = m.member, guild = m.guild;
+                if (author.bot === true)
+                    return [2 /*return*/];
+                if (!(content[0] === typedef_js_1.COMMAND_CALL)) return [3 /*break*/, 2];
+                return [4 /*yield*/, (0, Database_js_1.getUserData)(author)];
+            case 1:
+                firebaseAuthor = _a.sent();
+                sections = (0, Utility_js_1.extractCommands)(content);
+                command = sections[0];
+                if (commandReferral[command]) {
+                    commandReferral[command].callback(author, firebaseAuthor, content, channel, guild, sections, m, exports.BotClient);
+                }
+                _a.label = 2;
+            case 2: return [2 /*return*/];
         }
-        return [2 /*return*/];
     });
 }); });
 exports.BotClient.login(process.env.TOKEN);

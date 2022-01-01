@@ -33,19 +33,21 @@ var hGraph = /** @class */ (function () {
         this.nodeList = [];
         this.directedGraph = _directedGraph;
     }
-    hGraph.prototype.addNode = function (_data, _pos) {
-        var pos = _pos ?
-            _pos :
-            _data;
-        var data = _pos ?
-            _data :
+    hGraph.prototype.addNode = function (_arg1, _arg2) {
+        var pos = _arg2 ?
+            (_arg2) : // arg2 is provided
+            _arg1.x ?
+                _arg1 : // arg2 is not provided and arg1 is a Coord
+                _arg1.position; // arg2 is not provided and arg1 is a node
+        var data = _arg2 ?
+            _arg1 :
             undefined;
         // decide if input is a Node or a type of data for the node
-        var inputNode = data !== undefined && data.data === undefined ? // not node, is data
-            new hNode(pos, data) :
+        var inputNode = _arg1.position ?
+            _arg1 :
             data === undefined ?
                 new hNode(pos) : // no data
-                data; // data is node
+                new hNode(pos, data); // data is node
         // find out if there is already data for the node
         var existingNode = this.nodeList.find(function (_n) { return (_n.position.x === inputNode.position.x && _n.position.y === inputNode.position.y); });
         var node;
@@ -61,8 +63,12 @@ var hGraph = /** @class */ (function () {
         return node;
     };
     hGraph.prototype.connectNodes = function (_from, _to, _weight) {
-        var fromNode = this.addNode(_from);
-        var toNode = this.addNode(_to);
+        var fromNode = _from.position ?
+            this.addNode(_from) :
+            this.addNode(_from);
+        var toNode = _to.position ?
+            this.addNode(_to) :
+            this.addNode(_to);
         var edge = new hEdge(fromNode, toNode, _weight);
         var from_edgeArray = this.adjGraph.get(fromNode.id);
         var to_edgeArray = this.adjGraph.get(toNode.id);

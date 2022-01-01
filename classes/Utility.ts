@@ -1,5 +1,5 @@
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { BaseMessageComponent, Interaction, Message, MessageActionRowOptions, MessageActionRow, MessageAttachment, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions } from "discord.js";
+import { BaseMessageComponent, Interaction, Message, MessageActionRowOptions, MessageActionRow, MessageAttachment, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessagePayload, MessageButton, MessageButtonOptions } from "discord.js";
 import { Type } from "typescript";
 import { getFileBufferImage, getIcon } from "./Database";
 import classData from "../data/classData.json"
@@ -7,7 +7,7 @@ import classData from "../data/classData.json"
 import * as fs from "fs";
 import { BotClient } from "..";
 import { MinHeap } from "./MinHeap";
-import { DashAction, Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, PriorityRound, Stat, TargetingError, Team, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA } from "../typedef";
+import { DashAction, Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, Round, Stat, TargetingError, Team, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, Priority, COMMAND_CALL } from "../typedef";
 import { Battle } from "./Battle";
 
 export function clamp(value: number, min: number, max: number) {
@@ -45,8 +45,8 @@ export function debug(tag: String, any: any) {
 // string manipulation
 export function extractCommands(string: string) : Array<string> {
     const sections = string.split(' ');
-    if (sections[0][0] + sections[0][1] === '//') {
-        sections[0] = sections[0].substring(2);
+    if (sections[0][0] === COMMAND_CALL) {
+        sections[0] = sections[0].substring(1);
     }
     return sections;
 }
@@ -408,23 +408,24 @@ export function getDirection(axis: 'x' | 'y', moveMagnitude: number) {
 //     console.log(message.embeds[0].image);
 // }
 
-export function getMoveAction(stat: Stat, action: string, priority: number, moveMagnitude: number): MoveAction;
-export function getMoveAction(stat: Stat, magnitude: number, priority: number, axis: "x" | "y"): MoveAction;
-export function getMoveAction(stat: Stat, args2: string | number, priority: number, args4: number | "x" | "y"): MoveAction {
+export function getMoveAction(_stat: Stat, action: string, _round: number, moveMagnitude: number): MoveAction;
+export function getMoveAction(_stat: Stat, magnitude: number, _round: number, axis: "x" | "y"): MoveAction;
+export function getMoveAction(_stat: Stat, args2: string | number, _round: number, args4: number | "x" | "y"): MoveAction {
     const movetype: ActionType = "Move";
     const moveAction: MoveAction = {
         executed: false,
 
         type: movetype,
-        from: stat,
-        affected: stat,
+        from: _stat,
+        affected: _stat,
         readiness: 0,
 
         sword: 0,
         shield: 0,
-        sprint: Number(stat.moved),
+        sprint: Number(_stat.moved),
 
-        priority: priority,
+        round: _round,
+        priority: 4178,
 
         axis: 'x',
         magnitude: 0,
@@ -443,12 +444,12 @@ export function getMoveAction(stat: Stat, args2: string | number, priority: numb
                 axis = 'y';
                 break;
             case "down":
+            case "d":
                 magnitude = -1 * moveMagnitude;
                 axis = 'y';
                 break;
             // move horizontally
             case "right":
-            case "h":
             case "r":
                 magnitude = moveMagnitude;
                 axis = 'x';
@@ -475,24 +476,25 @@ export function getMoveAction(stat: Stat, args2: string | number, priority: numb
     return moveAction;
 }
 
-export function getAttackAction(attacker: Stat, victim: Stat, weapon: Weapon, coords: Coordinate, priority: number): AttackAction {
+export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon, _coord: Coordinate, _round: Round): AttackAction {
     const actionType: ActionType = "Attack";
     const attackAction: AttackAction = {
         executed: false,
 
         type: actionType,
-        from: attacker,
-        affected: victim,
-        readiness: weapon.Readiness,
+        from: _attacker,
+        affected: _victim,
+        readiness: _weapon.Readiness,
 
-        sword: weapon.sword,
-        shield: weapon.shield,
-        sprint: weapon.sprint,
+        sword: _weapon.sword,
+        shield: _weapon.shield,
+        sprint: _weapon.sprint,
 
-        priority: priority,
+        round: _round,
+        priority: 4178,
 
-        weapon: weapon,
-        coordinate: coords
+        weapon: _weapon,
+        coordinate: _coord
     };
     return attackAction;
 }
@@ -522,6 +524,23 @@ export async function Test() {
     
 }
 
+export function findReferenceAngle(_angle: number): number {
+    const angle = Math.abs(_angle);
+    if (angle <= 90) {
+        return angle;
+    }
+    else if (angle <= 180) {
+        return 180 - angle;
+    }
+    else if (angle <= 270) {
+        return angle - 180;
+    }
+    else if (angle <= 360) {
+        return 360 - angle;
+    }
+    return findReferenceAngle(angle - 360);
+}
+
 export function setUpInteractionCollect(msg: Message, cb: (itr: Interaction) => void, collectCount = 1) {
     const interCollectr = new InteractionCollector(BotClient, { message: msg, max: collectCount });
     interCollectr.on('collect', cb);
@@ -536,6 +555,17 @@ export function getSelectMenuActionRow(options: { label: string, value: string }
         options: options,
     });
     const messageActionRow = new MessageActionRow({ components: [menu] });
+    return messageActionRow;
+}
+export function getButtonsActionRow(_btnOptions: MessageButtonOptions[]) {
+    const buttons: MessageButton[] = [];
+    for (let i = 0; i < _btnOptions.length; i++) {
+        const btnOption = _btnOptions[i];
+        buttons.push(new MessageButton(btnOption));
+    }
+    const messageActionRow = new MessageActionRow({
+        components: buttons
+    })
     return messageActionRow;
 }
 
@@ -755,6 +785,7 @@ export function getStat(bss: SimpleStat | BaseStat, _owner: string = ''): Stat {
         name: `${bss.class}`,
 
         weaponUses: [],
+        actionsAssociatedStrings: {},
 
         HP: base.AHP,
         readiness: 0,
@@ -863,4 +894,141 @@ export function getNewNode(_x: number, _y: number, _destination: Coordinate, _di
         totalC: totalC,
     };
     return object;
+}
+
+export function shortenString(_s: string, _length = 2048) {
+    const array = _s.split('');
+    while (array.length > _length) {
+        array.pop();
+    }
+    return array.join('');
+}
+
+export function drawText(
+    _ctx: NodeCanvasRenderingContext2D,
+    _text: string,
+    _textSize: number,
+    _canvasCoord: Coordinate,
+    _angle: number = 0
+): void {
+    log(`\tDrawing "${_text}" at ${JSON.stringify(_canvasCoord)} (angle: ${_angle})`)
+    const textSize = Math.round(_textSize);
+
+    _ctx.save();
+
+    _ctx.font = `${textSize}px Verdana`;
+    _ctx.lineWidth = 0.5;
+    _ctx.fillStyle = "white"
+    _ctx.strokeStyle = "black"
+    _ctx.textAlign = "center"
+
+    _ctx.translate(_canvasCoord.x, _canvasCoord.y);
+
+    const referenceAngle = findReferenceAngle(_angle);
+    if (referenceAngle < 90) {
+        log(`\t\tRefAngle: ${referenceAngle}`)
+        _ctx.rotate(referenceAngle);
+    }
+    _ctx.fillText(_text, 0, textSize/3);
+    _ctx.strokeText(_text, 0, textSize/3);
+
+    _ctx.restore();
+}
+export function drawCircle(
+    _ctx: NodeCanvasRenderingContext2D,
+    _canvasCoord: Coordinate,
+    _radius: number,
+    _stroke = true,
+): void {
+    _ctx.save();
+
+    _ctx.closePath();
+
+    _ctx.beginPath();
+    _ctx.arc(_canvasCoord.x, _canvasCoord.y, _radius, 0, Math.PI * 2);
+    if (_stroke) {
+        _ctx.stroke();
+    }
+    else {
+        _ctx.fill();
+    }
+    _ctx.closePath();
+
+    _ctx.restore();
+}
+
+export async function sendInvitation(_id: string, _fromID: string, _?: TextChannel): Promise<boolean | null>;
+export async function sendInvitation(_user: User, _from: User, _?: TextChannel): Promise<boolean | null>;
+export async function sendInvitation(_user_id: User | string, _from: User | string, channel?: TextChannel): Promise<boolean | null> {
+    const inviterUser: User | undefined = (_from as User).avatar ?
+        _from as User :
+        await BotClient.users.fetch(_from as string).then(u => u).catch(e => undefined);
+
+    const user: User | undefined = (_user_id as User).avatar?
+        _user_id as User :
+        await BotClient.users.fetch(_user_id as string).then(u => u).catch(e => undefined);
+
+    return new Promise<boolean | null>((resolve) => {
+        if (user && inviterUser) {
+            const buttonOptions: MessageButtonOptions[] = [
+                {
+                    label: "Accept",
+                    style: "SUCCESS",
+                    customId: "accept"
+                },
+                {
+                    label: "Decline",
+                    style: "DANGER",
+                    customId: "decline"
+                },
+            ];
+            const messagePayload: MessageOptions = {
+                embeds: [
+                    new MessageEmbed({
+                        title: "You have been invited!",
+                        footer: {
+                            text: `...by ${inviterUser?.username}`,
+                            iconURL: inviterUser.displayAvatarURL() || inviterUser.defaultAvatarURL,
+                            icon_url: inviterUser.displayAvatarURL() || inviterUser.defaultAvatarURL,
+                        }
+                    })
+                ],
+                components: [getButtonsActionRow(buttonOptions)],
+            }
+
+            user.send(messagePayload)
+                .then(_m => {
+                    const buttonInteractionCollection = setUpInteractionCollect(_m, async itr => {
+                        if (itr.isButton() && itr.user.id === user.id) {
+                            clearTimeout(timeOut);
+                            const selectedButton = itr.customId;
+                            if (selectedButton === "accept") {
+                                resolve(true);
+                            }
+                            else {
+                                resolve(false);
+                            }
+
+                            _m.delete();
+                            await itr.reply({
+                                content: selectedButton === "accept" ?
+                                    "Accepted.":
+                                    "Declined."
+                            });
+                        }
+                    });
+
+                    // timeout: done checking round
+                    const timeOut = setTimeout(() => {
+                        buttonInteractionCollection.stop();
+                        _m.delete();
+                        resolve(false);
+                    }, 15 * 1000);
+                })
+                .catch(_e => {
+                    log(_e);
+                    resolve(null);
+                });
+        }
+    });
 }

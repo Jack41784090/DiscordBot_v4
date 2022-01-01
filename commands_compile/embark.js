@@ -59,7 +59,7 @@ module.exports = {
     expectedArgs: '[location]',
     minArgs: 0,
     maxArgs: 1,
-    callback: function (author, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
+    callback: function (author, authorData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
         var locationsEmbed, _a, _b, locationName, formalName, mapData;
         var e_1, _c;
         return __generator(this, function (_d) {
@@ -153,7 +153,7 @@ module.exports = {
                 // }
                 //#endregion
                 // Database.WriteBattle(author, battleData.returnObject());
-                Battle_1.Battle.Start(mapData, author, message, [author.id], client);
+                Battle_1.Battle.Start(mapData, author, message, authorData.party, client);
             }
             return [2 /*return*/];
         });

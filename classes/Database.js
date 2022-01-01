@@ -58,8 +58,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.saveBattle = exports.getBufferFromImage = exports.getIcon = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.getAnyData = void 0;
-var typedef_1 = require("../typedef");
+exports.saveBattle = exports.getBufferFromImage = exports.getIcon = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.saveUserData = exports.getAnyData = void 0;
 var admin = __importStar(require("firebase-admin"));
 var serviceAccount = __importStar(require("../serviceAccount.json"));
 var canvas_1 = require("canvas");
@@ -80,20 +79,36 @@ function getAnyData(collection, doc, failureCB) {
                     return [4 /*yield*/, docRef.get()];
                 case 1:
                     snapShot = _a.sent();
-                    if (snapShot.exists) {
-                        return [2 /*return*/, snapShot.data()];
+                    if (snapShot.exists === false && failureCB !== undefined) {
+                        failureCB(docRef, snapShot);
                     }
-                    else {
-                        if (failureCB)
-                            failureCB(docRef, snapShot);
-                        return [2 /*return*/, null];
+                    return [2 /*return*/, snapShot.exists ?
+                            snapShot.data() :
+                            null];
+            }
+        });
+    });
+}
+exports.getAnyData = getAnyData;
+function saveUserData(_userData) {
+    return __awaiter(this, void 0, void 0, function () {
+        var docRef, snapShot;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    docRef = database.collection("Users").doc(_userData.party[0]);
+                    return [4 /*yield*/, docRef.get()];
+                case 1:
+                    snapShot = _a.sent();
+                    if (snapShot.exists) {
+                        docRef.update(_userData);
                     }
                     return [2 /*return*/];
             }
         });
     });
 }
-exports.getAnyData = getAnyData;
+exports.saveUserData = saveUserData;
 function getMapFromLocal(mapName) {
     return __awaiter(this, void 0, void 0, function () {
         var image, dataURL;
@@ -166,15 +181,15 @@ function createNewUser(author) {
 }
 exports.createNewUser = createNewUser;
 function getDefaultUserData(author) {
-    var _classes = [typedef_1.Class.Hercules];
+    var _classes = ["Hercules"];
     return {
         classes: _classes,
         money: 0,
         name: author.username,
         party: [author.id],
         settings: getDefaultSettings(),
-        status: typedef_1.UserStatus.idle,
-        equippedClass: typedef_1.Class.Hercules,
+        status: "idle",
+        equippedClass: "Hercules",
     };
 }
 exports.getDefaultUserData = getDefaultUserData;
@@ -209,14 +224,54 @@ function getFileImage(path) {
     });
 }
 exports.getFileImage = getFileImage;
-function getIcon(stat) {
-    var imageURL = stat.base.iconURL;
+function getIcon(_stat) {
+    var iconURL = _stat.base.iconURL;
     var image = new canvas_1.Image();
     return new Promise(function (resolve) {
         image.onload = function () {
-            resolve(image);
+            clearTimeout(invalidURLTimeout);
+            var squaredSize = Math.min(image.width, image.height);
+            var _a = (0, Utility_1.startDrawing)(squaredSize, squaredSize), canvas = _a.canvas, ctx = _a.ctx;
+            ctx.save();
+            // draw image
+            var halfedImage = image.height / 2;
+            var halfedSquare = squaredSize / 2;
+            var increasing = Math.abs(halfedImage - halfedSquare);
+            ctx.drawImage(image, 0, increasing, squaredSize, squaredSize, 0, 0, squaredSize, squaredSize);
+            // crop
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.fillStyle = "#000";
+            ctx.beginPath();
+            ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.closePath();
+            // team color (green/red)
+            ctx.globalCompositeOperation = "source-over";
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
+                r: 255 * Number(_stat.team === "enemy"),
+                g: 255 * Number(_stat.team === "player"),
+                b: 0,
+                alpha: 1
+            });
+            (0, Utility_1.drawCircle)(ctx, {
+                x: squaredSize / 2,
+                y: squaredSize / 2
+            }, squaredSize / 2);
+            ctx.restore();
+            resolve(canvas);
         };
-        image.src = imageURL;
+        if (_stat.owner) {
+            __1.BotClient.users.fetch(_stat.owner).then(function (u) {
+                image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(".webp", ".png");
+            });
+        }
+        else {
+            image.src = iconURL;
+        }
+        var invalidURLTimeout = setTimeout(function () {
+            image.src = "https://cdn.discordapp.com/embed/avatars/0.png";
+        }, 10 * 1000);
     });
 }
 exports.getIcon = getIcon;

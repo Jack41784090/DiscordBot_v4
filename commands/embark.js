@@ -59,7 +59,7 @@ module.exports = {
     expectedArgs: '[location]',
     minArgs: 0,
     maxArgs: 1,
-    callback: function (author, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
+    callback: function (author, authorData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
         var locationsEmbed, _a, _b, locationName, formalName, mapData;
         var e_1, _c;
         return __generator(this, function (_d) {
@@ -75,7 +75,7 @@ module.exports = {
                 try {
                     for (_a = __values(Object.keys(areasData_json_1.default)), _b = _a.next(); !_b.done; _b = _a.next()) {
                         locationName = _b.value;
-                        formalName = Utility_1.formalize(locationName);
+                        formalName = (0, Utility_1.formalize)(locationName);
                         locationsEmbed.description += "**" + formalName + "**\n";
                     }
                 }
@@ -92,11 +92,11 @@ module.exports = {
             // else if (areasData[args[0]]) {
             else {
                 message.delete();
-                mapData = Utility_1.getNewObject(areasData_json_1.default.farmstead, {});
+                mapData = (0, Utility_1.getNewObject)(areasData_json_1.default.farmstead, {});
                 // const locationName = "Farmstead" // temporary
                 // //#endregion
                 // //#region BATTLEDATA INIT (SPAWN PLAYERS)
-                Utility_1.log("Defining battleData...");
+                (0, Utility_1.log)("Defining battleData...");
                 // const battleData = new Battle(mapData, author, message, [author.id], client);
                 // // battleData.Spawn(battleData.Party);
                 // //#endregion
@@ -153,7 +153,7 @@ module.exports = {
                 // }
                 //#endregion
                 // Database.WriteBattle(author, battleData.returnObject());
-                Battle_1.Battle.Start(mapData, author, message, [author.id], client);
+                Battle_1.Battle.Start(mapData, author, message, authorData.party, client);
             }
             return [2 /*return*/];
         });

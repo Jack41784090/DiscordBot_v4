@@ -77,8 +77,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.printCSMap = exports.getWeaponUses = exports.getLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.Test = exports.getAttackAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = void 0;
+exports.getLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
+exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var classData_json_1 = __importDefault(require("../data/classData.json"));
@@ -120,8 +120,8 @@ exports.debug = debug;
 // string manipulation
 function extractCommands(string) {
     var sections = string.split(' ');
-    if (sections[0][0] + sections[0][1] === '//') {
-        sections[0] = sections[0].substring(2);
+    if (sections[0][0] === typedef_1.COMMAND_CALL) {
+        sections[0] = sections[0].substring(1);
     }
     return sections;
 }
@@ -400,18 +400,19 @@ function getDirection(axis, moveMagnitude) {
     return direction;
 }
 exports.getDirection = getDirection;
-function getMoveAction(stat, args2, priority, args4) {
+function getMoveAction(_stat, args2, _round, args4) {
     var movetype = "Move";
     var moveAction = {
         executed: false,
         type: movetype,
-        from: stat,
-        affected: stat,
+        from: _stat,
+        affected: _stat,
         readiness: 0,
         sword: 0,
         shield: 0,
-        sprint: Number(stat.moved),
-        priority: priority,
+        sprint: Number(_stat.moved),
+        round: _round,
+        priority: 4178,
         axis: 'x',
         magnitude: 0,
     };
@@ -429,12 +430,12 @@ function getMoveAction(stat, args2, priority, args4) {
                 axis = 'y';
                 break;
             case "down":
+            case "d":
                 magnitude = -1 * moveMagnitude;
                 axis = 'y';
                 break;
             // move horizontally
             case "right":
-            case "h":
             case "r":
                 magnitude = moveMagnitude;
                 axis = 'x';
@@ -461,20 +462,21 @@ function getMoveAction(stat, args2, priority, args4) {
     return moveAction;
 }
 exports.getMoveAction = getMoveAction;
-function getAttackAction(attacker, victim, weapon, coords, priority) {
+function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
     var actionType = "Attack";
     var attackAction = {
         executed: false,
         type: actionType,
-        from: attacker,
-        affected: victim,
-        readiness: weapon.Readiness,
-        sword: weapon.sword,
-        shield: weapon.shield,
-        sprint: weapon.sprint,
-        priority: priority,
-        weapon: weapon,
-        coordinate: coords
+        from: _attacker,
+        affected: _victim,
+        readiness: _weapon.Readiness,
+        sword: _weapon.sword,
+        shield: _weapon.shield,
+        sprint: _weapon.sprint,
+        round: _round,
+        priority: 4178,
+        weapon: _weapon,
+        coordinate: _coord
     };
     return attackAction;
 }
@@ -503,6 +505,23 @@ function Test() {
     });
 }
 exports.Test = Test;
+function findReferenceAngle(_angle) {
+    var angle = Math.abs(_angle);
+    if (angle <= 90) {
+        return angle;
+    }
+    else if (angle <= 180) {
+        return 180 - angle;
+    }
+    else if (angle <= 270) {
+        return angle - 180;
+    }
+    else if (angle <= 360) {
+        return 360 - angle;
+    }
+    return findReferenceAngle(angle - 360);
+}
+exports.findReferenceAngle = findReferenceAngle;
 function setUpInteractionCollect(msg, cb, collectCount) {
     if (collectCount === void 0) { collectCount = 1; }
     var interCollectr = new discord_js_1.InteractionCollector(__1.BotClient, { message: msg, max: collectCount });
@@ -524,6 +543,18 @@ function getSelectMenuActionRow(options, id, min, max) {
     return messageActionRow;
 }
 exports.getSelectMenuActionRow = getSelectMenuActionRow;
+function getButtonsActionRow(_btnOptions) {
+    var buttons = [];
+    for (var i = 0; i < _btnOptions.length; i++) {
+        var btnOption = _btnOptions[i];
+        buttons.push(new discord_js_1.MessageButton(btnOption));
+    }
+    var messageActionRow = new discord_js_1.MessageActionRow({
+        components: buttons
+    });
+    return messageActionRow;
+}
+exports.getButtonsActionRow = getButtonsActionRow;
 function clearChannel(channel, afterMessage) {
     return __awaiter(this, void 0, void 0, function () {
         var options;
@@ -711,15 +742,15 @@ function getMapFromCS(coordStat) {
         for (var _c = __values(Object.values(coordStat)), _d = _c.next(); !_d.done; _d = _c.next()) {
             var yStat = _d.value;
             try {
-                for (var _e = (e_3 = void 0, __values(Object.values(yStat))), _f = _e.next(); !_f.done; _f = _e.next()) {
-                    var stat = _f.value;
+                for (var _f = (e_3 = void 0, __values(Object.values(yStat))), _g = _f.next(); !_g.done; _g = _f.next()) {
+                    var stat = _g.value;
                     mapReturn.set(getCoordString(stat), getStat(stat));
                 }
             }
             catch (e_3_1) { e_3 = { error: e_3_1 }; }
             finally {
                 try {
-                    if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
+                    if (_g && !_g.done && (_b = _f.return)) _b.call(_f);
                 }
                 finally { if (e_3) throw e_3.error; }
             }
@@ -794,6 +825,7 @@ function getStat(bss, _owner) {
         index: -1,
         name: "" + bss.class,
         weaponUses: [],
+        actionsAssociatedStrings: {},
         HP: base.AHP,
         readiness: 0,
         moved: false,
@@ -913,3 +945,148 @@ function getNewNode(_x, _y, _destination, _distanceTravelled) {
     return object;
 }
 exports.getNewNode = getNewNode;
+function shortenString(_s, _length) {
+    if (_length === void 0) { _length = 2048; }
+    var array = _s.split('');
+    while (array.length > _length) {
+        array.pop();
+    }
+    return array.join('');
+}
+exports.shortenString = shortenString;
+function drawText(_ctx, _text, _textSize, _canvasCoord, _angle) {
+    if (_angle === void 0) { _angle = 0; }
+    log("\tDrawing \"" + _text + "\" at " + JSON.stringify(_canvasCoord) + " (angle: " + _angle + ")");
+    var textSize = Math.round(_textSize);
+    _ctx.save();
+    _ctx.font = textSize + "px Verdana";
+    _ctx.lineWidth = 0.5;
+    _ctx.fillStyle = "white";
+    _ctx.strokeStyle = "black";
+    _ctx.textAlign = "center";
+    _ctx.translate(_canvasCoord.x, _canvasCoord.y);
+    var referenceAngle = findReferenceAngle(_angle);
+    if (referenceAngle < 90) {
+        log("\t\tRefAngle: " + referenceAngle);
+        _ctx.rotate(referenceAngle);
+    }
+    _ctx.fillText(_text, 0, textSize / 3);
+    _ctx.strokeText(_text, 0, textSize / 3);
+    _ctx.restore();
+}
+exports.drawText = drawText;
+function drawCircle(_ctx, _canvasCoord, _radius, _stroke) {
+    if (_stroke === void 0) { _stroke = true; }
+    _ctx.save();
+    _ctx.closePath();
+    _ctx.beginPath();
+    _ctx.arc(_canvasCoord.x, _canvasCoord.y, _radius, 0, Math.PI * 2);
+    if (_stroke) {
+        _ctx.stroke();
+    }
+    else {
+        _ctx.fill();
+    }
+    _ctx.closePath();
+    _ctx.restore();
+}
+exports.drawCircle = drawCircle;
+function sendInvitation(_user_id, _from, channel) {
+    return __awaiter(this, void 0, void 0, function () {
+        var inviterUser, _a, user, _b;
+        var _this = this;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0:
+                    if (!_from.avatar) return [3 /*break*/, 1];
+                    _a = _from;
+                    return [3 /*break*/, 3];
+                case 1: return [4 /*yield*/, __1.BotClient.users.fetch(_from).then(function (u) { return u; }).catch(function (e) { return undefined; })];
+                case 2:
+                    _a = _c.sent();
+                    _c.label = 3;
+                case 3:
+                    inviterUser = _a;
+                    if (!_user_id.avatar) return [3 /*break*/, 4];
+                    _b = _user_id;
+                    return [3 /*break*/, 6];
+                case 4: return [4 /*yield*/, __1.BotClient.users.fetch(_user_id).then(function (u) { return u; }).catch(function (e) { return undefined; })];
+                case 5:
+                    _b = _c.sent();
+                    _c.label = 6;
+                case 6:
+                    user = _b;
+                    return [2 /*return*/, new Promise(function (resolve) {
+                            if (user && inviterUser) {
+                                var buttonOptions = [
+                                    {
+                                        label: "Accept",
+                                        style: "SUCCESS",
+                                        customId: "accept"
+                                    },
+                                    {
+                                        label: "Decline",
+                                        style: "DANGER",
+                                        customId: "decline"
+                                    },
+                                ];
+                                var messagePayload = {
+                                    embeds: [
+                                        new discord_js_1.MessageEmbed({
+                                            title: "You have been invited!",
+                                            footer: {
+                                                text: "...by " + (inviterUser === null || inviterUser === void 0 ? void 0 : inviterUser.username),
+                                                iconURL: inviterUser.displayAvatarURL() || inviterUser.defaultAvatarURL,
+                                                icon_url: inviterUser.displayAvatarURL() || inviterUser.defaultAvatarURL,
+                                            }
+                                        })
+                                    ],
+                                    components: [getButtonsActionRow(buttonOptions)],
+                                };
+                                user.send(messagePayload)
+                                    .then(function (_m) {
+                                    var buttonInteractionCollection = setUpInteractionCollect(_m, function (itr) { return __awaiter(_this, void 0, void 0, function () {
+                                        var selectedButton;
+                                        return __generator(this, function (_a) {
+                                            switch (_a.label) {
+                                                case 0:
+                                                    if (!(itr.isButton() && itr.user.id === user.id)) return [3 /*break*/, 2];
+                                                    clearTimeout(timeOut);
+                                                    selectedButton = itr.customId;
+                                                    if (selectedButton === "accept") {
+                                                        resolve(true);
+                                                    }
+                                                    else {
+                                                        resolve(false);
+                                                    }
+                                                    _m.delete();
+                                                    return [4 /*yield*/, itr.reply({
+                                                            content: selectedButton === "accept" ?
+                                                                "Accepted." :
+                                                                "Declined."
+                                                        })];
+                                                case 1:
+                                                    _a.sent();
+                                                    _a.label = 2;
+                                                case 2: return [2 /*return*/];
+                                            }
+                                        });
+                                    }); });
+                                    // timeout: done checking round
+                                    var timeOut = setTimeout(function () {
+                                        buttonInteractionCollection.stop();
+                                        _m.delete();
+                                        resolve(false);
+                                    }, 15 * 1000);
+                                })
+                                    .catch(function (_e) {
+                                    log(_e);
+                                    resolve(null);
+                                });
+                            }
+                        })];
+            }
+        });
+    });
+}
+exports.sendInvitation = sendInvitation;

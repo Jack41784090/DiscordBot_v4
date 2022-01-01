@@ -140,7 +140,7 @@
             ],
             "width": 5,
             "height": 5,
-            "groundURL": "images/swampMap.jpg"
+            "groundURL": "images/map.png"
         },
         "enemiesInfo": {
             "Barbar": {

@@ -1,6 +1,6 @@
 import { Client, Guild, GuildMember, Message, MessageEmbed, TextChannel, User } from "discord.js";
 import { formalize, getNewObject, log, random } from "../classes/Utility";
-import { Class, CommandModule, Mapdata, UserStatus } from "../typedef";
+import { Class, CommandModule, Mapdata, UserData, UserStatus } from "../typedef";
 import { Battle } from "../classes/Battle";
 import areasData from "../data/areasData.json";
 import enemiesData from "../data/enemiesData.json"
@@ -11,7 +11,7 @@ module.exports = {
     expectedArgs: '[location]',
     minArgs: 0,
     maxArgs: 1,
-    callback: async (author: User, content: string, channel: TextChannel, guild: Guild, args: Array<string>, message: Message, client: Client) => {
+    callback: async (author: User, authorData: UserData, content: string, channel: TextChannel, guild: Guild, args: Array<string>, message: Message, client: Client) => {
         // if (args[0] === undefined) {
         if (false) {
             //#region STARTING WITHOUT A LOCATION
@@ -128,7 +128,7 @@ module.exports = {
             //#endregion
 
             // Database.WriteBattle(author, battleData.returnObject());
-            Battle.Start(mapData, author, message, [author.id], client);
+            Battle.Start(mapData, author, message, authorData.party, client);
         }
     }
 } as CommandModule;

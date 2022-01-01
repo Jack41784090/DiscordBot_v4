@@ -7,7 +7,6 @@
 		"Prot": 0.9,
 		"Spd": 0,
 		"iconURL": "images/black.jpg",
-		"portraitURL": "images/black.jpg",
 		"weapons": [],
 		"botType": 1
 	},
@@ -19,8 +18,7 @@
 		"Prot": 0.2,
 		"Spd": 5.5,
 		"maxMove": 1,
-		"iconURL": "images/Hercules.png",
-		"portraitURL": "images/Kruger.png",
+		"iconURL": "images/Rommel.png",
 		"weapons": [
 			{
 				"Name": "Obliterate",

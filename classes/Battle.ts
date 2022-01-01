@@ -1,13 +1,13 @@
 import { CategoryChannel, Client, DiscordAPIError, Guild, GuildMember, Message, MessageAttachment, MessageCollector, MessageEditOptions, MessageEmbed, MessageEmbedImage, MessageOptions, MessagePayload, OverwriteData, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getActionsTranslate, getAHP, getDirection, getLoadingEmbed, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, capitalize, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getCSFromMap, printCSMap, getNewObject, startDrawing, dealWithAction, printAction, sendToSandbox, getRandomCode, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getWithSign, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens as HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA } from "./Utility";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getActionsTranslate, getAHP, getDirection, getLoadingEmbed, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, capitalize, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getCSFromMap, printCSMap, getNewObject, startDrawing, dealWithAction, printAction, sendToSandbox, getRandomCode, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getWithSign, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens as HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, findReferenceAngle, shortenString, drawText, drawCircle } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getBufferFromImage, getFileImage, getIcon, getUserData, saveBattle } from "./Database";
 import enemiesData from "../data/enemiesData.json";
 
 import fs from 'fs';
 import { MinHeap } from "./MinHeap";
-import { Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, PriorityRound, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponAOE, WeaponTarget } from "../typedef";
-import { hGraph } from "./hGraphTheory";
+import { Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponAOE, WeaponTarget } from "../typedef";
+import { hGraph, hNode } from "./hGraphTheory";
 
 export class Battle {
     static readonly MOVE_READINESS = 10;
@@ -39,7 +39,7 @@ export class Battle {
     roundSavedCanvasMap: Map<number, Canvas>;
 
     // Entity-Related Information
-    enemiesToBeSpawnedArray: Array<Stat>;
+    tobespawnedArray: Array<Stat>;
     totalEnemyCount: number;
     enemyCount: number;
     playerCount: number;
@@ -73,7 +73,7 @@ export class Battle {
         const allStats = this.allStats(true);
 
         // fixing spawning
-        this.enemiesToBeSpawnedArray = [];
+        this.tobespawnedArray = [];
         this.totalEnemyCount = 0;
         this.enemyCount = 0;
         this.playerCount = 0;
@@ -99,7 +99,7 @@ export class Battle {
             const ownerID = _party[i];
             const userData = await getUserData(ownerID);
             const blankStat = getStat(getBaseStat(userData.equippedClass), ownerID);
-            battle.enemiesToBeSpawnedArray.push(blankStat);
+            battle.tobespawnedArray.push(blankStat);
         }
 
         // add enemies to the spawning list
@@ -112,7 +112,7 @@ export class Battle {
             for (let i = 0; i < spawnCount; i++) {
                 battle.totalEnemyCount++;
                 battle.enemyCount++;
-                battle.enemiesToBeSpawnedArray.push(getStat(enemyBase));
+                battle.tobespawnedArray.push(getStat(enemyBase));
             }
         }
 
@@ -129,6 +129,13 @@ export class Battle {
         this.roundSavedCanvasMap = new Map<number, Canvas>();
 
         // SPAWNING
+        log("Currently waiting to be spawned...")
+
+        for (let i = 0; i < this.tobespawnedArray.length; i++) {
+            const spawning = this.tobespawnedArray[i];
+            log(`\t{ index:${spawning.index}, class:${spawning.base.class} }`)
+        }
+
         log("Spawning...");
         this.SpawnOnSpawner();
         await saveBattle(this);
@@ -149,6 +156,7 @@ export class Battle {
             // randomly assign tokens
             for (let i = 0; i < 2; i++) {
                 const got = random(0, 2);
+                log(`\t${s.base.class} (${s.index}) got ${got}`)
                 switch (got) {
                     case 0:
                         s.sword++;
@@ -216,10 +224,14 @@ export class Battle {
         await new Promise((resolve) => {
             const thePath = `./maps/battle-${this.author.id}.txt`;
             fs.writeFile(thePath, currentMapDataURL, 'utf8', () => {
+                clearTimeout(saveFailedErrorTimeout);
                 resolve(void 0);
             });
+            const saveFailedErrorTimeout = setTimeout(() => {
+                resolve(void 0);
+            }, 10 * 1000);
         });
-        // log("||=> Success.");
+        log("||=> Success.");
 
         //#endregion
 
@@ -232,9 +244,11 @@ export class Battle {
             if (realStat.HP <= 0 || realStat.team === "block") continue;
 
             // reset weapon uses for entity
-            realStat.weaponUses.forEach(wU => wU = 0);
+            realStat.weaponUses.forEach(_wU => _wU = 0);
             // reset moved
             realStat.moved = false;
+            // reset associatedStrings
+            realStat.actionsAssociatedStrings = {};
 
             //#region PLAYER CONTROL
             if (realStat.botType === BotType.naught) {
@@ -258,17 +272,27 @@ export class Battle {
                 // creating channel
                 const channelAlreadyExist = this.guild.channels.cache.find(c => c.name === virtualStat.owner && c.type === 'GUILD_TEXT') as TextChannel;
                 const createdChannel = channelAlreadyExist || await this.guild.channels.create(`${virtualStat.owner}`, { type: 'GUILD_TEXT' });
-                createdChannel.setParent(commandCategory.id);
+                if (!createdChannel.parent || createdChannel.parent.name !== commandCategory.name) {
+                    createdChannel.setParent(commandCategory.id);
+                }
                 const existingPermissions_everyone = createdChannel.permissionOverwrites.cache.get(this.guild.roles.everyone.id)?.deny.toArray();
                 const existingPermissions_author = createdChannel.permissionOverwrites.cache.get(virtualStat.owner)?.allow.toArray();
+                
+                const newChannel = !channelAlreadyExist;
+                const noExistingPermission = (!existingPermissions_author || !existingPermissions_everyone);
+                const extraPermissions = existingPermissions_author && existingPermissions_everyone && (existingPermissions_author.length > 1 || existingPermissions_everyone.length > 1);
+                const missingPermissions = existingPermissions_author && existingPermissions_everyone && (!existingPermissions_author.includes('VIEW_CHANNEL') || !existingPermissions_everyone.includes('VIEW_CHANNEL'));
+                
+                // log(newChannel, noExistingPermission, extraPermissions, missingPermissions);
                 if (
-                    !channelAlreadyExist||
-                    !existingPermissions_author||
-                    !existingPermissions_everyone||
-                    existingPermissions_author.length > 1 ||
-                    existingPermissions_everyone.length > 1 ||
-                    !existingPermissions_author.includes('VIEW_CHANNEL') ||
-                    !existingPermissions_everyone.includes('VIEW_CHANNEL')
+                    newChannel||
+                        // new channel, set permission
+                    noExistingPermission||
+                        // no existing permissions
+                    extraPermissions||
+                        // extra permissions
+                    missingPermissions
+                        // missing permissions
                     )
                 {
                     const overWrites: Array<OverwriteData> = [
@@ -358,9 +382,51 @@ export class Battle {
         //#endregion
 
         //#region EXECUTING ACTIONS
-        await this.totalExecution();
+
+        // sort actions in priority using map
+        const priorityActionMap = new Map<Round, Action[]>();
+        for (let i = 0; i < this.roundActionsArray.length; i++) {
+            const act: Action = this.roundActionsArray[i];
+            const actionListThisRound: Action[] | undefined = priorityActionMap.get(act.round);
+
+            if (actionListThisRound)
+                actionListThisRound.push(act);
+            else
+                priorityActionMap.set(act.round, [act]);
+        }
+
+        // find the latest action's priority
+        const latestPrio: Round = getLargestInArray(this.roundActionsArray.map(a => a.round));
+
+        // execute every move from lowest priority to highest
+        for (let i = 0; i <= latestPrio; i++) {
+            const expectedActions: Action[] | undefined = priorityActionMap.get(i);
+            if (expectedActions) {
+                this.sortActionsByGreaterPrior(expectedActions);
+
+                // draw the base tiles and characters (before executing actions)
+                let canvas = this.roundSavedCanvasMap.get(i);
+                if (!canvas) {
+                    canvas = new Canvas(this.width * 50, this.height * 50);
+                    if (canvas) this.roundSavedCanvasMap.set(i, canvas);
+                }
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(await this.getNewCanvasMap(), 0, 0, canvas.width, canvas.height);
+
+                // execution
+                const executedActions = this.executeActions(expectedActions);
+
+                // draw executed actions
+                const actualCanvas = await this.getActionArrowsCanvas(executedActions);
+                ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
+
+                // update the final canvas
+                this.roundSavedCanvasMap.set(i, canvas);
+            }
+        }
         //#endregion
 
+        // limit token count
         for (let i = 0; i < allStats.length; i++) {
             const s = allStats[i];
             HandleTokens(s, (p, t) => {
@@ -382,7 +448,7 @@ export class Battle {
         // for each player, send an embed of actions completed of the player.
         const players = allStats.filter(s => s.botType === BotType.naught);
         players.forEach(async stat => {
-            const greatestRoundNumber: PriorityRound = getLargestInArray(Array.from(this.roundSavedCanvasMap.keys()));
+            const greatestRoundNumber: Round = getLargestInArray(Array.from(this.roundSavedCanvasMap.keys()));
             const commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
 
             allPromise.push(commandRoomReport);
@@ -512,22 +578,34 @@ export class Battle {
             return (commandRoom as TextChannel).send(message);
         }
     }
-    async sendReportToCommand(roomID: string, round: number): Promise<boolean> {
-        const embed = new MessageEmbed({ title: `Round ${round}`, }).setImage("attachment://map.png");
-        const menuOptions: MenuOption[] = Array.from(this.roundSavedCanvasMap.keys()).map(rn => {
-            return {
-                label: `Round ${rn}`,
-                value: `${rn}`,
-            }
-        });
+    async sendReportToCommand(roomID: string, round: Round): Promise<boolean> {
         const chosenCanvas = this.roundSavedCanvasMap.get(round);
         if (chosenCanvas) {
+            const menuOptions: MenuOption[] = Array.from(this.roundSavedCanvasMap.keys()).map(rn => {
+                return {
+                    label: `Round ${rn}`,
+                    value: `${rn}`,
+                }
+            });
+            const embed = new MessageEmbed({
+                title: `Round ${round}`,
+                description: ""
+            }).setImage("attachment://map.png");
             const messageOption: MessageOptions = {
                 embeds: [embed],
                 components: [getSelectMenuActionRow(menuOptions)],
                 files: [{ attachment: chosenCanvas.toBuffer(), name: 'map.png' }]
             };
 
+            // add description as actions done and done-to
+            const associatedStat = this.allStats(true).find(_s => _s.owner === roomID);
+            if (associatedStat && associatedStat.actionsAssociatedStrings[round] !== undefined) {
+                embed.description = shortenString(associatedStat.actionsAssociatedStrings[round].join('\n'));
+            }
+
+            if (embed.description === "") {
+                embed.description = "*(No Actions this Round )*";
+            }
             const promisedMsg = await this.sendToCommand(roomID, messageOption);
             if (promisedMsg) {
                 return new Promise((resolve) => {
@@ -539,6 +617,8 @@ export class Battle {
                             resolve(this.sendReportToCommand(roomID, selectedRound));
                         }
                     });
+
+                    // timeout: done checking round
                     const timeOut = setTimeout(() => {
                         itrCollector.stop();
                         resolve(true);
@@ -556,10 +636,10 @@ export class Battle {
         return this.roundActionsArray.filter(a => a.from.index === stat.index);
     }
 
-    getCanvasCoordsFromBattleCoord(s: Coordinate) {
+    getCanvasCoordsFromBattleCoord(s: Coordinate, shift = true) {
         return {
-            x: s.x * this.pixelsPerTile + this.pixelsPerTile/2,
-            y: (this.height - s.y) * this.pixelsPerTile - this.pixelsPerTile/2
+            x: s.x * this.pixelsPerTile + (this.pixelsPerTile/2 * Number(shift)),
+            y: (this.height - s.y - 1) * this.pixelsPerTile + (this.pixelsPerTile/2 * Number(shift))
         };
     }
 
@@ -607,6 +687,7 @@ export class Battle {
             // other resource drain
             virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(moveAction.magnitude);
             virtualStat.moved = true;
+            virtualStat[moveAction.axis] += moveAction.magnitude;
         }
         else {
             log(`\t\tFailed to move. Reason: ${check.reason} (${check.value})`);
@@ -660,8 +741,8 @@ export class Battle {
                         case "up":
                         case "v":
                         case "down":
+                        case "d":
                         case "right":
-                        case "h":
                         case "r":
                         case "left":
                         case "l":
@@ -674,6 +755,9 @@ export class Battle {
                             // movement is permitted
                             if (valid) {
                                 const realMoveStat = getMoveAction(realStat, actionName, infoMessagesQueue.length, moveMagnitude);
+                                if (virtualStat.moved) {
+                                    realMoveStat.sprint = 1;
+                                }
                                 mes.react('✅');
                                 executingActions.push(realMoveStat);
                             }
@@ -701,7 +785,7 @@ export class Battle {
                                     channel.send({
                                         embeds: [new MessageEmbed({
                                             title: check.reason,
-                                            description: `Failed to move. Reference value: __${check.value}__`,
+                                            description: `Failed to attack. Reference value: __${check.value}__`,
                                         })]
                                     });
                                 }
@@ -730,7 +814,7 @@ export class Battle {
                                         channel.send({
                                             embeds: [new MessageEmbed({
                                                 title: check.reason,
-                                                description: `Failed to move. Reference value: __${check.value}__`,
+                                                description: `Failed to attack. Reference value: __${check.value}__`,
                                             })]
                                         });
                                     }
@@ -749,7 +833,7 @@ export class Battle {
 
                         case "end":
                             newCollector.stop();
-                            log(`Ended turn for "${virtualStat.name}" (${virtualStat.base.class})`);
+                            log(`\tEnded turn for "${virtualStat.name}" (${virtualStat.base.class})`);
                             break;
 
                         case "log":
@@ -765,6 +849,9 @@ export class Battle {
                                 dealWithUndoAction(virtualStat, undoAction!);
                                 infoMessagesQueue.pop();
                                 await clearChannel(channel as TextChannel, getLastElement(infoMessagesQueue));
+                            }
+                            else {
+                                mes.react('❎');
                             }
                             break;
 
@@ -893,13 +980,15 @@ export class Battle {
         return exemption(coord) || !this.CSMap.has(getCoordString(coord));
     }
     checkWithinWorld(coord: Coordinate) {
+        log(`\t\tChecking within world:`)
+        log(`\t\t\tw\\${this.width} h\\${this.height} ${JSON.stringify(coord)}`);
         return this.width > coord.x && this.height > coord.y && coord.x >= 0 && coord.y >= 0;
     }
 
     // clash methods
-    clashAfterMath(clashResult: ClashResult, attacker: Stat, target: Stat, weapon: Weapon): string;
-    clashAfterMath(clashResult: ClashResult, attackAction: AttackAction): string;
-    clashAfterMath(clashResult: ClashResult, attacker_attackAction: Stat | AttackAction, _target?: Stat, _weapon?: Weapon): string {
+    applyClash(clashResult: ClashResult, attacker: Stat, target: Stat, weapon: Weapon): string;
+    applyClash(clashResult: ClashResult, attackAction: AttackAction): string;
+    applyClash(clashResult: ClashResult, attacker_attackAction: Stat | AttackAction, _target?: Stat, _weapon?: Weapon): string {
         const attacker = (attacker_attackAction as AttackAction).from || attacker_attackAction as Stat;
         const target = (attacker_attackAction as AttackAction).affected || _target;
         const weapon = (attacker_attackAction as AttackAction).weapon || _weapon;
@@ -929,7 +1018,7 @@ export class Battle {
 
                 dealWithAccolade(clashResult, attacker, target);
 
-                returnString += `**${attacker.base.class}** (${attacker.index}) ⚔️ **${target.base.class}** (${target.index}) __*${weapon.Name}*__${hitRate}% (${roundToDecimalPlace(critRate)}% Crit)**${CR_fate}!** -**${roundToDecimalPlace(CR_damage)}** HP`;
+                returnString += `**${attacker.base.class}** (${attacker.index}) ⚔️ **${target.base.class}** (${target.index}) __*${weapon.Name}*__\n${hitRate}% (${roundToDecimalPlace(critRate)}% Crit) **${CR_fate}!** -**${roundToDecimalPlace(CR_damage)}** HP`;
                 if (target.HP > 0 && target.HP - CR_damage <= 0) returnString += "**KILLING BLOW!**";
                 const LS = getLifesteal(attacker, weapon);
                 if (LS > 0) {
@@ -991,6 +1080,7 @@ export class Battle {
     // spawning methods
     Spawn(unit: Stat, coords: Coordinate) {
         this.setIndex(unit);
+        debug("Spawning", `${unit.base.class} (${unit.index})`)
 
         unit.x = coords.x;
         unit.y = coords.y;
@@ -999,16 +1089,19 @@ export class Battle {
     SpawnOnSpawner(unit?: Array<Stat>) {
         // adding addition units to be spawned this round.
         if (unit) {
-            this.enemiesToBeSpawnedArray = this.enemiesToBeSpawnedArray.concat(unit);
+            this.tobespawnedArray = this.tobespawnedArray.concat(unit);
         }
 
-        while (this.enemiesToBeSpawnedArray[0]) {
-            const stat = this.enemiesToBeSpawnedArray.shift() as Stat;
+        const failedToSpawn = [];
+        while (this.tobespawnedArray[0]) {
+            const stat = this.tobespawnedArray.shift() as Stat;
 
             // 1. look for spawner
-            const possibleCoords = this.mapData.map.spawners.filter(s => s.spawns === stat.team).map(s => {
-                return { x: s.x, y: s.y };
-            });
+            const possibleCoords = this.mapData.map.spawners
+                .filter(s => s.spawns === stat.team)
+                .map(s => (
+                    { x: s.x, y: s.y } as Coordinate
+                ));
 
             // 2. look for coords if occupied and spawn if not
             const availableCoords = possibleCoords.filter(c => !this.CSMap.has(getCoordString(c)));
@@ -1017,64 +1110,18 @@ export class Battle {
             if (availableCoords.length > 0) {
                 const c = availableCoords[random(0, availableCoords.length - 1)];
                 this.Spawn(stat, c);
-                // log(stat.base.class + " @ " + c.x + "," + c.y);
             }
+            else {
+                failedToSpawn.push(stat);
+            }
+        }
+
+        for (let i = 0; i < failedToSpawn.length; i++) {
+            this.tobespawnedArray.push(failedToSpawn[i]);
         }
     }
 
-    // execute actions
-    async totalExecution() {
-        // sort actions in priority using map
-        const priorityActionMap = new Map<PriorityRound, Action[]>();
-        for (let i = 0; i < this.roundActionsArray.length; i++) {
-            const act: Action = this.roundActionsArray[i];
-            const actionListThisRound: Action[] | undefined = priorityActionMap.get(act.priority);
-
-            if (actionListThisRound)
-                actionListThisRound.push(act);
-            else
-                priorityActionMap.set(act.priority, [act]);
-        }
-
-        // find the latest action's priority
-        const latestPrio: PriorityRound = getLargestInArray(this.roundActionsArray.map(a => a.priority));
-
-        // execute every move from lowest priority to highest
-        for (let i = 0; i <= latestPrio; i++) {
-            const expectedActions: Action[] | undefined = priorityActionMap.get(i);
-            if (expectedActions) {
-                this.sortActionsByGreaterPrior(expectedActions);
-
-                // draw the base tiles and characters (before executing actions)
-                let canvas = this.roundSavedCanvasMap.get(i);
-                if (!canvas) {
-                    canvas = new Canvas(this.width * 50, this.height * 50);
-                    if (canvas) this.roundSavedCanvasMap.set(i, canvas);
-                }
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(await this.getNewCanvasMap(), 0, 0, canvas.width, canvas.height);
-
-                const expectedCanvas = await this.getActionArrowsCanvas(expectedActions, {
-                    r: 255,
-                    g: 0,
-                    b: 0,
-                    alpha: 0.25
-                });
-                const executedActions = this.executeActions(expectedActions);
-                const actualCanvas = await this.getActionArrowsCanvas(executedActions);
-
-                // draw executed actions
-                ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
-
-                // draw the arrows of expected actions on top
-                // ctx.drawImage(expectedCanvas, 0, 0, canvas.width, canvas.height);
-
-                // update the final canvas
-                this.roundSavedCanvasMap.set(i, canvas);
-            }
-        }
-    }
-    getGreaterPrio (a: Action){ return (1000 * (20 - a.priority)) + (a.from.readiness - a.readiness)};
+    getGreaterPrio (a: Action){ return (1000 * (20 - a.round)) + (a.from.readiness - a.readiness)};
     sortActionsByGreaterPrior(actions: Action[]) {
         const sortedActions = actions.sort((a, b) => this.getGreaterPrio(b) - this.getGreaterPrio(a));
         return sortedActions;
@@ -1093,23 +1140,10 @@ export class Battle {
         
         return returning;
     }
-    executeOneAction(action: Action, show = true) {
-        const stat = action.from;
+    executeOneAction(action: Action) {
         const mAction = action as MoveAction;
         const aAction = action as AttackAction;
 
-        // =========LOG=========
-        if (show && 'axis' in action) {
-            log(`\tmove: ${mAction.axis} ${mAction.magnitude}`);
-        }
-        else if (show) {
-            log(`\tattack: ${aAction.affected.base.class} (${aAction.affected.index}) using ${aAction.weapon.Name}`);
-        }
-        // =========LOG=========
-
-        action.executed = true;
-        stat.readiness -= action.readiness;
-        HandleTokens(stat, (p, t) => stat[t] -= action[t]);
         return action.type === 'Attack' ?
             this.executeAttackAction(aAction):
             this.executeMoveAction(mAction);
@@ -1123,16 +1157,19 @@ export class Battle {
 
         const SA = (gStat = attacker, gTarget = target) => {
             const eM = this.validateTarget(attacker, weapon, target);
+            let string = '';
             
             if (eM) {
                 log(`${attacker.base.class} failed to attack ${target.base.class}. Reason: ${eM.reason}`);
-                // return `**${attacker.base.class}** (${attacker.index}) ⚔️ **${target.base.class}** (${target.index}) ❌${eM.reason}${eM.value !== null ? ` ( ${eM.value} )` : ""}`;
-            } else {
+                string = `**${attacker.base.class}** (${attacker.index}) ⚔️ **${target.base.class}** (${target.index}) ❌${eM.reason}${eM.value !== null ? ` ( ${eM.value} )` : ""}`;
+            }
+            else {
                 // valid attack
                 const clashResult = this.clash(gStat, gTarget, weapon);
-                const clashAfterMathString = this.clashAfterMath(clashResult, gStat, gTarget, weapon);
-                // return clashAfterMathString + "";
+                const clashAfterMathString = this.applyClash(clashResult, gStat, gTarget, weapon);
+                string = clashAfterMathString + "";
             }
+            return string;
         };
         const AOE = (center: Coordinate, inclusive: boolean) => {
             const enemiesInRadius = this.findEntities_radius(center, weapon.Range[2] || weapon.Range[1], inclusive);
@@ -1143,15 +1180,15 @@ export class Battle {
                 string += SAResult;
                 arrayOfResults.push(SAResult);
             }
-            // return string;
+            return string;
         };
         const line = () => {
             const yDif = target.y - attacker.y;
             const xDif = target.x - attacker.x;
             const slope = yDif / xDif;
-            log(`   slope: ${slope}`);
+            log(`\tslope: ${slope}`);
             const enemiesInLine = this.findEntities_inLine(attacker, target);
-            log(`   ${enemiesInLine.length} enemies in line`);
+            log(`\t${enemiesInLine.length} enemies in line`);
             let string = '';
             const arrayOfResults = [];
             for (let i = 0; i < enemiesInLine.length; i++) {
@@ -1159,26 +1196,42 @@ export class Battle {
                 string += SAResult;
                 arrayOfResults.push(SAResult);
             }
+            return string;
         };
 
+        let attackResult = "";
         switch (weapon.targetting.AOE) {
             case "single":
             case "touch":
-                SA();
+                attackResult = SA();
                 break;
 
             case "circle":
-                AOE(attackAction.coordinate, true);
+                attackResult = AOE(attackAction.coordinate, true);
                 break;
 
             case "selfCircle":
-                AOE(attacker, false);
+                attackResult = AOE(attacker, false);
                 break;
 
             case "line":
-                line();
+                attackResult = line();
                 break;
         }
+
+        if (attackAction.from.actionsAssociatedStrings[attackAction.round] === undefined) {
+            attackAction.from.actionsAssociatedStrings[attackAction.round] = [];
+        }
+        attackAction.from.actionsAssociatedStrings[attackAction.round].push(attackResult);
+
+        if (attackAction.affected.actionsAssociatedStrings[attackAction.round] === undefined) {
+            attackAction.affected.actionsAssociatedStrings[attackAction.round] = [];
+        }
+        attackAction.affected.actionsAssociatedStrings[attackAction.round].push(attackResult);
+
+        attackAction.executed = true;
+        attackAction.from.readiness -= attackAction.readiness;
+        HandleTokens(attackAction.from, (p, t) => attackAction.from[t] -= attackAction[t]);
 
         return attackAction;
     }
@@ -1197,6 +1250,10 @@ export class Battle {
         this.CSMap = this.CSMap.set(getCoordString(stat), stat);
         
         console.log(`${moveAction.from.base.class} (${moveAction.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
+
+        moveAction.executed = true;
+        moveAction.from.readiness -= moveAction.readiness;
+        HandleTokens(moveAction.from, (p, t) => moveAction.from[t] -= moveAction[t]);
 
         return getNewObject(moveAction, { magnitude: newMagnitude });
     }
@@ -1238,16 +1295,48 @@ export class Battle {
         const ctx = canvas.getContext('2d');
 
         // putting other stats in the map
+        const iconCache = new Map<Class | EnemyClass, Canvas>(); 
         for (let i = 0; i < allStats.length; i++) {
             const stat = allStats[i];
             const X = stat.x;
             const Y = stat.y;
+            const baseClass = stat.base.class;
 
-            // log(`   || Loading an icon: "${stat.base.iconURL}"...`);
-            let iconImage: Image = await getIcon(stat);
-            // log(`   ||=> Done.`);
+            // get character icon (template)
+            // let iconCanvas: Canvas = iconCache.get(baseClass) || await getIcon(stat);
+            let iconCanvas: Canvas = await getIcon(stat);
+            const iconSize = iconCanvas.width;
+            const iconCtx = iconCanvas.getContext("2d");
+            // if (iconCache.get(baseClass) === undefined) {
+            //     iconCache.set(baseClass, iconCanvas);
+            // }
 
-            ctx.drawImage(iconImage, X * this.pixelsPerTile, (this.height - 1 - Y) * this.pixelsPerTile, this.pixelsPerTile, this.pixelsPerTile);
+            // attach index
+            drawCircle(
+                iconCtx,
+                {
+                    x: iconSize * 9 / 10,
+                    y: iconSize * 1 / 5
+                },
+                iconSize / 6,
+                false
+            );
+            drawText(
+                iconCtx,
+                `${stat.index}`,
+                iconSize / 3,
+                {
+                    x: iconSize * 9 / 10,
+                    y: iconSize * 1 / 5
+                }
+            );
+
+            // draw on the main canvas
+            const imageCanvasCoord = this.getCanvasCoordsFromBattleCoord({
+                x: X,
+                y: Y
+            }, false);
+            ctx.drawImage(iconCanvas, imageCanvasCoord.x, imageCanvasCoord.y, Math.min(iconCanvas.width, this.pixelsPerTile), Math.min(iconCanvas.height, this.pixelsPerTile));
         }
 
         // end
@@ -1297,98 +1386,103 @@ export class Battle {
     async getCurrentMapWithArrowsBuffer(stat: Stat): Promise<Buffer> {
         return (await this.getCurrentMapWithArrowsCanvas(stat)).toBuffer();
     }
-    async getActionArrowsCanvas(_actions: Action[], style: RGBA = {
-        r: 0,
-        g: 0,
-        b: 0,
-        alpha: 1
-    }): Promise<Canvas> {
+    async getActionArrowsCanvas(_actions: Action[]): Promise<Canvas> {
+        const actions = _actions.map((_a: Action, _index: number) => {
+            _a.priority = _index + 1;
+            return _a;
+        });
         const canvas = new Canvas(this.width * 50, this.height * 50);
         const ctx = canvas.getContext("2d");
 
-        style = normaliseRGBA(style);
+        const style: RGBA = {
+            r: 0,
+            g: 0,
+            b: 0,
+            alpha: 1
+        };
         ctx.fillStyle = stringifyRGBA(style);
         ctx.strokeStyle = stringifyRGBA(style);
 
-        const drawPriorityText = (priority: number, canvasCoord: Coordinate, angle: number = 0) => {
-            ctx.save();
-            ctx.font = "15px Verdana";
-            ctx.lineWidth = 0.5;
-            ctx.fillStyle = "white"
-            ctx.strokeStyle = "black"
-            ctx.textAlign = "center"
-
-            ctx.translate(canvasCoord.x, canvasCoord.y);
-            ctx.rotate(angle);
-            ctx.fillText(`${priority}`, 0, 0);
-            ctx.strokeText(`${priority}`, 0, 0);
-            ctx.restore();
-        }
         /**
-         * @param action 
-         * @param fromBattleCoord 
-         * @param toBattleCoord 
-         * @param priority 
-         * @param width 
-         * @param offset default: half of this.pixelsPerTile
+         * @param _aA 
+         * @param _fromBattleCoord 
+         * @param _toBattleCoord 
+         * @param minorPrio 
+         * @param _width 
+         * @param _offset default: half of this.pixelsPerTile
          */
-        const drawAttackAction = async (action: AttackAction, fromBattleCoord: Coordinate, toBattleCoord: Coordinate, priority: number, width: number = 5, offset: Coordinate = {
+        const drawAttackAction = async (_aA: AttackAction, _fromBattleCoord: Coordinate, _toBattleCoord: Coordinate, _width: number = 5, _offset: Coordinate = {
             x: 0,
             y: 0
         }) => {
-            
             log("Drawing attack action...")
-            debug("\tfromCoord", { x: fromBattleCoord.x, y: fromBattleCoord.y });
-            debug("\ttoCoord", { x: toBattleCoord.x, y: toBattleCoord.y });
+            debug("\tfromCoord", { x: _fromBattleCoord.x, y: _fromBattleCoord.y });
+            debug("\ttoCoord", { x: _toBattleCoord.x, y: _toBattleCoord.y });
             
             ctx.save();
 
+            style.r = 255;
+            style.g = 0;
+            style.b = 0;
+            ctx.strokeStyle = stringifyRGBA(normaliseRGBA(style));
+
             // draw tracing path
-            const victimWithinDistance = checkWithinDistance(action.weapon, getDistance(action.from, action.affected));
+            const victimWithinDistance = checkWithinDistance(_aA.weapon, getDistance(_aA.from, _aA.affected));
             ctx.beginPath();
             ctx.strokeStyle = victimWithinDistance?
                                 "red":
                                 "black";
-            ctx.lineWidth = width;
-            const fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
-            ctx.moveTo(fromCanvasCoord.x + offset.x, fromCanvasCoord.y + offset.y);
+            ctx.lineWidth = _width;
+            const fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(_fromBattleCoord);
+            ctx.moveTo(fromCanvasCoord.x + _offset.x, fromCanvasCoord.y + _offset.y);
 
-            const toCanvasCoord = this.getCanvasCoordsFromBattleCoord(toBattleCoord);
-            ctx.lineTo(toCanvasCoord.x + offset.x, toCanvasCoord.y + offset.y);
+            const toCanvasCoord = this.getCanvasCoordsFromBattleCoord(_toBattleCoord);
+            ctx.lineTo(toCanvasCoord.x + _offset.x, toCanvasCoord.y + _offset.y);
             ctx.stroke();
             ctx.closePath();
 
-            debug("\tfromCanvasCoord", { x: fromCanvasCoord.x, y: fromCanvasCoord.y });
-            debug("\ttoCanvasCoord", { x: toCanvasCoord.x, y: toCanvasCoord.y });
+            // debug("\tfromCanvasCoord", { x: fromCanvasCoord.x, y: fromCanvasCoord.y });
+            // debug("\ttoCanvasCoord", { x: toCanvasCoord.x, y: toCanvasCoord.y });
 
             // priority text
             const textCanvasCoordinate = this.getCanvasCoordsFromBattleCoord({
-                x: (fromBattleCoord.x + toBattleCoord.x) / 2,
-                y: (fromBattleCoord.y + toBattleCoord.y) / 2
+                x: (_fromBattleCoord.x + _toBattleCoord.x) / 2,
+                y: (_fromBattleCoord.y + _toBattleCoord.y) / 2
             });
-            const x = toBattleCoord.x - fromBattleCoord.x;
-            const y = toBattleCoord.y - fromBattleCoord.y;
+            const x = _toBattleCoord.x - _fromBattleCoord.x;
+            const y = _toBattleCoord.y - _fromBattleCoord.y;
             const angle = Math.atan2(y,x);
-            drawPriorityText(priority, textCanvasCoordinate, -1 * angle);
-            debug("\ttextCanvasCoord", textCanvasCoordinate);
+            drawText(
+                ctx,
+                `${_aA.priority}`,
+                this.pixelsPerTile / 3,
+                {
+                    x: textCanvasCoordinate.x + _offset.x,
+                    y: textCanvasCoordinate.y + _offset.y,
+                },
+                -1 * angle
+            );
 
             if (victimWithinDistance) {
-                const victimDead = action.affected.HP <= 0;
+                const victimDead = _aA.affected.HP <= 0;
                 const greenBarPercentage = victimDead?
                     1:
-                    action.affected.HP / action.affected.base.AHP;
+                    _aA.affected.HP / _aA.affected.base.AHP;
 
                 ctx.lineWidth = 10;
-                const targetCanvasCoords = this.getCanvasCoordsFromBattleCoord(action.affected);
+                const targetCanvasCoords = this.getCanvasCoordsFromBattleCoord(_aA.affected);
 
                 // draw hit
-                const image = await getFileImage('./images/Hit.png');
-                const reversedY = (this.height - 1 - action.affected.y); // y is treated differently in canvas (up to down instead of down to up)
-                ctx.drawImage(image,
-                    action.affected.x * this.pixelsPerTile,
-                    reversedY * this.pixelsPerTile,
-                    this.pixelsPerTile * 0.7,
-                    this.pixelsPerTile * 0.7);
+                const hitImage = await getFileImage('./images/Hit.png');
+                const imageWidth = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile/3));
+                const imageHeight = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile/3));
+                ctx.drawImage(
+                    hitImage,
+                    toCanvasCoord.x + _offset.x - (imageWidth / 2),
+                    toCanvasCoord.y + _offset.y - (imageHeight / 2),
+                    imageWidth,
+                    imageHeight
+                );
 
                 const edgeDistance = this.pixelsPerTile * (1 / 3);
                 const barStartingCanvasPosition = {
@@ -1400,67 +1494,87 @@ export class Battle {
                     y: targetCanvasCoords.y - edgeDistance,
                 }
 
-                // draw red bar
-                ctx.beginPath();
-                // shift 1/3 of a block top and left from the center
-                ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y);
-                ctx.strokeStyle = "red";
-                // 1/3 to the top right
-                ctx.lineTo(barEndingCanvasPosition.x, barEndingCanvasPosition.y);
-                ctx.stroke();
-                ctx.closePath();
+                // // draw red bar
+                // ctx.beginPath();
+                // ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y); // shift 1/3 of a block top and left from the center
+                // ctx.strokeStyle = "red";
+                // ctx.lineTo(barEndingCanvasPosition.x, barEndingCanvasPosition.y); // 1/3 to the top right
+                // ctx.stroke();
+                // ctx.closePath();
 
-                // draw green bar
-                ctx.beginPath();
-                ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y);
-                ctx.strokeStyle = victimDead?
-                    "black":
-                    "green";
-
-                // ** full bar === 2 * edgeDistance
-                const greenLineLength = 2 * edgeDistance * greenBarPercentage;
-                ctx.lineTo(barStartingCanvasPosition.x + greenLineLength, barEndingCanvasPosition.y);
-                ctx.stroke();
-                ctx.closePath();
+                // // draw green bar
+                // ctx.beginPath();
+                // ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y);
+                // ctx.strokeStyle = victimDead?
+                //     "black":
+                //     "green";
+                // const greenLineLength = 2 * edgeDistance * greenBarPercentage; // full bar === 2 * edgeDistance
+                // ctx.lineTo(barStartingCanvasPosition.x + greenLineLength, barEndingCanvasPosition.y);
+                // ctx.stroke();
+                // ctx.closePath();
             }
 
             ctx.restore();
         }
-        const drawMoveAction = (fromBattleCoord: Coordinate, toBattleCoord: Coordinate, priority: number, width: number = 5, offset: Coordinate = {
+        const drawMoveAction = (_mA: MoveAction, _fromBattleCoord: Coordinate, _toBattleCoord: Coordinate, _width: number = 5, _offsetCanvas: Coordinate = {
             x: 0,
             y: 0
         }) => {
-            log(`Drawing move action: (${fromBattleCoord.x},${fromBattleCoord.y})=>(${toBattleCoord.x},${toBattleCoord.y}) (width:${width})(offset x:${offset.x} y:${offset.y})`)
-            ctx.lineWidth = width;
+            ctx.save();
+
+            style.r = 0;
+            style.g = 0;
+            style.b = 0;
+            ctx.strokeStyle = stringifyRGBA(normaliseRGBA(style));
+
+            log(`Drawing move action: (${_fromBattleCoord.x},${_fromBattleCoord.y})=>(${_toBattleCoord.x},${_toBattleCoord.y}) (width:${_width})(offset x:${_offsetCanvas.x} y:${_offsetCanvas.y})`)
+            ctx.lineWidth = _width;
 
             // get position before move
-            const beforeCanvasCoord = this.getCanvasCoordsFromBattleCoord(fromBattleCoord);
+            const beforeCanvasCoord = this.getCanvasCoordsFromBattleCoord(_fromBattleCoord);
             ctx.beginPath();
             ctx.moveTo(beforeCanvasCoord.x, beforeCanvasCoord.y);
 
             // draw a line to the coord after move action
-            const afterCanvasCoord = this.getCanvasCoordsFromBattleCoord(toBattleCoord);
+            const afterCanvasCoord = this.getCanvasCoordsFromBattleCoord(_toBattleCoord);
             ctx.lineTo(afterCanvasCoord.x, afterCanvasCoord.y);
             ctx.stroke();
             ctx.closePath();
 
             // draw circle
-            ctx.arc(afterCanvasCoord.x, afterCanvasCoord.y, this.pixelsPerTile / 5, 0, Math.PI * 2);
-            ctx.fill();
+            const arrivingCanvasCoord = _mA.executed?
+                beforeCanvasCoord:
+                afterCanvasCoord;
+            drawCircle(ctx, arrivingCanvasCoord, this.pixelsPerTile / 5, false);
 
             // priority text
-            drawPriorityText(priority, toBattleCoord);
+            const middleCanvasCoord = {
+                x: (beforeCanvasCoord.x + afterCanvasCoord.x) / 2,
+                y: (beforeCanvasCoord.y + afterCanvasCoord.y) / 2,
+            };
+            drawText(
+                ctx,
+                `${_mA.priority}`,
+                this.pixelsPerTile / 3,
+                {
+                    x: middleCanvasCoord.x + _offsetCanvas.x,
+                    y: middleCanvasCoord.y + _offsetCanvas.x,
+                }
+            );
+            ctx.restore();
         }
 
-        const appendGraph = (action: Action, from: Coordinate, to: Coordinate) => {
-            graph.connectNodes(from, to, action);
+        const appendGraph = (action: Action, from: Coordinate, to: Coordinate, _iVal: number) => {
+            const fromNode = new hNode<number>(from, _iVal);
+            const toNode = new hNode<number>(to, _iVal);
+            graph.connectNodes(fromNode, toNode, action);
         }
 
         const virtualCoordsMap = new Map<number, Coordinate>();
-        const graph = new hGraph<null, Action>(true);
+        const graph = new hGraph<number, Action>(true);
         
-        for (let i = 0; i < _actions.length; i++) {
-            const action = _actions[i];
+        for (let i = 0; i < actions.length; i++) {
+            const action = actions[i];
             const attackerIndex = action.from.index;
             const victimIndex = action.affected.index;
             if (!virtualCoordsMap.has(victimIndex)) {
@@ -1478,7 +1592,7 @@ export class Battle {
                     switch (weapon.targetting.AOE) {
                         case "single":
                         case "touch":
-                            appendGraph(aA, attacker_beforeCoords, victim_beforeCoords);
+                            appendGraph(aA, attacker_beforeCoords, victim_beforeCoords, i+1);
                             break;
 
                         case "circle":
@@ -1497,13 +1611,11 @@ export class Battle {
                                 // ** technically from "action.from", but for the sake of visual effects, the epicenter
                                 // coords will be fed instead.
                                 const singleTarget: AttackAction = getNewObject(aA, { from: epicenterCoord, affected: af });
-                                appendGraph(singleTarget, epicenterCoord, af);
-                                // await drawAttackAction(singleTarget, epicenterCoord, af, i+1);
+                                appendGraph(singleTarget, epicenterCoord, af, i+1);
                             }
                             if (weapon.targetting.AOE === "circle") {
                                 // show AOE throw trajectory
-                                appendGraph(aA, attacker_beforeCoords, epicenterCoord);
-                                // await drawAttackAction(aA, attacker_beforeCoords, epicenterCoord, i+1);
+                                appendGraph(aA, attacker_beforeCoords, epicenterCoord, i+1);
                             }
 
                             // draw explosion range
@@ -1534,7 +1646,7 @@ export class Battle {
 
                     // connect to graph
                     // drawMoveAction(beforeBattleCoord, afterBattleCoord, i+1);
-                    appendGraph(mA, beforeBattleCoord, afterBattleCoord);
+                    appendGraph(mA, beforeBattleCoord, afterBattleCoord, i+1);
                 }
             );
         }
@@ -1550,21 +1662,22 @@ export class Battle {
                 /**
                  * eg:
                  * columnWidth: 5
-                 * 0th pixel => ||[-==========-]|| <= 5th pixel
-                 *                [-==========-]  [-==========-]
-                 *                [-==========-]  [-==========-]
-                 *                [-==========-]  [-==========-]
-                 *                [-==========-]  [-==========-]
-                 *                [-==========-]  [-==========-]
-                 *                [-==========-]  [-==========-]
-                 *                [-==========-]  [-==========-]
-                 *                [-==========-]  [-==========-]
+                 * 0th pixel =>   ||==========|| <= 5th pixel
+                 *                [-==========-][-==========-]
+                 *                [-==========-][-==========-]
+                 *                [-==========-][-==========-]
+                 *                [-==========-][-==========-]
+                 *                [-==========-][-==========-]
+                 *                [-==========-][-==========-]
+                 *                [-==========-][-==========-]
+                 *                [-==========-][-==========-]
                  */
 
                 // is solid column
                 if (o % 2 === 0) {
-                    log(`Solid edge #${o/2}`);
-                    const edge = value[(o/2)-1]; edge.print();
+                    // log(`Solid edge #${o/2}`);
+                    const edgeIndex = (o / 2) - 1;
+                    const edge = value[edgeIndex]; edge.print();
                     const connectingAction = edge.weight;
 
                     const isXtransition = edge.from.position.x !== edge.to.position.x; // change y
@@ -1575,7 +1688,6 @@ export class Battle {
                             connectingAction as AttackAction,
                             edge.from.position,
                             edge.to.position,
-                            connectingAction.priority,
                             columnWidth,
                             {
                                 x: isYtransition?
@@ -1589,9 +1701,9 @@ export class Battle {
                     }
                     else if (connectingAction.type === "Move") {
                         drawMoveAction(
+                            connectingAction as MoveAction,
                             edge.from.position,
                             edge.to.position,
-                            connectingAction.priority,
                             columnWidth,
                             {
                                 x: isYtransition ?
@@ -1606,7 +1718,7 @@ export class Battle {
                 }
                 // is gap column
                 else {
-                    log(`Gap edge #${o / 2}`);
+                    // log(`Gap edge #${o / 2}`);
                 }
             }
         }
@@ -1621,7 +1733,7 @@ export class Battle {
         const map: Buffer = mapCanvas.toBuffer();
 
         const frameImage: Image = await getFileImage('images/frame.png');
-        const characterBaseImage: Image = await getFileImage(stat.base.portraitURL);
+        const characterBaseImage: Image = await getFileImage(stat.base.iconURL);
         const { canvas, ctx } = startDrawing(frameImage.width * 3, frameImage.height * 3);
         ctx.drawImage(characterBaseImage, 20, 20, characterBaseImage.width * 3, characterBaseImage.height * 3);
         ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
@@ -1854,13 +1966,13 @@ export class Battle {
             return eM;
         }
 
-        log(
-            `\tname: ${weapon.Name}`,
-            `\tdamage: ${weapon.Damage}`,
-            `\trange: ${weapon.Range}`,
-            `\tattacker: ${attackerStat.base.class} (${attackerStat.index})`,
-            `\ttarget: ${targetStat.base.class} (${targetStat.index})`
-        );
+        // log(
+        //     `\tname: ${weapon.Name}`,
+        //     `\tdamage: ${weapon.Damage}`,
+        //     `\trange: ${weapon.Range}`,
+        //     `\tattacker: ${attackerStat.base.class} (${attackerStat.index})`,
+        //     `\ttarget: ${targetStat.base.class} (${targetStat.index})`
+        // );
 
         // location
         // if (targetStat.base.class === "location") {
@@ -1876,6 +1988,26 @@ export class Battle {
             eM.reason = "Not enough readiness.";
             eM.value = attackerStat.readiness;
             return eM;
+        }
+
+        // tokens
+        if (attackerStat.sword < weapon.sword) {
+            eM.reason = "Not enough Sword (🗡️) tokens.";
+            eM.value = attackerStat.sword;
+            return eM;
+
+        }
+        if (attackerStat.shield < weapon.shield) {
+            eM.reason = "Not enough Shield (🛡️) tokens.";
+            eM.value = attackerStat.shield;
+            return eM;
+
+        }
+        if (attackerStat.sprint < weapon.sprint) {
+            eM.reason = "Not enough Sprint (👢) tokens.";
+            eM.value = attackerStat.sprint;
+            return eM;
+
         }
 
         // weapon uses

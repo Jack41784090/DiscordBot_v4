@@ -50,22 +50,25 @@ export class hGraph<nodeDataType, weightType> {
 
     addNode(_pos: Coordinate, _?: undefined): hNode<nodeDataType>;
     addNode(_data: nodeDataType, _pos: Coordinate): hNode<nodeDataType>;
-    addNode(_node: hNode<nodeDataType>, _pos: Coordinate): hNode<nodeDataType>;
-    addNode(_data: Coordinate | nodeDataType | hNode<nodeDataType>, _pos: Coordinate | undefined) {
-        const pos = _pos?
-            _pos:
-            _data as Coordinate;
-        const data = _pos?
-            _data as (nodeDataType | hNode<nodeDataType>):
+    addNode(_node: hNode<nodeDataType>, _?: undefined): hNode<nodeDataType>;
+    addNode(_arg1: Coordinate | nodeDataType | hNode<nodeDataType>, _arg2: Coordinate | undefined) {
+        const pos: Coordinate = _arg2?
+            (_arg2) as Coordinate: // arg2 is provided
+            (_arg1 as Coordinate).x?
+                (_arg1 as Coordinate): // arg2 is not provided and arg1 is a Coord
+                (_arg1 as hNode<nodeDataType>).position; // arg2 is not provided and arg1 is a node
+
+        const data: nodeDataType | undefined = _arg2?
+            _arg1 as nodeDataType:
             undefined;
 
         // decide if input is a Node or a type of data for the node
         const inputNode: hNode<nodeDataType> =
-            data !== undefined && (data as hNode<nodeDataType>).data === undefined? // not node, is data
-                new hNode<nodeDataType>(pos, data as nodeDataType):
-                data === undefined?
-                    new hNode<nodeDataType>(pos): // no data
-                    data as hNode<nodeDataType>; // data is node
+            (_arg1 as hNode<nodeDataType>).position?
+                _arg1 as hNode<nodeDataType>:
+                data === undefined ?
+                    new hNode<nodeDataType>(pos) : // no data
+                    new hNode<nodeDataType>(pos, data); // data is node
 
         // find out if there is already data for the node
         const existingNode = this.nodeList.find(_n => (
@@ -85,9 +88,17 @@ export class hGraph<nodeDataType, weightType> {
         return node;
     }
 
-    connectNodes(_from: Coordinate, _to: Coordinate, _weight: weightType) {
-        const fromNode = this.addNode(_from);
-        const toNode = this.addNode(_to);
+    connectNodes(_fromNode: hNode<nodeDataType>, _toNode: hNode<nodeDataType>, _weight: weightType): void;
+    connectNodes(_fromCoord: Coordinate, _toCoord: Coordinate, _weight: weightType): void;
+    connectNodes(_from: hNode<nodeDataType> | Coordinate, _to: hNode<nodeDataType> | Coordinate, _weight: weightType) {
+        const fromNode =
+            (_from as hNode<nodeDataType>).position?
+                this.addNode(_from as hNode<nodeDataType>):
+                this.addNode(_from as Coordinate);
+        const toNode =
+            (_to as hNode<nodeDataType>).position ?
+                this.addNode(_to as hNode<nodeDataType>) :
+                this.addNode(_to as Coordinate);
         const edge = new hEdge<nodeDataType, weightType>(fromNode, toNode, _weight);
         const from_edgeArray = this.adjGraph.get(fromNode.id);
         const to_edgeArray = this.adjGraph.get(toNode.id);
