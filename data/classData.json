@@ -38,25 +38,6 @@
 				},
 				"CD": 0,
 				"UPT": 255
-			},
-			{
-				"Name": "Sweep",
-				"Acc": 80,
-				"Damage": [15, 20],
-				"Range": [1, 1.5],
-				"Readiness": 30,
-				"sword": 1,
-				"shield": 0,
-				"sprint": 0,
-				"Crit": 5,
-				"Spd": 1,
-				"lifesteal": 0,
-				"targetting": {
-					"target": 1,
-					"AOE": "single"
-				},
-				"CD": 0,
-				"UPT": 255
 			}
 		],
 		"botType": 0

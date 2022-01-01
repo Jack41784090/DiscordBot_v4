@@ -921,12 +921,15 @@ function dealWithUndoAction(stat, action) {
 }
 exports.dealWithUndoAction = dealWithUndoAction;
 function HandleTokens(changeToken, changingFunction) {
-    if (changeToken.sword !== undefined)
+    if (changeToken.sword !== undefined) {
         changingFunction(changeToken.sword, "sword");
-    if (changeToken.shield !== undefined)
+    }
+    if (changeToken.shield !== undefined) {
         changingFunction(changeToken.shield, "shield");
-    if (changeToken.sprint !== undefined)
+    }
+    if (changeToken.sprint !== undefined) {
         changingFunction(changeToken.sprint, "sprint");
+    }
 }
 exports.HandleTokens = HandleTokens;
 function getNewNode(_x, _y, _destination, _distanceTravelled) {
@@ -956,7 +959,7 @@ function shortenString(_s, _length) {
 exports.shortenString = shortenString;
 function drawText(_ctx, _text, _textSize, _canvasCoord, _angle) {
     if (_angle === void 0) { _angle = 0; }
-    log("\tDrawing \"" + _text + "\" at " + JSON.stringify(_canvasCoord) + " (angle: " + _angle + ")");
+    // log(`\tDrawing "${_text}" at ${JSON.stringify(_canvasCoord)} (angle: ${_angle})`)
     var textSize = Math.round(_textSize);
     _ctx.save();
     _ctx.font = textSize + "px Verdana";
@@ -967,7 +970,6 @@ function drawText(_ctx, _text, _textSize, _canvasCoord, _angle) {
     _ctx.translate(_canvasCoord.x, _canvasCoord.y);
     var referenceAngle = findReferenceAngle(_angle);
     if (referenceAngle < 90) {
-        log("\t\tRefAngle: " + referenceAngle);
         _ctx.rotate(referenceAngle);
     }
     _ctx.fillText(_text, 0, textSize / 3);

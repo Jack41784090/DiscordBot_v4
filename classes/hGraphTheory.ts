@@ -9,7 +9,7 @@ export class hNode<dataType> {
         this.data = _data;
         
         this.id = `${random(0.0, 100000.5)}`;
-        debug("Created node with id", `${this.id} @ (${_pos.x}, ${_pos.y})`);
+        // debug("Created node with id", `${this.id} @ (${_pos.x}, ${_pos.y})`);
 
         this.position = {
             x: _pos.x, y: _pos.y

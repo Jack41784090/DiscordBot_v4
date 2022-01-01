@@ -6,7 +6,7 @@ var hNode = /** @class */ (function () {
     function hNode(_pos, _data) {
         this.data = _data;
         this.id = "" + (0, Utility_1.random)(0.0, 100000.5);
-        (0, Utility_1.debug)("Created node with id", this.id + " @ (" + _pos.x + ", " + _pos.y + ")");
+        // debug("Created node with id", `${this.id} @ (${_pos.x}, ${_pos.y})`);
         this.position = {
             x: _pos.x, y: _pos.y
         };

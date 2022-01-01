@@ -876,9 +876,15 @@ export function dealWithUndoAction(stat: Stat, action: Action) {
 }
 
 export function HandleTokens(changeToken: { sword?: number, shield?: number, sprint?: number }, changingFunction: ((p:number, type: "sword" | "shield" | "sprint") => void)) {
-    if (changeToken.sword !== undefined) changingFunction(changeToken.sword, "sword");
-    if (changeToken.shield !== undefined) changingFunction(changeToken.shield, "shield");
-    if (changeToken.sprint !== undefined) changingFunction(changeToken.sprint, "sprint");
+    if (changeToken.sword !== undefined) {
+        changingFunction(changeToken.sword, "sword");
+    }
+    if (changeToken.shield !== undefined) {
+        changingFunction(changeToken.shield, "shield");
+    }
+    if (changeToken.sprint !== undefined) {
+        changingFunction(changeToken.sprint, "sprint");
+    }
 }
 
 export function getNewNode(_x: number, _y: number, _destination: Coordinate, _distanceTravelled: number = 0): AINode {
@@ -911,7 +917,7 @@ export function drawText(
     _canvasCoord: Coordinate,
     _angle: number = 0
 ): void {
-    log(`\tDrawing "${_text}" at ${JSON.stringify(_canvasCoord)} (angle: ${_angle})`)
+    // log(`\tDrawing "${_text}" at ${JSON.stringify(_canvasCoord)} (angle: ${_angle})`)
     const textSize = Math.round(_textSize);
 
     _ctx.save();
@@ -926,7 +932,6 @@ export function drawText(
 
     const referenceAngle = findReferenceAngle(_angle);
     if (referenceAngle < 90) {
-        log(`\t\tRefAngle: ${referenceAngle}`)
         _ctx.rotate(referenceAngle);
     }
     _ctx.fillText(_text, 0, textSize/3);

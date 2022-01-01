@@ -1,5 +1,5 @@
-import { CategoryChannel, Client, DiscordAPIError, Guild, GuildMember, Message, MessageAttachment, MessageCollector, MessageEditOptions, MessageEmbed, MessageEmbedImage, MessageOptions, MessagePayload, OverwriteData, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getActionsTranslate, getAHP, getDirection, getLoadingEmbed, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, capitalize, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getCSFromMap, printCSMap, getNewObject, startDrawing, dealWithAction, printAction, sendToSandbox, getRandomCode, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getWithSign, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens as HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, findReferenceAngle, shortenString, drawText, drawCircle } from "./Utility";
+import { CategoryChannel, Client, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getActionsTranslate, getAHP, getDirection, getLoadingEmbed, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, capitalize, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getCSFromMap, printCSMap, getNewObject, startDrawing, dealWithAction, printAction, sendToSandbox, getRandomCode, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getWithSign, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, findReferenceAngle, shortenString, drawText, drawCircle } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getBufferFromImage, getFileImage, getIcon, getUserData, saveBattle } from "./Database";
 import enemiesData from "../data/enemiesData.json";
@@ -153,6 +153,8 @@ export class Battle {
         for (let i = 0; i < allStats.length; i++) {
             const s = allStats[i];
 
+            if (s.team === 'block') continue;
+
             // randomly assign tokens
             for (let i = 0; i < 2; i++) {
                 const got = random(0, 2);
@@ -172,6 +174,7 @@ export class Battle {
 
             // limit the entity's tokens
             HandleTokens(s, (p, t) => {
+                log(`\t\t${s.index}) ${t} =${clamp(p, 0, 5)}`)
                 s[t] = clamp(p, 0, 5);
             })
 
@@ -402,7 +405,7 @@ export class Battle {
         for (let i = 0; i <= latestPrio; i++) {
             const expectedActions: Action[] | undefined = priorityActionMap.get(i);
             if (expectedActions) {
-                this.sortActionsByGreaterPrior(expectedActions);
+                this.greaterPriorSort(expectedActions);
 
                 // draw the base tiles and characters (before executing actions)
                 let canvas = this.roundSavedCanvasMap.get(i);
@@ -431,6 +434,7 @@ export class Battle {
             const s = allStats[i];
             HandleTokens(s, (p, t) => {
                 if (p > 3) {
+                    log(`\t\t${s.index}) ${t} =${3}`)
                     s[t] = 3;
                 }
             });
@@ -651,17 +655,19 @@ export class Battle {
         ctx.fillRect(canvasCoord.x, canvasCoord.y, this.pixelsPerTile, this.pixelsPerTile);
     }
 
-    executeVirtualAttack(attackAction: AttackAction, virtualStat: Stat) {
-        const target = attackAction.affected;
-        const weapon = attackAction.weapon;
-        const check: TargetingError | null = this.validateTarget(virtualStat, attackAction.weapon, target);
+    // virtual actions (actions that only change the virtualStat)
+    executeVirtualAttack(_aA: AttackAction, _virtualAttacker: Stat) {
+        const target = _aA.affected;
+        const weapon = _aA.weapon;
+        const check: TargetingError | null = this.validateTarget(_virtualAttacker, _aA.weapon, target);
 
         if (check === null) { // attack goes through
-            virtualStat.weaponUses[getWeaponIndex(weapon, virtualStat)]++;
+            _virtualAttacker.weaponUses[getWeaponIndex(weapon, _virtualAttacker)]++;
 
-            virtualStat.readiness -= attackAction.readiness;
-            HandleTokens(virtualStat, (p, t) => {
-                virtualStat[t] -= attackAction[t];
+            _virtualAttacker.readiness -= _aA.readiness;
+            HandleTokens(_virtualAttacker, (p, t) => {
+                log(`\t\t${_virtualAttacker.index}) ${t} --${_aA[t]}`)
+                _virtualAttacker[t] -= _aA[t];
             });
         }
         else { // attack cannot go through
@@ -669,25 +675,26 @@ export class Battle {
         }
         return check === null;
     };
-    executeVirtualMovement (moveAction: MoveAction, virtualStat: Stat): boolean {
+    executeVirtualMovement (_mA: MoveAction, virtualStat: Stat): boolean {
         log(`\tExecuting virtual movement for ${virtualStat.base.class} (${virtualStat.index}).`)
-        const check: MovingError | null = this.validateMovement(virtualStat, moveAction);
+        const check: MovingError | null = this.validateMovement(virtualStat, _mA);
 
         if (check === null) {
             log("\t\tMoved!");
 
             // spending sprint to move
             if (virtualStat.moved === true) {
-                HandleTokens(moveAction, (p, type) => {
+                HandleTokens(_mA, (p, type) => {
                     if (type === "sprint") {
+                        log(`\t\t${virtualStat.index}) ${type} --${p}`)
                         virtualStat.sprint -= p;
                     }
                 });
             }
             // other resource drain
-            virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(moveAction.magnitude);
+            virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(_mA.magnitude);
             virtualStat.moved = true;
-            virtualStat[moveAction.axis] += moveAction.magnitude;
+            virtualStat[_mA.axis] += _mA.magnitude;
         }
         else {
             log(`\t\tFailed to move. Reason: ${check.reason} (${check.value})`);
@@ -749,13 +756,16 @@ export class Battle {
                             // get moveAction based on input (blackboxed)
                             const moveAction = getMoveAction(virtualStat, actionName, infoMessagesQueue.length, moveMagnitude);
 
+                            // record if it is first move or not
+                            const isFirstMove = !virtualStat.moved;
+
                             // validate + act on (if valid) movement on virtual map
                             valid = this.executeVirtualMovement(moveAction!, virtualStat);
 
                             // movement is permitted
                             if (valid) {
                                 const realMoveStat = getMoveAction(realStat, actionName, infoMessagesQueue.length, moveMagnitude);
-                                if (virtualStat.moved) {
+                                if (!isFirstMove) {
                                     realMoveStat.sprint = 1;
                                 }
                                 mes.react('✅');
@@ -940,32 +950,36 @@ export class Battle {
     }
 
     // index manipulation
-    private getIndex_lookUp(min: number, max: number): number | null {
-        if (Math.abs(min - max) <= 1) return null;
+    getIndex(stat?: Stat): number {
+        let index: number | null = 0;
+        if (this.allIndex.size > 0) {
+            const lookUp = (min: number, max: number): number | null => {
+                if (Math.abs(min - max) <= 1) {
+                    return null;
+                }
 
-        const middle = Math.floor((max + min) / 2);
-        const got = this.allIndex.get(middle);
-        // log(min, middle, max);
+                const middle = Math.floor((max + min) / 2);
+                const got = this.allIndex.get(middle);
 
-        if (!got) return middle;
-        else return this.getIndex_lookUp(min, middle) || this.getIndex_lookUp(middle, max);
-    }
-    getIndex(stat?: Stat) {
-        if (this.allIndex.size < 1) {
-            if (stat) stat.index = 0;
-            return 0;
+                return got ?
+                    (lookUp(min, middle) || lookUp(middle, max)) :
+                    middle;
+            }
+
+            const allIndex: number[] = Array.from(this.allIndex.keys()).sort((a, b) => a - b);
+            index = lookUp(0, getLastElement(allIndex));
+
+            if (index === null) {
+                index = getLastElement(allIndex) + 1;
+            }
         }
-
-        const indexi = Array.from(this.allIndex.keys()).sort((a, b) => a - b);
-        let lookUpIndex = this.getIndex_lookUp(0, getLastElement(indexi));
-
-        if (lookUpIndex === null) lookUpIndex = getLastElement(indexi) + 1;
-
         if (stat) {
-            stat.index = lookUpIndex;
+            stat.index = index;
         }
 
-        return lookUpIndex;
+        return index === null?
+            this.getIndex():
+            index as number;
     }
     setIndex(stat: Stat) {
         const oldIndex: number = stat.index;
@@ -1121,151 +1135,164 @@ export class Battle {
         }
     }
 
-    getGreaterPrio (a: Action){ return (1000 * (20 - a.round)) + (a.from.readiness - a.readiness)};
-    sortActionsByGreaterPrior(actions: Action[]) {
-        const sortedActions = actions.sort((a, b) => this.getGreaterPrio(b) - this.getGreaterPrio(a));
+    getGreaterPrio (a: Action) {
+        return (1000 * (20 - a.round)) + (a.from.readiness - a.readiness);
+    };
+    greaterPriorSort(_actions: Action[]) {
+        const sortedActions = _actions.sort((a, b) => this.getGreaterPrio(b) - this.getGreaterPrio(a));
         return sortedActions;
-    }
-    executeActions(actions: Action[]) {
-        log("Executing actions...")
-
-        const returning: Action[] = [];
-        this.sortActionsByGreaterPrior(actions);
-
-        let executing = actions.shift();
-        while (executing) {
-            returning.push(this.executeOneAction(executing));
-            executing = actions.shift();
-        }
-        
-        return returning;
-    }
-    executeOneAction(action: Action) {
-        const mAction = action as MoveAction;
-        const aAction = action as AttackAction;
-
-        return action.type === 'Attack' ?
-            this.executeAttackAction(aAction):
-            this.executeMoveAction(mAction);
     }
 
     // actions
-    executeAttackAction(attackAction: AttackAction): AttackAction {
-        const target = attackAction.affected;
-        const attacker = attackAction.from;
-        const weapon = attackAction.weapon;
+    executeActions(_actions: Action[]) {
+        log("Executing actions...")
 
-        const SA = (gStat = attacker, gTarget = target) => {
-            const eM = this.validateTarget(attacker, weapon, target);
-            let string = '';
-            
-            if (eM) {
-                log(`${attacker.base.class} failed to attack ${target.base.class}. Reason: ${eM.reason}`);
-                string = `**${attacker.base.class}** (${attacker.index}) ⚔️ **${target.base.class}** (${target.index}) ❌${eM.reason}${eM.value !== null ? ` ( ${eM.value} )` : ""}`;
-            }
-            else {
-                // valid attack
-                const clashResult = this.clash(gStat, gTarget, weapon);
-                const clashAfterMathString = this.applyClash(clashResult, gStat, gTarget, weapon);
-                string = clashAfterMathString + "";
-            }
-            return string;
-        };
-        const AOE = (center: Coordinate, inclusive: boolean) => {
-            const enemiesInRadius = this.findEntities_radius(center, weapon.Range[2] || weapon.Range[1], inclusive);
-            const arrayOfResults = [];
-            let string = '';
-            for (let i = 0; i < enemiesInRadius.length; i++) {
-                const SAResult = SA(attacker, enemiesInRadius[i]);
-                string += SAResult;
-                arrayOfResults.push(SAResult);
-            }
-            return string;
-        };
-        const line = () => {
-            const yDif = target.y - attacker.y;
-            const xDif = target.x - attacker.x;
-            const slope = yDif / xDif;
-            log(`\tslope: ${slope}`);
-            const enemiesInLine = this.findEntities_inLine(attacker, target);
-            log(`\t${enemiesInLine.length} enemies in line`);
-            let string = '';
-            const arrayOfResults = [];
-            for (let i = 0; i < enemiesInLine.length; i++) {
-                const SAResult = SA(attacker, enemiesInLine[i]);
-                string += SAResult;
-                arrayOfResults.push(SAResult);
-            }
-            return string;
-        };
+        const returning: Action[] = [];
+        this.greaterPriorSort(_actions);
 
+        let executing = _actions.shift();
+        while (executing) {
+            returning.push(this.executeOneAction(executing));
+            executing = _actions.shift();
+        }
+
+        return returning;
+    }
+    executeOneAction(_action: Action) {
+        const mAction = _action as MoveAction;
+        const aAction = _action as AttackAction;
+
+        return _action.type === 'Attack' ?
+            this.executeAttackAction(aAction) :
+            this.executeMoveAction(mAction);
+    }
+    executeSingleTargetAttackAction(_aA: AttackAction) {
+        const attacker = _aA.from;
+        const target = _aA.affected;
+        const weapon = _aA.weapon;
+        const eM = this.validateTarget(attacker, weapon, target);
+        let string = '';
+
+        if (eM) {
+            log(`${attacker.base.class} failed to attack ${target.base.class}. Reason: ${eM.reason}`);
+            string = `**${attacker.base.class}** (${attacker.index}) ⚔️ **${target.base.class}** (${target.index})\n❌${eM.reason}${eM.value !== null ? ` ( ${eM.value} )` : ""}`;
+        }
+        else {
+            // valid attack
+            const clashResult = this.clash(attacker, target, weapon);
+            const clashAfterMathString = this.applyClash(clashResult, attacker, target, weapon);
+            string = clashAfterMathString + "";
+        }
+        return string;
+    };
+    executeAOEAttackAction(_aA: AttackAction, inclusive = true) {
+        const center = _aA.coordinate;
+        const weapon = _aA.weapon;
+        const attacker = _aA.from;
+
+        const enemiesInRadius = this.findEntities_radius(center, weapon.Range[2] || weapon.Range[1], inclusive);
+        let string = '';
+        for (let i = 0; i < enemiesInRadius.length; i++) {
+            const singleTargetAA = getAttackAction(attacker, enemiesInRadius[i], weapon, enemiesInRadius[i], _aA.round);
+            const SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
+            string += SAResult;
+        }
+        return string;
+    };
+    executeLineAttackAction(_aA: AttackAction) {
+        const target = _aA.affected;
+        const attacker = _aA.from;
+
+        const enemiesInLine = this.findEntities_inLine(attacker, target);
+        let string = '';
+        for (let i = 0; i < enemiesInLine.length; i++) {
+            const singleTargetAA = getAttackAction(attacker, target, _aA.weapon, enemiesInLine[i], _aA.round);
+            const SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
+            string += SAResult;
+        }
+        return string;
+    };
+    executeAttackAction(_aA: AttackAction): AttackAction {
         let attackResult = "";
-        switch (weapon.targetting.AOE) {
+        switch (_aA.weapon.targetting.AOE) {
             case "single":
             case "touch":
-                attackResult = SA();
+                attackResult = this.executeSingleTargetAttackAction(_aA);
                 break;
 
             case "circle":
-                attackResult = AOE(attackAction.coordinate, true);
+                attackResult = this.executeAOEAttackAction(_aA, true);
                 break;
 
             case "selfCircle":
-                attackResult = AOE(attacker, false);
+                attackResult = this.executeAOEAttackAction(_aA, false);
                 break;
 
             case "line":
-                attackResult = line();
+                attackResult = this.executeLineAttackAction(_aA);
                 break;
         }
 
-        if (attackAction.from.actionsAssociatedStrings[attackAction.round] === undefined) {
-            attackAction.from.actionsAssociatedStrings[attackAction.round] = [];
+        // save attack results
+            // attacker
+        const round = _aA.round;
+        const tAssociatedString = _aA.from.actionsAssociatedStrings;
+        if (tAssociatedString[round] === undefined) {
+            tAssociatedString[round] = [];
         }
-        attackAction.from.actionsAssociatedStrings[attackAction.round].push(attackResult);
-
-        if (attackAction.affected.actionsAssociatedStrings[attackAction.round] === undefined) {
-            attackAction.affected.actionsAssociatedStrings[attackAction.round] = [];
+        tAssociatedString[round].push(attackResult);
+            // target
+        const aAssociatedString = _aA.affected.actionsAssociatedStrings;
+        if (aAssociatedString[round] === undefined) {
+            aAssociatedString[round] = [];
         }
-        attackAction.affected.actionsAssociatedStrings[attackAction.round].push(attackResult);
+        aAssociatedString[round].push(attackResult);
 
-        attackAction.executed = true;
-        attackAction.from.readiness -= attackAction.readiness;
-        HandleTokens(attackAction.from, (p, t) => attackAction.from[t] -= attackAction[t]);
+        // expend resources
+        _aA.executed = true;
+        _aA.from.readiness -= _aA.readiness;
+        HandleTokens(_aA.from, (p, t) => {
+            log(`\t\t${_aA.from.index}) ${t} --${_aA[t]}`)
+            _aA.from[t] -= _aA[t]
+        });
 
-        return attackAction;
+        return _aA;
     }
-    executeMoveAction(moveAction: MoveAction): MoveAction {
-        const stat = moveAction.affected;
-        const axis = moveAction.axis;
+    executeMoveAction(_mA: MoveAction): MoveAction {
+        const stat = _mA.affected;
+        const axis = _mA.axis;
 
-        const possibleSeats = this.getAvailableSpacesAhead(moveAction);
+        const possibleSeats = this.getAvailableSpacesAhead(_mA);
         const finalCoord = getLastElement(possibleSeats);
 
-        const newMagnitude = (finalCoord ? getDistance(finalCoord, moveAction.affected) : 0) * Math.sign(moveAction.magnitude);
+        const newMagnitude = (finalCoord ? getDistance(finalCoord, _mA.affected) : 0) * Math.sign(_mA.magnitude);
         const direction = getDirection(axis, newMagnitude);
 
         this.CSMap.delete(getCoordString(stat))
         stat[axis] += newMagnitude;
         this.CSMap = this.CSMap.set(getCoordString(stat), stat);
         
-        console.log(`${moveAction.from.base.class} (${moveAction.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
+        console.log(`${_mA.from.base.class} (${_mA.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
 
-        moveAction.executed = true;
-        moveAction.from.readiness -= moveAction.readiness;
-        HandleTokens(moveAction.from, (p, t) => moveAction.from[t] -= moveAction[t]);
+        const affected = _mA.affected;
+        _mA.executed = true;
+        affected.readiness -= _mA.readiness;
+        HandleTokens(affected, (p, t) => {
+            log(`\t\t${affected.index}) ${t} --${_mA[t]}`)
+            affected[t] -= _mA[t]
+        });
 
-        return getNewObject(moveAction, { magnitude: newMagnitude });
+        return getNewObject(_mA, { magnitude: newMagnitude });
     }
-    heal(stat: Stat, value: number): string {
-        const beforeHP = roundToDecimalPlace(stat.HP);
-        if (stat.HP > 0) {
-            stat.HP += value;
-            if (stat.HP > getAHP(stat)) stat.HP = getAHP(stat);
+    heal(_healedStat: Stat, _val: number): string {
+        const beforeHP = roundToDecimalPlace(_healedStat.HP);
+        if (_healedStat.HP > 0) {
+            _healedStat.HP += _val;
+            if (_healedStat.HP > getAHP(_healedStat)) _healedStat.HP = getAHP(_healedStat);
         }
-        const afterHP = roundToDecimalPlace(stat.HP);
+        const afterHP = roundToDecimalPlace(_healedStat.HP);
 
-        stat.accolades.healingDone += (afterHP - beforeHP);
+        _healedStat.accolades.healingDone += (afterHP - beforeHP);
         return beforeHP !== afterHP ? `✚ ${beforeHP} => ${afterHP}` : '';
     }
 
@@ -1636,13 +1663,13 @@ export class Battle {
                 },
                 (mA: MoveAction) => {
                     const beforeBattleCoord = getNewObject(victim_beforeCoords);
-                    log(`BeforeBattleCoord: ${beforeBattleCoord.x}, ${beforeBattleCoord.y}`);
+                    // log(`BeforeBattleCoord: ${beforeBattleCoord.x}, ${beforeBattleCoord.y}`);
 
                     victim_beforeCoords[mA.axis] += mA.magnitude * Math.pow(-1, Number(mA.executed));
-                    log(`Action: ${mA.magnitude} (${mA.executed})`);
+                    // log(`Action: ${mA.magnitude} (${mA.executed})`);
                     
                     const afterBattleCoord = getNewObject(victim_beforeCoords);
-                    log(`AfterBattleCoord: ${afterBattleCoord.x}, ${afterBattleCoord.y}`);
+                    // log(`AfterBattleCoord: ${afterBattleCoord.x}, ${afterBattleCoord.y}`);
 
                     // connect to graph
                     // drawMoveAction(beforeBattleCoord, afterBattleCoord, i+1);
@@ -1652,7 +1679,7 @@ export class Battle {
         }
         
         for (const [key, value] of graph.adjGraph.entries()) {
-            log(`Node ${key}`);
+            // log(`Node ${key}`);
             const solidColumns = clamp(value.length, 0, 10);
             const columns = 2 * solidColumns + 1;
             const columnWidth = Math.floor(this.pixelsPerTile / columns);
@@ -1677,7 +1704,7 @@ export class Battle {
                 if (o % 2 === 0) {
                     // log(`Solid edge #${o/2}`);
                     const edgeIndex = (o / 2) - 1;
-                    const edge = value[edgeIndex]; edge.print();
+                    const edge = value[edgeIndex]; // edge.print();
                     const connectingAction = edge.weight;
 
                     const isXtransition = edge.from.position.x !== edge.to.position.x; // change y
@@ -1799,20 +1826,20 @@ export class Battle {
     }
 
     // find entities
-    findEntity_args(args: Array<string>, stat: Stat, weapon?: Weapon): Stat | null {
+    findEntity_args(_args: Array<string>, _attacker: Stat, _weapon?: Weapon): Stat | null {
         const allStats = this.allStats();
         const ignore: Team[] = ["block"];
         const targetNotInIgnore = (c:Stat) => !ignore.includes(c.team);
-        if (weapon && weapon.targetting.target === WeaponTarget.enemy) ignore.push("player");
-        if (weapon && weapon.targetting.target === WeaponTarget.ally) ignore.push("enemy");
+        if (_weapon && _weapon.targetting.target === WeaponTarget.enemy) ignore.push("player");
+        if (_weapon && _weapon.targetting.target === WeaponTarget.ally) ignore.push("enemy");
 
         // 0. self target
-        if (weapon && (weapon.targetting.AOE === "selfCircle" || weapon.targetting.AOE === "self")) {
-            return allStats.find(s => s.index === stat.index) || null;
+        if (_weapon && (_weapon.targetting.AOE === "selfCircle" || _weapon.targetting.AOE === "self")) {
+            return allStats.find(s => s.index === _attacker.index) || null;
         }
 
         // 1. attack through the name
-        const targetName = args[0];
+        const targetName = _args[0];
         const nameTarget = allStats.find(c => {
             return c.index === parseInt(targetName) && targetNotInIgnore(c);
         });
@@ -1836,32 +1863,32 @@ export class Battle {
                 dir: -1,
             },
         };
-        const direction: Direction = args[0] as Direction;
+        const direction: Direction = _args[0] as Direction;
         const axisDirection = translateDir[direction];
         let directionTarget = undefined;
         if (axisDirection !== undefined) {
             const axis: 'x' | 'y' = axisDirection.axis as ('x' | 'y');
             const dir = axisDirection.dir;
-            directionTarget = this.findEntity_closestInAxis(stat, axis, 12 * dir, ignore);
+            directionTarget = this.findEntity_closestInAxis(_attacker, axis, 12 * dir, ignore);
         }
 
         // 3. attack through coordinates
-        const x = parseInt(args[0]);
-        const y = parseInt(args[1]);
+        const x = parseInt(_args[0]);
+        const y = parseInt(_args[1]);
         const coordTarget = (x + y) ? (allStats.find(c => c.x === x && c.y === y && targetNotInIgnore(c))) : null;
 
         // 4. attack closest
-        const closestTarget = this.findEntity_closest(stat, ignore);
+        const closestTarget = this.findEntity_closest(_attacker, ignore);
 
         return directionTarget || coordTarget || nameTarget || closestTarget;
     }
-    findEntity_closestInAxis(attacker: Stat, axis: 'x' | 'y', magnitude: number, ignore: Team[] = []): Stat | null {
-        const obstacles = this.findEntities_allInAxis(attacker, axis, magnitude, ignore);
+    findEntity_closestInAxis(_attacker: Stat, axis: 'x' | 'y', magnitude: number, ignore: Team[] = []): Stat | null {
+        const obstacles = this.findEntities_allInAxis(_attacker, axis, magnitude, ignore);
 
         if (obstacles[0]) {
             const result = obstacles.reduce((closest, ob) => {
-                const newMag = getDistance(attacker, ob);
-                return newMag < getDistance(attacker, closest) ? ob : closest;
+                const newMag = getDistance(_attacker, ob);
+                return newMag < getDistance(_attacker, closest) ? ob : closest;
             }, obstacles[0]);
             return result;
         }
@@ -1870,16 +1897,16 @@ export class Battle {
             return null;
         }
     }
-    findEntity_closest(attacker: Stat, ignore: Team[] = ["block"]): Stat | null {
+    findEntity_closest(_attacker: Stat, ignore: Team[] = ["block"]): Stat | null {
         const allStats = this.allStats();
         let closestDistance = 100;
         const closestR = allStats.reduce((closest: Stat | null, s: Stat) => {
             if (closest !== null && closest.index === s.index) return s;
 
-            const newDistance = getDistance(s, attacker);
+            const newDistance = getDistance(s, _attacker);
 
             // fail cases
-            const selfTargettingIgnored = s.index === attacker.index;
+            const selfTargettingIgnored = s.index === _attacker.index;
             const ignored = ignore.includes(s.team);
             const targetIsDead = s.HP <= 0;
             if (selfTargettingIgnored || ignored || targetIsDead) {
@@ -1890,29 +1917,29 @@ export class Battle {
         }, null);
         return closestR;
     }
-    findEntity_index(index: number): Stat | undefined {
+    findEntity_index(_i: number): Stat | undefined {
         return this.allStats().find(s => (
-            s.index === index
+            s.index === _i
         ));
     }
-    findEntities_allInAxis(attacker: Stat, axis: 'x' | 'y', magnitude: number, ignore: Team[] = []): Array<Stat> {
+    findEntities_allInAxis(_attacker: Stat, _axis: 'x' | 'y', magnitude: number, ignore: Team[] = []): Array<Stat> {
         const allStats = this.allStats();
 
         if (magnitude === 0) return [];
-        const cAxis = counterAxis(axis);
+        const cAxis = counterAxis(_axis);
         const result = allStats.filter(s => {
             if (ignore.includes(s.team)) return false;
 
-            const checkNeg = s[axis] >= attacker[axis] + magnitude && s[axis] < attacker[axis];
-            const checkPos = s[axis] <= attacker[axis] + magnitude && s[axis] > attacker[axis];
+            const checkNeg = s[_axis] >= _attacker[_axis] + magnitude && s[_axis] < _attacker[_axis];
+            const checkPos = s[_axis] <= _attacker[_axis] + magnitude && s[_axis] > _attacker[_axis];
 
             // check negative if magnitude is negative. else, check positive axis
             const conditionOne = (Math.sign(magnitude) == -1) ? checkNeg : checkPos;
-            return (s[cAxis] === attacker[cAxis] && getDistance(attacker, s) !== 0 && conditionOne);
+            return (s[cAxis] === _attacker[cAxis] && getDistance(_attacker, s) !== 0 && conditionOne);
         });
         return result;
     }
-    findEntities_radius(_stat: Coordinate, radius: number, includeSelf: boolean = false, ignore: Array<Team> = ["block"]): Array<Stat> {
+    findEntities_radius(_stat: Coordinate, _r: number, includeSelf: boolean = false, ignore: Array<Team> = ["block"]): Array<Stat> {
         // console.log(_stat, radius, includeSelf, ignore); 
         
         const targetNotInIgnore = (c: Stat) => !ignore.includes(c.team);
@@ -1921,28 +1948,30 @@ export class Battle {
         return this.allStats().filter(s => {
             return (s.index !== stat.index || (typeof stat.index === 'number' && includeSelf))&&
                 targetNotInIgnore(s)&&
-                Math.sqrt(Math.pow((s.x - stat.x), 2) + Math.pow((s.y - stat.y), 2)) <= radius;
+                Math.sqrt(Math.pow((s.x - stat.x), 2) + Math.pow((s.y - stat.y), 2)) <= _r;
         });
     }
-    findEntities_inLine(dot1: Coordinate, dot2: Coordinate): Stat[] {
-        const dx = dot2.x - dot1.x;
-        const dy = dot2.y - dot1.y;
-        const coordDiff = getCompass(dot1, dot2);
+    findEntities_inLine(_x1: Coordinate, _x2: Coordinate): Stat[] {
+        const dx = _x2.x - _x1.x;
+        const dy = _x2.y - _x1.y;
+        const coordDiff = getCompass(_x1, _x2);
         const slope = dy/dx;
         return this.allStats().filter(s => {
-            const x = s.x - dot1.x;
+            const x = s.x - _x1.x;
 
-            const coordDiff_this = getCompass(dot1, s);
+            const coordDiff_this = getCompass(_x1, s);
 
             const lineLength = getPyTheorem(dx, dy);
-            const isWithinDistance = lineLength >= getDistance(dot1, s);
+            const isWithinDistance = lineLength >= getDistance(_x1, s);
 
-            const withinSlopeA = (s.y === (dot1.y + Math.floor(slope * x))) || (s.y === (dot1.y + Math.ceil(slope * x)));
-            const isVertSlope = (Math.abs(slope) === Infinity) || (s.x === dot1.x);
+            const withinSlopeA = (s.y === (_x1.y + Math.floor(slope * x))) || (s.y === (_x1.y + Math.ceil(slope * x)));
+            const isVertSlope = (Math.abs(slope) === Infinity) || (s.x === _x1.x);
 
             return coordDiff.x === coordDiff_this.x && coordDiff.y === coordDiff_this.y && isWithinDistance && (withinSlopeA || isVertSlope);
         });
     }
+
+    // validation
     validateTarget(attackerStat: Stat | null, weapon: Weapon | null, targetStat: Stat | null): TargetingError | null {
         const eM: TargetingError = {
             reason: "",
@@ -2047,14 +2076,14 @@ export class Battle {
         
         return null;
     }
-    validateMovement(moverStat: Stat, moveAction: MoveAction | null): MovingError | null {
+    validateMovement(moverStat: Stat, _mA: MoveAction | null): MovingError | null {
         let movingError: MovingError | null = null;
         const coord = {
-            x: moverStat.x + Number(moveAction?.axis === 'x') * Number(moveAction?.magnitude),
-            y: moverStat.y + Number(moveAction?.axis === 'y') * Number(moveAction?.magnitude)
+            x: moverStat.x + Number(_mA?.axis === 'x') * Number(_mA?.magnitude),
+            y: moverStat.y + Number(_mA?.axis === 'y') * Number(_mA?.magnitude)
         };
 
-        if (moveAction === null) {
+        if (_mA === null) {
             movingError = {
                 reason: "FATAL ERROR! Null pointer detected! Contact a mod!",
                 value: 0
@@ -2066,7 +2095,7 @@ export class Battle {
                 value: moverStat.sprint
             };
         }
-        else if (moverStat.base.maxMove < moveAction.magnitude) {
+        else if (moverStat.base.maxMove < _mA.magnitude) {
             movingError = {
                 reason: "Movement exceeding character limits.",
                 value: moverStat.base.maxMove
@@ -2078,10 +2107,10 @@ export class Battle {
                 value: coord.x + coord.y * Math.pow(10, -1)
             };
         }
-        else if (Math.abs(moveAction.magnitude) < 1) {
+        else if (Math.abs(_mA.magnitude) < 1) {
             movingError = {
                 reason: "Movement magnitude most be at least 1 (or -1).",
-                value: moveAction.magnitude
+                value: _mA.magnitude
             };
         }
 

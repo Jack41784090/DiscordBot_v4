@@ -214,9 +214,12 @@ var Battle = /** @class */ (function () {
                         (0, Utility_1.log)("Readiness ticking...");
                         _loop_1 = function (i) {
                             var s = allStats[i];
+                            if (s.team === 'block')
+                                return "continue";
                             // randomly assign tokens
                             for (var i_1 = 0; i_1 < 2; i_1++) {
                                 var got = (0, Utility_1.random)(0, 2);
+                                (0, Utility_1.log)("\t" + s.base.class + " (" + s.index + ") got " + got);
                                 switch (got) {
                                     case 0:
                                         s.sword++;
@@ -231,6 +234,7 @@ var Battle = /** @class */ (function () {
                             }
                             // limit the entity's tokens
                             (0, Utility_1.HandleTokens)(s, function (p, t) {
+                                (0, Utility_1.log)("\t\t" + s.index + ") " + t + " =" + (0, Utility_1.clamp)(p, 0, 5));
                                 s[t] = (0, Utility_1.clamp)(p, 0, 5);
                             });
                             // increment readiness
@@ -463,7 +467,7 @@ var Battle = /** @class */ (function () {
                         if (!(i <= latestPrio)) return [3 /*break*/, 19];
                         expectedActions = priorityActionMap.get(i);
                         if (!expectedActions) return [3 /*break*/, 18];
-                        this.sortActionsByGreaterPrior(expectedActions);
+                        this.greaterPriorSort(expectedActions);
                         canvas = this.roundSavedCanvasMap.get(i);
                         if (!canvas) {
                             canvas = new canvas_1.Canvas(this.width * 50, this.height * 50);
@@ -491,6 +495,7 @@ var Battle = /** @class */ (function () {
                             var s = allStats[i];
                             (0, Utility_1.HandleTokens)(s, function (p, t) {
                                 if (p > 3) {
+                                    (0, Utility_1.log)("\t\t" + s.index + ") " + t + " =" + 3);
                                     s[t] = 3;
                                 }
                             });
@@ -705,15 +710,17 @@ var Battle = /** @class */ (function () {
         }
         ctx.fillRect(canvasCoord.x, canvasCoord.y, this.pixelsPerTile, this.pixelsPerTile);
     };
-    Battle.prototype.executeVirtualAttack = function (attackAction, virtualStat) {
-        var target = attackAction.affected;
-        var weapon = attackAction.weapon;
-        var check = this.validateTarget(virtualStat, attackAction.weapon, target);
+    // virtual actions (actions that only change the virtualStat)
+    Battle.prototype.executeVirtualAttack = function (_aA, _virtualAttacker) {
+        var target = _aA.affected;
+        var weapon = _aA.weapon;
+        var check = this.validateTarget(_virtualAttacker, _aA.weapon, target);
         if (check === null) { // attack goes through
-            virtualStat.weaponUses[(0, Utility_1.getWeaponIndex)(weapon, virtualStat)]++;
-            virtualStat.readiness -= attackAction.readiness;
-            (0, Utility_1.HandleTokens)(virtualStat, function (p, t) {
-                virtualStat[t] -= attackAction[t];
+            _virtualAttacker.weaponUses[(0, Utility_1.getWeaponIndex)(weapon, _virtualAttacker)]++;
+            _virtualAttacker.readiness -= _aA.readiness;
+            (0, Utility_1.HandleTokens)(_virtualAttacker, function (p, t) {
+                (0, Utility_1.log)("\t\t" + _virtualAttacker.index + ") " + t + " --" + _aA[t]);
+                _virtualAttacker[t] -= _aA[t];
             });
         }
         else { // attack cannot go through
@@ -722,23 +729,24 @@ var Battle = /** @class */ (function () {
         return check === null;
     };
     ;
-    Battle.prototype.executeVirtualMovement = function (moveAction, virtualStat) {
+    Battle.prototype.executeVirtualMovement = function (_mA, virtualStat) {
         (0, Utility_1.log)("\tExecuting virtual movement for " + virtualStat.base.class + " (" + virtualStat.index + ").");
-        var check = this.validateMovement(virtualStat, moveAction);
+        var check = this.validateMovement(virtualStat, _mA);
         if (check === null) {
             (0, Utility_1.log)("\t\tMoved!");
             // spending sprint to move
             if (virtualStat.moved === true) {
-                (0, Utility_1.HandleTokens)(moveAction, function (p, type) {
+                (0, Utility_1.HandleTokens)(_mA, function (p, type) {
                     if (type === "sprint") {
+                        (0, Utility_1.log)("\t\t" + virtualStat.index + ") " + type + " --" + p);
                         virtualStat.sprint -= p;
                     }
                 });
             }
             // other resource drain
-            virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(moveAction.magnitude);
+            virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(_mA.magnitude);
             virtualStat.moved = true;
-            virtualStat[moveAction.axis] += moveAction.magnitude;
+            virtualStat[_mA.axis] += _mA.magnitude;
         }
         else {
             (0, Utility_1.log)("\t\tFailed to move. Reason: " + check.reason + " (" + check.value + ")");
@@ -778,7 +786,7 @@ var Battle = /** @class */ (function () {
             };
             /** Handles the response (response is Discord.Message) */
             var handleQueue = function () { return __awaiter(_this, void 0, void 0, function () {
-                var mes, sections, actionName_1, actionArgs, moveMagnitude, valid_1, _b, moveAction, realMoveStat, check, attackTarget, check, range_1, listOfWeaponsInRange, weaponChosen, virtualAttackAction, realAttackAction, check, undoAction, targetedWeapon, victim, coord, AOE, attackAction, messageOptions;
+                var mes, sections, actionName_1, actionArgs, moveMagnitude, valid_1, _b, moveAction, isFirstMove, realMoveStat, check, attackTarget, check, range_1, listOfWeaponsInRange, weaponChosen, virtualAttackAction, realAttackAction, check, undoAction, targetedWeapon, victim, coord, AOE, attackAction, messageOptions;
                 return __generator(this, function (_c) {
                     switch (_c.label) {
                         case 0:
@@ -812,12 +820,13 @@ var Battle = /** @class */ (function () {
                             return [3 /*break*/, 12];
                         case 2:
                             moveAction = (0, Utility_1.getMoveAction)(virtualStat, actionName_1, infoMessagesQueue.length, moveMagnitude);
+                            isFirstMove = !virtualStat.moved;
                             // validate + act on (if valid) movement on virtual map
                             valid_1 = this.executeVirtualMovement(moveAction, virtualStat);
                             // movement is permitted
                             if (valid_1) {
                                 realMoveStat = (0, Utility_1.getMoveAction)(realStat, actionName_1, infoMessagesQueue.length, moveMagnitude);
-                                if (virtualStat.moved) {
+                                if (!isFirstMove) {
                                     realMoveStat.sprint = 1;
                                 }
                                 mes.react('✅');
@@ -1007,31 +1016,32 @@ var Battle = /** @class */ (function () {
         });
     };
     // index manipulation
-    Battle.prototype.getIndex_lookUp = function (min, max) {
-        if (Math.abs(min - max) <= 1)
-            return null;
-        var middle = Math.floor((max + min) / 2);
-        var got = this.allIndex.get(middle);
-        // log(min, middle, max);
-        if (!got)
-            return middle;
-        else
-            return this.getIndex_lookUp(min, middle) || this.getIndex_lookUp(middle, max);
-    };
     Battle.prototype.getIndex = function (stat) {
-        if (this.allIndex.size < 1) {
-            if (stat)
-                stat.index = 0;
-            return 0;
+        var _this = this;
+        var index = 0;
+        if (this.allIndex.size > 0) {
+            var lookUp_1 = function (min, max) {
+                if (Math.abs(min - max) <= 1) {
+                    return null;
+                }
+                var middle = Math.floor((max + min) / 2);
+                var got = _this.allIndex.get(middle);
+                return got ?
+                    (lookUp_1(min, middle) || lookUp_1(middle, max)) :
+                    middle;
+            };
+            var allIndex = Array.from(this.allIndex.keys()).sort(function (a, b) { return a - b; });
+            index = lookUp_1(0, (0, Utility_1.getLastElement)(allIndex));
+            if (index === null) {
+                index = (0, Utility_1.getLastElement)(allIndex) + 1;
+            }
         }
-        var indexi = Array.from(this.allIndex.keys()).sort(function (a, b) { return a - b; });
-        var lookUpIndex = this.getIndex_lookUp(0, (0, Utility_1.getLastElement)(indexi));
-        if (lookUpIndex === null)
-            lookUpIndex = (0, Utility_1.getLastElement)(indexi) + 1;
         if (stat) {
-            stat.index = lookUpIndex;
+            stat.index = index;
         }
-        return lookUpIndex;
+        return index === null ?
+            this.getIndex() :
+            index;
     };
     Battle.prototype.setIndex = function (stat) {
         var oldIndex = stat.index;
@@ -1167,135 +1177,150 @@ var Battle = /** @class */ (function () {
             this.tobespawnedArray.push(failedToSpawn[i]);
         }
     };
-    Battle.prototype.getGreaterPrio = function (a) { return (1000 * (20 - a.round)) + (a.from.readiness - a.readiness); };
+    Battle.prototype.getGreaterPrio = function (a) {
+        return (1000 * (20 - a.round)) + (a.from.readiness - a.readiness);
+    };
     ;
-    Battle.prototype.sortActionsByGreaterPrior = function (actions) {
+    Battle.prototype.greaterPriorSort = function (_actions) {
         var _this = this;
-        var sortedActions = actions.sort(function (a, b) { return _this.getGreaterPrio(b) - _this.getGreaterPrio(a); });
+        var sortedActions = _actions.sort(function (a, b) { return _this.getGreaterPrio(b) - _this.getGreaterPrio(a); });
         return sortedActions;
     };
-    Battle.prototype.executeActions = function (actions) {
+    // actions
+    Battle.prototype.executeActions = function (_actions) {
         (0, Utility_1.log)("Executing actions...");
         var returning = [];
-        this.sortActionsByGreaterPrior(actions);
-        var executing = actions.shift();
+        this.greaterPriorSort(_actions);
+        var executing = _actions.shift();
         while (executing) {
             returning.push(this.executeOneAction(executing));
-            executing = actions.shift();
+            executing = _actions.shift();
         }
         return returning;
     };
-    Battle.prototype.executeOneAction = function (action) {
-        var mAction = action;
-        var aAction = action;
-        return action.type === 'Attack' ?
+    Battle.prototype.executeOneAction = function (_action) {
+        var mAction = _action;
+        var aAction = _action;
+        return _action.type === 'Attack' ?
             this.executeAttackAction(aAction) :
             this.executeMoveAction(mAction);
     };
-    // actions
-    Battle.prototype.executeAttackAction = function (attackAction) {
-        var _this = this;
-        var target = attackAction.affected;
-        var attacker = attackAction.from;
-        var weapon = attackAction.weapon;
-        var SA = function (gStat, gTarget) {
-            if (gStat === void 0) { gStat = attacker; }
-            if (gTarget === void 0) { gTarget = target; }
-            var eM = _this.validateTarget(attacker, weapon, target);
-            var string = '';
-            if (eM) {
-                (0, Utility_1.log)(attacker.base.class + " failed to attack " + target.base.class + ". Reason: " + eM.reason);
-                string = "**" + attacker.base.class + "** (" + attacker.index + ") \u2694\uFE0F **" + target.base.class + "** (" + target.index + ") \u274C" + eM.reason + (eM.value !== null ? " ( " + eM.value + " )" : "");
-            }
-            else {
-                // valid attack
-                var clashResult = _this.clash(gStat, gTarget, weapon);
-                var clashAfterMathString = _this.applyClash(clashResult, gStat, gTarget, weapon);
-                string = clashAfterMathString + "";
-            }
-            return string;
-        };
-        var AOE = function (center, inclusive) {
-            var enemiesInRadius = _this.findEntities_radius(center, weapon.Range[2] || weapon.Range[1], inclusive);
-            var arrayOfResults = [];
-            var string = '';
-            for (var i = 0; i < enemiesInRadius.length; i++) {
-                var SAResult = SA(attacker, enemiesInRadius[i]);
-                string += SAResult;
-                arrayOfResults.push(SAResult);
-            }
-            return string;
-        };
-        var line = function () {
-            var yDif = target.y - attacker.y;
-            var xDif = target.x - attacker.x;
-            var slope = yDif / xDif;
-            (0, Utility_1.log)("\tslope: " + slope);
-            var enemiesInLine = _this.findEntities_inLine(attacker, target);
-            (0, Utility_1.log)("\t" + enemiesInLine.length + " enemies in line");
-            var string = '';
-            var arrayOfResults = [];
-            for (var i = 0; i < enemiesInLine.length; i++) {
-                var SAResult = SA(attacker, enemiesInLine[i]);
-                string += SAResult;
-                arrayOfResults.push(SAResult);
-            }
-            return string;
-        };
+    Battle.prototype.executeSingleTargetAttackAction = function (_aA) {
+        var attacker = _aA.from;
+        var target = _aA.affected;
+        var weapon = _aA.weapon;
+        var eM = this.validateTarget(attacker, weapon, target);
+        var string = '';
+        if (eM) {
+            (0, Utility_1.log)(attacker.base.class + " failed to attack " + target.base.class + ". Reason: " + eM.reason);
+            string = "**" + attacker.base.class + "** (" + attacker.index + ") \u2694\uFE0F **" + target.base.class + "** (" + target.index + ")\n\u274C" + eM.reason + (eM.value !== null ? " ( " + eM.value + " )" : "");
+        }
+        else {
+            // valid attack
+            var clashResult = this.clash(attacker, target, weapon);
+            var clashAfterMathString = this.applyClash(clashResult, attacker, target, weapon);
+            string = clashAfterMathString + "";
+        }
+        return string;
+    };
+    ;
+    Battle.prototype.executeAOEAttackAction = function (_aA, inclusive) {
+        if (inclusive === void 0) { inclusive = true; }
+        var center = _aA.coordinate;
+        var weapon = _aA.weapon;
+        var attacker = _aA.from;
+        var enemiesInRadius = this.findEntities_radius(center, weapon.Range[2] || weapon.Range[1], inclusive);
+        var string = '';
+        for (var i = 0; i < enemiesInRadius.length; i++) {
+            var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, enemiesInRadius[i], weapon, enemiesInRadius[i], _aA.round);
+            var SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
+            string += SAResult;
+        }
+        return string;
+    };
+    ;
+    Battle.prototype.executeLineAttackAction = function (_aA) {
+        var target = _aA.affected;
+        var attacker = _aA.from;
+        var enemiesInLine = this.findEntities_inLine(attacker, target);
+        var string = '';
+        for (var i = 0; i < enemiesInLine.length; i++) {
+            var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, target, _aA.weapon, enemiesInLine[i], _aA.round);
+            var SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
+            string += SAResult;
+        }
+        return string;
+    };
+    ;
+    Battle.prototype.executeAttackAction = function (_aA) {
         var attackResult = "";
-        switch (weapon.targetting.AOE) {
+        switch (_aA.weapon.targetting.AOE) {
             case "single":
             case "touch":
-                attackResult = SA();
+                attackResult = this.executeSingleTargetAttackAction(_aA);
                 break;
             case "circle":
-                attackResult = AOE(attackAction.coordinate, true);
+                attackResult = this.executeAOEAttackAction(_aA, true);
                 break;
             case "selfCircle":
-                attackResult = AOE(attacker, false);
+                attackResult = this.executeAOEAttackAction(_aA, false);
                 break;
             case "line":
-                attackResult = line();
+                attackResult = this.executeLineAttackAction(_aA);
                 break;
         }
-        if (attackAction.from.actionsAssociatedStrings[attackAction.round] === undefined) {
-            attackAction.from.actionsAssociatedStrings[attackAction.round] = [];
+        // save attack results
+        // attacker
+        var round = _aA.round;
+        var tAssociatedString = _aA.from.actionsAssociatedStrings;
+        if (tAssociatedString[round] === undefined) {
+            tAssociatedString[round] = [];
         }
-        attackAction.from.actionsAssociatedStrings[attackAction.round].push(attackResult);
-        if (attackAction.affected.actionsAssociatedStrings[attackAction.round] === undefined) {
-            attackAction.affected.actionsAssociatedStrings[attackAction.round] = [];
+        tAssociatedString[round].push(attackResult);
+        // target
+        var aAssociatedString = _aA.affected.actionsAssociatedStrings;
+        if (aAssociatedString[round] === undefined) {
+            aAssociatedString[round] = [];
         }
-        attackAction.affected.actionsAssociatedStrings[attackAction.round].push(attackResult);
-        attackAction.executed = true;
-        attackAction.from.readiness -= attackAction.readiness;
-        (0, Utility_1.HandleTokens)(attackAction.from, function (p, t) { return attackAction.from[t] -= attackAction[t]; });
-        return attackAction;
+        aAssociatedString[round].push(attackResult);
+        // expend resources
+        _aA.executed = true;
+        _aA.from.readiness -= _aA.readiness;
+        (0, Utility_1.HandleTokens)(_aA.from, function (p, t) {
+            (0, Utility_1.log)("\t\t" + _aA.from.index + ") " + t + " --" + _aA[t]);
+            _aA.from[t] -= _aA[t];
+        });
+        return _aA;
     };
-    Battle.prototype.executeMoveAction = function (moveAction) {
-        var stat = moveAction.affected;
-        var axis = moveAction.axis;
-        var possibleSeats = this.getAvailableSpacesAhead(moveAction);
+    Battle.prototype.executeMoveAction = function (_mA) {
+        var stat = _mA.affected;
+        var axis = _mA.axis;
+        var possibleSeats = this.getAvailableSpacesAhead(_mA);
         var finalCoord = (0, Utility_1.getLastElement)(possibleSeats);
-        var newMagnitude = (finalCoord ? (0, Utility_1.getDistance)(finalCoord, moveAction.affected) : 0) * Math.sign(moveAction.magnitude);
+        var newMagnitude = (finalCoord ? (0, Utility_1.getDistance)(finalCoord, _mA.affected) : 0) * Math.sign(_mA.magnitude);
         var direction = (0, Utility_1.getDirection)(axis, newMagnitude);
         this.CSMap.delete((0, Utility_1.getCoordString)(stat));
         stat[axis] += newMagnitude;
         this.CSMap = this.CSMap.set((0, Utility_1.getCoordString)(stat), stat);
-        console.log(moveAction.from.base.class + " (" + moveAction.from.index + ") \uD83D\uDC62" + (0, Utility_1.formalize)(direction) + " " + Math.abs(newMagnitude) + " blocks.");
-        moveAction.executed = true;
-        moveAction.from.readiness -= moveAction.readiness;
-        (0, Utility_1.HandleTokens)(moveAction.from, function (p, t) { return moveAction.from[t] -= moveAction[t]; });
-        return (0, Utility_1.getNewObject)(moveAction, { magnitude: newMagnitude });
+        console.log(_mA.from.base.class + " (" + _mA.from.index + ") \uD83D\uDC62" + (0, Utility_1.formalize)(direction) + " " + Math.abs(newMagnitude) + " blocks.");
+        var affected = _mA.affected;
+        _mA.executed = true;
+        affected.readiness -= _mA.readiness;
+        (0, Utility_1.HandleTokens)(affected, function (p, t) {
+            (0, Utility_1.log)("\t\t" + affected.index + ") " + t + " --" + _mA[t]);
+            affected[t] -= _mA[t];
+        });
+        return (0, Utility_1.getNewObject)(_mA, { magnitude: newMagnitude });
     };
-    Battle.prototype.heal = function (stat, value) {
-        var beforeHP = (0, Utility_1.roundToDecimalPlace)(stat.HP);
-        if (stat.HP > 0) {
-            stat.HP += value;
-            if (stat.HP > (0, Utility_1.getAHP)(stat))
-                stat.HP = (0, Utility_1.getAHP)(stat);
+    Battle.prototype.heal = function (_healedStat, _val) {
+        var beforeHP = (0, Utility_1.roundToDecimalPlace)(_healedStat.HP);
+        if (_healedStat.HP > 0) {
+            _healedStat.HP += _val;
+            if (_healedStat.HP > (0, Utility_1.getAHP)(_healedStat))
+                _healedStat.HP = (0, Utility_1.getAHP)(_healedStat);
         }
-        var afterHP = (0, Utility_1.roundToDecimalPlace)(stat.HP);
-        stat.accolades.healingDone += (afterHP - beforeHP);
+        var afterHP = (0, Utility_1.roundToDecimalPlace)(_healedStat.HP);
+        _healedStat.accolades.healingDone += (afterHP - beforeHP);
         return beforeHP !== afterHP ? "\u271A " + beforeHP + " => " + afterHP : '';
     };
     // return Battle-related information
@@ -1657,11 +1682,11 @@ var Battle = /** @class */ (function () {
                                                 });
                                             }); }, function (mA) {
                                                 var beforeBattleCoord = (0, Utility_1.getNewObject)(victim_beforeCoords);
-                                                (0, Utility_1.log)("BeforeBattleCoord: " + beforeBattleCoord.x + ", " + beforeBattleCoord.y);
+                                                // log(`BeforeBattleCoord: ${beforeBattleCoord.x}, ${beforeBattleCoord.y}`);
                                                 victim_beforeCoords[mA.axis] += mA.magnitude * Math.pow(-1, Number(mA.executed));
-                                                (0, Utility_1.log)("Action: " + mA.magnitude + " (" + mA.executed + ")");
+                                                // log(`Action: ${mA.magnitude} (${mA.executed})`);
                                                 var afterBattleCoord = (0, Utility_1.getNewObject)(victim_beforeCoords);
-                                                (0, Utility_1.log)("AfterBattleCoord: " + afterBattleCoord.x + ", " + afterBattleCoord.y);
+                                                // log(`AfterBattleCoord: ${afterBattleCoord.x}, ${afterBattleCoord.y}`);
                                                 // connect to graph
                                                 // drawMoveAction(beforeBattleCoord, afterBattleCoord, i+1);
                                                 appendGraph(mA, beforeBattleCoord, afterBattleCoord, i + 1);
@@ -1687,7 +1712,6 @@ var Battle = /** @class */ (function () {
                         try {
                             for (_b = __values(graph.adjGraph.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
                                 _d = __read(_c.value, 2), key = _d[0], value = _d[1];
-                                (0, Utility_1.log)("Node " + key);
                                 solidColumns = (0, Utility_1.clamp)(value.length, 0, 10);
                                 columns = 2 * solidColumns + 1;
                                 columnWidth = Math.floor(this.pixelsPerTile / columns);
@@ -1711,7 +1735,6 @@ var Battle = /** @class */ (function () {
                                     if (o % 2 === 0) {
                                         edgeIndex = (o / 2) - 1;
                                         edge = value[edgeIndex];
-                                        edge.print();
                                         connectingAction = edge.weight;
                                         isXtransition = edge.from.position.x !== edge.to.position.x;
                                         isYtransition = edge.from.position.y !== edge.to.position.y;
@@ -1848,20 +1871,20 @@ var Battle = /** @class */ (function () {
         });
     };
     // find entities
-    Battle.prototype.findEntity_args = function (args, stat, weapon) {
+    Battle.prototype.findEntity_args = function (_args, _attacker, _weapon) {
         var allStats = this.allStats();
         var ignore = ["block"];
         var targetNotInIgnore = function (c) { return !ignore.includes(c.team); };
-        if (weapon && weapon.targetting.target === typedef_1.WeaponTarget.enemy)
+        if (_weapon && _weapon.targetting.target === typedef_1.WeaponTarget.enemy)
             ignore.push("player");
-        if (weapon && weapon.targetting.target === typedef_1.WeaponTarget.ally)
+        if (_weapon && _weapon.targetting.target === typedef_1.WeaponTarget.ally)
             ignore.push("enemy");
         // 0. self target
-        if (weapon && (weapon.targetting.AOE === "selfCircle" || weapon.targetting.AOE === "self")) {
-            return allStats.find(function (s) { return s.index === stat.index; }) || null;
+        if (_weapon && (_weapon.targetting.AOE === "selfCircle" || _weapon.targetting.AOE === "self")) {
+            return allStats.find(function (s) { return s.index === _attacker.index; }) || null;
         }
         // 1. attack through the name
-        var targetName = args[0];
+        var targetName = _args[0];
         var nameTarget = allStats.find(function (c) {
             return c.index === parseInt(targetName) && targetNotInIgnore(c);
         });
@@ -1884,29 +1907,29 @@ var Battle = /** @class */ (function () {
                 dir: -1,
             },
         };
-        var direction = args[0];
+        var direction = _args[0];
         var axisDirection = translateDir[direction];
         var directionTarget = undefined;
         if (axisDirection !== undefined) {
             var axis = axisDirection.axis;
             var dir = axisDirection.dir;
-            directionTarget = this.findEntity_closestInAxis(stat, axis, 12 * dir, ignore);
+            directionTarget = this.findEntity_closestInAxis(_attacker, axis, 12 * dir, ignore);
         }
         // 3. attack through coordinates
-        var x = parseInt(args[0]);
-        var y = parseInt(args[1]);
+        var x = parseInt(_args[0]);
+        var y = parseInt(_args[1]);
         var coordTarget = (x + y) ? (allStats.find(function (c) { return c.x === x && c.y === y && targetNotInIgnore(c); })) : null;
         // 4. attack closest
-        var closestTarget = this.findEntity_closest(stat, ignore);
+        var closestTarget = this.findEntity_closest(_attacker, ignore);
         return directionTarget || coordTarget || nameTarget || closestTarget;
     };
-    Battle.prototype.findEntity_closestInAxis = function (attacker, axis, magnitude, ignore) {
+    Battle.prototype.findEntity_closestInAxis = function (_attacker, axis, magnitude, ignore) {
         if (ignore === void 0) { ignore = []; }
-        var obstacles = this.findEntities_allInAxis(attacker, axis, magnitude, ignore);
+        var obstacles = this.findEntities_allInAxis(_attacker, axis, magnitude, ignore);
         if (obstacles[0]) {
             var result = obstacles.reduce(function (closest, ob) {
-                var newMag = (0, Utility_1.getDistance)(attacker, ob);
-                return newMag < (0, Utility_1.getDistance)(attacker, closest) ? ob : closest;
+                var newMag = (0, Utility_1.getDistance)(_attacker, ob);
+                return newMag < (0, Utility_1.getDistance)(_attacker, closest) ? ob : closest;
             }, obstacles[0]);
             return result;
         }
@@ -1914,16 +1937,16 @@ var Battle = /** @class */ (function () {
             return null;
         }
     };
-    Battle.prototype.findEntity_closest = function (attacker, ignore) {
+    Battle.prototype.findEntity_closest = function (_attacker, ignore) {
         if (ignore === void 0) { ignore = ["block"]; }
         var allStats = this.allStats();
         var closestDistance = 100;
         var closestR = allStats.reduce(function (closest, s) {
             if (closest !== null && closest.index === s.index)
                 return s;
-            var newDistance = (0, Utility_1.getDistance)(s, attacker);
+            var newDistance = (0, Utility_1.getDistance)(s, _attacker);
             // fail cases
-            var selfTargettingIgnored = s.index === attacker.index;
+            var selfTargettingIgnored = s.index === _attacker.index;
             var ignored = ignore.includes(s.team);
             var targetIsDead = s.HP <= 0;
             if (selfTargettingIgnored || ignored || targetIsDead) {
@@ -1933,27 +1956,27 @@ var Battle = /** @class */ (function () {
         }, null);
         return closestR;
     };
-    Battle.prototype.findEntity_index = function (index) {
-        return this.allStats().find(function (s) { return (s.index === index); });
+    Battle.prototype.findEntity_index = function (_i) {
+        return this.allStats().find(function (s) { return (s.index === _i); });
     };
-    Battle.prototype.findEntities_allInAxis = function (attacker, axis, magnitude, ignore) {
+    Battle.prototype.findEntities_allInAxis = function (_attacker, _axis, magnitude, ignore) {
         if (ignore === void 0) { ignore = []; }
         var allStats = this.allStats();
         if (magnitude === 0)
             return [];
-        var cAxis = (0, Utility_1.counterAxis)(axis);
+        var cAxis = (0, Utility_1.counterAxis)(_axis);
         var result = allStats.filter(function (s) {
             if (ignore.includes(s.team))
                 return false;
-            var checkNeg = s[axis] >= attacker[axis] + magnitude && s[axis] < attacker[axis];
-            var checkPos = s[axis] <= attacker[axis] + magnitude && s[axis] > attacker[axis];
+            var checkNeg = s[_axis] >= _attacker[_axis] + magnitude && s[_axis] < _attacker[_axis];
+            var checkPos = s[_axis] <= _attacker[_axis] + magnitude && s[_axis] > _attacker[_axis];
             // check negative if magnitude is negative. else, check positive axis
             var conditionOne = (Math.sign(magnitude) == -1) ? checkNeg : checkPos;
-            return (s[cAxis] === attacker[cAxis] && (0, Utility_1.getDistance)(attacker, s) !== 0 && conditionOne);
+            return (s[cAxis] === _attacker[cAxis] && (0, Utility_1.getDistance)(_attacker, s) !== 0 && conditionOne);
         });
         return result;
     };
-    Battle.prototype.findEntities_radius = function (_stat, radius, includeSelf, ignore) {
+    Battle.prototype.findEntities_radius = function (_stat, _r, includeSelf, ignore) {
         // console.log(_stat, radius, includeSelf, ignore); 
         if (includeSelf === void 0) { includeSelf = false; }
         if (ignore === void 0) { ignore = ["block"]; }
@@ -1962,24 +1985,25 @@ var Battle = /** @class */ (function () {
         return this.allStats().filter(function (s) {
             return (s.index !== stat.index || (typeof stat.index === 'number' && includeSelf)) &&
                 targetNotInIgnore(s) &&
-                Math.sqrt(Math.pow((s.x - stat.x), 2) + Math.pow((s.y - stat.y), 2)) <= radius;
+                Math.sqrt(Math.pow((s.x - stat.x), 2) + Math.pow((s.y - stat.y), 2)) <= _r;
         });
     };
-    Battle.prototype.findEntities_inLine = function (dot1, dot2) {
-        var dx = dot2.x - dot1.x;
-        var dy = dot2.y - dot1.y;
-        var coordDiff = (0, Utility_1.getCompass)(dot1, dot2);
+    Battle.prototype.findEntities_inLine = function (_x1, _x2) {
+        var dx = _x2.x - _x1.x;
+        var dy = _x2.y - _x1.y;
+        var coordDiff = (0, Utility_1.getCompass)(_x1, _x2);
         var slope = dy / dx;
         return this.allStats().filter(function (s) {
-            var x = s.x - dot1.x;
-            var coordDiff_this = (0, Utility_1.getCompass)(dot1, s);
+            var x = s.x - _x1.x;
+            var coordDiff_this = (0, Utility_1.getCompass)(_x1, s);
             var lineLength = (0, Utility_1.getPyTheorem)(dx, dy);
-            var isWithinDistance = lineLength >= (0, Utility_1.getDistance)(dot1, s);
-            var withinSlopeA = (s.y === (dot1.y + Math.floor(slope * x))) || (s.y === (dot1.y + Math.ceil(slope * x)));
-            var isVertSlope = (Math.abs(slope) === Infinity) || (s.x === dot1.x);
+            var isWithinDistance = lineLength >= (0, Utility_1.getDistance)(_x1, s);
+            var withinSlopeA = (s.y === (_x1.y + Math.floor(slope * x))) || (s.y === (_x1.y + Math.ceil(slope * x)));
+            var isVertSlope = (Math.abs(slope) === Infinity) || (s.x === _x1.x);
             return coordDiff.x === coordDiff_this.x && coordDiff.y === coordDiff_this.y && isWithinDistance && (withinSlopeA || isVertSlope);
         });
     };
+    // validation
     Battle.prototype.validateTarget = function (attackerStat, weapon, targetStat) {
         var eM = {
             reason: "",
@@ -2070,13 +2094,13 @@ var Battle = /** @class */ (function () {
         }
         return null;
     };
-    Battle.prototype.validateMovement = function (moverStat, moveAction) {
+    Battle.prototype.validateMovement = function (moverStat, _mA) {
         var movingError = null;
         var coord = {
-            x: moverStat.x + Number((moveAction === null || moveAction === void 0 ? void 0 : moveAction.axis) === 'x') * Number(moveAction === null || moveAction === void 0 ? void 0 : moveAction.magnitude),
-            y: moverStat.y + Number((moveAction === null || moveAction === void 0 ? void 0 : moveAction.axis) === 'y') * Number(moveAction === null || moveAction === void 0 ? void 0 : moveAction.magnitude)
+            x: moverStat.x + Number((_mA === null || _mA === void 0 ? void 0 : _mA.axis) === 'x') * Number(_mA === null || _mA === void 0 ? void 0 : _mA.magnitude),
+            y: moverStat.y + Number((_mA === null || _mA === void 0 ? void 0 : _mA.axis) === 'y') * Number(_mA === null || _mA === void 0 ? void 0 : _mA.magnitude)
         };
-        if (moveAction === null) {
+        if (_mA === null) {
             movingError = {
                 reason: "FATAL ERROR! Null pointer detected! Contact a mod!",
                 value: 0
@@ -2088,7 +2112,7 @@ var Battle = /** @class */ (function () {
                 value: moverStat.sprint
             };
         }
-        else if (moverStat.base.maxMove < moveAction.magnitude) {
+        else if (moverStat.base.maxMove < _mA.magnitude) {
             movingError = {
                 reason: "Movement exceeding character limits.",
                 value: moverStat.base.maxMove
@@ -2100,10 +2124,10 @@ var Battle = /** @class */ (function () {
                 value: coord.x + coord.y * Math.pow(10, -1)
             };
         }
-        else if (Math.abs(moveAction.magnitude) < 1) {
+        else if (Math.abs(_mA.magnitude) < 1) {
             movingError = {
                 reason: "Movement magnitude most be at least 1 (or -1).",
-                value: moveAction.magnitude
+                value: _mA.magnitude
             };
         }
         return movingError;
