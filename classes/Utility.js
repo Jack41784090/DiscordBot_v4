@@ -826,6 +826,7 @@ function getStat(bss, _owner) {
         name: "" + bss.class,
         weaponUses: [],
         actionsAssociatedStrings: {},
+        statusEffects: [],
         HP: base.AHP,
         readiness: 0,
         moved: false,

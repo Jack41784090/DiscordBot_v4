@@ -225,54 +225,68 @@ function getFileImage(path) {
 }
 exports.getFileImage = getFileImage;
 function getIcon(_stat) {
+    var threadID = (0, Utility_1.random)(0, 10000);
+    (0, Utility_1.log)("\t\t\tGetting icon for " + _stat.base.class + "(" + _stat.index + ") (" + threadID + ")");
     var iconURL = _stat.base.iconURL;
     var image = new canvas_1.Image();
-    return new Promise(function (resolve) {
-        image.onload = function () {
-            clearTimeout(invalidURLTimeout);
-            var squaredSize = Math.min(image.width, image.height);
-            var _a = (0, Utility_1.startDrawing)(squaredSize, squaredSize), canvas = _a.canvas, ctx = _a.ctx;
-            ctx.save();
-            // draw image
-            var halfedImage = image.height / 2;
-            var halfedSquare = squaredSize / 2;
-            var increasing = Math.abs(halfedImage - halfedSquare);
-            ctx.drawImage(image, 0, increasing, squaredSize, squaredSize, 0, 0, squaredSize, squaredSize);
-            // crop
-            ctx.globalCompositeOperation = 'destination-in';
-            ctx.fillStyle = "#000";
-            ctx.beginPath();
-            ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.closePath();
-            // team color (green/red)
-            ctx.globalCompositeOperation = "source-over";
-            ctx.lineWidth = 5;
-            ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
-                r: 255 * Number(_stat.team === "enemy"),
-                g: 255 * Number(_stat.team === "player"),
-                b: 0,
-                alpha: 1
-            });
-            (0, Utility_1.drawCircle)(ctx, {
-                x: squaredSize / 2,
-                y: squaredSize / 2
-            }, squaredSize / 2);
-            ctx.restore();
-            resolve(canvas);
-        };
-        if (_stat.owner) {
-            __1.BotClient.users.fetch(_stat.owner).then(function (u) {
-                image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(".webp", ".png");
-            });
+    var requestPromise = new Promise(function (resolve) {
+        try {
+            // take at most 10 seconds to get icon before using default icon    
+            var invalidURLTimeout_1 = setTimeout(function () {
+                (0, Utility_1.log)("\t\t\t\tFailed. (" + threadID + ")");
+                image.src = "https://cdn.discordapp.com/embed/avatars/0.png";
+            }, 10 * 1000);
+            // set onLoad after timeout
+            image.onload = function () {
+                (0, Utility_1.log)("\t\t\t\tSuccess! (" + threadID + ")");
+                clearTimeout(invalidURLTimeout_1);
+                var squaredSize = Math.min(image.width, image.height);
+                var _a = (0, Utility_1.startDrawing)(squaredSize, squaredSize), canvas = _a.canvas, ctx = _a.ctx;
+                ctx.save();
+                // draw image
+                var halfedImage = image.height / 2;
+                var halfedSquare = squaredSize / 2;
+                var increasing = Math.abs(halfedImage - halfedSquare);
+                ctx.drawImage(image, 0, increasing, squaredSize, squaredSize, 0, 0, squaredSize, squaredSize);
+                // crop
+                ctx.globalCompositeOperation = 'destination-in';
+                ctx.fillStyle = "#000";
+                ctx.beginPath();
+                ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.closePath();
+                // team color (green/red)
+                ctx.globalCompositeOperation = "source-over";
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
+                    r: 255 * Number(_stat.team === "enemy"),
+                    g: 255 * Number(_stat.team === "player"),
+                    b: 0,
+                    alpha: 1
+                });
+                (0, Utility_1.drawCircle)(ctx, {
+                    x: squaredSize / 2,
+                    y: squaredSize / 2
+                }, squaredSize / 2);
+                ctx.restore();
+                resolve(canvas);
+            };
+            // getting icon for stat, changes if there is an owner (Discord user ID) attached
+            if (_stat.owner) {
+                __1.BotClient.users.fetch(_stat.owner).then(function (u) {
+                    image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(".webp", ".png");
+                });
+            }
+            else {
+                image.src = iconURL;
+            }
         }
-        else {
-            image.src = iconURL;
+        catch (error) {
+            console.error(error);
+            resolve(getIcon(_stat));
         }
-        var invalidURLTimeout = setTimeout(function () {
-            image.src = "https://cdn.discordapp.com/embed/avatars/0.png";
-        }, 10 * 1000);
     });
+    return requestPromise;
 }
 exports.getIcon = getIcon;
 function getBufferFromImage(image) {

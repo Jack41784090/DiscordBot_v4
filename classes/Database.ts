@@ -5,7 +5,7 @@ import * as admin from 'firebase-admin'
 import * as serviceAccount from '../serviceAccount.json'
 import { Canvas, Image } from "canvas";
 import { ServiceAccount } from "firebase-admin";
-import { drawCircle, drawText, getBaseStat, getCSFromMap, getStat, log, startDrawing, stringifyRGBA } from "./Utility";
+import { drawCircle, drawText, getBaseStat, getCSFromMap, getStat, log, random, startDrawing, stringifyRGBA } from "./Utility";
 import { Battle } from "./Battle";
 import { BotClient } from "..";
 
@@ -112,64 +112,82 @@ export function getFileImage(path: string): Promise<Image> {
 }
 export function getIcon(_stat: Stat): Promise<Canvas>
 {
+    const threadID = random(0, 10000);
+    log(`\t\t\tGetting icon for ${_stat.base.class}(${_stat.index}) (${threadID})`)
+
     const iconURL = _stat.base.iconURL;
     const image = new Image();
-    return new Promise((resolve) => {
-        image.onload = () => {
-            clearTimeout(invalidURLTimeout);
+    const requestPromise = new Promise<Canvas>((resolve) => {
+        try {
+            // take at most 10 seconds to get icon before using default icon    
+            const invalidURLTimeout = setTimeout(() => {
+                log(`\t\t\t\tFailed. (${threadID})`)
+                image.src = "https://cdn.discordapp.com/embed/avatars/0.png";
+            }, 10 * 1000);
 
-            const squaredSize = Math.min(image.width, image.height);
-            const { canvas, ctx } = startDrawing(squaredSize, squaredSize);
+            // set onLoad after timeout
+            image.onload = () => {
+                log(`\t\t\t\tSuccess! (${threadID})`)
 
-            ctx.save();
+                clearTimeout(invalidURLTimeout);
 
-            // draw image
-            const halfedImage = image.height / 2;
-            const halfedSquare = squaredSize / 2;
-            const increasing = Math.abs(halfedImage - halfedSquare);
-            ctx.drawImage(image, 0, increasing, squaredSize, squaredSize, 0, 0, squaredSize, squaredSize);
+                const squaredSize = Math.min(image.width, image.height);
+                const { canvas, ctx } = startDrawing(squaredSize, squaredSize);
 
-            // crop
-            ctx.globalCompositeOperation = 'destination-in';
-            
-            ctx.fillStyle = "#000";
-            ctx.beginPath();
-            ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.closePath();
+                ctx.save();
 
-            // team color (green/red)
-            ctx.globalCompositeOperation = "source-over";
+                // draw image
+                const halfedImage = image.height / 2;
+                const halfedSquare = squaredSize / 2;
+                const increasing = Math.abs(halfedImage - halfedSquare);
+                ctx.drawImage(image, 0, increasing, squaredSize, squaredSize, 0, 0, squaredSize, squaredSize);
 
-            ctx.lineWidth = 5;
-            ctx.strokeStyle = stringifyRGBA({
-                r: 255 * Number(_stat.team === "enemy"),
-                g: 255 * Number(_stat.team === "player"),
-                b: 0,
-                alpha: 1
-            });
-            drawCircle(ctx, {
+                // crop
+                ctx.globalCompositeOperation = 'destination-in';
+
+                ctx.fillStyle = "#000";
+                ctx.beginPath();
+                ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.closePath();
+
+                // team color (green/red)
+                ctx.globalCompositeOperation = "source-over";
+
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = stringifyRGBA({
+                    r: 255 * Number(_stat.team === "enemy"),
+                    g: 255 * Number(_stat.team === "player"),
+                    b: 0,
+                    alpha: 1
+                });
+                drawCircle(ctx, {
                     x: squaredSize / 2,
                     y: squaredSize / 2
                 },
-            squaredSize/2);
+                    squaredSize / 2);
 
-            ctx.restore();
+                ctx.restore();
 
-            resolve(canvas);
-        };
-        if (_stat.owner) {
-            BotClient.users.fetch(_stat.owner).then(u => {
-                image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(".webp", ".png");
-            })
+                resolve(canvas);
+            };
+
+            // getting icon for stat, changes if there is an owner (Discord user ID) attached
+            if (_stat.owner) {
+                BotClient.users.fetch(_stat.owner).then(u => {
+                    image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(".webp", ".png");
+                })
+            }
+            else {
+                image.src = iconURL;
+            }
         }
-        else {
-            image.src = iconURL;
+        catch (error) {
+            console.error(error);
+            resolve(getIcon(_stat));
         }
-        const invalidURLTimeout = setTimeout(() => {
-            image.src = "https://cdn.discordapp.com/embed/avatars/0.png";
-        }, 10 * 1000);
     });
+    return requestPromise;
 }
 export function getBufferFromImage(image: Image): Buffer {
     const { canvas, ctx } = startDrawing(image.width, image.height);

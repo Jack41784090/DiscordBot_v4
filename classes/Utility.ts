@@ -1,13 +1,10 @@
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { BaseMessageComponent, Interaction, Message, MessageActionRowOptions, MessageActionRow, MessageAttachment, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessagePayload, MessageButton, MessageButtonOptions } from "discord.js";
+import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions } from "discord.js";
 import { Type } from "typescript";
-import { getFileBufferImage, getIcon } from "./Database";
 import classData from "../data/classData.json"
 
-import * as fs from "fs";
 import { BotClient } from "..";
-import { MinHeap } from "./MinHeap";
-import { DashAction, Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, Round, Stat, TargetingError, Team, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, Priority, COMMAND_CALL } from "../typedef";
+import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL } from "../typedef";
 import { Battle } from "./Battle";
 
 export function clamp(value: number, min: number, max: number) {
@@ -786,6 +783,7 @@ export function getStat(bss: SimpleStat | BaseStat, _owner: string = ''): Stat {
 
         weaponUses: [],
         actionsAssociatedStrings: {},
+        statusEffects: [],
 
         HP: base.AHP,
         readiness: 0,

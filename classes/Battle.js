@@ -85,6 +85,7 @@ var fs_1 = __importDefault(require("fs"));
 var MinHeap_1 = require("./MinHeap");
 var typedef_1 = require("../typedef");
 var hGraphTheory_1 = require("./hGraphTheory");
+var WeaponEffect_1 = require("./WeaponEffect");
 var Battle = /** @class */ (function () {
     function Battle(_mapData, _author, _message, _client) {
         var _this = this;
@@ -1078,8 +1079,8 @@ var Battle = /** @class */ (function () {
         return exemption(coord) || !this.CSMap.has((0, Utility_1.getCoordString)(coord));
     };
     Battle.prototype.checkWithinWorld = function (coord) {
-        (0, Utility_1.log)("\t\tChecking within world:");
-        (0, Utility_1.log)("\t\t\tw\\" + this.width + " h\\" + this.height + " " + JSON.stringify(coord));
+        // log(`\t\tChecking within world:`)
+        // log(`\t\t\tw\\${this.width} h\\${this.height} ${JSON.stringify(coord)}`);
         return this.width > coord.x && this.height > coord.y && coord.x >= 0 && coord.y >= 0;
     };
     // clash methods
@@ -1087,9 +1088,28 @@ var Battle = /** @class */ (function () {
         var returnString = '';
         var target = _aA.affected;
         // vantage
-        // effects
+        // weapon effects
+        var weaponEffect = new WeaponEffect_1.WeaponEffect(_aA);
+        weaponEffect.activate();
+        // status effects
+        var targetStatuses = _aA.affected.statusEffects;
+        var attackerStatuses = _aA.from.statusEffects;
+        targetStatuses.forEach(function (_t_S, _index) {
+            var validStatus = _t_S.tick();
+            if (!validStatus) {
+                targetStatuses.splice(_index);
+                _index--;
+            }
+        });
+        attackerStatuses.forEach(function (_a_S, _index) {
+            var validStatus = _a_S.tick();
+            if (!validStatus) {
+                targetStatuses.splice(_index);
+                _index--;
+            }
+        });
         // reduce shielding
-        if (target.shield > 0) {
+        if (_cR.fate !== "Miss" && target.shield > 0) {
             target.shield--;
         }
         // apply basic weapon damage
@@ -1115,7 +1135,7 @@ var Battle = /** @class */ (function () {
                 var critRate = ((0, Utility_1.getAcc)(attacker, weapon) - (0, Utility_1.getDodge)(target)) * 0.1 + (0, Utility_1.getCrit)(attacker, weapon);
                 (0, Utility_1.dealWithAccolade)(clashResult, attacker, target);
                 returnString +=
-                    "**" + attackerClass + "** (" + attacker.index + ") \u2694\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + weapon.Name + "*__ " + hitRate + "% (" + (0, Utility_1.roundToDecimalPlace)(critRate) + "%)\n                    **" + CR_fate + "!** -**" + (0, Utility_1.roundToDecimalPlace)(CR_damage) + "** (" + (0, Utility_1.roundToDecimalPlace)(clashResult.u_damage - CR_damage) + ")";
+                    "**" + attackerClass + "** (" + attacker.index + ") \u2694\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + weapon.Name + "*__ " + hitRate + "% (" + (0, Utility_1.roundToDecimalPlace)(critRate) + "%)\n                    **" + CR_fate + "!** -**" + (0, Utility_1.roundToDecimalPlace)(CR_damage) + "** (" + (0, Utility_1.roundToDecimalPlace)(clashResult.u_damage) + ")";
                 if (target.HP > 0 && target.HP - CR_damage <= 0) {
                     returnString += "\n__**KILLING BLOW!**__";
                 }
@@ -1376,33 +1396,47 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.getNewCanvasMap = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var allStats, groundImage, canvas, ctx, iconCache, i, stat, X, Y, baseClass, iconCanvas, iconSize, iconCtx, imageCanvasCoord;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var allStats, groundImage, canvas, ctx, iconCache, i, stat, X, Y, baseClass, iconCanvas, _b, _c, iconSize, iconCtx, imageCanvasCoord;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         allStats = this.allStats();
                         return [4 /*yield*/, (0, Database_1.getFileImage)(this.mapData.map.groundURL)];
                     case 1:
-                        groundImage = _b.sent();
+                        groundImage = _d.sent();
                         canvas = (0, Utility_1.returnGridCanvas)(this.height, this.width, this.pixelsPerTile, groundImage);
                         ctx = canvas.getContext('2d');
                         iconCache = new Map();
                         i = 0;
-                        _b.label = 2;
+                        _d.label = 2;
                     case 2:
-                        if (!(i < allStats.length)) return [3 /*break*/, 5];
+                        if (!(i < allStats.length)) return [3 /*break*/, 9];
                         stat = allStats[i];
                         X = stat.x;
                         Y = stat.y;
                         baseClass = stat.base.class;
+                        if (!stat.owner) return [3 /*break*/, 4];
                         return [4 /*yield*/, (0, Database_1.getIcon)(stat)];
                     case 3:
-                        iconCanvas = _b.sent();
+                        _b = _d.sent();
+                        return [3 /*break*/, 7];
+                    case 4:
+                        _c = iconCache.get(baseClass);
+                        if (_c) return [3 /*break*/, 6];
+                        return [4 /*yield*/, (0, Database_1.getIcon)(stat)];
+                    case 5:
+                        _c = (_d.sent());
+                        _d.label = 6;
+                    case 6:
+                        _b = (_c);
+                        _d.label = 7;
+                    case 7:
+                        iconCanvas = _b;
                         iconSize = iconCanvas.width;
                         iconCtx = iconCanvas.getContext("2d");
-                        // if (iconCache.get(baseClass) === undefined) {
-                        //     iconCache.set(baseClass, iconCanvas);
-                        // }
+                        if (!stat.owner && iconCache.get(baseClass) === undefined) {
+                            iconCache.set(baseClass, iconCanvas);
+                        }
                         // attach index
                         (0, Utility_1.drawCircle)(iconCtx, {
                             x: iconSize * 9 / 10,
@@ -1417,11 +1451,11 @@ var Battle = /** @class */ (function () {
                             y: Y
                         }, false);
                         ctx.drawImage(iconCanvas, imageCanvasCoord.x, imageCanvasCoord.y, Math.min(iconCanvas.width, this.pixelsPerTile), Math.min(iconCanvas.height, this.pixelsPerTile));
-                        _b.label = 4;
-                    case 4:
+                        _d.label = 8;
+                    case 8:
                         i++;
                         return [3 /*break*/, 2];
-                    case 5: 
+                    case 9: 
                     // end
                     return [2 /*return*/, canvas];
                 }

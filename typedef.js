@@ -10,6 +10,7 @@ var BotType;
     BotType[BotType["enemy"] = 1] = "enemy";
     BotType[BotType["sentry"] = 2] = "sentry";
 })(BotType = exports.BotType || (exports.BotType = {}));
+// weapons
 var WeaponTarget;
 (function (WeaponTarget) {
     WeaponTarget[WeaponTarget["ally"] = 0] = "ally";

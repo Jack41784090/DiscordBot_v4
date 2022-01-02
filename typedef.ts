@@ -88,6 +88,7 @@ export interface Stat extends Coordinate {
 
     weaponUses: number[],
     actionsAssociatedStrings: { [key: number]: string[] },
+    statusEffects: StatusEffect[],
     moved: boolean,
 
     HP: number,
@@ -155,7 +156,7 @@ export enum WeaponTarget {
 }
 export type WeaponAOE = "single" | "self" | "circle" | "selfCircle" | "touch" | "line"
 export interface Weapon {
-    Name: string,
+    Name: WeaponName,
     Acc: number,
     Damage: Array<number>,
     Spd: number,
@@ -172,6 +173,11 @@ export interface Weapon {
     },
     CD: number,
     UPT: number,
+}
+export type WeaponName = 
+    "Obliterate"
+export interface WeaponEffectFunction {
+    (_aA: AttackAction): void;
 }
 
 // classes
@@ -206,8 +212,8 @@ export type StatusEffectType =
     "weak"|
     "protected"|
     "armorbreak"
-export interface StatusEffectEffect {
-    (_statusEffect: StatusEffect): void;
+export interface StatusEffectFunction {
+    (_statusEffect: StatusEffect): string;
 }
 
 export type ClashResultFate = "Miss" | "Hit" | "Crit"

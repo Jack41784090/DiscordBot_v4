@@ -1,13 +1,14 @@
 import { CategoryChannel, Client, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getActionsTranslate, getAHP, getDirection, getLoadingEmbed, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, capitalize, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getCSFromMap, printCSMap, getNewObject, startDrawing, dealWithAction, printAction, sendToSandbox, getRandomCode, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getWithSign, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, findReferenceAngle, shortenString, drawText, drawCircle } from "./Utility";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { getBufferFromImage, getFileImage, getIcon, getUserData, saveBattle } from "./Database";
+import { getFileImage, getIcon, getUserData, saveBattle } from "./Database";
 import enemiesData from "../data/enemiesData.json";
 
 import fs from 'fs';
 import { MinHeap } from "./MinHeap";
-import { Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponAOE, WeaponTarget } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
+import { WeaponEffect } from "./WeaponEffect";
 
 export class Battle {
     static readonly MOVE_READINESS = 10;
@@ -1015,8 +1016,8 @@ export class Battle {
         return exemption(coord) || !this.CSMap.has(getCoordString(coord));
     }
     checkWithinWorld(coord: Coordinate) {
-        log(`\t\tChecking within world:`)
-        log(`\t\t\tw\\${this.width} h\\${this.height} ${JSON.stringify(coord)}`);
+        // log(`\t\tChecking within world:`)
+        // log(`\t\t\tw\\${this.width} h\\${this.height} ${JSON.stringify(coord)}`);
         return this.width > coord.x && this.height > coord.y && coord.x >= 0 && coord.y >= 0;
     }
 
@@ -1027,7 +1028,27 @@ export class Battle {
 
         // vantage
 
-        // effects
+        // weapon effects
+        const weaponEffect: WeaponEffect = new WeaponEffect(_aA);
+            weaponEffect.activate();
+
+        // status effects
+        const targetStatuses = _aA.affected.statusEffects;
+        const attackerStatuses = _aA.from.statusEffects;
+        targetStatuses.forEach((_t_S, _index) => {
+            const validStatus = _t_S.tick();
+            if (!validStatus) {
+                targetStatuses.splice(_index);
+                _index--;
+            }
+        })
+        attackerStatuses.forEach((_a_S, _index) => {
+            const validStatus = _a_S.tick();
+            if (!validStatus) {
+                targetStatuses.splice(_index);
+                _index--;
+            }
+        })
 
         // reduce shielding
         if (_cR.fate !== "Miss" && target.shield > 0) {
@@ -1373,13 +1394,15 @@ export class Battle {
             const baseClass = stat.base.class;
 
             // get character icon (template)
-            // let iconCanvas: Canvas = iconCache.get(baseClass) || await getIcon(stat);
-            let iconCanvas: Canvas = await getIcon(stat);
+            let iconCanvas: Canvas = stat.owner?
+                await getIcon(stat):
+                (iconCache.get(baseClass) || await getIcon(stat));
+            // let iconCanvas: Canvas = await getIcon(stat);
             const iconSize = iconCanvas.width;
             const iconCtx = iconCanvas.getContext("2d");
-            // if (iconCache.get(baseClass) === undefined) {
-            //     iconCache.set(baseClass, iconCanvas);
-            // }
+            if (!stat.owner && iconCache.get(baseClass) === undefined) {
+                iconCache.set(baseClass, iconCanvas);
+            }
 
             // attach index
             drawCircle(
