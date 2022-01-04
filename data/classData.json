@@ -37,7 +37,26 @@
 					"AOE": "single"
 				},
 				"CD": 0,
-				"UPT": 255
+				"UPT": 3
+			},
+			{
+				"Name": "Endure",
+				"Acc": 0,
+				"Damage": [0,0],
+				"Range": [0,0],
+				"Readiness": 20,
+				"sword": 0,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 0,
+					"AOE": "self"
+				},
+				"CD": 0,
+				"UPT": 1
 			}
 		],
 		"botType": 0

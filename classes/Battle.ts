@@ -139,7 +139,7 @@ export class Battle {
 
         log("Spawning...");
         this.SpawnOnSpawner();
-        await saveBattle(this);
+        // await saveBattle(this);
         const allStats = this.allStats();
 
         //#region COUNT LIVES
@@ -158,18 +158,19 @@ export class Battle {
 
             // randomly assign tokens
             for (let i = 0; i < 2; i++) {
-                const got = random(0, 2);
+                // const got = random(0, 2);
+                const got = 0;
                 log(`\t${s.base.class} (${s.index}) got ${got}`)
                 switch (got) {
                     case 0:
                         s.sword++;
                         break;
-                    case 1:
-                        s.shield++;
-                        break;
-                    case 2:
-                        s.sprint++;
-                        break;
+                    // case 1:
+                    //     s.shield++;
+                    //     break;
+                    // case 2:
+                    //     s.sprint++;
+                    //     break;
                 }
             }
 
@@ -605,7 +606,7 @@ export class Battle {
             // add description as actions done and done-to
             const associatedStat = this.allStats(true).find(_s => _s.owner === roomID);
             if (associatedStat && associatedStat.actionsAssociatedStrings[round] !== undefined) {
-                embed.description = shortenString(associatedStat.actionsAssociatedStrings[round].join('\n'));
+                embed.description = shortenString(associatedStat.actionsAssociatedStrings[round].join('\n\n'));
             }
 
             if (embed.description === "") {
@@ -882,33 +883,37 @@ export class Battle {
 
                         default:
                             if (actionName.length >= 3) {
-                                const targetedWeapon = virtualStat.base.weapons.find(w => {
+                                const weaponChosen = virtualStat.base.weapons.find(w => {
                                     return w.Name.toLowerCase().search(actionName) !== -1;
                                 });
-                                if (targetedWeapon) {
+                                if (weaponChosen) {
                                     mes.react('✅');
-                                    const victim = this.findEntity_args(actionArgs, virtualStat, targetedWeapon);
-                                    if (victim === null) {
+                                    const attackTarget = this.findEntity_args(actionArgs, virtualStat, weaponChosen);
+                                    if (attackTarget === null) {
                                         valid = false;
+                                        mes.react('❎');
                                     }
                                     else {
-                                        let coord: Coordinate;
-                                        const AOE = targetedWeapon.targetting.AOE;
-                                        if (AOE === "self" || AOE === "selfCircle") {
-                                            coord = {
-                                                x: virtualStat.x,
-                                                y: virtualStat.y,
-                                            }
+                                        const virtualAttackAction = getAttackAction(virtualStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
+                                        valid = this.executeVirtualAttack(virtualAttackAction, virtualStat);
+
+                                        if (valid) {
+                                            mes.react('✅');
+                                            const realAttackAction = getAttackAction(realStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
+                                            executingActions.push(realAttackAction);
                                         }
                                         else {
-                                            coord = {
-                                                x: victim.x,
-                                                y: victim.y
+                                            mes.react('❎');
+                                            const check = this.validateTarget(virtualStat, weaponChosen, attackTarget)!;
+                                            if (check) {
+                                                channel.send({
+                                                    embeds: [new MessageEmbed({
+                                                        title: check.reason,
+                                                        description: `Failed to attack. Reference value: __${check.value}__`,
+                                                    })]
+                                                });
                                             }
                                         }
-
-                                        const attackAction = getAttackAction(virtualStat, victim, targetedWeapon, coord, infoMessagesQueue.length);
-                                        valid = this.executeVirtualAttack(attackAction, virtualStat);
                                     }
                                 }
                                 else {
@@ -1021,6 +1026,37 @@ export class Battle {
         return this.width > coord.x && this.height > coord.y && coord.x >= 0 && coord.y >= 0;
     }
 
+    tickStatuses(_s: Stat, _round: Round): string {
+        let returnString = '';
+        const targetStatuses = _s.statusEffects;
+        targetStatuses.forEach((_status, _index) => {
+            // make sure status is affecting the right entity and entity is still alive
+            if (_status.affected.index === _s.index && _status.affected.HP > 0) {
+                // tick
+                const statusString = _status.tick();
+
+                /**
+                 * if not returning, either
+                 * 1. status reaches 0 duration
+                 * 2. status has an invalid type
+                 * delete either way
+                 */
+                if (!statusString) {
+                    targetStatuses.splice(_index);
+                    _index--;
+                }
+
+                // notify the inflicter
+                if (_status.from.index !== _status.affected.index) {
+                    this.appendReportString(_status.from, _round, statusString);
+                }
+
+                // add to total infliction reportString
+                returnString = returnString + statusString;
+            }
+        })
+        return returnString;
+    }
     // clash methods
     applyClash(_cR: ClashResult, _aA: AttackAction): string {
         let returnString = '';
@@ -1028,27 +1064,10 @@ export class Battle {
 
         // vantage
 
-        // weapon effects
-        const weaponEffect: WeaponEffect = new WeaponEffect(_aA);
-            weaponEffect.activate();
 
-        // status effects
-        const targetStatuses = _aA.affected.statusEffects;
-        const attackerStatuses = _aA.from.statusEffects;
-        targetStatuses.forEach((_t_S, _index) => {
-            const validStatus = _t_S.tick();
-            if (!validStatus) {
-                targetStatuses.splice(_index);
-                _index--;
-            }
-        })
-        attackerStatuses.forEach((_a_S, _index) => {
-            const validStatus = _a_S.tick();
-            if (!validStatus) {
-                targetStatuses.splice(_index);
-                _index--;
-            }
-        })
+        // weapon effects
+        const weaponEffect: WeaponEffect = new WeaponEffect(_aA, _cR);
+            weaponEffect.activate();
 
         // reduce shielding
         if (_cR.fate !== "Miss" && target.shield > 0) {
@@ -1056,13 +1075,13 @@ export class Battle {
         }
 
         // apply basic weapon damage
-        returnString += this.applyDamage(_aA, _cR);
+        returnString += this.applyClashDamage(_aA, _cR);
 
         // retaliation
 
         return returnString;
     }
-    applyDamage(_aA: AttackAction, clashResult: ClashResult) {
+    applyClashDamage(_aA: AttackAction, clashResult: ClashResult): string {
         let returnString = '';
 
         const CR_damage = clashResult.damage;
@@ -1095,7 +1114,7 @@ export class Battle {
 
                 const LS = getLifesteal(attacker, weapon);
                 if (LS > 0) {
-                    returnString += this.heal(attacker, CR_damage * LS);
+                    returnString += "\n" + this.heal(attacker, CR_damage * LS);
                 }
                 target.HP -= CR_damage;
                 break;
@@ -1111,6 +1130,7 @@ export class Battle {
         return returnString;
     }
     clash(_aA: AttackAction): ClashResult {
+        log(`\tClash: ${_aA.from.base.class} => ${_aA.affected.base.class}`);
         let fate: ClashResultFate = 'Miss';
         let damage: number, u_damage: number = 0;
 
@@ -1207,6 +1227,13 @@ export class Battle {
         return sortedActions;
     }
 
+    appendReportString(_stat: Stat, _round: Round, _string: string) {
+        const associatedStringArray = _stat.actionsAssociatedStrings;
+        if (associatedStringArray[_round] === undefined) {
+            associatedStringArray[_round] = [];
+        }
+        associatedStringArray[_round].push(_string);
+    }
     // actions
     executeActions(_actions: Action[]) {
         log("Executing actions...")
@@ -1223,8 +1250,22 @@ export class Battle {
         return returning;
     }
     executeOneAction(_action: Action) {
+        log(`\tExecuting action: ${_action.type}, ${_action.from.base.class} => ${_action.affected.base.class}`)
         const mAction = _action as MoveAction;
         const aAction = _action as AttackAction;
+
+        // apply statuses for target, then report to afflicted entity
+        const affectedStatusString = this.tickStatuses(_action.affected, _action.round);
+        if (affectedStatusString) {
+            this.appendReportString(_action.affected, _action.round, affectedStatusString);
+        }
+        if (_action.affected.index !== _action.from.index) {
+            // apply statuses for attacker, then report to attacker entity
+            const attackerStatusString = this.tickStatuses(_action.from, _action.round);
+            if (attackerStatusString) {
+                this.appendReportString(_action.from, _action.round, attackerStatusString);
+            }
+        }
 
         return _action.type === 'Attack' ?
             this.executeAttackAction(aAction) :
@@ -1239,7 +1280,7 @@ export class Battle {
         if (eM) {
             log(`\t${attacker.base.class} failed to attack ${target.base.class}. Reason: ${eM.reason}`);
             string =
-                `${attacker.base.class} failed to attack ${target.base.class}. Reason: ${eM.reason}`;
+                `**${attacker.base.class}** (${attacker.index}) failed to attack **${target.base.class}** (${target.index}). Reason: ${eM.reason}`;
         }
         else {
             // valid attack
@@ -1277,8 +1318,11 @@ export class Battle {
         return string;
     };
     executeAttackAction(_aA: AttackAction): AttackAction {
+        log(`\t\t Attack: ${_aA.from.base.class} => ${_aA.affected.base.class}`)
         let attackResult = "";
         switch (_aA.weapon.targetting.AOE) {
+            case "self":
+                _aA.affected = _aA.from;
             case "single":
             case "touch":
                 attackResult = this.executeSingleTargetAttackAction(_aA);
@@ -1298,19 +1342,10 @@ export class Battle {
         }
 
         // save attack results
-            // attacker
-        const round = _aA.round;
-        const tAssociatedString = _aA.from.actionsAssociatedStrings;
-        if (tAssociatedString[round] === undefined) {
-            tAssociatedString[round] = [];
+        this.appendReportString(_aA.from, _aA.round, attackResult);
+        if (_aA.from.index !== _aA.affected.index) {
+            this.appendReportString(_aA.affected, _aA.round, attackResult);
         }
-        tAssociatedString[round].push(attackResult);
-            // target
-        const aAssociatedString = _aA.affected.actionsAssociatedStrings;
-        if (aAssociatedString[round] === undefined) {
-            aAssociatedString[round] = [];
-        }
-        aAssociatedString[round].push(attackResult);
 
         // expend resources
         _aA.executed = true;
@@ -1357,7 +1392,9 @@ export class Battle {
         const afterHP = roundToDecimalPlace(_healedStat.HP);
 
         _healedStat.accolades.healingDone += (afterHP - beforeHP);
-        return beforeHP !== afterHP ? `✚ ${beforeHP} => ${afterHP}` : '';
+        return beforeHP !== afterHP?
+            `✚ ${beforeHP} => ${afterHP}`:
+            '';
     }
 
     // return Battle-related information
@@ -1854,7 +1891,9 @@ export class Battle {
         const ReadinessBar = `${'`'}${addHPBar(50, stat.readiness)}${'`'}`;
         const explorerEmbed = new MessageEmbed({
             title: HealthBar,
-            description: `*Readiness* (${Math.round(stat.readiness)}/50)\n${ReadinessBar}`,
+            description:
+                `*Readiness* (${Math.round(stat.readiness)}/50)
+                ${ReadinessBar}`,
             fields: [
                 {
                     name: `(${stat.sword}/3)`,
@@ -2076,6 +2115,11 @@ export class Battle {
             eM.reason = "No weapon detected.";
             return eM;
         }
+        // attacker is dead
+        if (attackerStat.HP <= 0) {
+            eM.reason = "Attacker perished.";
+            return eM;
+        }
 
         // log(
         //     `\tname: ${weapon.Name}`,
@@ -2141,7 +2185,7 @@ export class Battle {
         }
 
         // only valid errors if weapon is not a self-target
-        if (weapon.targetting.AOE !== "selfCircle" && weapon.targetting.AOE !== "self") {
+        if (weapon.targetting.AOE !== "selfCircle" && weapon.targetting.AOE !== "self" && weapon.targetting.AOE !== "touch") {
             // out of range
             if (getDistance(attackerStat, targetStat) > weapon.Range[1] || getDistance(attackerStat, targetStat) < weapon.Range[0]) {
                 eM.reason = "Target is too far or too close.";
@@ -2193,6 +2237,12 @@ export class Battle {
             movingError = {
                 reason: "Movement magnitude most be at least 1 (or -1).",
                 value: _mA.magnitude
+            };
+        }
+        else if (moverStat.HP <= 0) {
+            movingError = {
+                reason: "Mover perished.",
+                value: moverStat.HP
             };
         }
 

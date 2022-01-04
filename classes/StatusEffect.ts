@@ -5,10 +5,20 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     [
         "bleed",
         (_statusEffect: StatusEffect) => {
+            const affected = _statusEffect.affected;
             const value = _statusEffect.value * 100;
-            _statusEffect.affected.HP -= value;
+            let returnString = `**${affected.base.class}** (${affected.index}) Bleeds! 🩸 -**${value}**`;
+
+            affected.HP -= value;
             _statusEffect.duration--;
-            return `${_statusEffect.affected} Bleeds! 🩸 -${value}`;
+
+            if (affected.HP + value > 0 && affected.HP <= 0) {
+                returnString += "\n__**KILLING BLOW!**__";
+            }
+            else if (affected.HP <= 0) {
+                returnString += " (*Overkill*)";
+            }
+            return returnString;
         }
     ],
 ]);
@@ -30,14 +40,16 @@ export class StatusEffect {
 
     tick() {
         log(`\t\tFinding "${this.type}" (${this.value} for ${this.duration})...`);
+
+        let statusResult: string = "";
         const statusEffect = statusEffect_effects.get(this.type);
         if (this.duration > 0 && statusEffect) {
             log(`\t\t\tSuccessful execution!`)
-            statusEffect(this);
+            statusResult = statusEffect(this);
         }
         else {
             log(`\t\t\tFailed to execute. Removing.`)
         }
-        return this.duration > 0 && statusEffect;
+        return statusResult;
     }
 }

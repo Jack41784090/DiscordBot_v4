@@ -6,10 +6,18 @@ var statusEffect_effects = new Map([
     [
         "bleed",
         function (_statusEffect) {
+            var affected = _statusEffect.affected;
             var value = _statusEffect.value * 100;
-            _statusEffect.affected.HP -= value;
+            var returnString = "**" + affected.base.class + "** (" + affected.index + ") Bleeds! \uD83E\uDE78 -**" + value + "**";
+            affected.HP -= value;
             _statusEffect.duration--;
-            return _statusEffect.affected + " Bleeds! \uD83E\uDE78 -" + value;
+            if (affected.HP + value > 0 && affected.HP <= 0) {
+                returnString += "\n__**KILLING BLOW!**__";
+            }
+            else if (affected.HP <= 0) {
+                returnString += " (*Overkill*)";
+            }
+            return returnString;
         }
     ],
 ]);
@@ -23,15 +31,16 @@ var StatusEffect = /** @class */ (function () {
     }
     StatusEffect.prototype.tick = function () {
         (0, Utility_1.log)("\t\tFinding \"" + this.type + "\" (" + this.value + " for " + this.duration + ")...");
+        var statusResult = "";
         var statusEffect = statusEffect_effects.get(this.type);
         if (this.duration > 0 && statusEffect) {
             (0, Utility_1.log)("\t\t\tSuccessful execution!");
-            statusEffect(this);
+            statusResult = statusEffect(this);
         }
         else {
             (0, Utility_1.log)("\t\t\tFailed to execute. Removing.");
         }
-        return this.duration > 0 && statusEffect;
+        return statusResult;
     };
     return StatusEffect;
 }());

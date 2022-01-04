@@ -297,7 +297,7 @@ function getBufferFromImage(image) {
 exports.getBufferFromImage = getBufferFromImage;
 function saveBattle(battle) {
     return __awaiter(this, void 0, void 0, function () {
-        var dR, sS;
+        var dR, sS, CS;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -305,14 +305,15 @@ function saveBattle(battle) {
                     return [4 /*yield*/, dR.get()];
                 case 1:
                     sS = _a.sent();
+                    CS = (0, Utility_1.getCSFromMap)(battle.CSMap);
                     if (sS.exists) {
                         dR.set({
-                            coordStat: (0, Utility_1.getCSFromMap)(battle.CSMap),
+                            coordStat: CS,
                         });
                     }
                     else {
                         dR.create({
-                            coordStat: (0, Utility_1.getCSFromMap)(battle.CSMap),
+                            coordStat: CS,
                         });
                     }
                     return [2 /*return*/];

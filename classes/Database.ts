@@ -198,15 +198,16 @@ export function getBufferFromImage(image: Image): Buffer {
 export async function saveBattle(battle: Battle) {
     const dR = database.collection('Battles').doc(battle.author.id);
     const sS = await dR.get();
+    const CS = getCSFromMap(battle.CSMap)
 
     if (sS.exists) {
         dR.set({
-            coordStat: getCSFromMap(battle.CSMap),
+            coordStat: CS,
         })
     }
     else {
         dR.create({
-            coordStat: getCSFromMap(battle.CSMap),
+            coordStat: CS,
         });
     }
 }

@@ -768,11 +768,12 @@ function getMapFromCS(coordStat) {
 exports.getMapFromCS = getMapFromCS;
 function getCSFromMap(map) {
     var CSreturn = {};
-    map.forEach(function (v, k) {
-        var _a = { x: k.split(',')[0], y: k.split(',')[1] }, x = _a.x, y = _a.y;
-        if (CSreturn[x] === undefined)
+    map.forEach(function (_stat, _coordString) {
+        var _a = { x: _coordString.split(',')[0], y: _coordString.split(',')[1] }, x = _a.x, y = _a.y;
+        if (CSreturn[x] === undefined) {
             CSreturn[x] = {};
-        CSreturn[x][y] = v;
+        }
+        CSreturn[x][y] = _stat;
     });
     return CSreturn;
 }
@@ -971,7 +972,7 @@ function drawText(_ctx, _text, _textSize, _canvasCoord, _angle) {
     _ctx.translate(_canvasCoord.x, _canvasCoord.y);
     var referenceAngle = findReferenceAngle(_angle);
     if (referenceAngle < 90) {
-        _ctx.rotate(referenceAngle);
+        _ctx.rotate(_angle);
     }
     _ctx.fillText(_text, 0, textSize / 3);
     _ctx.strokeText(_text, 0, textSize / 3);

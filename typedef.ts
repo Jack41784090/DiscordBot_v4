@@ -175,9 +175,10 @@ export interface Weapon {
     UPT: number,
 }
 export type WeaponName = 
-    "Obliterate"
+    "Obliterate"|
+    "Endure"
 export interface WeaponEffectFunction {
-    (_aA: AttackAction): void;
+    (_aA: AttackAction, _cR: ClashResult): void;
 }
 
 // classes

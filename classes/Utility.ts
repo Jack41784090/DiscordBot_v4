@@ -722,10 +722,12 @@ export function getMapFromCS(coordStat: CoordStat<SimpleStat>): Map<StringCoordi
 
 export function getCSFromMap(map: Map<string, Stat>): CoordStat<Stat> {
     const CSreturn: CoordStat<Stat> = {};
-    map.forEach((v, k) => {
-        const {x, y} = { x: k.split(',')[0], y: k.split(',')[1] };
-        if (CSreturn[x] === undefined) CSreturn[x] = {};
-        CSreturn[x][y] = v;
+    map.forEach((_stat, _coordString) => {
+        const {x, y} = { x: _coordString.split(',')[0], y: _coordString.split(',')[1] };
+        if (CSreturn[x] === undefined) {
+            CSreturn[x] = {};
+        }
+        CSreturn[x][y] = _stat;
     });
     return CSreturn;
 }
@@ -930,7 +932,7 @@ export function drawText(
 
     const referenceAngle = findReferenceAngle(_angle);
     if (referenceAngle < 90) {
-        _ctx.rotate(referenceAngle);
+        _ctx.rotate(_angle);
     }
     _ctx.fillText(_text, 0, textSize/3);
     _ctx.strokeText(_text, 0, textSize/3);
