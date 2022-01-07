@@ -172,15 +172,16 @@ export function getIcon(_stat: Stat): Promise<Canvas>
                 resolve(canvas);
             };
 
-            // getting icon for stat, changes if there is an owner (Discord user ID) attached
-            if (_stat.owner) {
-                BotClient.users.fetch(_stat.owner).then(u => {
-                    image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(".webp", ".png");
-                })
-            }
-            else {
-                image.src = iconURL;
-            }
+            // // getting icon for stat, changes if there is an owner (Discord user ID) attached
+            // if (_stat.owner) {
+            //     BotClient.users.fetch(_stat.owner).then(u => {
+            //         image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(".webp", ".png");
+            //     })
+            // }
+            // else {
+            //     image.src = iconURL;
+            // }
+            image.src = iconURL;
         }
         catch (error) {
             console.error(error);

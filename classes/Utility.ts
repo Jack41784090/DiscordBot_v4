@@ -215,10 +215,10 @@ export function getCoordsWithinRadius(radius: number, center: Coordinate, inclus
     return result;
 }
 
-export function getLargestInArray<Type>(array: Type[]) {
+export function getLargestInArray<Type>(array: Type[], _getValue: (_item: Type) => number) {
     return array.reduce((la, c) => {
-        return la < c ?
-            c :
+        return _getValue(la) < _getValue(c) ?
+            c:
             la;
     }, array[0]);
 }

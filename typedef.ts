@@ -1,4 +1,5 @@
 import { Client, Guild, GuildMember, Message, TextChannel, User } from "discord.js";
+import { Battle } from "./classes/Battle";
 import { StatusEffect } from "./classes/StatusEffect";
 
 export type Round = number;
@@ -76,6 +77,7 @@ export interface BaseStat {
     Spd: number,
     maxMove: number,
     weapons: Array<Weapon>,
+    autoWeapons: Array<Weapon>,
     iconURL: string,
     botType: BotType,
 }
@@ -174,11 +176,18 @@ export interface Weapon {
     CD: number,
     UPT: number,
 }
-export type WeaponName = 
+export type WeaponName =
+    // Hercules
     "Obliterate"|
-    "Endure"
+    "Endure"|
+    "Endless Labour"|
+
+    // Mars
+    "Vicious Stab"|
+    "Decimate"|
+    "Unrelenting Fury"
 export interface WeaponEffectFunction {
-    (_aA: AttackAction, _cR: ClashResult): void;
+    (_aA: AttackAction, _cR: ClashResult, _bd: Battle): string;
 }
 
 // classes
@@ -207,14 +216,12 @@ export interface Accolade {
     rollNo: number,
 }
 export type StatusEffectType =
-    "bleed"|
-    "tired"|
-    "powerful"|
-    "weak"|
-    "protected"|
-    "armorbreak"
+    "bleed"| // tick damage
+    "protected"| // extra health (shield)
+    "labouring"| // Hercules unique: add 33% of taken damage to value and increase healing rate
+    "fury" // Mars unique: fury over 0.66 gives a buff to damage and crit
 export interface StatusEffectFunction {
-    (_statusEffect: StatusEffect): string;
+    (_statusEffect: StatusEffect, _action: Action): string;
 }
 
 export type ClashResultFate = "Miss" | "Hit" | "Crit"

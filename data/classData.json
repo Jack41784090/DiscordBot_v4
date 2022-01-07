@@ -8,6 +8,7 @@
 		"Spd": 0,
 		"iconURL": "images/black.jpg",
 		"weapons": [],
+		"autoWeapons": [],
 		"botType": 1
 	},
 	"Hercules": {
@@ -18,13 +19,13 @@
 		"Prot": 0.5,
 		"Spd": 5.5,
 		"maxMove": 1,
-		"iconURL": "images/Rommel.png",
+		"iconURL": "images/Hercules.png",
 		"weapons": [
 			{
 				"Name": "Obliterate",
 				"Acc": 85,
-				"Damage": [10, 18],
-				"Range": [0, 5],
+				"Damage": [10,18],
+				"Range": [1,1.5],
 				"Readiness": 15,
 				"sword": 1,
 				"shield": 0,
@@ -45,6 +46,105 @@
 				"Damage": [0,0],
 				"Range": [0,0],
 				"Readiness": 20,
+				"sword": 0,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 0,
+					"AOE": "self"
+				},
+				"CD": 0,
+				"UPT": 1
+			}
+		],
+		"autoWeapons": [
+			{
+				"Name": "Endless Labour",
+				"Acc": 0,
+				"Damage": [0,0],
+				"Range": [0,0],
+				"Readiness": 0,
+				"sword": 0,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 0,
+					"AOE": "self"
+				},
+				"CD": 0,
+				"UPT": 1
+			}
+		],
+		"botType": 0
+	},
+	"Mars": {
+		"name": "Mars",
+		"class": "Mars",
+		"AHP": 55,
+		"Dodge": 10,
+		"Prot": 0.3,
+		"Spd": 6.5,
+		"maxMove": 1,
+		"iconURL": "images/Mars.png",
+		"weapons": [
+			{
+				"Name": "Vicious Stab",
+				"Acc": 85,
+				"Damage": [10,18],
+				"Range": [0,5],
+				"Readiness": 10,
+				"sword": 1,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 5,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 1,
+					"AOE": "single"
+				},
+				"CD": 0,
+				"UPT": 5
+			},
+			{
+				"Name": "Decimate",
+				"Acc": 75,
+				"Damage": [0,0],
+				"Range": [0,0],
+				"Readiness": 25,
+				"sword": 2,
+				"shield": 0,
+				"sprint": 1,
+				"Crit": 10,
+				"Spd": 1,
+				"lifesteal": 0.1,
+				"targetting": {
+					"target": 1,
+					"AOE": "selfAOE"
+				},
+				"CD": 0,
+				"UPT": 2
+			}
+		],
+		"autoWeapons": [
+			{
+				"Name": "Unrelenting Fury",
+				"Acc": 0,
+				"Damage": [
+					0,
+					0
+				],
+				"Range": [
+					0,
+					0
+				],
+				"Readiness": 0,
 				"sword": 0,
 				"shield": 0,
 				"sprint": 0,

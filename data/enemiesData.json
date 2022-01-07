@@ -6,7 +6,6 @@
         "Prot": 0.5,
         "Spd": 5,
         "maxMove": 1,
-        "botType": 1,
         "iconURL": "images/Barbar.png",
         "portraitURL": "images/Barbar.png",
         "weapons": [
@@ -35,7 +34,9 @@
 				"CD": 0,
                 "UPT": 255
             }
-        ]
+        ],
+        "autoWeapons": [],
+        "botType": 1
     },
     "Barcher": {
         "class": "Barcher",
@@ -44,7 +45,6 @@
         "Prot": 0.3,
         "Spd": 5,
         "maxMove": 1,
-        "botType": 1,
         "iconURL": "images/Barcher.png",
         "portraitURL": "images/Barbar.png",
         "weapons": [
@@ -65,6 +65,8 @@
                     "AOE": "single"
                 }
             }
-        ]
+        ],
+        "autoWeapons": [],
+        "botType": 1
     }
 }

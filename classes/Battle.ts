@@ -1,4 +1,4 @@
-import { CategoryChannel, Client, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
+import { CategoryChannel, Client, EmbedField, EmbedFieldData, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
 import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIcon, getUserData, saveBattle } from "./Database";
@@ -6,9 +6,10 @@ import enemiesData from "../data/enemiesData.json";
 
 import fs from 'fs';
 import { MinHeap } from "./MinHeap";
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
+import { StatusEffect } from "./StatusEffect";
 
 export class Battle {
     static readonly MOVE_READINESS = 10;
@@ -27,14 +28,6 @@ export class Battle {
     CSMap: Map<string, Stat>;
     pixelsPerTile: number;
 
-    // Status-related Information <Up for Change>
-    /* beforeActionStatusVL: Object;
-    afterActionStatusVL: Object;
-    beforeStatusVL: Object;
-    afterStatusVL: Object;
-    onHitStatusVL: Object;
-    statusArray: Array<typeof Status>; */
-
     // Round Actions Information (Resets every Round)
     roundActionsArray: Array<Action>;
     roundSavedCanvasMap: Map<number, Canvas>;
@@ -45,6 +38,9 @@ export class Battle {
     enemyCount: number;
     playerCount: number;
     allIndex: Map<number, boolean>;
+
+    // user cache
+    userCache: Map<OwnerID, User>;
 
     private constructor(_mapData: Mapdata, _author: User, _message: Message, _client: Client) {
         this.author = _author;
@@ -59,6 +55,8 @@ export class Battle {
         this.CSMap = getMapFromCS(_mapData.map.coordStat);
 
         this.pixelsPerTile = 50;
+
+        this.userCache = new Map<OwnerID, User>();
 
         // sort status
         // this.beforeActionStatusVL = {};
@@ -131,7 +129,6 @@ export class Battle {
 
         // SPAWNING
         log("Currently waiting to be spawned...")
-
         for (let i = 0; i < this.tobespawnedArray.length; i++) {
             const spawning = this.tobespawnedArray[i];
             log(`\t{ index:${spawning.index}, class:${spawning.base.class} }`)
@@ -249,7 +246,7 @@ export class Battle {
             if (realStat.HP <= 0 || realStat.team === "block") continue;
 
             // reset weapon uses for entity
-            realStat.weaponUses.forEach(_wU => _wU = 0);
+            realStat.weaponUses = realStat.weaponUses.map(_wU => 0);
             // reset moved
             realStat.moved = false;
             // reset associatedStrings
@@ -258,19 +255,23 @@ export class Battle {
             //#region PLAYER CONTROL
             if (realStat.botType === BotType.naught) {
                 // fetch the Discord.User 
-                const user: User | null = await this.client.users.fetch(realStat.owner)
-                    .then(u => u)
-                    .catch(err => {
-                        console.log(err);
-                        return null;
-                    });
+                const user: User | null = 
+                    this.userCache.get(realStat.owner)||
+                    await this.client.users.fetch(realStat.owner)
+                        .then(u => {
+                            this.userCache.set(realStat.owner, u);
+                            return u;
+                        })
+                        .catch(err => {
+                            console.log(err);
+                            return null;
+                        });
 
                 // get a copy of stat (main reference in player control) from the CSMap
                 const virtualStat: Stat = getNewObject(realStat,
                     {
-                        username: (user?
-                            user.username:
-                            realStat.owner)
+                        username: user?.username,
+                        virtual: true
                     }
                 );
 
@@ -401,13 +402,14 @@ export class Battle {
         }
 
         // find the latest action's priority
-        const latestPrio: Round = getLargestInArray(this.roundActionsArray.map(a => a.round));
+        const latestAction: Action = getLargestInArray(this.roundActionsArray, _a => _a.round);
+        const latestRound = latestAction.round;
 
         // execute every move from lowest priority to highest
-        for (let i = 0; i <= latestPrio; i++) {
-            const expectedActions: Action[] | undefined = priorityActionMap.get(i);
-            if (expectedActions) {
-                this.greaterPriorSort(expectedActions);
+        for (let i = 0; i <= latestRound; i++) {
+            const roundExpectedActions: Action[] | undefined = priorityActionMap.get(i);
+            if (roundExpectedActions) {
+                this.greaterPriorSort(roundExpectedActions);
 
                 // draw the base tiles and characters (before executing actions)
                 let canvas = this.roundSavedCanvasMap.get(i);
@@ -419,7 +421,7 @@ export class Battle {
                 ctx.drawImage(await this.getNewCanvasMap(), 0, 0, canvas.width, canvas.height);
 
                 // execution
-                const executedActions = this.executeActions(expectedActions);
+                const executedActions = this.executeActions(roundExpectedActions);
 
                 // draw executed actions
                 const actualCanvas = await this.getActionArrowsCanvas(executedActions);
@@ -454,7 +456,8 @@ export class Battle {
         // for each player, send an embed of actions completed of the player.
         const players = allStats.filter(s => s.botType === BotType.naught);
         players.forEach(async stat => {
-            const greatestRoundNumber: Round = getLargestInArray(Array.from(this.roundSavedCanvasMap.keys()));
+            const allRounds: Round[] = Array.from(this.roundSavedCanvasMap.keys());
+            const greatestRoundNumber: Round = getLargestInArray(allRounds, _ => _);
             const commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
 
             allPromise.push(commandRoomReport);
@@ -474,15 +477,15 @@ export class Battle {
 
         //#region Finish the Round
         log("Finishing Round...");
-        // if (this.playerCount === 0 || (this.totalEnemyCount === 0 && this.spawning.length === 0))
-        if (false)
+        if (this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0))
+        // if (false)
         {
             // database work
             // await Database.updateOrAddUser(author, { status: 'idle' });
             // await Database.WriteBattle(author, Object.assign(this.returnObject(), { finished: true }));
 
             // == ACCOLADES ==
-            const endEmbedFields = [];
+            const endEmbedFields: EmbedFieldData[] = [];
             this.callbackOnParty((stat: Stat) => {
                 const statAcco = stat.accolades;
                 const value = `Kills: ${statAcco.kill}
@@ -513,8 +516,9 @@ export class Battle {
     }
 
     /** Execute function on every stat of players */
-    callbackOnParty(arg0: (stat: Stat) => void) {
-        throw new Error("Method not implemented.");
+    callbackOnParty(_callback: (stat: Stat) => void) {
+        const playersArray = this.allStats().filter(_s => _s.owner);
+        playersArray.forEach(_callback);
     }
 
     /** Get array of all Stat, saved by reference */
@@ -606,6 +610,7 @@ export class Battle {
             // add description as actions done and done-to
             const associatedStat = this.allStats(true).find(_s => _s.owner === roomID);
             if (associatedStat && associatedStat.actionsAssociatedStrings[round] !== undefined) {
+                log(associatedStat.actionsAssociatedStrings[round]);
                 embed.description = shortenString(associatedStat.actionsAssociatedStrings[round].join('\n\n'));
             }
 
@@ -705,19 +710,16 @@ export class Battle {
     };
 
     // action reader methods
-    readActions(time: number, infoMessage: Message, virtualStat: Stat, realStat: Stat) {
-        if (realStat === undefined) {
-            throw Error(`Fatal error at readActions: cannot find realStat. (${virtualStat.base.class} (${virtualStat.index}))`)
-        }
+    readActions(_givenSeconds: number, _infoMessage: Message, _vS: Stat, _rS: Stat) {
         // returns a Promise that resolves when the player is finished with their moves
         return new Promise((resolve) => {
             let currentListener: NodeJS.Timer;
             const responseQueue: Message[] = [];
-            const { x, y, readiness, sword, shield, sprint } = virtualStat;
+            const { x, y, readiness, sword, shield, sprint } = _vS;
 
             let executingActions: Action[] = [];
-            let infoMessagesQueue: Message[] = [infoMessage];
-            const channel = infoMessage.channel;
+            let infoMessagesQueue: Message[] = [_infoMessage];
+            const channel = _infoMessage.channel;
 
             /** Listens to the responseQueue every 300ms, clears the interval and handles the request when detected. */
             const listenToQueue = () => {
@@ -756,17 +758,17 @@ export class Battle {
                         case "left":
                         case "l":
                             // get moveAction based on input (blackboxed)
-                            const moveAction = getMoveAction(virtualStat, actionName, infoMessagesQueue.length, moveMagnitude);
+                            const moveAction = getMoveAction(_vS, actionName, infoMessagesQueue.length, moveMagnitude);
 
                             // record if it is first move or not
-                            const isFirstMove = !virtualStat.moved;
+                            const isFirstMove = !_vS.moved;
 
                             // validate + act on (if valid) movement on virtual map
-                            valid = this.executeVirtualMovement(moveAction!, virtualStat);
+                            valid = this.executeVirtualMovement(moveAction!, _vS);
 
                             // movement is permitted
                             if (valid) {
-                                const realMoveStat = getMoveAction(realStat, actionName, infoMessagesQueue.length, moveMagnitude);
+                                const realMoveStat = getMoveAction(_rS, actionName, infoMessagesQueue.length, moveMagnitude);
                                 if (!isFirstMove) {
                                     realMoveStat.sprint = 1;
                                 }
@@ -775,7 +777,7 @@ export class Battle {
                             }
                             else {
                                 mes.react('❎');
-                                const check = this.validateMovement(virtualStat, moveAction)!;
+                                const check = this.validateMovement(_vS, moveAction)!;
                                 if (check) {
                                     channel.send({
                                         embeds: [new MessageEmbed({
@@ -789,7 +791,7 @@ export class Battle {
 
                         // attack
                         case "attack":
-                            const attackTarget = this.findEntity_args(actionArgs, virtualStat);
+                            const attackTarget = this.findEntity_args(actionArgs, _vS);
                             if (attackTarget === null) {
                                 mes.react('❎');
                                 channel.send({
@@ -800,25 +802,25 @@ export class Battle {
                                 });
                             }
                             else {
-                                const range = getDistance(attackTarget, virtualStat);
-                                const listOfWeaponsInRange = virtualStat.base.weapons.filter(w => (
+                                const range = getDistance(attackTarget, _vS);
+                                const listOfWeaponsInRange = _vS.base.weapons.filter(w => (
                                     w.Range[0] <= range &&
                                     w.Range[1] >= range &&
                                     w.targetting.target === WeaponTarget.enemy
                                 ));
                                 const weaponChosen = listOfWeaponsInRange[0];
 
-                                const virtualAttackAction = getAttackAction(virtualStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
-                                valid = this.executeVirtualAttack(virtualAttackAction, virtualStat);
+                                const virtualAttackAction = getAttackAction(_vS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
+                                valid = this.executeVirtualAttack(virtualAttackAction, _vS);
 
                                 if (valid) {
                                     mes.react('✅');
-                                    const realAttackAction = getAttackAction(realStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
+                                    const realAttackAction = getAttackAction(_rS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
                                     executingActions.push(realAttackAction);
                                 }
                                 else {
                                     mes.react('❎');
-                                    const check = this.validateTarget(virtualStat, weaponChosen, attackTarget)!;
+                                    const check = this.validateTarget(_vS, weaponChosen, attackTarget)!;
                                     if (check) {
                                         channel.send({
                                             embeds: [new MessageEmbed({
@@ -835,14 +837,14 @@ export class Battle {
                         case "clear":
                         case "cr":
                             executingActions = [];
-                            infoMessagesQueue = [infoMessage];
-                            Object.assign(virtualStat, { x: x, y: y, readiness: readiness, sword: sword, shield: shield, sprint: sprint });
-                            await clearChannel(channel as TextChannel, infoMessage);
+                            infoMessagesQueue = [_infoMessage];
+                            Object.assign(_vS, { x: x, y: y, readiness: readiness, sword: sword, shield: shield, sprint: sprint });
+                            await clearChannel(channel as TextChannel, _infoMessage);
                             break;
 
                         case "end":
                             newCollector.stop();
-                            log(`\tEnded turn for "${virtualStat.name}" (${virtualStat.base.class})`);
+                            log(`\tEnded turn for "${_vS.name}" (${_vS.base.class})`);
                             break;
 
                         case "log":
@@ -855,7 +857,7 @@ export class Battle {
                         case "undo":
                             if (infoMessagesQueue.length > 1) {
                                 const undoAction = executingActions.pop();
-                                dealWithUndoAction(virtualStat, undoAction!);
+                                dealWithUndoAction(_vS, undoAction!);
                                 infoMessagesQueue.pop();
                                 await clearChannel(channel as TextChannel, getLastElement(infoMessagesQueue));
                             }
@@ -883,28 +885,27 @@ export class Battle {
 
                         default:
                             if (actionName.length >= 3) {
-                                const weaponChosen = virtualStat.base.weapons.find(w => {
+                                const weaponChosen = _vS.base.weapons.find(w => {
                                     return w.Name.toLowerCase().search(actionName) !== -1;
                                 });
                                 if (weaponChosen) {
-                                    mes.react('✅');
-                                    const attackTarget = this.findEntity_args(actionArgs, virtualStat, weaponChosen);
+                                    const attackTarget = this.findEntity_args(actionArgs, _vS, weaponChosen);
                                     if (attackTarget === null) {
                                         valid = false;
                                         mes.react('❎');
                                     }
                                     else {
-                                        const virtualAttackAction = getAttackAction(virtualStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
-                                        valid = this.executeVirtualAttack(virtualAttackAction, virtualStat);
+                                        const virtualAttackAction = getAttackAction(_vS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
+                                        valid = this.executeVirtualAttack(virtualAttackAction, _vS);
 
                                         if (valid) {
                                             mes.react('✅');
-                                            const realAttackAction = getAttackAction(realStat, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
+                                            const realAttackAction = getAttackAction(_rS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
                                             executingActions.push(realAttackAction);
                                         }
                                         else {
                                             mes.react('❎');
-                                            const check = this.validateTarget(virtualStat, weaponChosen, attackTarget)!;
+                                            const check = this.validateTarget(_vS, weaponChosen, attackTarget)!;
                                             if (check) {
                                                 channel.send({
                                                     embeds: [new MessageEmbed({
@@ -931,7 +932,7 @@ export class Battle {
 
                     if (valid) {
                         // send the predicted map of the next move to channel
-                        const messageOptions = await this.getFullPlayerEmbedMessageOptions(virtualStat, executingActions);
+                        const messageOptions = await this.getFullPlayerEmbedMessageOptions(_vS, executingActions);
                         channel.send(messageOptions)
                             .then(m => {
                                 if (valid) {
@@ -952,8 +953,8 @@ export class Battle {
             }
 
             const newCollector = new MessageCollector(channel, {
-                filter: m => m.author.id === virtualStat.owner,
-                time: time * 1000,
+                filter: m => m.author.id === _vS.owner,
+                time: _givenSeconds * 1000,
             });
             newCollector.on('collect', mes => {
                 if (responseQueue.length < 3) {
@@ -1026,14 +1027,17 @@ export class Battle {
         return this.width > coord.x && this.height > coord.y && coord.x >= 0 && coord.y >= 0;
     }
 
-    tickStatuses(_s: Stat, _round: Round): string {
+    tickStatuses(_s: Stat, _action: Action): string {
+        log(`\tTick status for ${_s.base.class} (${_s.index})...`);
         let returnString = '';
         const targetStatuses = _s.statusEffects;
-        targetStatuses.forEach((_status, _index) => {
+        for (let i = 0; i < targetStatuses.length; i++) {
+            const _status = targetStatuses[i];
             // make sure status is affecting the right entity and entity is still alive
             if (_status.affected.index === _s.index && _status.affected.HP > 0) {
                 // tick
-                const statusString = _status.tick();
+                log(`\t\t${_status.type} ${_status.value} (${_status.duration} turns)`)
+                const statusString = _status.tick(_action);
 
                 /**
                  * if not returning, either
@@ -1042,32 +1046,35 @@ export class Battle {
                  * delete either way
                  */
                 if (!statusString) {
-                    targetStatuses.splice(_index);
-                    _index--;
+                    log(`\t\t\tRemoving status`)
+                    this.removeStatus(_status);
+                    i--;
+                }
+                else {
+                    returnString += statusString
                 }
 
                 // notify the inflicter
                 if (_status.from.index !== _status.affected.index) {
-                    this.appendReportString(_status.from, _round, statusString);
+                    this.appendReportString(_status.from, _action.round, statusString);
                 }
-
-                // add to total infliction reportString
-                returnString = returnString + statusString;
             }
-        })
+            
+        }
         return returnString;
     }
+
     // clash methods
     applyClash(_cR: ClashResult, _aA: AttackAction): string {
         let returnString = '';
         const target = _aA.affected;
-
-        // vantage
-
-
+        
         // weapon effects
-        const weaponEffect: WeaponEffect = new WeaponEffect(_aA, _cR);
-            weaponEffect.activate();
+        const weaponEffect: WeaponEffect = new WeaponEffect(_aA, _cR, this);
+        const activationString = weaponEffect.activate();
+        if (activationString) {
+            returnString += activationString + "\n";
+        }
 
         // reduce shielding
         if (_cR.fate !== "Miss" && target.shield > 0) {
@@ -1076,8 +1083,6 @@ export class Battle {
 
         // apply basic weapon damage
         returnString += this.applyClashDamage(_aA, _cR);
-
-        // retaliation
 
         return returnString;
     }
@@ -1103,7 +1108,10 @@ export class Battle {
                 const critRate =
                     (getAcc(attacker, weapon) - getDodge(target)) * 0.1 + getCrit(attacker, weapon);
 
+                // save accolades
                 dealWithAccolade(clashResult, attacker, target);
+
+                // reportString
                 returnString +=
                     `**${attackerClass}** (${attacker.index}) ⚔️ **${targetClass}** (${target.index})
                     __*${weapon.Name}*__ ${hitRate}% (${roundToDecimalPlace(critRate)}%)
@@ -1112,10 +1120,19 @@ export class Battle {
                     returnString += "\n__**KILLING BLOW!**__";
                 }
 
+                // lifesteal
                 const LS = getLifesteal(attacker, weapon);
                 if (LS > 0) {
                     returnString += "\n" + this.heal(attacker, CR_damage * LS);
                 }
+
+                // search for "Labouring" status
+                const labourStatus = getLargestInArray(this.getStatus(target, "labouring"), _s => _s.value);
+                if (labourStatus) {
+                    labourStatus.value += CR_damage / 1000;
+                }
+
+                // apply damage
                 target.HP -= CR_damage;
                 break;
 
@@ -1166,6 +1183,27 @@ export class Battle {
 
         // apply protections
         damage = clamp(u_damage * (1 - (prot * target.shield / 3)), 0, 999);
+
+        // reduce damage by shielding
+        const shieldingStatus = getLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"),
+            (_item) => {
+                return _item.value;
+            }
+        );
+        if (shieldingStatus && shieldingStatus.value > 0) {
+            const shieldValue = shieldingStatus.value * 100;
+
+            shieldingStatus.value -= damage / 100;
+            if (shieldingStatus.value <= 0) {
+                this.removeStatus(shieldingStatus);
+            }
+
+            damage -= shieldValue;
+
+            if (damage < 0) {
+                damage = 0;
+            }
+        }
 
         return {
             damage: damage,
@@ -1234,7 +1272,32 @@ export class Battle {
         }
         associatedStringArray[_round].push(_string);
     }
+
     // actions
+    executeAutoWeapon(_attacker: Stat, _target: Stat, _round: Round): string {
+        let totalString: string[] = [];
+        _attacker.base.autoWeapons.forEach(_w => {
+            const weaponTarget: WeaponTarget = _w.targetting.target;
+            const intendedVictim: Stat | null =
+                weaponTarget === WeaponTarget.ally ?
+                    // weapon is intended to target friendly units
+                    _target.team === _attacker.team ?
+                        _target : // if the action is targetting a friendly unit, use the effect on them.
+                        _attacker : // if the action is targetting an enemy, use it on self
+                    _target.team === _attacker.team ?
+                        null : // if the action is aggressive, and the targetted unit is friendly, ignore the autoWeapon.
+                        _target; // if the targetted is an enemy, unleash the autoWeapon.
+            if (intendedVictim) {
+                const selfActivatingAA: AttackAction = getAttackAction(_attacker, intendedVictim, _w, {
+                    x: intendedVictim.x, y: intendedVictim.y
+                }, _round);
+                const clashResult = this.clash(selfActivatingAA);
+                const weaponEffect: WeaponEffect = new WeaponEffect(selfActivatingAA, clashResult, this);
+                totalString.push(weaponEffect.activate());
+            }
+        });
+        return totalString.join("\n");
+    }
     executeActions(_actions: Action[]) {
         log("Executing actions...")
 
@@ -1254,14 +1317,22 @@ export class Battle {
         const mAction = _action as MoveAction;
         const aAction = _action as AttackAction;
 
+        // activate autoWeapons
+        let autoWeaponReportString = this.executeAutoWeapon(_action.affected, _action.from, _action.round);
+        if (_action.from.index !== _action.affected.index) {
+            autoWeaponReportString += this.executeAutoWeapon(_action.from, _action.affected, _action.round);
+            this.appendReportString(_action.from, _action.round, autoWeaponReportString);
+        }
+        this.appendReportString(_action.affected, _action.round, autoWeaponReportString);
+
         // apply statuses for target, then report to afflicted entity
-        const affectedStatusString = this.tickStatuses(_action.affected, _action.round);
+        const affectedStatusString = this.tickStatuses(_action.affected, _action);
         if (affectedStatusString) {
             this.appendReportString(_action.affected, _action.round, affectedStatusString);
         }
         if (_action.affected.index !== _action.from.index) {
             // apply statuses for attacker, then report to attacker entity
-            const attackerStatusString = this.tickStatuses(_action.from, _action.round);
+            const attackerStatusString = this.tickStatuses(_action.from, _action);
             if (attackerStatusString) {
                 this.appendReportString(_action.from, _action.round, attackerStatusString);
             }
@@ -1284,10 +1355,11 @@ export class Battle {
         }
         else {
             // valid attack
-            const clashResult = this.clash(_aA);
-            const clashAfterMathString = this.applyClash(clashResult, _aA);
+            const clashResult: ClashResult = this.clash(_aA);
+            const clashAfterMathString: string = this.applyClash(clashResult, _aA);
             string = clashAfterMathString;
         }
+
         return string;
     };
     executeAOEAttackAction(_aA: AttackAction, inclusive = true) {
@@ -1371,7 +1443,7 @@ export class Battle {
         stat[axis] += newMagnitude;
         this.CSMap = this.CSMap.set(getCoordString(stat), stat);
         
-        console.log(`${_mA.from.base.class} (${_mA.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
+        // console.log(`${_mA.from.base.class} (${_mA.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
 
         const affected = _mA.affected;
         _mA.executed = true;
@@ -1559,9 +1631,9 @@ export class Battle {
             // draw tracing path
             const victimWithinDistance = checkWithinDistance(_aA.weapon, getDistance(_aA.from, _aA.affected));
             ctx.beginPath();
-            ctx.strokeStyle = victimWithinDistance?
-                                "red":
-                                "black";
+            ctx.strokeStyle = victimWithinDistance ?
+                "red" :
+                "black";
             ctx.lineWidth = _width;
             const fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(_fromBattleCoord);
             ctx.moveTo(fromCanvasCoord.x + _offset.x, fromCanvasCoord.y + _offset.y);
@@ -1571,8 +1643,21 @@ export class Battle {
             ctx.stroke();
             ctx.closePath();
 
-            // debug("\tfromCanvasCoord", { x: fromCanvasCoord.x, y: fromCanvasCoord.y });
-            // debug("\ttoCanvasCoord", { x: toCanvasCoord.x, y: toCanvasCoord.y });
+            // draw hit
+            if (victimWithinDistance) {
+                const hitImage = _aA.weapon.targetting.target === WeaponTarget.ally?
+                    await getFileImage('./images/Shield.png'):
+                    await getFileImage('./images/Hit.png');
+                const imageWidth = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile / 3));
+                const imageHeight = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile / 3));
+                ctx.drawImage(
+                    hitImage,
+                    toCanvasCoord.x + _offset.x - (imageWidth / 2),
+                    toCanvasCoord.y + _offset.y - (imageHeight / 2),
+                    imageWidth,
+                    imageHeight
+                );
+            }
 
             // priority text
             const textCanvasCoordinate = this.getCanvasCoordsFromBattleCoord({
@@ -1592,57 +1677,6 @@ export class Battle {
                 },
                 -1 * angle
             );
-
-            if (victimWithinDistance) {
-                const victimDead = _aA.affected.HP <= 0;
-                const greenBarPercentage = victimDead?
-                    1:
-                    _aA.affected.HP / _aA.affected.base.AHP;
-
-                ctx.lineWidth = 10;
-                const targetCanvasCoords = this.getCanvasCoordsFromBattleCoord(_aA.affected);
-
-                // draw hit
-                const hitImage = await getFileImage('./images/Hit.png');
-                const imageWidth = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile/3));
-                const imageHeight = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile/3));
-                ctx.drawImage(
-                    hitImage,
-                    toCanvasCoord.x + _offset.x - (imageWidth / 2),
-                    toCanvasCoord.y + _offset.y - (imageHeight / 2),
-                    imageWidth,
-                    imageHeight
-                );
-
-                const edgeDistance = this.pixelsPerTile * (1 / 3);
-                const barStartingCanvasPosition = {
-                    x: targetCanvasCoords.x - edgeDistance,
-                    y: targetCanvasCoords.y - edgeDistance,
-                }
-                const barEndingCanvasPosition = {
-                    x: targetCanvasCoords.x + edgeDistance,
-                    y: targetCanvasCoords.y - edgeDistance,
-                }
-
-                // // draw red bar
-                // ctx.beginPath();
-                // ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y); // shift 1/3 of a block top and left from the center
-                // ctx.strokeStyle = "red";
-                // ctx.lineTo(barEndingCanvasPosition.x, barEndingCanvasPosition.y); // 1/3 to the top right
-                // ctx.stroke();
-                // ctx.closePath();
-
-                // // draw green bar
-                // ctx.beginPath();
-                // ctx.moveTo(barStartingCanvasPosition.x, barStartingCanvasPosition.y);
-                // ctx.strokeStyle = victimDead?
-                //     "black":
-                //     "green";
-                // const greenLineLength = 2 * edgeDistance * greenBarPercentage; // full bar === 2 * edgeDistance
-                // ctx.lineTo(barStartingCanvasPosition.x + greenLineLength, barEndingCanvasPosition.y);
-                // ctx.stroke();
-                // ctx.closePath();
-            }
 
             ctx.restore();
         }
@@ -1720,6 +1754,7 @@ export class Battle {
                 async (aA: AttackAction) => {
                     const weapon = aA.weapon;
                     switch (weapon.targetting.AOE) {
+                        case "self":
                         case "single":
                         case "touch":
                             appendGraph(aA, attacker_beforeCoords, victim_beforeCoords, i+1);
@@ -1859,13 +1894,14 @@ export class Battle {
         return (await this.getActionArrowsCanvas(actions)).toBuffer();
     }
     async getFullPlayerEmbedMessageOptions(stat: Stat, actions?: Array<Action>): Promise<MessageOptions> {
+        // log("actions",actions);
         const mapCanvas = await this.getCurrentMapWithArrowsCanvas(stat, actions);
         const map: Buffer = mapCanvas.toBuffer();
 
         const frameImage: Image = await getFileImage('images/frame.png');
         const characterBaseImage: Image = await getFileImage(stat.base.iconURL);
         const { canvas, ctx } = startDrawing(frameImage.width * 3, frameImage.height * 3);
-        ctx.drawImage(characterBaseImage, 20, 20, characterBaseImage.width * 3, characterBaseImage.height * 3);
+        ctx.drawImage(characterBaseImage, 20, 20, canvas.width - 40, canvas.height - 40);
         ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
         ctx.textAlign = "center";
         ctx.font = '90px serif';
@@ -1880,7 +1916,7 @@ export class Battle {
         return {
             embeds: [embed],
             files: [
-                { attachment: map, name: `map.png` },
+                { attachment: map, name: "map.png" },
                 { attachment: canvas.toBuffer(), name: "thumbnail.png" }
             ]
         };
@@ -2169,6 +2205,7 @@ export class Battle {
         if (weapon.UPT < getWeaponUses(weapon, attackerStat)) {
             eM.reason = `You can only use this ability ${weapon.UPT} time(s) per turn.`;
             eM.value = getWeaponUses(weapon, attackerStat);
+            log(weapon, attackerStat, getWeaponUses(weapon, attackerStat));
             return eM;
         }
 
@@ -2365,5 +2402,17 @@ export class Battle {
         }
 
         return moveActions;
+    }
+
+    // status function
+    removeStatus(_status: StatusEffect) {
+        const owner = _status.affected;
+        const index = owner.statusEffects.indexOf(_status);
+        if (index !== -1) {
+            owner.statusEffects.splice(index);
+        }
+    }
+    getStatus(_stat: Stat, _type: StatusEffectType) {
+        return _stat.statusEffects.filter(_s => _s.type === _type);
     }
 }

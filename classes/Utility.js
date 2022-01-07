@@ -313,9 +313,9 @@ function getCoordsWithinRadius(radius, center, inclusive) {
     return result;
 }
 exports.getCoordsWithinRadius = getCoordsWithinRadius;
-function getLargestInArray(array) {
+function getLargestInArray(array, _getValue) {
     return array.reduce(function (la, c) {
-        return la < c ?
+        return _getValue(la) < _getValue(c) ?
             c :
             la;
     }, array[0]);
