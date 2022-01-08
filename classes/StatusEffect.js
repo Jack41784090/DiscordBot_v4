@@ -5,7 +5,7 @@ var Utility_1 = require("./Utility");
 var statusEffect_effects = new Map([
     [
         "bleed",
-        function (_statusEffect, _sameRound_action) {
+        function (_statusEffect, _sameRound_action, _bd) {
             var affected = _statusEffect.affected;
             var value = _statusEffect.value;
             var returnString = "Bleeds! \uD83E\uDE78 -**" + (0, Utility_1.roundToDecimalPlace)(value) + "** (x" + _statusEffect.duration + ")";
@@ -22,7 +22,7 @@ var statusEffect_effects = new Map([
     ],
     [
         "protected",
-        function (_statusEffect, _sameRound_action) {
+        function (_statusEffect, _sameRound_action, _bd) {
             var value = (0, Utility_1.clamp)(_statusEffect.value, 0, _statusEffect.affected.base.AHP);
             _statusEffect.value = value;
             var returnString = "";
@@ -38,7 +38,7 @@ var statusEffect_effects = new Map([
     ],
     [
         "labouring",
-        function (_statusEffect, _sameRound_action) {
+        function (_statusEffect, _sameRound_action, _bd) {
             var value = (0, Utility_1.clamp)(_statusEffect.value, 0, 100);
             _statusEffect.value = value;
             var returnString = "Endures the pain... \uD83D\uDC77 (**" + (0, Utility_1.roundToDecimalPlace)(value) + "**)";
@@ -48,47 +48,33 @@ var statusEffect_effects = new Map([
     ],
     [
         "fury",
-        function (_statusEffect, _sameRound_action) {
+        function (_statusEffect, _sameRound_action, _bd) {
             var affected = _statusEffect.affected;
             var value = (0, Utility_1.clamp)(_statusEffect.value, 0, 100);
             _statusEffect.value = value;
             var fullBar = 12;
             var fullFury = 100;
-            var returnString = "**" + affected.base.class + "** (" + affected.index + ")";
+            var returnString = "";
             if (value > 66) {
-                returnString += " is **ENRAGED**! ( `" + (0, Utility_1.addHPBar)(fullBar, value * fullBar / fullFury) + "` )";
+                returnString += "**ENRAGED**! ( `" + (0, Utility_1.addHPBar)(fullBar, value * fullBar / fullFury) + "` )";
                 if (affected.buffs.Damage < 5) {
                     affected.buffs.Damage = 5;
                 }
+                if (affected.buffs.lifesteal < 0.2) {
+                    affected.buffs.lifesteal = 0.2;
+                }
             }
             else {
-                returnString += " is growing in rage... ( `" + (0, Utility_1.addHPBar)(fullBar, value * fullBar / fullFury) + "` )";
-                // check if damage buff is 5
-                if (affected.buffs.Damage === 5) {
-                    // is 5, check if there are other buffs that is giving the same buff
-                    var otherDamageUpBuffs = _statusEffect.battleData.getStatus(affected, "damageUp");
-                    if (!otherDamageUpBuffs.find(function (_se) { return _se.value === 5; })) {
-                        // if no, remove buff, find other buffs that give damage buff
-                        affected.buffs.Damage = 0;
-                        if (otherDamageUpBuffs.length > 0) {
-                            var largestDamageUpBuff = (0, Utility_1.getLargestInArray)(otherDamageUpBuffs, function (_se) { return _se.value; });
-                            affected.buffs.Damage = largestDamageUpBuff.value;
-                        }
-                    }
-                    else {
-                        // if yes, ignore
-                    }
-                }
-                else {
-                    // is not 5, buff is most probably more than 5. Ignore.
-                }
+                returnString += "Growing in rage... ( `" + (0, Utility_1.addHPBar)(fullBar, value * fullBar / fullFury) + "` )";
+                _bd.removeBuffStatus(_statusEffect.affected, 5, "Damage");
+                _bd.removeBuffStatus(_statusEffect.affected, 0.2, "lifesteal");
             }
             return returnString;
         }
     ],
     [
-        "damageUp",
-        function (_statusEffect, _sameRound_action) {
+        "DamageUp",
+        function (_statusEffect, _sameRound_action, _bd) {
             var value = _statusEffect.value;
             var returnString = "";
             if (value > 0) {
@@ -118,7 +104,7 @@ var StatusEffect = /** @class */ (function () {
         var statusEffect = statusEffect_effects.get(this.type);
         if (this.duration > 0 && statusEffect) {
             (0, Utility_1.log)("\t\t\tSuccessful execution!");
-            statusResult = statusEffect(this, _action);
+            statusResult = statusEffect(this, _action, this.battleData);
         }
         else {
             (0, Utility_1.log)("\t\t\tFailed to execute. Removing.");

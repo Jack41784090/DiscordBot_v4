@@ -103,11 +103,13 @@ export interface Stat extends Coordinate {
     owner: string,
     username: string,
 
-    team: Team,
+    team: Team | null,
     accolades: Accolade,
     buffs: Buffs,
     debuffs: Buffs,
     botType: BotType,
+
+    pvp: boolean
 }
 
 export interface Spawner extends Coordinate {
@@ -207,6 +209,7 @@ export interface Buffs {
     Spd: number,
     lifesteal: number,
 }
+export type Buff = "AHP" | "Damage" | "Acc" | "Dodge" | "Crit" | "Prot" | "Spd" | "lifesteal";
 export interface Accolade {
     kill: number,
     damageDealt: number,
@@ -224,9 +227,10 @@ export type StatusEffectType =
     "protected"| // extra health (shield)
     "labouring"| // Hercules unique: add 33% of taken damage to value and increase healing rate
     "fury"| // Mars unique: fury over 0.66 gives a buff to damage and crit
-    "damageUp" // damage buff
+    "DamageUp"| // damage buff
+    "lifestealUp"
 export interface StatusEffectFunction {
-    (_statusEffect: StatusEffect, _action: Action): string;
+    (_statusEffect: StatusEffect, _action: Action, _bd: Battle): string;
 }
 
 export type ClashResultFate = "Miss" | "Hit" | "Crit"

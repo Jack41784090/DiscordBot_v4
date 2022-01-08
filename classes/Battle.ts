@@ -1,5 +1,5 @@
 import { CategoryChannel, Client, EmbedField, EmbedFieldData, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle } from "./Utility";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIcon, getUserData, saveBattle } from "./Database";
 import enemiesData from "../data/enemiesData.json";
@@ -7,7 +7,7 @@ import weaponData from "../data/weaponData.json";
 
 import fs from 'fs';
 import { MinHeap } from "./MinHeap";
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
@@ -43,7 +43,10 @@ export class Battle {
     // user cache
     userCache: Map<OwnerID, User>;
 
-    private constructor(_mapData: Mapdata, _author: User, _message: Message, _client: Client) {
+    // gamemode
+    pvp: boolean;
+
+    private constructor(_mapData: Mapdata, _author: User, _message: Message, _client: Client, _pvp = false) {
         this.author = _author;
         this.message = _message;
         this.channel = _message.channel as TextChannel;
@@ -58,6 +61,8 @@ export class Battle {
         this.pixelsPerTile = 50;
 
         this.userCache = new Map<OwnerID, User>();
+
+        this.pvp = _pvp;
 
         // action strings
         this.roundActionsArray = [];
@@ -84,37 +89,38 @@ export class Battle {
     }
 
     /** Main function to access in order to start a thread of battle */
-    static async Start(_mapData: Mapdata, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client) {
-        const battle = new Battle(_mapData, _author, _message, _client);
+    static async Start(_mapData: Mapdata, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
+        debug("pvp", _pvp);
+        const battle = new Battle(_mapData, _author, _message, _client, _pvp);
 
         // add players to spawning list
         for (let i = 0; i < _party.length; i++) {
             const ownerID = _party[i];
             const userData = await getUserData(ownerID);
             const blankStat = getStat(getBaseStat(userData.equippedClass), ownerID);
+            if (_pvp) {
+                blankStat.pvp = true;
+            }
             battle.tobespawnedArray.push(blankStat);
         }
 
         // add enemies to the spawning list
-        for (const [key, value] of Object.entries(_mapData.enemiesInfo)) {
-            const Eclass = key as EnemyClass;
-            const mod = { name: `${Eclass}` };
-            const enemyBase: BaseStat = getNewObject(enemiesData[Eclass], mod) as BaseStat;
-            const spawnCount = random(value.min, value.max);
+        if (!_pvp) {
+            for (const [key, value] of Object.entries(_mapData.enemiesInfo)) {
+                const Eclass = key as EnemyClass;
+                const mod = { name: `${Eclass}` };
+                const enemyBase: BaseStat = getNewObject(enemiesData[Eclass], mod) as BaseStat;
+                const spawnCount = random(value.min, value.max);
 
-            for (let i = 0; i < spawnCount; i++) {
-                battle.totalEnemyCount++;
-                battle.enemyCount++;
-                battle.tobespawnedArray.push(getStat(enemyBase));
+                for (let i = 0; i < spawnCount; i++) {
+                    battle.totalEnemyCount++;
+                    battle.enemyCount++;
+                    battle.tobespawnedArray.push(getStat(enemyBase));
+                }
             }
         }
 
-        try {
-            battle.StartRound();
-        }
-        catch (_err) {
-            _message.channel.send(`${_err}`);
-        }
+        battle.StartRound();
     }
 
     /** Begin a new round
@@ -177,7 +183,7 @@ export class Battle {
             })
 
             // increment readiness
-            if (s.team && s.readiness <= 50) {
+            if (s.readiness <= 50) {
                 const Spd = getSpd(s);
                 const read = random(Spd * 4, Spd * 4.25);
 
@@ -189,11 +195,6 @@ export class Battle {
                 }
             }
         }
-        //#endregion
-
-        //#region SORT STATUS EFFECTS
-        // log("Sorting status...");
-        // this.sortStatus();
         //#endregion
 
         //#region FIND / CREATE COMMAND ROOM CATEGORY
@@ -211,11 +212,6 @@ export class Battle {
         }
         
         //#endregion
-
-        // this.BeforeAll(allStats);
-
-        // check death: after passive
-        // this.CheckDeath(allStats);
 
         //#region SAVE CURRENT MAP TO LOCAL
         log("Saving current map to local...")
@@ -252,7 +248,7 @@ export class Battle {
             realStat.actionsAssociatedStrings = {};
 
             //#region PLAYER CONTROL
-            if (realStat.botType === BotType.naught) {
+            if (realStat.botType === BotType.naught && realStat.owner) {
                 // fetch the Discord.User 
                 const user: User | null = 
                     this.userCache.get(realStat.owner)||
@@ -329,7 +325,11 @@ export class Battle {
 
                 // target selection
                 // option 1: select the closest target
-                const selectedTarget = this.findEntity_closest(virtualStat, ["block", virtualStat.team]);
+                const intendedTargets: Team[] = ["block"];
+                if (virtualStat.team) {
+                    intendedTargets.push(virtualStat.team);
+                }
+                const selectedTarget = this.findEntity_closest(virtualStat, intendedTargets);
                 // option 2: select the weakest target
 
                 // if found a target
@@ -401,55 +401,55 @@ export class Battle {
         }
 
         // find the latest action's priority
-        const latestAction: Action = getLargestInArray(this.roundActionsArray, _a => _a.round);
-        const latestRound = latestAction.round;
+        const latestAction = getLargestInArray(this.roundActionsArray, _a => _a.round);
+        if (latestAction) {
+            const latestRound = latestAction.round;
 
-        // execute every move from lowest priority to highest
-        for (let i = 0; i <= latestRound; i++) {
-            const roundExpectedActions: Action[] | undefined = priorityActionMap.get(i);
-            if (roundExpectedActions) {
-                this.greaterPriorSort(roundExpectedActions);
+            // execute every move from lowest priority to highest
+            for (let i = 0; i <= latestRound; i++) {
+                const roundExpectedActions: Action[] | undefined = priorityActionMap.get(i);
+                if (roundExpectedActions) {
+                    this.greaterPriorSort(roundExpectedActions);
 
-                // draw the base tiles and characters (before executing actions)
-                let canvas = this.roundSavedCanvasMap.get(i);
-                if (!canvas) {
-                    canvas = new Canvas(this.width * this.pixelsPerTile, this.height * this.pixelsPerTile);
-                    if (canvas) this.roundSavedCanvasMap.set(i, canvas);
+                    // draw the base tiles and characters (before executing actions)
+                    let canvas = this.roundSavedCanvasMap.get(i);
+                    if (!canvas) {
+                        canvas = new Canvas(this.width * this.pixelsPerTile, this.height * this.pixelsPerTile);
+                        if (canvas) this.roundSavedCanvasMap.set(i, canvas);
+                    }
+                    const ctx = canvas.getContext("2d");
+                    const roundCanvas = await this.getNewCanvasMap();
+                    this.drawHealthArcs(roundCanvas);
+                    this.drawIndexi(roundCanvas);
+                    ctx.drawImage(roundCanvas, 0, 0, canvas.width, canvas.height);
+
+                    // execution
+                    const executedActions = this.executeActions(roundExpectedActions);
+
+                    // draw executed actions
+                    const actualCanvas = await this.getActionArrowsCanvas(executedActions);
+                    ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
+
+                    // update the final canvas
+                    this.roundSavedCanvasMap.set(i, canvas);
                 }
-                const ctx = canvas.getContext("2d");
-                const roundCanvas = await this.getNewCanvasMap();
-                this.drawHealthArcs(roundCanvas);
-                this.drawIndexi(roundCanvas);
-                ctx.drawImage(roundCanvas, 0, 0, canvas.width, canvas.height);
-
-                // execution
-                const executedActions = this.executeActions(roundExpectedActions);
-
-                // draw executed actions
-                const actualCanvas = await this.getActionArrowsCanvas(executedActions);
-                ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
-
-                // update the final canvas
-                this.roundSavedCanvasMap.set(i, canvas);
             }
-        }
-        //#endregion
+            //#endregion
 
-        // limit token count
-        for (let i = 0; i < allStats.length; i++) {
-            const s = allStats[i];
-            HandleTokens(s, (p, t) => {
-                if (p > 3) {
-                    log(`\t\t${s.index}) ${t} =${3}`)
-                    s[t] = 3;
-                }
-            });
+            // limit token count
+            for (let i = 0; i < allStats.length; i++) {
+                const s = allStats[i];
+                HandleTokens(s, (p, t) => {
+                    if (p > 3) {
+                        log(`\t\t${s.index}) ${t} =${3}`)
+                        s[t] = 3;
+                    }
+                });
+            }
         }
 
         // check death: after player round
         this.checkDeath(allStats);
-
-        // status: check deaths after 
 
         //#region REPORT ACTIONS
         log("Reporting...")
@@ -459,10 +459,11 @@ export class Battle {
         const players = allStats.filter(s => s.botType === BotType.naught);
         players.forEach(async stat => {
             const allRounds: Round[] = Array.from(this.roundSavedCanvasMap.keys());
-            const greatestRoundNumber: Round = getLargestInArray(allRounds, _ => _);
-            const commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
-
-            allPromise.push(commandRoomReport);
+            const greatestRoundNumber: Round | undefined = getLargestInArray(allRounds, _ => _);
+            if (greatestRoundNumber) {
+                const commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
+                allPromise.push(commandRoomReport);
+            }
         });
 
         // wait for all players to finish reading the reports
@@ -477,10 +478,14 @@ export class Battle {
         // allPromise.forEach(console.log);
         //#endregion
 
-        //#region Finish the Round
+        this.FinishRound();
+    }
+
+    FinishRound() {
         log("Finishing Round...");
-        if (this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0))
-        // if (false)
+        const PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
+        const PVP = this.playerCount === 1;
+        if ((this.pvp && PVP) || (!this.pvp && PVE))
         {
             // database work
             // await Database.updateOrAddUser(author, { status: 'idle' });
@@ -504,22 +509,21 @@ export class Battle {
                     value: value,
                 });
             });
+
+            const victoryTitle =
+                this.pvp ?
+                    `${this.allStats().find(_s => _s.owner && _s.HP > 0)?.base.class || "What? No one "} wins!` :
+                    this.totalEnemyCount === 0 ? "VICTORY!" : "Defeat."
             this.channel.send({
                 embeds: [new MessageEmbed({
-                    title: this.totalEnemyCount === 0 ? "VICTORY!" : "Defeat.",
+                    title: victoryTitle,
                     fields: endEmbedFields,
                 })]
             });
         }
         else {
-            try {
-                this.StartRound();
-            }
-            catch (_err) {
-                this.channel.send(`${_err}`);
-            }
+            this.StartRound();
         }
-        //#endregion
     }
 
     /** Execute function on every stat of players */
@@ -1027,9 +1031,9 @@ export class Battle {
 
     tickStatuses(_s: Stat, _action: Action): string {
         log(`\tTick status for ${_s.base.class} (${_s.index})...`);
+
         let returnString = '';
         const statuses = _s.statusEffects;
-        const from = _action.from;
         const affected = _action.affected;
         for (let i = 0; i < statuses.length; i++) {
             const _status = statuses[i];
@@ -1062,8 +1066,8 @@ export class Battle {
                 }
 
                 // notify the inflicter
-                if (from.index !== affected.index) {
-                    this.appendReportString(from, _action.round, `__${affected.base.class}__ (${affected.index})\n` + statusString);
+                if (_status.from.index !== _status.affected.index) {
+                    this.appendReportString(_status.from, _action.round, `__${affected.base.class}__ (${affected.index})\n` + statusString);
                 }
             }
             
@@ -1279,6 +1283,7 @@ export class Battle {
             associatedStringArray[_round] = [];
         }
         if (_string) {
+            log(`\t\t\tAppending "${_string}" to (${_stat.index})`)
             associatedStringArray[_round].push(_string);
         }
     }
@@ -1291,7 +1296,7 @@ export class Battle {
             const intendedVictim: Stat | null =
                 weaponTarget === WeaponTarget.ally ?
                     // weapon is intended to target friendly units
-                    _target.team === _attacker.team ?
+                    _target.team === _attacker.team && _w.targetting.AOE !== "self" ?
                         _target : // if the action is targetting a friendly unit, use the effect on them.
                         _attacker : // if the action is targetting an enemy, use it on self
                     _target.team === _attacker.team ?
@@ -1335,13 +1340,15 @@ export class Battle {
         }
         this.appendReportString(_action.affected, _action.round, autoWeaponReportString);
 
-        // apply statuses for target, then report to afflicted entity
+        // apply statuses for target, then report to target
         const affectedStatusString = this.tickStatuses(_action.affected, _action);
         if (affectedStatusString) {
             this.appendReportString(_action.affected, _action.round, affectedStatusString);
         }
+
+        // if the action is not self-targetting...
         if (_action.affected.index !== _action.from.index) {
-            // apply statuses for attacker, then report to attacker entity
+            // apply statuses for attacker, then report to attacker
             const attackerStatusString = this.tickStatuses(_action.from, _action);
             if (attackerStatusString) {
                 this.appendReportString(_action.from, _action.round, attackerStatusString);
@@ -2037,7 +2044,7 @@ export class Battle {
     findEntity_args(_args: Array<string>, _attacker: Stat, _weapon?: Weapon): Stat | null {
         const allStats = this.allStats();
         const ignore: Team[] = ["block"];
-        const targetNotInIgnore = (c:Stat) => !ignore.includes(c.team);
+        const targetNotInIgnore = (c:Stat) => c.team && !ignore.includes(c.team);
         if (_weapon && _weapon.targetting.target === WeaponTarget.enemy) ignore.push("player");
         if (_weapon && _weapon.targetting.target === WeaponTarget.ally) ignore.push("enemy");
 
@@ -2115,7 +2122,7 @@ export class Battle {
 
             // fail cases
             const selfTargettingIgnored = s.index === _attacker.index;
-            const ignored = ignore.includes(s.team);
+            const ignored = s.team && ignore.includes(s.team);
             const targetIsDead = s.HP <= 0;
             if (selfTargettingIgnored || ignored || targetIsDead) {
                 return closest;
@@ -2136,7 +2143,7 @@ export class Battle {
         if (magnitude === 0) return [];
         const cAxis = counterAxis(_axis);
         const result = allStats.filter(s => {
-            if (ignore.includes(s.team)) return false;
+            if (s.team && ignore.includes(s.team)) return false;
 
             const checkNeg = s[_axis] >= _attacker[_axis] + magnitude && s[_axis] < _attacker[_axis];
             const checkPos = s[_axis] <= _attacker[_axis] + magnitude && s[_axis] > _attacker[_axis];
@@ -2150,7 +2157,7 @@ export class Battle {
     findEntities_radius(_stat: Coordinate, _r: number, includeSelf: boolean = false, ignore: Array<Team> = ["block"]): Array<Stat> {
         // console.log(_stat, radius, includeSelf, ignore); 
         
-        const targetNotInIgnore = (c: Stat) => !ignore.includes(c.team);
+        const targetNotInIgnore = (c: Stat) => c.team && !ignore.includes(c.team);
         const stat = _stat as Stat;
         
         return this.allStats().filter(s => {
@@ -2223,23 +2230,11 @@ export class Battle {
             eM.reason = "Attacker perished.";
             return eM;
         }
-
-        // log(
-        //     `\tname: ${weapon.Name}`,
-        //     `\tdamage: ${weapon.Damage}`,
-        //     `\trange: ${weapon.Range}`,
-        //     `\tattacker: ${attackerStat.base.class} (${attackerStat.index})`,
-        //     `\ttarget: ${targetStat.base.class} (${targetStat.index})`
-        // );
-
-        // location
-        // if (targetStat.base.class === "location") {
-        //     eM.reason = "You are targetting an empty location.";
-        //     eM.advice = "Continue casting?";
-        //     eM.tragic = "Swung at the air.";
-        //     eM.harsh = false;
-        //     return eM;
-        // }
+        // targetting a teammate without pvp on
+        if (attackerStat.team === targetStat.team && (!targetStat.pvp || !attackerStat.pvp)) {
+            eM.reason = "Attempted to attack a teammate without pvp on.";
+            return eM;
+        }
 
         // readiness
         if (attackerStat.readiness < 0) {
@@ -2477,6 +2472,29 @@ export class Battle {
         const index = owner.statusEffects.indexOf(_status);
         if (index !== -1) {
             owner.statusEffects.splice(index);
+        }
+    }
+    removeBuffStatus(_s: Stat, _value: number, _buffType: Buff) {
+        // check if current buff is equal to value
+        if (_s.buffs[_buffType] === _value) {
+            // if true, check if there are other buffs that is giving the same buff
+            const otherSameTypeBuffs = this.getStatus(_s, getBuffStatusEffect(_buffType));
+            if (!otherSameTypeBuffs.find(_se => _se.value === _value)) {
+                // if no other buff is the same, reset buff
+                _s.buffs[_buffType] = 0;
+
+                // find other buffs that give the same type of buff
+                if (otherSameTypeBuffs.length > 0) {
+                    const largestBuff = getLargestInArray(otherSameTypeBuffs, _se => _se.value);
+                    _s.buffs[_buffType] = largestBuff!.value;
+                }
+            }
+            else {
+                // if yes, ignore
+            }
+        }
+        else {
+            // is not 5, buff is most probably more than 5. Ignore.
         }
     }
     getStatus(_stat: Stat, _type: StatusEffectType) {

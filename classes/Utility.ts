@@ -4,7 +4,7 @@ import { Type } from "typescript";
 import classData from "../data/classData.json"
 
 import { BotClient } from "..";
-import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption } from "../typedef";
+import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType } from "../typedef";
 import { Battle } from "./Battle";
 
 export function clamp(value: number, min: number, max: number) {
@@ -215,12 +215,16 @@ export function getCoordsWithinRadius(radius: number, center: Coordinate, inclus
     return result;
 }
 
-export function getLargestInArray<Type>(array: Type[], _getValue: (_item: Type) => number) {
+export function getLargestInArray<Type>(array: Type[], _getValue: (_item: Type) => number): Type | undefined {
     return array.reduce((la, c) => {
         return _getValue(la) < _getValue(c) ?
             c:
             la;
     }, array[0]);
+}
+
+export function getBuffStatusEffect(_buff: Buff) {
+    return `${_buff}Up` as StatusEffectType;
 }
 
 export function newWeapon(origin: Weapon, modifier: {
@@ -810,6 +814,8 @@ export function getStat(bss: SimpleStat | BaseStat, _owner: string = ''): Stat {
 
         x: ss.x,
         y: ss.y,
+
+        pvp: false,
     };
 
     for (let i = 0; i < base.weapons.length; i++) {

@@ -153,7 +153,12 @@ module.exports = {
                 // }
                 //#endregion
                 // Database.WriteBattle(author, battleData.returnObject());
-                Battle_1.Battle.Start(mapData, author, message, authorData.party, client);
+                try {
+                    Battle_1.Battle.Start(mapData, author, message, authorData.party, client);
+                }
+                catch (_err) {
+                    channel.send("" + _err);
+                }
             }
             return [2 /*return*/];
         });

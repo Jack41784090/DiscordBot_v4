@@ -5,7 +5,7 @@ import { addHPBar, clamp, getLargestInArray, log, roundToDecimalPlace } from "./
 const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     [
         "bleed",
-        (_statusEffect: StatusEffect, _sameRound_action: Action) => {
+        (_statusEffect: StatusEffect, _sameRound_action: Action, _bd: Battle) => {
             const affected = _statusEffect.affected;
             const value = _statusEffect.value;
             let returnString = `Bleeds! 🩸 -**${roundToDecimalPlace(value)}** (x${_statusEffect.duration})`;
@@ -24,7 +24,7 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     ],
     [
         "protected",
-        (_statusEffect: StatusEffect, _sameRound_action: Action) => {
+        (_statusEffect: StatusEffect, _sameRound_action: Action, _bd: Battle) => {
             const value = clamp(_statusEffect.value, 0, _statusEffect.affected.base.AHP); _statusEffect.value = value;
             let returnString = "";
 
@@ -41,7 +41,7 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     ],
     [
         "labouring",
-        (_statusEffect: StatusEffect, _sameRound_action: Action) => {
+        (_statusEffect: StatusEffect, _sameRound_action: Action, _bd: Battle) => {
             const value = clamp(_statusEffect.value, 0, 100); _statusEffect.value = value;
             let returnString = `Endures the pain... 👷 (**${roundToDecimalPlace(value)}**)`;
             _statusEffect.duration--;
@@ -51,48 +51,34 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     ],
     [
         "fury",
-        (_statusEffect: StatusEffect, _sameRound_action: Action) => {
+        (_statusEffect: StatusEffect, _sameRound_action: Action, _bd: Battle) => {
             const affected = _statusEffect.affected;
             const value = clamp(_statusEffect.value, 0, 100); _statusEffect.value = value;
             const fullBar = 12;
             const fullFury = 100;
-            let returnString = `**${affected.base.class}** (${affected.index})`;
+            let returnString = "";
 
             if (value > 66) {
-                returnString += ` is **ENRAGED**! ( \`${addHPBar(fullBar, value * fullBar / fullFury)}\` )`;
+                returnString += `**ENRAGED**! ( \`${addHPBar(fullBar, value * fullBar / fullFury)}\` )`;
                 if (affected.buffs.Damage < 5) {
                     affected.buffs.Damage = 5;
                 }
+                if (affected.buffs.lifesteal < 0.2) {
+                    affected.buffs.lifesteal = 0.2;
+                }
             }
             else {
-                returnString += ` is growing in rage... ( \`${addHPBar(fullBar, value * fullBar / fullFury)}\` )`;
-                // check if damage buff is 5
-                if (affected.buffs.Damage === 5) {
-                    // is 5, check if there are other buffs that is giving the same buff
-                    const otherDamageUpBuffs = _statusEffect.battleData.getStatus(affected, "damageUp");
-                    if (!otherDamageUpBuffs.find(_se => _se.value === 5)) {
-                        // if no, remove buff, find other buffs that give damage buff
-                        affected.buffs.Damage = 0;
-                        if (otherDamageUpBuffs.length > 0) {
-                            const largestDamageUpBuff = getLargestInArray(otherDamageUpBuffs, _se => _se.value);
-                            affected.buffs.Damage = largestDamageUpBuff.value;
-                        }
-                    }
-                    else {
-                        // if yes, ignore
-                    }
-                }
-                else {
-                    // is not 5, buff is most probably more than 5. Ignore.
-                }
+                returnString += `Growing in rage... ( \`${addHPBar(fullBar, value * fullBar / fullFury)}\` )`;
+                _bd.removeBuffStatus(_statusEffect.affected, 5, "Damage");
+                _bd.removeBuffStatus(_statusEffect.affected, 0.2, "lifesteal");
             }
 
             return returnString;
         }
     ],
     [
-        "damageUp",
-        (_statusEffect: StatusEffect, _sameRound_action: Action) => {
+        "DamageUp",
+        (_statusEffect: StatusEffect, _sameRound_action: Action, _bd: Battle) => {
             const value = _statusEffect.value;
             let returnString = "";
 
@@ -136,7 +122,7 @@ export class StatusEffect {
         const statusEffect = statusEffect_effects.get(this.type);
         if (this.duration > 0 && statusEffect) {
             log(`\t\t\tSuccessful execution!`)
-            statusResult = statusEffect(this, _action);
+            statusResult = statusEffect(this, _action, this.battleData);
         }
         else {
             log(`\t\t\tFailed to execute. Removing.`)

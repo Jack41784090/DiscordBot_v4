@@ -102,7 +102,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
             if (_aA.from.base.class === _aA.affected.base.class && _aA.from.index === _aA.affected.index) {
                 furyStatus.value -= 5;
             }
-            clamp(furyStatus.value, 0, 100);
+            furyStatus.value = clamp(furyStatus.value, 0, 100);
             return "";
         }
     ],

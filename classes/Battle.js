@@ -88,8 +88,9 @@ var typedef_1 = require("../typedef");
 var hGraphTheory_1 = require("./hGraphTheory");
 var WeaponEffect_1 = require("./WeaponEffect");
 var Battle = /** @class */ (function () {
-    function Battle(_mapData, _author, _message, _client) {
+    function Battle(_mapData, _author, _message, _client, _pvp) {
         var _this = this;
+        if (_pvp === void 0) { _pvp = false; }
         this.author = _author;
         this.message = _message;
         this.channel = _message.channel;
@@ -101,6 +102,7 @@ var Battle = /** @class */ (function () {
         this.CSMap = (0, Utility_1.getMapFromCS)(_mapData.map.coordStat);
         this.pixelsPerTile = 50;
         this.userCache = new Map();
+        this.pvp = _pvp;
         // action strings
         this.roundActionsArray = [];
         this.roundSavedCanvasMap = new Map();
@@ -123,14 +125,16 @@ var Battle = /** @class */ (function () {
         });
     }
     /** Main function to access in order to start a thread of battle */
-    Battle.Start = function (_mapData, _author, _message, _party, _client) {
+    Battle.Start = function (_mapData, _author, _message, _party, _client, _pvp) {
+        if (_pvp === void 0) { _pvp = false; }
         return __awaiter(this, void 0, void 0, function () {
             var battle, i, ownerID, userData, blankStat, _b, _c, _d, key, value, Eclass, mod, enemyBase, spawnCount, i;
             var e_1, _e;
             return __generator(this, function (_f) {
                 switch (_f.label) {
                     case 0:
-                        battle = new Battle(_mapData, _author, _message, _client);
+                        (0, Utility_1.debug)("pvp", _pvp);
+                        battle = new Battle(_mapData, _author, _message, _client, _pvp);
                         i = 0;
                         _f.label = 1;
                     case 1:
@@ -140,41 +144,40 @@ var Battle = /** @class */ (function () {
                     case 2:
                         userData = _f.sent();
                         blankStat = (0, Utility_1.getStat)((0, Utility_1.getBaseStat)(userData.equippedClass), ownerID);
+                        if (_pvp) {
+                            blankStat.pvp = true;
+                        }
                         battle.tobespawnedArray.push(blankStat);
                         _f.label = 3;
                     case 3:
                         i++;
                         return [3 /*break*/, 1];
                     case 4:
-                        try {
-                            // add enemies to the spawning list
-                            for (_b = __values(Object.entries(_mapData.enemiesInfo)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                                _d = __read(_c.value, 2), key = _d[0], value = _d[1];
-                                Eclass = key;
-                                mod = { name: "" + Eclass };
-                                enemyBase = (0, Utility_1.getNewObject)(enemiesData_json_1.default[Eclass], mod);
-                                spawnCount = (0, Utility_1.random)(value.min, value.max);
-                                for (i = 0; i < spawnCount; i++) {
-                                    battle.totalEnemyCount++;
-                                    battle.enemyCount++;
-                                    battle.tobespawnedArray.push((0, Utility_1.getStat)(enemyBase));
+                        // add enemies to the spawning list
+                        if (!_pvp) {
+                            try {
+                                for (_b = __values(Object.entries(_mapData.enemiesInfo)), _c = _b.next(); !_c.done; _c = _b.next()) {
+                                    _d = __read(_c.value, 2), key = _d[0], value = _d[1];
+                                    Eclass = key;
+                                    mod = { name: "" + Eclass };
+                                    enemyBase = (0, Utility_1.getNewObject)(enemiesData_json_1.default[Eclass], mod);
+                                    spawnCount = (0, Utility_1.random)(value.min, value.max);
+                                    for (i = 0; i < spawnCount; i++) {
+                                        battle.totalEnemyCount++;
+                                        battle.enemyCount++;
+                                        battle.tobespawnedArray.push((0, Utility_1.getStat)(enemyBase));
+                                    }
                                 }
                             }
-                        }
-                        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-                        finally {
-                            try {
-                                if (_c && !_c.done && (_e = _b.return)) _e.call(_b);
+                            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                            finally {
+                                try {
+                                    if (_c && !_c.done && (_e = _b.return)) _e.call(_b);
+                                }
+                                finally { if (e_1) throw e_1.error; }
                             }
-                            finally { if (e_1) throw e_1.error; }
                         }
-                        try {
-                            throw new Error();
-                            // battle.StartRound();
-                        }
-                        catch (_err) {
-                            _message.channel.send("" + _err);
-                        }
+                        battle.StartRound();
                         return [2 /*return*/];
                 }
             });
@@ -185,7 +188,7 @@ var Battle = /** @class */ (function () {
     Battle.prototype.StartRound = function () {
         var _b, _c, _d;
         return __awaiter(this, void 0, void 0, function () {
-            var i, spawning, allStats, _loop_1, i, existingCategory, commandCategory, _e, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_2, this_1, allStats_1, allStats_1_1, realStat, e_2_1, priorityActionMap, i, act, actionListThisRound, latestAction, latestRound, i, roundExpectedActions, canvas, ctx, roundCanvas, executedActions, actualCanvas, _loop_3, i, allPromise, players, endEmbedFields_1;
+            var i, spawning, allStats, _loop_1, i, existingCategory, commandCategory, _e, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_2, this_1, allStats_1, allStats_1_1, realStat, e_2_1, priorityActionMap, i, act, actionListThisRound, latestAction, latestRound, i, roundExpectedActions, canvas, ctx, roundCanvas, executedActions, actualCanvas, _loop_3, i, allPromise, players;
             var e_2, _f;
             var _this = this;
             return __generator(this, function (_g) {
@@ -239,7 +242,7 @@ var Battle = /** @class */ (function () {
                                 s[t] = (0, Utility_1.clamp)(p, 0, 5);
                             });
                             // increment readiness
-                            if (s.team && s.readiness <= 50) {
+                            if (s.readiness <= 50) {
                                 var Spd = (0, Utility_1.getSpd)(s);
                                 var read = (0, Utility_1.random)(Spd * 4, Spd * 4.25);
                                 s.readiness += read;
@@ -266,9 +269,6 @@ var Battle = /** @class */ (function () {
                             commandCategory.permissionOverwrites.set([{ id: this.guild.roles.everyone.id, deny: 'VIEW_CHANNEL' }]);
                         }
                         //#endregion
-                        // this.BeforeAll(allStats);
-                        // check death: after passive
-                        // this.CheckDeath(allStats);
                         //#region SAVE CURRENT MAP TO LOCAL
                         (0, Utility_1.log)("Saving current map to local...");
                         return [4 /*yield*/, this.getNewCanvasMap()];
@@ -290,7 +290,7 @@ var Battle = /** @class */ (function () {
                         reportPromises = [];
                         (0, Utility_1.log)("Playing phase!");
                         _loop_2 = function (realStat) {
-                            var user, _h, virtualStat_1, channelAlreadyExist, createdChannel_1, _j, existingPermissions_everyone_1, existingPermissions_author, newChannel, noExistingPermission, extraPermissions, missingPermissions, overWrites, playerInfoMessage, _k, _l, readingPlayerPromise, virtualStat, selectedTarget, weaponSelected, path, moveActionArray, fullActions, i, moveAction, moveMagnitude, valid, error, attackAction, valid;
+                            var user, _h, virtualStat_1, channelAlreadyExist, createdChannel_1, _j, existingPermissions_everyone_1, existingPermissions_author, newChannel, noExistingPermission, extraPermissions, missingPermissions, overWrites, playerInfoMessage, _k, _l, readingPlayerPromise, virtualStat, intendedTargets, selectedTarget, weaponSelected, path, moveActionArray, fullActions, i, moveAction, moveMagnitude, valid, error, attackAction, valid;
                             var _m;
                             return __generator(this, function (_o) {
                                 switch (_o.label) {
@@ -304,7 +304,7 @@ var Battle = /** @class */ (function () {
                                         realStat.moved = false;
                                         // reset associatedStrings
                                         realStat.actionsAssociatedStrings = {};
-                                        if (!(realStat.botType === typedef_1.BotType.naught)) return [3 /*break*/, 7];
+                                        if (!(realStat.botType === typedef_1.BotType.naught && realStat.owner)) return [3 /*break*/, 7];
                                         _h = this_1.userCache.get(realStat.owner);
                                         if (_h) return [3 /*break*/, 2];
                                         return [4 /*yield*/, this_1.client.users.fetch(realStat.owner)
@@ -378,7 +378,11 @@ var Battle = /** @class */ (function () {
                                         //#region AI
                                         if (realStat.botType === typedef_1.BotType.enemy) {
                                             virtualStat = (0, Utility_1.getNewObject)(realStat);
-                                            selectedTarget = this_1.findEntity_closest(virtualStat, ["block", virtualStat.team]);
+                                            intendedTargets = ["block"];
+                                            if (virtualStat.team) {
+                                                intendedTargets.push(virtualStat.team);
+                                            }
+                                            selectedTarget = this_1.findEntity_closest(virtualStat, intendedTargets);
                                             // option 2: select the weakest target
                                             // if found a target
                                             if (selectedTarget !== null) {
@@ -469,6 +473,7 @@ var Battle = /** @class */ (function () {
                                 priorityActionMap.set(act.round, [act]);
                         }
                         latestAction = (0, Utility_1.getLargestInArray)(this.roundActionsArray, function (_a) { return _a.round; });
+                        if (!latestAction) return [3 /*break*/, 19];
                         latestRound = latestAction.round;
                         i = 0;
                         _g.label = 14;
@@ -516,9 +521,10 @@ var Battle = /** @class */ (function () {
                         for (i = 0; i < allStats.length; i++) {
                             _loop_3(i);
                         }
+                        _g.label = 19;
+                    case 19:
                         // check death: after player round
                         this.checkDeath(allStats);
-                        // status: check deaths after 
                         //#region REPORT ACTIONS
                         (0, Utility_1.log)("Reporting...");
                         allPromise = [];
@@ -528,8 +534,10 @@ var Battle = /** @class */ (function () {
                             return __generator(this, function (_b) {
                                 allRounds = Array.from(this.roundSavedCanvasMap.keys());
                                 greatestRoundNumber = (0, Utility_1.getLargestInArray)(allRounds, function (_) { return _; });
-                                commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
-                                allPromise.push(commandRoomReport);
+                                if (greatestRoundNumber) {
+                                    commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
+                                    allPromise.push(commandRoomReport);
+                                }
                                 return [2 /*return*/];
                             });
                         }); });
@@ -540,45 +548,50 @@ var Battle = /** @class */ (function () {
                                     resolve(void 0);
                                 }, 150 * 1000);
                             })];
-                    case 19:
+                    case 20:
                         // wait for all players to finish reading the reports
                         _g.sent();
                         (0, Utility_1.log)("Reporting phase finished.");
                         // allPromise.forEach(console.log);
                         //#endregion
-                        //#region Finish the Round
-                        (0, Utility_1.log)("Finishing Round...");
-                        if (this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0)) 
-                        // if (false)
-                        {
-                            endEmbedFields_1 = [];
-                            this.callbackOnParty(function (stat) {
-                                var statAcco = stat.accolades;
-                                var value = "Kills: " + statAcco.kill + "\n                        Damage Dealt: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageDealt) + "\n                        Healing Done: " + (0, Utility_1.roundToDecimalPlace)(statAcco.healingDone) + "\n                        Damage Absorbed: " + (0, Utility_1.roundToDecimalPlace)(statAcco.absorbed) + "\n                        Damage Taken: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageTaken) + "\n                        Dodged: " + statAcco.dodged + " times\n                        Critical Hits: " + statAcco.critNo + " times\n                        Clashed " + statAcco.clashNo + " times\n                        Average Rolls: " + ((0, Utility_1.roundToDecimalPlace)(statAcco.rollAverage) || "N/A");
-                                endEmbedFields_1.push({
-                                    name: stat.name + (" (" + stat.base.class + ")"),
-                                    value: value,
-                                });
-                            });
-                            this.channel.send({
-                                embeds: [new discord_js_1.MessageEmbed({
-                                        title: this.totalEnemyCount === 0 ? "VICTORY!" : "Defeat.",
-                                        fields: endEmbedFields_1,
-                                    })]
-                            });
-                        }
-                        else {
-                            try {
-                                this.StartRound();
-                            }
-                            catch (_err) {
-                                this.channel.send("" + _err);
-                            }
-                        }
+                        this.FinishRound();
                         return [2 /*return*/];
                 }
             });
         });
+    };
+    Battle.prototype.FinishRound = function () {
+        var _b;
+        (0, Utility_1.log)("Finishing Round...");
+        var PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
+        var PVP = this.playerCount === 1;
+        if ((this.pvp && PVP) || (!this.pvp && PVE)) {
+            // database work
+            // await Database.updateOrAddUser(author, { status: 'idle' });
+            // await Database.WriteBattle(author, Object.assign(this.returnObject(), { finished: true }));
+            // == ACCOLADES ==
+            var endEmbedFields_1 = [];
+            this.callbackOnParty(function (stat) {
+                var statAcco = stat.accolades;
+                var value = "Kills: " + statAcco.kill + "\n                        Damage Dealt: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageDealt) + "\n                        Healing Done: " + (0, Utility_1.roundToDecimalPlace)(statAcco.healingDone) + "\n                        Damage Absorbed: " + (0, Utility_1.roundToDecimalPlace)(statAcco.absorbed) + "\n                        Damage Taken: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageTaken) + "\n                        Dodged: " + statAcco.dodged + " times\n                        Critical Hits: " + statAcco.critNo + " times\n                        Clashed " + statAcco.clashNo + " times\n                        Average Rolls: " + ((0, Utility_1.roundToDecimalPlace)(statAcco.rollAverage) || "N/A");
+                endEmbedFields_1.push({
+                    name: stat.name + (" (" + stat.base.class + ")"),
+                    value: value,
+                });
+            });
+            var victoryTitle = this.pvp ?
+                (((_b = this.allStats().find(function (_s) { return _s.owner && _s.HP > 0; })) === null || _b === void 0 ? void 0 : _b.base.class) || "What? No one ") + " wins!" :
+                this.totalEnemyCount === 0 ? "VICTORY!" : "Defeat.";
+            this.channel.send({
+                embeds: [new discord_js_1.MessageEmbed({
+                        title: victoryTitle,
+                        fields: endEmbedFields_1,
+                    })]
+            });
+        }
+        else {
+            this.StartRound();
+        }
     };
     /** Execute function on every stat of players */
     Battle.prototype.callbackOnParty = function (_callback) {
@@ -841,9 +854,8 @@ var Battle = /** @class */ (function () {
                                 case "defend": return [3 /*break*/, 13];
                                 case "br": return [3 /*break*/, 13];
                                 case "df": return [3 /*break*/, 13];
-                                case "crash": return [3 /*break*/, 14];
                             }
-                            return [3 /*break*/, 15];
+                            return [3 /*break*/, 14];
                         case 2:
                             moveAction = (0, Utility_1.getMoveAction)(_vS, actionName_1, infoMessagesQueue.length, moveMagnitude);
                             isFirstMove = !_vS.moved;
@@ -868,7 +880,7 @@ var Battle = /** @class */ (function () {
                                     });
                                 }
                             }
-                            return [3 /*break*/, 16];
+                            return [3 /*break*/, 15];
                         case 3:
                             attackTarget = this.findEntity_args(actionArgs, _vS);
                             if (attackTarget === null) {
@@ -900,7 +912,7 @@ var Battle = /** @class */ (function () {
                                     }
                                 }
                             }
-                            return [3 /*break*/, 16];
+                            return [3 /*break*/, 15];
                         case 4:
                             executingActions = [];
                             infoMessagesQueue = [_infoMessage];
@@ -908,17 +920,17 @@ var Battle = /** @class */ (function () {
                             return [4 /*yield*/, (0, Utility_1.clearChannel)(channel, _infoMessage)];
                         case 5:
                             _c.sent();
-                            return [3 /*break*/, 16];
+                            return [3 /*break*/, 15];
                         case 6:
                             newCollector.stop();
                             (0, Utility_1.log)("\tEnded turn for \"" + _vS.name + "\" (" + _vS.base.class + ")");
-                            return [3 /*break*/, 16];
+                            return [3 /*break*/, 15];
                         case 7:
                             Utility_1.log.apply(void 0, __spreadArray([], __read(this.allStats().filter(function (s) { return s.team !== "block"; }).map(function (s) {
                                 var string = s.base.class + " (" + s.index + ") (" + s.team + ") " + s.HP + "/" + (0, Utility_1.getAHP)(s) + " (" + s.x + ", " + s.y + ")";
                                 return string;
                             })), false));
-                            return [3 /*break*/, 16];
+                            return [3 /*break*/, 15];
                         case 8:
                             if (!(infoMessagesQueue.length > 1)) return [3 /*break*/, 10];
                             undoAction = executingActions.pop();
@@ -928,7 +940,7 @@ var Battle = /** @class */ (function () {
                         case 9:
                             _c.sent();
                             _c.label = 10;
-                        case 10: return [3 /*break*/, 16];
+                        case 10: return [3 /*break*/, 15];
                         case 11:
                             // 2 shields => 1 sword
                             if (_vS.shield >= 2) {
@@ -938,15 +950,14 @@ var Battle = /** @class */ (function () {
                                 recklessAction = (0, Utility_1.getAttackAction)(_rS, _rS, weaponData_json_1.default.Reckless, _vS, infoMessagesQueue.length);
                                 executingActions.push(recklessAction);
                             }
-                            return [3 /*break*/, 16];
+                            return [3 /*break*/, 15];
                         case 12: 
                         // use 2 sprints to perform an attack
-                        return [3 /*break*/, 16];
+                        return [3 /*break*/, 15];
                         case 13: 
                         // no drawing next turn. +1 shield.
-                        return [3 /*break*/, 16];
-                        case 14: throw new Error("Crash test");
-                        case 15:
+                        return [3 /*break*/, 15];
+                        case 14:
                             if (actionName_1.length >= 3) {
                                 weaponChosen = _vS.base.weapons.find(function (w) {
                                     return w.Name.toLowerCase().search(actionName_1) !== -1;
@@ -980,13 +991,13 @@ var Battle = /** @class */ (function () {
                                     setTimeout(function () { return mes.delete().catch(console.log); }, 10 * 1000);
                                 }
                             }
-                            return [3 /*break*/, 16];
-                        case 16:
+                            return [3 /*break*/, 15];
+                        case 15:
                             (0, Utility_1.debug)("\tvalid", valid_1 !== null);
-                            if (!valid_1) return [3 /*break*/, 18];
+                            if (!valid_1) return [3 /*break*/, 17];
                             mes.react('✅');
                             return [4 /*yield*/, this.getFullPlayerEmbedMessageOptions(_vS, executingActions)];
-                        case 17:
+                        case 16:
                             messageOptions = _c.sent();
                             channel.send(messageOptions)
                                 .then(function (m) {
@@ -1000,12 +1011,12 @@ var Battle = /** @class */ (function () {
                                     listenToQueue();
                                 }
                             });
-                            return [3 /*break*/, 19];
-                        case 18:
+                            return [3 /*break*/, 18];
+                        case 17:
                             mes.react('❎');
                             listenToQueue();
-                            _c.label = 19;
-                        case 19: return [2 /*return*/];
+                            _c.label = 18;
+                        case 18: return [2 /*return*/];
                     }
                 });
             }); };
@@ -1099,7 +1110,6 @@ var Battle = /** @class */ (function () {
         (0, Utility_1.log)("\tTick status for " + _s.base.class + " (" + _s.index + ")...");
         var returnString = '';
         var statuses = _s.statusEffects;
-        var from = _action.from;
         var affected = _action.affected;
         for (var i = 0; i < statuses.length; i++) {
             var _status = statuses[i];
@@ -1129,8 +1139,8 @@ var Battle = /** @class */ (function () {
                     }
                 }
                 // notify the inflicter
-                if (from.index !== affected.index) {
-                    this.appendReportString(from, _action.round, "__" + affected.base.class + "__ (" + affected.index + ")\n" + statusString);
+                if (_status.from.index !== _status.affected.index) {
+                    this.appendReportString(_status.from, _action.round, "__" + affected.base.class + "__ (" + affected.index + ")\n" + statusString);
                 }
             }
         }
@@ -1308,6 +1318,7 @@ var Battle = /** @class */ (function () {
             associatedStringArray[_round] = [];
         }
         if (_string) {
+            (0, Utility_1.log)("\t\t\tAppending \"" + _string + "\" to (" + _stat.index + ")");
             associatedStringArray[_round].push(_string);
         }
     };
@@ -1319,7 +1330,7 @@ var Battle = /** @class */ (function () {
             var weaponTarget = _w.targetting.target;
             var intendedVictim = weaponTarget === typedef_1.WeaponTarget.ally ?
                 // weapon is intended to target friendly units
-                _target.team === _attacker.team ?
+                _target.team === _attacker.team && _w.targetting.AOE !== "self" ?
                     _target : // if the action is targetting a friendly unit, use the effect on them.
                     _attacker : // if the action is targetting an enemy, use it on self
                 _target.team === _attacker.team ?
@@ -1358,13 +1369,14 @@ var Battle = /** @class */ (function () {
             this.appendReportString(_action.from, _action.round, autoWeaponReportString);
         }
         this.appendReportString(_action.affected, _action.round, autoWeaponReportString);
-        // apply statuses for target, then report to afflicted entity
+        // apply statuses for target, then report to target
         var affectedStatusString = this.tickStatuses(_action.affected, _action);
         if (affectedStatusString) {
             this.appendReportString(_action.affected, _action.round, affectedStatusString);
         }
+        // if the action is not self-targetting...
         if (_action.affected.index !== _action.from.index) {
-            // apply statuses for attacker, then report to attacker entity
+            // apply statuses for attacker, then report to attacker
             var attackerStatusString = this.tickStatuses(_action.from, _action);
             if (attackerStatusString) {
                 this.appendReportString(_action.from, _action.round, attackerStatusString);
@@ -2089,7 +2101,7 @@ var Battle = /** @class */ (function () {
     Battle.prototype.findEntity_args = function (_args, _attacker, _weapon) {
         var allStats = this.allStats();
         var ignore = ["block"];
-        var targetNotInIgnore = function (c) { return !ignore.includes(c.team); };
+        var targetNotInIgnore = function (c) { return c.team && !ignore.includes(c.team); };
         if (_weapon && _weapon.targetting.target === typedef_1.WeaponTarget.enemy)
             ignore.push("player");
         if (_weapon && _weapon.targetting.target === typedef_1.WeaponTarget.ally)
@@ -2162,7 +2174,7 @@ var Battle = /** @class */ (function () {
             var newDistance = (0, Utility_1.getDistance)(s, _attacker);
             // fail cases
             var selfTargettingIgnored = s.index === _attacker.index;
-            var ignored = ignore.includes(s.team);
+            var ignored = s.team && ignore.includes(s.team);
             var targetIsDead = s.HP <= 0;
             if (selfTargettingIgnored || ignored || targetIsDead) {
                 return closest;
@@ -2181,7 +2193,7 @@ var Battle = /** @class */ (function () {
             return [];
         var cAxis = (0, Utility_1.counterAxis)(_axis);
         var result = allStats.filter(function (s) {
-            if (ignore.includes(s.team))
+            if (s.team && ignore.includes(s.team))
                 return false;
             var checkNeg = s[_axis] >= _attacker[_axis] + magnitude && s[_axis] < _attacker[_axis];
             var checkPos = s[_axis] <= _attacker[_axis] + magnitude && s[_axis] > _attacker[_axis];
@@ -2195,7 +2207,7 @@ var Battle = /** @class */ (function () {
         // console.log(_stat, radius, includeSelf, ignore); 
         if (includeSelf === void 0) { includeSelf = false; }
         if (ignore === void 0) { ignore = ["block"]; }
-        var targetNotInIgnore = function (c) { return !ignore.includes(c.team); };
+        var targetNotInIgnore = function (c) { return c.team && !ignore.includes(c.team); };
         var stat = _stat;
         return this.allStats().filter(function (s) {
             return (s.index !== stat.index || (typeof stat.index === 'number' && includeSelf)) &&
@@ -2257,21 +2269,11 @@ var Battle = /** @class */ (function () {
             eM.reason = "Attacker perished.";
             return eM;
         }
-        // log(
-        //     `\tname: ${weapon.Name}`,
-        //     `\tdamage: ${weapon.Damage}`,
-        //     `\trange: ${weapon.Range}`,
-        //     `\tattacker: ${attackerStat.base.class} (${attackerStat.index})`,
-        //     `\ttarget: ${targetStat.base.class} (${targetStat.index})`
-        // );
-        // location
-        // if (targetStat.base.class === "location") {
-        //     eM.reason = "You are targetting an empty location.";
-        //     eM.advice = "Continue casting?";
-        //     eM.tragic = "Swung at the air.";
-        //     eM.harsh = false;
-        //     return eM;
-        // }
+        // targetting a teammate without pvp on
+        if (attackerStat.team === targetStat.team && (!targetStat.pvp || !attackerStat.pvp)) {
+            eM.reason = "Attempted to attack a teammate without pvp on.";
+            return eM;
+        }
         // readiness
         if (attackerStat.readiness < 0) {
             eM.reason = "Not enough readiness.";
@@ -2501,6 +2503,28 @@ var Battle = /** @class */ (function () {
         var index = owner.statusEffects.indexOf(_status);
         if (index !== -1) {
             owner.statusEffects.splice(index);
+        }
+    };
+    Battle.prototype.removeBuffStatus = function (_s, _value, _buffType) {
+        // check if current buff is equal to value
+        if (_s.buffs[_buffType] === _value) {
+            // if true, check if there are other buffs that is giving the same buff
+            var otherSameTypeBuffs = this.getStatus(_s, (0, Utility_1.getBuffStatusEffect)(_buffType));
+            if (!otherSameTypeBuffs.find(function (_se) { return _se.value === _value; })) {
+                // if no other buff is the same, reset buff
+                _s.buffs[_buffType] = 0;
+                // find other buffs that give the same type of buff
+                if (otherSameTypeBuffs.length > 0) {
+                    var largestBuff = (0, Utility_1.getLargestInArray)(otherSameTypeBuffs, function (_se) { return _se.value; });
+                    _s.buffs[_buffType] = largestBuff.value;
+                }
+            }
+            else {
+                // if yes, ignore
+            }
+        }
+        else {
+            // is not 5, buff is most probably more than 5. Ignore.
         }
     };
     Battle.prototype.getStatus = function (_stat, _type) {
