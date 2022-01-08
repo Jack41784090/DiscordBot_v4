@@ -3,6 +3,7 @@ import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getA
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIcon, getUserData, saveBattle } from "./Database";
 import enemiesData from "../data/enemiesData.json";
+import weaponData from "../data/weaponData.json";
 
 import fs from 'fs';
 import { MinHeap } from "./MinHeap";
@@ -58,13 +59,6 @@ export class Battle {
 
         this.userCache = new Map<OwnerID, User>();
 
-        // sort status
-        // this.beforeActionStatusVL = {};
-        // this.afterActionStatusVL = {};
-        // this.beforeStatusVL = {};
-        // this.afterStatusVL = {};
-        // this.onHitStatusVL = {};
-
         // action strings
         this.roundActionsArray = [];
         this.roundSavedCanvasMap = new Map<number, Canvas>();
@@ -115,7 +109,12 @@ export class Battle {
             }
         }
 
-        battle.StartRound();
+        try {
+            battle.StartRound();
+        }
+        catch (_err) {
+            _message.channel.send(`${_err}`);
+        }
     }
 
     /** Begin a new round
@@ -125,7 +124,7 @@ export class Battle {
 
         // resetting action list and round current maps
         this.roundActionsArray = [];
-        this.roundSavedCanvasMap = new Map<number, Canvas>();
+        this.roundSavedCanvasMap.clear();
 
         // SPAWNING
         log("Currently waiting to be spawned...")
@@ -155,16 +154,16 @@ export class Battle {
 
             // randomly assign tokens
             for (let i = 0; i < 2; i++) {
-                // const got = random(0, 2);
-                const got = 0;
-                log(`\t${s.base.class} (${s.index}) got ${got}`)
-                switch (got) {
-                    case 0:
-                        s.sword++;
-                        break;
-                    // case 1:
-                    //     s.shield++;
+                // const token = random(0, 2);
+                const token = 1;
+                log(`\t${s.base.class} (${s.index}) got ${token}`)
+                switch (token) {
+                    // case 0:
+                    //     s.sword++;
                     //     break;
+                    case 1:
+                        s.shield++;
+                        break;
                     // case 2:
                     //     s.sprint++;
                     //     break;
@@ -414,11 +413,14 @@ export class Battle {
                 // draw the base tiles and characters (before executing actions)
                 let canvas = this.roundSavedCanvasMap.get(i);
                 if (!canvas) {
-                    canvas = new Canvas(this.width * 50, this.height * 50);
+                    canvas = new Canvas(this.width * this.pixelsPerTile, this.height * this.pixelsPerTile);
                     if (canvas) this.roundSavedCanvasMap.set(i, canvas);
                 }
                 const ctx = canvas.getContext("2d");
-                ctx.drawImage(await this.getNewCanvasMap(), 0, 0, canvas.width, canvas.height);
+                const roundCanvas = await this.getNewCanvasMap();
+                this.drawHealthArcs(roundCanvas);
+                this.drawIndexi(roundCanvas);
+                ctx.drawImage(roundCanvas, 0, 0, canvas.width, canvas.height);
 
                 // execution
                 const executedActions = this.executeActions(roundExpectedActions);
@@ -510,7 +512,12 @@ export class Battle {
             });
         }
         else {
-            this.StartRound();
+            try {
+                this.StartRound();
+            }
+            catch (_err) {
+                this.channel.send(`${_err}`);
+            }
         }
         //#endregion
     }
@@ -655,7 +662,7 @@ export class Battle {
     }
 
     drawSquareOnBattleCoords(ctx: NodeCanvasRenderingContext2D, coord: Coordinate, rgba?: RGBA) {
-        const canvasCoord = this.getCanvasCoordsFromBattleCoord(coord);
+        const canvasCoord = this.getCanvasCoordsFromBattleCoord(coord, false);
         if (rgba) {
             ctx.fillStyle = stringifyRGBA(rgba);
         }
@@ -772,11 +779,9 @@ export class Battle {
                                 if (!isFirstMove) {
                                     realMoveStat.sprint = 1;
                                 }
-                                mes.react('✅');
                                 executingActions.push(realMoveStat);
                             }
                             else {
-                                mes.react('❎');
                                 const check = this.validateMovement(_vS, moveAction)!;
                                 if (check) {
                                     channel.send({
@@ -793,7 +798,6 @@ export class Battle {
                         case "attack":
                             const attackTarget = this.findEntity_args(actionArgs, _vS);
                             if (attackTarget === null) {
-                                mes.react('❎');
                                 channel.send({
                                     embeds: [new MessageEmbed({
                                         title: `Invalid arguments given.`,
@@ -802,24 +806,19 @@ export class Battle {
                                 });
                             }
                             else {
-                                const range = getDistance(attackTarget, _vS);
-                                const listOfWeaponsInRange = _vS.base.weapons.filter(w => (
-                                    w.Range[0] <= range &&
-                                    w.Range[1] >= range &&
+                                const enemyTargetWeapons = _vS.base.weapons.filter(w => (
                                     w.targetting.target === WeaponTarget.enemy
                                 ));
-                                const weaponChosen = listOfWeaponsInRange[0];
+                                const weaponChosen = enemyTargetWeapons[0];
 
                                 const virtualAttackAction = getAttackAction(_vS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
                                 valid = this.executeVirtualAttack(virtualAttackAction, _vS);
 
                                 if (valid) {
-                                    mes.react('✅');
                                     const realAttackAction = getAttackAction(_rS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
                                     executingActions.push(realAttackAction);
                                 }
                                 else {
-                                    mes.react('❎');
                                     const check = this.validateTarget(_vS, weaponChosen, attackTarget)!;
                                     if (check) {
                                         channel.send({
@@ -861,14 +860,18 @@ export class Battle {
                                 infoMessagesQueue.pop();
                                 await clearChannel(channel as TextChannel, getLastElement(infoMessagesQueue));
                             }
-                            else {
-                                mes.react('❎');
-                            }
                             break;
 
                         case "reckless":
                         case "reck":
                             // 2 shields => 1 sword
+                            if (_vS.shield >= 2) {
+                                _vS.shield -= 2;
+                                _vS.sword++;
+                                valid = true;
+                                const recklessAction = getAttackAction(_rS, _rS, weaponData.Reckless as Weapon, _vS, infoMessagesQueue.length);
+                                executingActions.push(recklessAction);
+                            }
                             break;
 
                         case "smash":
@@ -892,19 +895,16 @@ export class Battle {
                                     const attackTarget = this.findEntity_args(actionArgs, _vS, weaponChosen);
                                     if (attackTarget === null) {
                                         valid = false;
-                                        mes.react('❎');
                                     }
                                     else {
                                         const virtualAttackAction = getAttackAction(_vS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
                                         valid = this.executeVirtualAttack(virtualAttackAction, _vS);
 
                                         if (valid) {
-                                            mes.react('✅');
                                             const realAttackAction = getAttackAction(_rS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
                                             executingActions.push(realAttackAction);
                                         }
                                         else {
-                                            mes.react('❎');
                                             const check = this.validateTarget(_vS, weaponChosen, attackTarget)!;
                                             if (check) {
                                                 channel.send({
@@ -918,12 +918,8 @@ export class Battle {
                                     }
                                 }
                                 else {
-                                    mes.react('❎');
                                     setTimeout(() => mes.delete().catch(console.log), 10 * 1000);
                                 }
-                            }
-                            else {
-                                mes.react('❎');
                             }
                             break;
                     }
@@ -931,6 +927,7 @@ export class Battle {
                     debug("\tvalid", valid !== null);
 
                     if (valid) {
+                        mes.react('✅');
                         // send the predicted map of the next move to channel
                         const messageOptions = await this.getFullPlayerEmbedMessageOptions(_vS, executingActions);
                         channel.send(messageOptions)
@@ -947,6 +944,7 @@ export class Battle {
                             })
                     }
                     else {
+                        mes.react('❎');
                         listenToQueue();
                     }
                 }
@@ -1030,11 +1028,17 @@ export class Battle {
     tickStatuses(_s: Stat, _action: Action): string {
         log(`\tTick status for ${_s.base.class} (${_s.index})...`);
         let returnString = '';
-        const targetStatuses = _s.statusEffects;
-        for (let i = 0; i < targetStatuses.length; i++) {
-            const _status = targetStatuses[i];
+        const statuses = _s.statusEffects;
+        const from = _action.from;
+        const affected = _action.affected;
+        for (let i = 0; i < statuses.length; i++) {
+            const _status = statuses[i];
             // make sure status is affecting the right entity and entity is still alive
-            if (_status.affected.index === _s.index && _status.affected.HP > 0) {
+            if (affected.index === _s.index && affected.HP > 0) {
+                if (!returnString) {
+                    returnString += `__${_s.base.class}__ (${_s.index})\n`
+                }
+
                 // tick
                 log(`\t\t${_status.type} ${_status.value} (${_status.duration} turns)`)
                 const statusString = _status.tick(_action);
@@ -1051,12 +1055,15 @@ export class Battle {
                     i--;
                 }
                 else {
-                    returnString += statusString
+                    returnString += statusString;
+                    if (i !== statuses.length - 1) {
+                        returnString += "\n";
+                    }
                 }
 
                 // notify the inflicter
-                if (_status.from.index !== _status.affected.index) {
-                    this.appendReportString(_status.from, _action.round, statusString);
+                if (from.index !== affected.index) {
+                    this.appendReportString(from, _action.round, `__${affected.base.class}__ (${affected.index})\n` + statusString);
                 }
             }
             
@@ -1115,7 +1122,8 @@ export class Battle {
                 returnString +=
                     `**${attackerClass}** (${attacker.index}) ⚔️ **${targetClass}** (${target.index})
                     __*${weapon.Name}*__ ${hitRate}% (${roundToDecimalPlace(critRate)}%)
-                    **${CR_fate}!** -**${roundToDecimalPlace(CR_damage)}** (${roundToDecimalPlace(clashResult.u_damage)})`
+                    **${CR_fate}!** -**${roundToDecimalPlace(CR_damage)}** (${roundToDecimalPlace(clashResult.u_damage)})
+                    [${roundToDecimalPlace(target.HP)} => ${roundToDecimalPlace(target.HP - CR_damage)}]`
                 if (target.HP > 0 && target.HP - CR_damage <= 0) {
                     returnString += "\n__**KILLING BLOW!**__";
                 }
@@ -1129,7 +1137,7 @@ export class Battle {
                 // search for "Labouring" status
                 const labourStatus = getLargestInArray(this.getStatus(target, "labouring"), _s => _s.value);
                 if (labourStatus) {
-                    labourStatus.value += CR_damage / 1000;
+                    labourStatus.value += CR_damage;
                 }
 
                 // apply damage
@@ -1191,9 +1199,9 @@ export class Battle {
             }
         );
         if (shieldingStatus && shieldingStatus.value > 0) {
-            const shieldValue = shieldingStatus.value * 100;
+            const shieldValue = shieldingStatus.value;
 
-            shieldingStatus.value -= damage / 100;
+            shieldingStatus.value -= damage;
             if (shieldingStatus.value <= 0) {
                 this.removeStatus(shieldingStatus);
             }
@@ -1270,7 +1278,9 @@ export class Battle {
         if (associatedStringArray[_round] === undefined) {
             associatedStringArray[_round] = [];
         }
-        associatedStringArray[_round].push(_string);
+        if (_string) {
+            associatedStringArray[_round].push(_string);
+        }
     }
 
     // actions
@@ -1373,6 +1383,9 @@ export class Battle {
             const singleTargetAA = getAttackAction(attacker, enemiesInRadius[i], weapon, enemiesInRadius[i], _aA.round);
             const SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
             string += SAResult;
+            if (enemiesInRadius.length > 1 && i !== enemiesInRadius.length - 1) {
+                string += "\n";
+            }
         }
         return string;
     };
@@ -1413,7 +1426,7 @@ export class Battle {
                 break;
         }
 
-        // save attack results
+        // save attack results as reportString
         this.appendReportString(_aA.from, _aA.round, attackResult);
         if (_aA.from.index !== _aA.affected.index) {
             this.appendReportString(_aA.affected, _aA.round, attackResult);
@@ -1486,6 +1499,8 @@ export class Battle {
         });
         return explorerEmbed;
     }
+
+    /** Draws the base map and character icons. Does not contain health arcs or indexi */
     async getNewCanvasMap(): Promise<Canvas> {
         const allStats = this.allStats();
 
@@ -1513,26 +1528,6 @@ export class Battle {
                 iconCache.set(baseClass, iconCanvas);
             }
 
-            // attach index
-            drawCircle(
-                iconCtx,
-                {
-                    x: iconSize * 9 / 10,
-                    y: iconSize * 1 / 5
-                },
-                iconSize / 6,
-                false
-            );
-            drawText(
-                iconCtx,
-                `${stat.index}`,
-                iconSize / 3,
-                {
-                    x: iconSize * 9 / 10,
-                    y: iconSize * 1 / 5
-                }
-            );
-
             // draw on the main canvas
             const imageCanvasCoord = this.getCanvasCoordsFromBattleCoord({
                 x: X,
@@ -1544,18 +1539,20 @@ export class Battle {
         // end
         return canvas;
     }
+
+    /** Draws map from file or invokes getNewCanvasMap. Draws indexi and health arc afterwards. */
     async getCurrentMapCanvas(): Promise<Canvas> {
         const thePath = `./maps/battle-${this.author.id}.txt`;
         let image = new Image();
         let src: string | Buffer;
         try {
-            // log("|| Reading existing file...")
+            log("\tReading existing file...")
             const readsrc = fs.readFileSync(thePath, 'utf8');
-            // log("|| Finish reading.")
+            log("\t\tFinish reading.")
             src = readsrc;
         }
         catch (err) {
-            log("|| Creating new file...")
+            log("\tCreating new file...")
             const newMap = await this.getNewCanvasMap();
             const dataBuffer = newMap.toDataURL();
             fs.writeFileSync(thePath, dataBuffer);
@@ -1564,18 +1561,22 @@ export class Battle {
 
         return new Promise((resolve) => {
             image.onload = () => {
+                log("\t\tSuccessfully loaded.")
                 const { canvas, ctx } = startDrawing(image.width, image.height);
                 ctx.drawImage(image, 0, 0, image.width, image.height);
-                // log("||=> Success. Canvas returned.")
+                this.drawHealthArcs(canvas);
+                this.drawIndexi(canvas);
                 resolve(canvas);
             }
-            // log("|| Waiting for image to load...");
+            log("\tWaiting for image to load...");
             image.src = src;
         });
     }
     async getCurrentMapBuffer(): Promise<Buffer> {
         return (await this.getCurrentMapCanvas()).toBuffer();
     }
+
+    /** Invokes getCurrentMapCanvas and draws arrows on top. */
     async getCurrentMapWithArrowsCanvas(stat: Stat, actions?: Action[]): Promise<Canvas> {
         const { canvas, ctx } = startDrawing(this.width * 50, this.height * 50);
         const baseImage = await this.getCurrentMapCanvas();
@@ -1588,6 +1589,8 @@ export class Battle {
     async getCurrentMapWithArrowsBuffer(stat: Stat): Promise<Buffer> {
         return (await this.getCurrentMapWithArrowsCanvas(stat)).toBuffer();
     }
+
+    /** Draws actions arrows based on provided actions */
     async getActionArrowsCanvas(_actions: Action[]): Promise<Canvas> {
         const actions = _actions.map((_a: Action, _index: number) => {
             _a.priority = _index + 1;
@@ -1893,6 +1896,70 @@ export class Battle {
     async getActionArrowsBuffer(actions: Action[]): Promise<Buffer> {
         return (await this.getActionArrowsCanvas(actions)).toBuffer();
     }
+
+    drawHealthArcs(_canvas: Canvas) {
+        const ctx = _canvas.getContext('2d');
+
+        ctx.save();
+
+        ctx.lineWidth = 3;
+        const allStats = this.allStats();
+        for (let i = 0; i < allStats.length; i++) {
+            const stat = allStats[i];
+
+            // attach health arc
+            const healthPercentage = clamp(stat.HP / stat.base.AHP, 0, 1);
+            ctx.strokeStyle = stringifyRGBA({
+                r: 255 * Number(stat.team === "enemy"),
+                g: 255 * Number(stat.team === "player"),
+                b: 0,
+                alpha: 1
+            });
+            const canvasCoord = this.getCanvasCoordsFromBattleCoord(stat);
+            drawCircle(
+                ctx,
+                {
+                    x: canvasCoord.x,
+                    y: canvasCoord.y
+                },
+                this.pixelsPerTile / 2,
+                true,
+                healthPercentage
+            );
+        }
+
+        ctx.restore();
+    }
+    drawIndexi(_canvas: Canvas) {
+        const ctx = _canvas.getContext('2d');
+
+        const allStats = this.allStats();
+        for (let i = 0; i < allStats.length; i++) {
+            const stat = allStats[i];
+            const canvasCoord = this.getCanvasCoordsFromBattleCoord(stat, false);
+
+            // attach index
+            drawCircle(
+                ctx,
+                {
+                    x: canvasCoord.x + this.pixelsPerTile * 9 / 10,
+                    y: canvasCoord.y + this.pixelsPerTile * 1 / 5,
+                },
+                this.pixelsPerTile / 6,
+                false
+            );
+            drawText(
+                ctx,
+                `${stat.index}`,
+                this.pixelsPerTile / 3,
+                {
+                    x: canvasCoord.x + this.pixelsPerTile * 9 / 10,
+                    y: canvasCoord.y + this.pixelsPerTile * 1 / 5,
+                }
+            );
+        }
+    }
+
     async getFullPlayerEmbedMessageOptions(stat: Stat, actions?: Array<Action>): Promise<MessageOptions> {
         // log("actions",actions);
         const mapCanvas = await this.getCurrentMapWithArrowsCanvas(stat, actions);

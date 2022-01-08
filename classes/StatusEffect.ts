@@ -1,13 +1,14 @@
 import { Action, AttackAction, Stat, StatusEffectFunction, StatusEffectType } from "../typedef";
-import { addHPBar, clamp, log, roundToDecimalPlace } from "./Utility";
+import { Battle } from "./Battle";
+import { addHPBar, clamp, getLargestInArray, log, roundToDecimalPlace } from "./Utility";
 
 const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     [
         "bleed",
         (_statusEffect: StatusEffect, _sameRound_action: Action) => {
             const affected = _statusEffect.affected;
-            const value = _statusEffect.value * 100;
-            let returnString = `**${affected.base.class}** (${affected.index}) Bleeds! 🩸 -**${value}** (x${_statusEffect.duration})`;
+            const value = _statusEffect.value;
+            let returnString = `Bleeds! 🩸 -**${roundToDecimalPlace(value)}** (x${_statusEffect.duration})`;
 
             affected.HP -= value;
             _statusEffect.duration--;
@@ -24,14 +25,13 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     [
         "protected",
         (_statusEffect: StatusEffect, _sameRound_action: Action) => {
-            const affected = _statusEffect.affected;
-            const value = _statusEffect.value * 100;
+            const value = clamp(_statusEffect.value, 0, _statusEffect.affected.base.AHP); _statusEffect.value = value;
             let returnString = "";
 
             if (value > 0) {
-                returnString += `**${affected.base.class}** (${affected.index}) is Protected! 🛡️ (**${roundToDecimalPlace(value)}**)`;
+                returnString += `Shielded! 🛡️ (**${roundToDecimalPlace(value)}**)`;
                 if (_sameRound_action.type === "Attack") {
-                    returnString += `\nProtection duration: ${_statusEffect.duration}`;
+                    returnString += ` (x${_statusEffect.duration})`;
                     _statusEffect.duration--;
                 }
             }
@@ -42,9 +42,8 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     [
         "labouring",
         (_statusEffect: StatusEffect, _sameRound_action: Action) => {
-            const affected = _statusEffect.affected;
-            const value = _statusEffect.value * 1000;
-            let returnString = `**${affected.base.class}** (${affected.index}) Labours... 👷 (Damage Taken: **${roundToDecimalPlace(value)}**)`;
+            const value = clamp(_statusEffect.value, 0, 100); _statusEffect.value = value;
+            let returnString = `Endures the pain... 👷 (**${roundToDecimalPlace(value)}**)`;
             _statusEffect.duration--;
 
             return returnString;
@@ -54,17 +53,55 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
         "fury",
         (_statusEffect: StatusEffect, _sameRound_action: Action) => {
             const affected = _statusEffect.affected;
-            const value = _statusEffect.value * 100;
+            const value = clamp(_statusEffect.value, 0, 100); _statusEffect.value = value;
+            const fullBar = 12;
+            const fullFury = 100;
             let returnString = `**${affected.base.class}** (${affected.index})`;
 
-            if (value > 0.66) {
-                returnString += ` is **ENRAGED**! ( ${addHPBar(100, value)} )`;
+            if (value > 66) {
+                returnString += ` is **ENRAGED**! ( \`${addHPBar(fullBar, value * fullBar / fullFury)}\` )`;
                 if (affected.buffs.Damage < 5) {
                     affected.buffs.Damage = 5;
                 }
             }
             else {
-                returnString += ` is growing in rage... ( ${addHPBar(100, value)} )`;
+                returnString += ` is growing in rage... ( \`${addHPBar(fullBar, value * fullBar / fullFury)}\` )`;
+                // check if damage buff is 5
+                if (affected.buffs.Damage === 5) {
+                    // is 5, check if there are other buffs that is giving the same buff
+                    const otherDamageUpBuffs = _statusEffect.battleData.getStatus(affected, "damageUp");
+                    if (!otherDamageUpBuffs.find(_se => _se.value === 5)) {
+                        // if no, remove buff, find other buffs that give damage buff
+                        affected.buffs.Damage = 0;
+                        if (otherDamageUpBuffs.length > 0) {
+                            const largestDamageUpBuff = getLargestInArray(otherDamageUpBuffs, _se => _se.value);
+                            affected.buffs.Damage = largestDamageUpBuff.value;
+                        }
+                    }
+                    else {
+                        // if yes, ignore
+                    }
+                }
+                else {
+                    // is not 5, buff is most probably more than 5. Ignore.
+                }
+            }
+
+            return returnString;
+        }
+    ],
+    [
+        "damageUp",
+        (_statusEffect: StatusEffect, _sameRound_action: Action) => {
+            const value = _statusEffect.value;
+            let returnString = "";
+
+            if (value > 0) {
+                returnString += `Damage Up! 💪 (**${roundToDecimalPlace(value)}**)`;
+                if (_sameRound_action.type === "Attack") {
+                    returnString += `(x${_statusEffect.duration})`;
+                    _statusEffect.duration--;
+                }
             }
 
             return returnString;
@@ -80,14 +117,16 @@ export class StatusEffect {
     value: number;
     from: Stat;
     affected: Stat;
+    battleData: Battle;
 
-    constructor(_type: StatusEffectType, _duration: number, _value: number, _from: Stat, _affected: Stat) {
+    constructor(_type: StatusEffectType, _duration: number, _value: number, _from: Stat, _affected: Stat, _bd: Battle) {
         log(`\t\t\tConstructed new Status: ${_type}, ${_value} for ${_duration} rounds`);
         this.type = _type;
         this.duration = _duration;
-        this.value = clamp(_value, 0, 1);
         this.from = _from;
         this.affected = _affected;
+        this.value = _value;
+        this.battleData = _bd;
     }
 
     tick(_action: Action) {

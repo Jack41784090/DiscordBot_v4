@@ -128,7 +128,12 @@ module.exports = {
             //#endregion
 
             // Database.WriteBattle(author, battleData.returnObject());
-            Battle.Start(mapData, author, message, authorData.party, client);
+            try {
+                Battle.Start(mapData, author, message, authorData.party, client);
+            }
+            catch (_err) {
+                channel.send(`${_err}`);
+            }
         }
     }
 } as CommandModule;

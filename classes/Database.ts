@@ -5,7 +5,7 @@ import * as admin from 'firebase-admin'
 import * as serviceAccount from '../serviceAccount.json'
 import { Canvas, Image } from "canvas";
 import { ServiceAccount } from "firebase-admin";
-import { drawCircle, drawText, getBaseStat, getCSFromMap, getStat, log, random, startDrawing, stringifyRGBA } from "./Utility";
+import { clamp, drawCircle, drawText, getBaseStat, getCSFromMap, getStat, log, random, startDrawing, stringifyRGBA } from "./Utility";
 import { Battle } from "./Battle";
 import { BotClient } from "..";
 
@@ -153,19 +153,23 @@ export function getIcon(_stat: Stat): Promise<Canvas>
 
                 // team color (green/red)
                 ctx.globalCompositeOperation = "source-over";
+                ctx.lineWidth = 10;
 
-                ctx.lineWidth = 5;
+                // black arc
                 ctx.strokeStyle = stringifyRGBA({
-                    r: 255 * Number(_stat.team === "enemy"),
-                    g: 255 * Number(_stat.team === "player"),
+                    r: 0,
+                    g: 0,
                     b: 0,
                     alpha: 1
                 });
-                drawCircle(ctx, {
-                    x: squaredSize / 2,
-                    y: squaredSize / 2
-                },
-                    squaredSize / 2);
+                drawCircle(
+                    ctx,
+                    {
+                        x: squaredSize / 2,
+                        y: squaredSize / 2,
+                    },
+                    squaredSize / 2,
+                )
 
                 ctx.restore();
 

@@ -979,12 +979,13 @@ function drawText(_ctx, _text, _textSize, _canvasCoord, _angle) {
     _ctx.restore();
 }
 exports.drawText = drawText;
-function drawCircle(_ctx, _canvasCoord, _radius, _stroke) {
+function drawCircle(_ctx, _canvasCoord, _radius, _stroke, _percentage) {
     if (_stroke === void 0) { _stroke = true; }
+    if (_percentage === void 0) { _percentage = 1; }
     _ctx.save();
     _ctx.closePath();
     _ctx.beginPath();
-    _ctx.arc(_canvasCoord.x, _canvasCoord.y, _radius, 0, Math.PI * 2);
+    _ctx.arc(_canvasCoord.x, _canvasCoord.y, _radius, 0, Math.PI * 2 * _percentage);
     if (_stroke) {
         _ctx.stroke();
     }

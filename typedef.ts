@@ -177,6 +177,9 @@ export interface Weapon {
     UPT: number,
 }
 export type WeaponName =
+    // universal
+    "Reckless"|
+
     // Hercules
     "Obliterate"|
     "Endure"|
@@ -193,6 +196,7 @@ export interface WeaponEffectFunction {
 // classes
 export type Class = "Block" | "Hercules";
 export type EnemyClass = "Barbar" | "Barcher";
+export type GetBuffOption = 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff';
 export interface Buffs {
     AHP: number,
     Damage: number,
@@ -219,7 +223,8 @@ export type StatusEffectType =
     "bleed"| // tick damage
     "protected"| // extra health (shield)
     "labouring"| // Hercules unique: add 33% of taken damage to value and increase healing rate
-    "fury" // Mars unique: fury over 0.66 gives a buff to damage and crit
+    "fury"| // Mars unique: fury over 0.66 gives a buff to damage and crit
+    "damageUp" // damage buff
 export interface StatusEffectFunction {
     (_statusEffect: StatusEffect, _action: Action): string;
 }

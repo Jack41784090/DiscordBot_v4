@@ -257,16 +257,17 @@ function getIcon(_stat) {
                 ctx.closePath();
                 // team color (green/red)
                 ctx.globalCompositeOperation = "source-over";
-                ctx.lineWidth = 5;
+                ctx.lineWidth = 10;
+                // black arc
                 ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
-                    r: 255 * Number(_stat.team === "enemy"),
-                    g: 255 * Number(_stat.team === "player"),
+                    r: 0,
+                    g: 0,
                     b: 0,
                     alpha: 1
                 });
                 (0, Utility_1.drawCircle)(ctx, {
                     x: squaredSize / 2,
-                    y: squaredSize / 2
+                    y: squaredSize / 2,
                 }, squaredSize / 2);
                 ctx.restore();
                 resolve(canvas);

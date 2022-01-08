@@ -96,7 +96,7 @@
 			{
 				"Name": "Vicious Stab",
 				"Acc": 85,
-				"Damage": [10,18],
+				"Damage": [8,13],
 				"Range": [0,5],
 				"Readiness": 10,
 				"sword": 1,
@@ -115,18 +115,18 @@
 			{
 				"Name": "Decimate",
 				"Acc": 75,
-				"Damage": [0,0],
-				"Range": [0,0],
+				"Damage": [9,15],
+				"Range": [0,0,1.5],
 				"Readiness": 25,
 				"sword": 2,
 				"shield": 0,
-				"sprint": 1,
+				"sprint": 0,
 				"Crit": 10,
 				"Spd": 1,
 				"lifesteal": 0.1,
 				"targetting": {
 					"target": 1,
-					"AOE": "selfAOE"
+					"AOE": "selfCircle"
 				},
 				"CD": 0,
 				"UPT": 2
@@ -136,14 +136,8 @@
 			{
 				"Name": "Unrelenting Fury",
 				"Acc": 0,
-				"Damage": [
-					0,
-					0
-				],
-				"Range": [
-					0,
-					0
-				],
+				"Damage": [0,0],
+				"Range": [0,0],
 				"Readiness": 0,
 				"sword": 0,
 				"shield": 0,

@@ -4,7 +4,7 @@ import { Type } from "typescript";
 import classData from "../data/classData.json"
 
 import { BotClient } from "..";
-import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL } from "../typedef";
+import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption } from "../typedef";
 import { Battle } from "./Battle";
 
 export function clamp(value: number, min: number, max: number) {
@@ -81,49 +81,49 @@ export function average(...nums: Array<number>) {
 }
 
 // get battle stats
-export function getAHP(entity: Stat, options: 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff' = 'WithBoth'): number {
+export function getAHP(entity: Stat, options: GetBuffOption = 'WithBoth'): number {
     const AHP = entity.base.AHP;
     const AHPBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.AHP : 0;
     const AHPDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.AHP : 0;
     return (AHP + AHPBuff - AHPDebuff) || 0;
 }
-export function getDamage(entity: Stat, weapon: Weapon, options: 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff' = 'WithBoth'): [number, number] {
+export function getDamage(entity: Stat, weapon: Weapon, options: GetBuffOption = 'WithBoth'): [number, number] {
     const damageRange = weapon.Damage;
     const damageBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Damage : 0;
     const damageDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Damage : 0;
     return [damageRange[0] + damageBuff - damageDebuff, damageRange[1] + damageBuff - damageDebuff]
 }
-export function getAcc(entity: Stat, weapon: Weapon, options: 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff' = 'WithBoth'): number {
+export function getAcc(entity: Stat, weapon: Weapon, options: GetBuffOption = 'WithBoth'): number {
     const acc = weapon.Acc;
     const accBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Acc : 0;
     const accDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Acc : 0;
     return (acc + accBuff - accDebuff) || 0;
 }
-export function getDodge(entity: Stat, options: 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff' = 'WithBoth'): number {
+export function getDodge(entity: Stat, options: GetBuffOption = 'WithBoth'): number {
     const dodge = entity.base.Dodge;
     const dodgeBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Dodge : 0;
     const dodgeDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Dodge : 0;
     return (dodge + dodgeBuff - dodgeDebuff) || 0;
 }
-export function getSpd(entity: Stat, options: 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff' = 'WithBoth'): number {
+export function getSpd(entity: Stat, options: GetBuffOption = 'WithBoth'): number {
     const spd = entity.base.Spd;
     const spdBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Spd : 0;
     const spdDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Spd : 0;
     return (spd + spdBuff - spdDebuff) || 0;
 }
-export function getCrit(entity: Stat, weapon: Weapon, options: 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff' = 'WithBoth'): number {
+export function getCrit(entity: Stat, weapon: Weapon, options: GetBuffOption = 'WithBoth'): number {
     const crit = weapon.Crit;
     const critBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Crit : 0;
     const critDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Crit : 0;
     return (crit + critBuff - critDebuff) || 0;
 }
-export function getLifesteal(entity: Stat, weapon: Weapon, options: 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff' = 'WithBoth'): number {
+export function getLifesteal(entity: Stat, weapon: Weapon, options: GetBuffOption = 'WithBoth'): number {
     const ls = weapon.lifesteal;
     const lsBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.lifesteal : 0;
     const lsDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.lifesteal : 0;
     return (ls + lsBuff - lsDebuff) || 0;
 }
-export function getProt(entity: Stat, options: 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff' = 'WithBoth'): number {
+export function getProt(entity: Stat, options: GetBuffOption = 'WithBoth'): number {
     const prot = entity.base.Prot;
     const protBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Prot : 0;
     const protDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Prot : 0;
@@ -944,13 +944,14 @@ export function drawCircle(
     _canvasCoord: Coordinate,
     _radius: number,
     _stroke = true,
+    _percentage = 1
 ): void {
     _ctx.save();
 
     _ctx.closePath();
 
     _ctx.beginPath();
-    _ctx.arc(_canvasCoord.x, _canvasCoord.y, _radius, 0, Math.PI * 2);
+    _ctx.arc(_canvasCoord.x, _canvasCoord.y, _radius, 0, Math.PI * 2 * _percentage);
     if (_stroke) {
         _ctx.stroke();
     }
