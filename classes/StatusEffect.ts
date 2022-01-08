@@ -8,17 +8,22 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
         (_statusEffect: StatusEffect, _sameRound_action: Action, _bd: Battle) => {
             const affected = _statusEffect.affected;
             const value = _statusEffect.value;
-            let returnString = `Bleeds! 🩸 -**${roundToDecimalPlace(value)}** (x${_statusEffect.duration})`;
+            let returnString = "";
 
-            affected.HP -= value;
-            _statusEffect.duration--;
+            if (value > 0) {
+                returnString += `Bleeds! 🩸 -**${roundToDecimalPlace(value)}** (x${_statusEffect.duration})`;
+                affected.HP -= value;
 
-            if (affected.HP + value > 0 && affected.HP <= 0) {
-                returnString += "\n__**KILLING BLOW!**__";
+                if (affected.HP + value > 0 && affected.HP <= 0) {
+                    returnString += "\n__**KILLING BLOW!**__";
+                }
+                else if (affected.HP <= 0) {
+                    returnString += " (*Overkill*)";
+                }
+
+                _statusEffect.duration--;
             }
-            else if (affected.HP <= 0) {
-                returnString += " (*Overkill*)";
-            }
+
             return returnString;
         }
     ],

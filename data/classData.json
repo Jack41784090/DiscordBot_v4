@@ -88,7 +88,7 @@
 		"class": "Mars",
 		"AHP": 55,
 		"Dodge": 10,
-		"Prot": 0.3,
+		"Prot": 0.45,
 		"Spd": 6.5,
 		"maxMove": 1,
 		"iconURL": "images/Mars.png",
@@ -153,6 +153,21 @@
 				"UPT": 1
 			}
 		],
+		"botType": 0
+	},
+	"Diana": {
+		"name": "Diana",
+		"class": "Diana",
+		"AHP": 45,
+		"Dodge": 20,
+		"Prot": 0.3,
+		"Spd": 7.5,
+		"maxMove": 1,
+		"iconURL": "images/Diana.png",
+		"weapons": [
+
+		],
+		"autoWeapons": [],
 		"botType": 0
 	}
 }

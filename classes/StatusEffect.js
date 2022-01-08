@@ -8,14 +8,17 @@ var statusEffect_effects = new Map([
         function (_statusEffect, _sameRound_action, _bd) {
             var affected = _statusEffect.affected;
             var value = _statusEffect.value;
-            var returnString = "Bleeds! \uD83E\uDE78 -**" + (0, Utility_1.roundToDecimalPlace)(value) + "** (x" + _statusEffect.duration + ")";
-            affected.HP -= value;
-            _statusEffect.duration--;
-            if (affected.HP + value > 0 && affected.HP <= 0) {
-                returnString += "\n__**KILLING BLOW!**__";
-            }
-            else if (affected.HP <= 0) {
-                returnString += " (*Overkill*)";
+            var returnString = "";
+            if (value > 0) {
+                returnString += "Bleeds! \uD83E\uDE78 -**" + (0, Utility_1.roundToDecimalPlace)(value) + "** (x" + _statusEffect.duration + ")";
+                affected.HP -= value;
+                if (affected.HP + value > 0 && affected.HP <= 0) {
+                    returnString += "\n__**KILLING BLOW!**__";
+                }
+                else if (affected.HP <= 0) {
+                    returnString += " (*Overkill*)";
+                }
+                _statusEffect.duration--;
             }
             return returnString;
         }

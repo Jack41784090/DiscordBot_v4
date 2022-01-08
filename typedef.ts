@@ -192,7 +192,7 @@ export type WeaponName =
     "Decimate"|
     "Unrelenting Fury"
 export interface WeaponEffectFunction {
-    (_aA: AttackAction, _cR: ClashResult, _bd: Battle): string;
+    (_aA: Action, _cR: ClashResult, _bd: Battle): string;
 }
 
 // classes

@@ -161,19 +161,18 @@ export class Battle {
             // randomly assign tokens
             for (let i = 0; i < 2; i++) {
                 // const token = random(0, 2);
-                const token = 1;
-                log(`\t${s.base.class} (${s.index}) got ${token}`)
-                switch (token) {
+                // log(`\t${s.base.class} (${s.index}) got ${token}`)
+                // switch (token) {
                     // case 0:
-                    //     s.sword++;
+                        s.sword++;
                     //     break;
-                    case 1:
-                        s.shield++;
-                        break;
+                    // case 1:
+                    //     s.shield++;
+                    //     break;
                     // case 2:
                     //     s.sprint++;
                     //     break;
-                }
+                // }
             }
 
             // limit the entity's tokens
@@ -1029,46 +1028,47 @@ export class Battle {
         return this.width > coord.x && this.height > coord.y && coord.x >= 0 && coord.y >= 0;
     }
 
-    tickStatuses(_s: Stat, _action: Action): string {
+    tickStatuses(_s: Stat, _currentRoundAction: Action): string {
         log(`\tTick status for ${_s.base.class} (${_s.index})...`);
 
         let returnString = '';
-        const statuses = _s.statusEffects;
-        const affected = _action.affected;
+        const statuses = _s.statusEffects; debug(`\t(${_s.index}) statuses`, statuses.map(_se => _se.type))
+
         for (let i = 0; i < statuses.length; i++) {
-            const _status = statuses[i];
+            const status = statuses[i];
             // make sure status is affecting the right entity and entity is still alive
-            if (affected.index === _s.index && affected.HP > 0) {
-                if (!returnString) {
-                    returnString += `__${_s.base.class}__ (${_s.index})\n`
-                }
-
+            if (status.affected.index === _s.index && status.affected.HP > 0) {
                 // tick
-                log(`\t\t${_status.type} ${_status.value} (${_status.duration} turns)`)
-                const statusString = _status.tick(_action);
+                log(`\t\t${status.type} ${status.value} (${status.duration} turns)`)
+                const statusString = status.tick(_currentRoundAction);
 
-                /**
-                 * if not returning, either
-                 * 1. status reaches 0 duration
-                 * 2. status has an invalid type
-                 * delete either way
-                 */
+                // empty string == invalid status => remove status
                 if (!statusString) {
                     log(`\t\t\tRemoving status`)
-                    this.removeStatus(_status);
+                    this.removeStatus(status);
                     i--;
                 }
                 else {
+                    // status header (first time only)
+                    if (!returnString) {
+                        returnString += `__${_s.base.class}__ (${_s.index})\n`
+                    }
+
+                    // status report
                     returnString += statusString;
                     if (i !== statuses.length - 1) {
                         returnString += "\n";
                     }
-                }
 
-                // notify the inflicter
-                if (_status.from.index !== _status.affected.index) {
-                    this.appendReportString(_status.from, _action.round, `__${affected.base.class}__ (${affected.index})\n` + statusString);
+                    // notify the inflicter
+                    if (status.from.index !== status.affected.index) {
+                        this.appendReportString(status.from, _currentRoundAction.round, `__${status.affected.base.class}__ (${status.affected.index})\n` + statusString);
+                    }
                 }
+            }
+            else {
+                debug("status.affected.index === _s.index", status.affected.index === _s.index);
+                debug("status.affected.HP > 0", status.affected.HP > 0);
             }
             
         }
@@ -1150,9 +1150,15 @@ export class Battle {
 
             // non-damaging
             case WeaponTarget.ally:
-                returnString +=
-                    `**${attackerClass}** (${attacker.index}) 🛡️ **${targetClass}** (${target.index})
+                if (attacker.index === target.index) {
+                    returnString +=
+                        `**${attackerClass}** (${attacker.index})) Activates __*${weapon.Name}*__`;
+                }
+                else {
+                    returnString +=
+                        `**${attackerClass}** (${attacker.index}) 🛡️ **${targetClass}** (${target.index})
                     __*${weapon.Name}*__`;
+                }
                 // returningString += abilityEffect();
                 break;
         }
@@ -1283,34 +1289,52 @@ export class Battle {
             associatedStringArray[_round] = [];
         }
         if (_string) {
-            log(`\t\t\tAppending "${_string}" to (${_stat.index})`)
+            log(`\t\t\tAppending "${_string.replace("\n", "\\n")}" to (${_stat.index})`)
             associatedStringArray[_round].push(_string);
         }
     }
 
     // actions
-    executeAutoWeapon(_attacker: Stat, _target: Stat, _round: Round): string {
+    executeAutoWeapons(_action: Action): string {
+        const round = _action.round;
+
+        const executeAuto = (_s: Stat) => {
+            const attacker = _s;
+            const target = _s.index === _action.from.index?
+                _action.affected:
+                _action.from;
+
+            _s.base.autoWeapons.forEach(_w => {
+                const weaponTarget: WeaponTarget = _w.targetting.target;
+                const intendedVictim: Stat | null =
+                    weaponTarget === WeaponTarget.ally ?
+                        // weapon is intended to target friendly units
+                        target.team === attacker.team && _w.targetting.AOE !== "self" ?
+                            target : // if the action is targetting a friendly unit, use the effect on them.
+                            attacker : // if the action is targetting an enemy, use it on self
+                        // weapon is intended to target enemies
+                        target.team === attacker.team && (!target.pvp || !attacker.pvp) ?
+                            null : // the targetted unit is friendly, ignore the autoWeapon.
+                            target; // if the targetted is an enemy, unleash the autoWeapon.
+
+                if (intendedVictim) {
+                    const selfActivatingAA: AttackAction = getAttackAction(attacker, intendedVictim, _w, {
+                        x: intendedVictim.x, y: intendedVictim.y
+                    }, round);
+
+                    this.executeAttackAction(selfActivatingAA);
+                    // totalString.push(weaponEffect.activate());
+                }
+            });
+        }
+
         let totalString: string[] = [];
-        _attacker.base.autoWeapons.forEach(_w => {
-            const weaponTarget: WeaponTarget = _w.targetting.target;
-            const intendedVictim: Stat | null =
-                weaponTarget === WeaponTarget.ally ?
-                    // weapon is intended to target friendly units
-                    _target.team === _attacker.team && _w.targetting.AOE !== "self" ?
-                        _target : // if the action is targetting a friendly unit, use the effect on them.
-                        _attacker : // if the action is targetting an enemy, use it on self
-                    _target.team === _attacker.team ?
-                        null : // if the action is aggressive, and the targetted unit is friendly, ignore the autoWeapon.
-                        _target; // if the targetted is an enemy, unleash the autoWeapon.
-            if (intendedVictim) {
-                const selfActivatingAA: AttackAction = getAttackAction(_attacker, intendedVictim, _w, {
-                    x: intendedVictim.x, y: intendedVictim.y
-                }, _round);
-                const clashResult = this.clash(selfActivatingAA);
-                const weaponEffect: WeaponEffect = new WeaponEffect(selfActivatingAA, clashResult, this);
-                totalString.push(weaponEffect.activate());
-            }
-        });
+
+        executeAuto(_action.from);
+        if (_action.from.index !== _action.affected.index) {
+            executeAuto(_action.affected);
+        }
+
         return totalString.join("\n");
     }
     executeActions(_actions: Action[]) {
@@ -1332,26 +1356,27 @@ export class Battle {
         const mAction = _action as MoveAction;
         const aAction = _action as AttackAction;
 
+        const actionAffected = _action.affected;
+        const actionFrom = _action.from;
+        const round = _action.round;
+
         // activate autoWeapons
-        let autoWeaponReportString = this.executeAutoWeapon(_action.affected, _action.from, _action.round);
-        if (_action.from.index !== _action.affected.index) {
-            autoWeaponReportString += this.executeAutoWeapon(_action.from, _action.affected, _action.round);
-            this.appendReportString(_action.from, _action.round, autoWeaponReportString);
-        }
-        this.appendReportString(_action.affected, _action.round, autoWeaponReportString);
+        let autoWeaponReportString = this.executeAutoWeapons(_action);
+        this.appendReportString(actionAffected, round, autoWeaponReportString);
+        this.appendReportString(actionFrom, round, autoWeaponReportString);
 
         // apply statuses for target, then report to target
-        const affectedStatusString = this.tickStatuses(_action.affected, _action);
+        const affectedStatusString = this.tickStatuses(actionAffected, _action);
         if (affectedStatusString) {
-            this.appendReportString(_action.affected, _action.round, affectedStatusString);
+            this.appendReportString(actionAffected, round, affectedStatusString);
         }
 
         // if the action is not self-targetting...
-        if (_action.affected.index !== _action.from.index) {
+        if (actionAffected.index !== actionFrom.index) {
             // apply statuses for attacker, then report to attacker
-            const attackerStatusString = this.tickStatuses(_action.from, _action);
+            const attackerStatusString = this.tickStatuses(actionFrom, _action);
             if (attackerStatusString) {
-                this.appendReportString(_action.from, _action.round, attackerStatusString);
+                this.appendReportString(actionFrom, round, attackerStatusString);
             }
         }
 
@@ -1410,7 +1435,6 @@ export class Battle {
         return string;
     };
     executeAttackAction(_aA: AttackAction): AttackAction {
-        log(`\t\t Attack: ${_aA.from.base.class} => ${_aA.affected.base.class}`)
         let attackResult = "";
         switch (_aA.weapon.targetting.AOE) {
             case "self":

@@ -222,19 +222,18 @@ var Battle = /** @class */ (function () {
                             // randomly assign tokens
                             for (var i_1 = 0; i_1 < 2; i_1++) {
                                 // const token = random(0, 2);
-                                var token = 1;
-                                (0, Utility_1.log)("\t" + s.base.class + " (" + s.index + ") got " + token);
-                                switch (token) {
-                                    // case 0:
-                                    //     s.sword++;
-                                    //     break;
-                                    case 1:
-                                        s.shield++;
-                                        break;
-                                    // case 2:
-                                    //     s.sprint++;
-                                    //     break;
-                                }
+                                // log(`\t${s.base.class} (${s.index}) got ${token}`)
+                                // switch (token) {
+                                // case 0:
+                                s.sword++;
+                                //     break;
+                                // case 1:
+                                //     s.shield++;
+                                //     break;
+                                // case 2:
+                                //     s.sprint++;
+                                //     break;
+                                // }
                             }
                             // limit the entity's tokens
                             (0, Utility_1.HandleTokens)(s, function (p, t) {
@@ -1106,42 +1105,43 @@ var Battle = /** @class */ (function () {
         // log(`\t\t\tw\\${this.width} h\\${this.height} ${JSON.stringify(coord)}`);
         return this.width > coord.x && this.height > coord.y && coord.x >= 0 && coord.y >= 0;
     };
-    Battle.prototype.tickStatuses = function (_s, _action) {
+    Battle.prototype.tickStatuses = function (_s, _currentRoundAction) {
         (0, Utility_1.log)("\tTick status for " + _s.base.class + " (" + _s.index + ")...");
         var returnString = '';
         var statuses = _s.statusEffects;
-        var affected = _action.affected;
+        (0, Utility_1.debug)("\t(" + _s.index + ") statuses", statuses.map(function (_se) { return _se.type; }));
         for (var i = 0; i < statuses.length; i++) {
-            var _status = statuses[i];
+            var status_1 = statuses[i];
             // make sure status is affecting the right entity and entity is still alive
-            if (affected.index === _s.index && affected.HP > 0) {
-                if (!returnString) {
-                    returnString += "__" + _s.base.class + "__ (" + _s.index + ")\n";
-                }
+            if (status_1.affected.index === _s.index && status_1.affected.HP > 0) {
                 // tick
-                (0, Utility_1.log)("\t\t" + _status.type + " " + _status.value + " (" + _status.duration + " turns)");
-                var statusString = _status.tick(_action);
-                /**
-                 * if not returning, either
-                 * 1. status reaches 0 duration
-                 * 2. status has an invalid type
-                 * delete either way
-                 */
+                (0, Utility_1.log)("\t\t" + status_1.type + " " + status_1.value + " (" + status_1.duration + " turns)");
+                var statusString = status_1.tick(_currentRoundAction);
+                // empty string == invalid status => remove status
                 if (!statusString) {
                     (0, Utility_1.log)("\t\t\tRemoving status");
-                    this.removeStatus(_status);
+                    this.removeStatus(status_1);
                     i--;
                 }
                 else {
+                    // status header (first time only)
+                    if (!returnString) {
+                        returnString += "__" + _s.base.class + "__ (" + _s.index + ")\n";
+                    }
+                    // status report
                     returnString += statusString;
                     if (i !== statuses.length - 1) {
                         returnString += "\n";
                     }
+                    // notify the inflicter
+                    if (status_1.from.index !== status_1.affected.index) {
+                        this.appendReportString(status_1.from, _currentRoundAction.round, "__" + status_1.affected.base.class + "__ (" + status_1.affected.index + ")\n" + statusString);
+                    }
                 }
-                // notify the inflicter
-                if (_status.from.index !== _status.affected.index) {
-                    this.appendReportString(_status.from, _action.round, "__" + affected.base.class + "__ (" + affected.index + ")\n" + statusString);
-                }
+            }
+            else {
+                (0, Utility_1.debug)("status.affected.index === _s.index", status_1.affected.index === _s.index);
+                (0, Utility_1.debug)("status.affected.HP > 0", status_1.affected.HP > 0);
             }
         }
         return returnString;
@@ -1203,8 +1203,14 @@ var Battle = /** @class */ (function () {
                 break;
             // non-damaging
             case typedef_1.WeaponTarget.ally:
-                returnString +=
-                    "**" + attackerClass + "** (" + attacker.index + ") \uD83D\uDEE1\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + weapon.Name + "*__";
+                if (attacker.index === target.index) {
+                    returnString +=
+                        "**" + attackerClass + "** (" + attacker.index + ")) Activates __*" + weapon.Name + "*__";
+                }
+                else {
+                    returnString +=
+                        "**" + attackerClass + "** (" + attacker.index + ") \uD83D\uDEE1\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + weapon.Name + "*__";
+                }
                 // returningString += abilityEffect();
                 break;
         }
@@ -1318,33 +1324,44 @@ var Battle = /** @class */ (function () {
             associatedStringArray[_round] = [];
         }
         if (_string) {
-            (0, Utility_1.log)("\t\t\tAppending \"" + _string + "\" to (" + _stat.index + ")");
+            (0, Utility_1.log)("\t\t\tAppending \"" + _string.replace("\n", "\\n") + "\" to (" + _stat.index + ")");
             associatedStringArray[_round].push(_string);
         }
     };
     // actions
-    Battle.prototype.executeAutoWeapon = function (_attacker, _target, _round) {
+    Battle.prototype.executeAutoWeapons = function (_action) {
         var _this = this;
+        var round = _action.round;
+        var executeAuto = function (_s) {
+            var attacker = _s;
+            var target = _s.index === _action.from.index ?
+                _action.affected :
+                _action.from;
+            _s.base.autoWeapons.forEach(function (_w) {
+                var weaponTarget = _w.targetting.target;
+                var intendedVictim = weaponTarget === typedef_1.WeaponTarget.ally ?
+                    // weapon is intended to target friendly units
+                    target.team === attacker.team && _w.targetting.AOE !== "self" ?
+                        target : // if the action is targetting a friendly unit, use the effect on them.
+                        attacker : // if the action is targetting an enemy, use it on self
+                    // weapon is intended to target enemies
+                    target.team === attacker.team && (!target.pvp || !attacker.pvp) ?
+                        null : // the targetted unit is friendly, ignore the autoWeapon.
+                        target; // if the targetted is an enemy, unleash the autoWeapon.
+                if (intendedVictim) {
+                    var selfActivatingAA = (0, Utility_1.getAttackAction)(attacker, intendedVictim, _w, {
+                        x: intendedVictim.x, y: intendedVictim.y
+                    }, round);
+                    _this.executeAttackAction(selfActivatingAA);
+                    // totalString.push(weaponEffect.activate());
+                }
+            });
+        };
         var totalString = [];
-        _attacker.base.autoWeapons.forEach(function (_w) {
-            var weaponTarget = _w.targetting.target;
-            var intendedVictim = weaponTarget === typedef_1.WeaponTarget.ally ?
-                // weapon is intended to target friendly units
-                _target.team === _attacker.team && _w.targetting.AOE !== "self" ?
-                    _target : // if the action is targetting a friendly unit, use the effect on them.
-                    _attacker : // if the action is targetting an enemy, use it on self
-                _target.team === _attacker.team ?
-                    null : // if the action is aggressive, and the targetted unit is friendly, ignore the autoWeapon.
-                    _target; // if the targetted is an enemy, unleash the autoWeapon.
-            if (intendedVictim) {
-                var selfActivatingAA = (0, Utility_1.getAttackAction)(_attacker, intendedVictim, _w, {
-                    x: intendedVictim.x, y: intendedVictim.y
-                }, _round);
-                var clashResult = _this.clash(selfActivatingAA);
-                var weaponEffect = new WeaponEffect_1.WeaponEffect(selfActivatingAA, clashResult, _this);
-                totalString.push(weaponEffect.activate());
-            }
-        });
+        executeAuto(_action.from);
+        if (_action.from.index !== _action.affected.index) {
+            executeAuto(_action.affected);
+        }
         return totalString.join("\n");
     };
     Battle.prototype.executeActions = function (_actions) {
@@ -1362,24 +1379,24 @@ var Battle = /** @class */ (function () {
         (0, Utility_1.log)("\tExecuting action: " + _action.type + ", " + _action.from.base.class + " => " + _action.affected.base.class);
         var mAction = _action;
         var aAction = _action;
+        var actionAffected = _action.affected;
+        var actionFrom = _action.from;
+        var round = _action.round;
         // activate autoWeapons
-        var autoWeaponReportString = this.executeAutoWeapon(_action.affected, _action.from, _action.round);
-        if (_action.from.index !== _action.affected.index) {
-            autoWeaponReportString += this.executeAutoWeapon(_action.from, _action.affected, _action.round);
-            this.appendReportString(_action.from, _action.round, autoWeaponReportString);
-        }
-        this.appendReportString(_action.affected, _action.round, autoWeaponReportString);
+        var autoWeaponReportString = this.executeAutoWeapons(_action);
+        this.appendReportString(actionAffected, round, autoWeaponReportString);
+        this.appendReportString(actionFrom, round, autoWeaponReportString);
         // apply statuses for target, then report to target
-        var affectedStatusString = this.tickStatuses(_action.affected, _action);
+        var affectedStatusString = this.tickStatuses(actionAffected, _action);
         if (affectedStatusString) {
-            this.appendReportString(_action.affected, _action.round, affectedStatusString);
+            this.appendReportString(actionAffected, round, affectedStatusString);
         }
         // if the action is not self-targetting...
-        if (_action.affected.index !== _action.from.index) {
+        if (actionAffected.index !== actionFrom.index) {
             // apply statuses for attacker, then report to attacker
-            var attackerStatusString = this.tickStatuses(_action.from, _action);
+            var attackerStatusString = this.tickStatuses(actionFrom, _action);
             if (attackerStatusString) {
-                this.appendReportString(_action.from, _action.round, attackerStatusString);
+                this.appendReportString(actionFrom, round, attackerStatusString);
             }
         }
         return _action.type === 'Attack' ?
@@ -1437,7 +1454,6 @@ var Battle = /** @class */ (function () {
     };
     ;
     Battle.prototype.executeAttackAction = function (_aA) {
-        (0, Utility_1.log)("\t\t Attack: " + _aA.from.base.class + " => " + _aA.affected.base.class);
         var attackResult = "";
         switch (_aA.weapon.targetting.AOE) {
             case "self":
