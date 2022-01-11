@@ -57,7 +57,7 @@ module.exports = {
             // BATTLEDATA INIT (SPAWN PLAYERS)
             if (dungeon) {
                 message.react(EMOJI_TICK);
-                Dungeon.Start(dungeon);
+                Dungeon.Generate(dungeon);
             }
             else {
                 message.reply(`The location "${location}" is not valid.`)

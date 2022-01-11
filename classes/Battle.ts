@@ -1,5 +1,5 @@
 import { CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect } from "./Utility";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIcon, getUserData } from "./Database";
 import enemiesData from "../data/enemiesData.json";
@@ -11,6 +11,7 @@ import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResu
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
+import { BattleManager } from "./BattleManager";
 
 export class Battle {
     static readonly MOVE_READINESS = 10;
@@ -90,8 +91,8 @@ export class Battle {
         })
     }
 
-    /** Main function to access in order to start a thread of battle */
-    static async Start(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
+    /** Generate a Battle but does not start it */
+    static async Generate(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
         const battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
 
         // add players to spawning list
@@ -121,9 +122,15 @@ export class Battle {
             }
         }
 
-        battle.StartRound();
-
+        // attach ongoing battle to Manager
+        BattleManager.Manager.set(_author.id, battle);
         return battle;
+    }
+
+    /** Main function to access in order to start a thread of battle */
+    static async Start(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
+        const battle = await Battle.Generate(_mapData, _author, _message, _party, _client, _pvp);
+        battle.StartRound();
     }
 
     /** Begin a new round
@@ -480,10 +487,10 @@ export class Battle {
         // allPromise.forEach(console.log);
         //#endregion
 
-        this.FinishRound();
+        return this.FinishRound();
     }
 
-    FinishRound() {
+    FinishRound(): Promise<boolean> | boolean {
         log("Finishing Round...");
         const PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
         const PVP = this.playerCount === 1;
@@ -522,9 +529,10 @@ export class Battle {
                     fields: endEmbedFields,
                 })]
             });
+            return this.totalEnemyCount === 0;
         }
         else {
-            this.StartRound();
+            return this.StartRound();
         }
     }
 
@@ -660,15 +668,8 @@ export class Battle {
         return this.roundActionsArray.filter(a => a.from.index === stat.index);
     }
 
-    getCanvasCoordsFromBattleCoord(s: Coordinate, shift = true) {
-        return {
-            x: s.x * this.pixelsPerTile + (this.pixelsPerTile/2 * Number(shift)),
-            y: (this.height - s.y - 1) * this.pixelsPerTile + (this.pixelsPerTile/2 * Number(shift))
-        };
-    }
-
     drawSquareOnBattleCoords(ctx: NodeCanvasRenderingContext2D, coord: Coordinate, rgba?: RGBA) {
-        const canvasCoord = this.getCanvasCoordsFromBattleCoord(coord, false);
+        const canvasCoord = getCanvasCoordsFromBattleCoord(coord, this.pixelsPerTile, this.height, false);
         if (rgba) {
             ctx.fillStyle = stringifyRGBA(rgba);
         }
@@ -1557,10 +1558,10 @@ export class Battle {
             }
 
             // draw on the main canvas
-            const imageCanvasCoord = this.getCanvasCoordsFromBattleCoord({
+            const imageCanvasCoord = getCanvasCoordsFromBattleCoord({
                 x: X,
                 y: Y
-            }, false);
+            }, this.pixelsPerTile, this.height, false);
             ctx.drawImage(iconCanvas, imageCanvasCoord.x, imageCanvasCoord.y, Math.min(iconCanvas.width, this.pixelsPerTile), Math.min(iconCanvas.height, this.pixelsPerTile));
         }
 
@@ -1666,10 +1667,10 @@ export class Battle {
                 "red" :
                 "black";
             ctx.lineWidth = _width;
-            const fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(_fromBattleCoord);
+            const fromCanvasCoord = getCanvasCoordsFromBattleCoord(_fromBattleCoord, this.pixelsPerTile, this.height);
             ctx.moveTo(fromCanvasCoord.x + _offset.x, fromCanvasCoord.y + _offset.y);
 
-            const toCanvasCoord = this.getCanvasCoordsFromBattleCoord(_toBattleCoord);
+            const toCanvasCoord = getCanvasCoordsFromBattleCoord(_toBattleCoord, this.pixelsPerTile, this.height);
             ctx.lineTo(toCanvasCoord.x + _offset.x, toCanvasCoord.y + _offset.y);
             ctx.stroke();
             ctx.closePath();
@@ -1691,10 +1692,10 @@ export class Battle {
             }
 
             // priority text
-            const textCanvasCoordinate = this.getCanvasCoordsFromBattleCoord({
+            const textCanvasCoordinate = getCanvasCoordsFromBattleCoord({
                 x: (_fromBattleCoord.x + _toBattleCoord.x) / 2,
                 y: (_fromBattleCoord.y + _toBattleCoord.y) / 2
-            });
+            }, this.pixelsPerTile, this.height);
             const x = _toBattleCoord.x - _fromBattleCoord.x;
             const y = _toBattleCoord.y - _fromBattleCoord.y;
             const angle = Math.atan2(y,x);
@@ -1726,12 +1727,12 @@ export class Battle {
             ctx.lineWidth = _width;
 
             // get position before move
-            const beforeCanvasCoord = this.getCanvasCoordsFromBattleCoord(_fromBattleCoord);
+            const beforeCanvasCoord = getCanvasCoordsFromBattleCoord(_fromBattleCoord, this.pixelsPerTile, this.height);
             ctx.beginPath();
             ctx.moveTo(beforeCanvasCoord.x, beforeCanvasCoord.y);
 
             // draw a line to the coord after move action
-            const afterCanvasCoord = this.getCanvasCoordsFromBattleCoord(_toBattleCoord);
+            const afterCanvasCoord = getCanvasCoordsFromBattleCoord(_toBattleCoord, this.pixelsPerTile, this.height);
             ctx.lineTo(afterCanvasCoord.x, afterCanvasCoord.y);
             ctx.stroke();
             ctx.closePath();
@@ -1943,7 +1944,7 @@ export class Battle {
                 b: 0,
                 alpha: 1
             });
-            const canvasCoord = this.getCanvasCoordsFromBattleCoord(stat);
+            const canvasCoord = getCanvasCoordsFromBattleCoord(stat, this.pixelsPerTile, this.height);
             drawCircle(
                 ctx,
                 {
@@ -1964,7 +1965,7 @@ export class Battle {
         const allStats = this.allStats();
         for (let i = 0; i < allStats.length; i++) {
             const stat = allStats[i];
-            const canvasCoord = this.getCanvasCoordsFromBattleCoord(stat, false);
+            const canvasCoord = getCanvasCoordsFromBattleCoord(stat, this.pixelsPerTile, this.height, false);
 
             // attach index
             drawCircle(

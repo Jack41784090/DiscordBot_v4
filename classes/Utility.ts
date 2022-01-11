@@ -142,6 +142,10 @@ export function findLongArm(weapons: Array<Weapon>) : Weapon {
     }, weapons[0]);
 }
 
+export function findEqualCoordinate(_c: Coordinate, __c: Coordinate) {
+    return _c.x === __c.x && _c.y === __c.y;
+}
+
 export function flatten(array: Array<Type>) {
     let flat: Type[] = [];
 
@@ -285,6 +289,13 @@ export function startDrawing(width: number, height: number) {
         canvas: canvas,
         ctx: canvas.getContext('2d'),
     }
+}
+
+export function getCanvasCoordsFromBattleCoord(_c: Coordinate, _pixelsPerTile: number, _maxHeight: number, _shiftToMiddle = true) {
+    return {
+        x: _c.x * _pixelsPerTile + (_pixelsPerTile / 2 * Number(_shiftToMiddle)),
+        y: (_maxHeight - _c.y - 1) * _pixelsPerTile + (_pixelsPerTile / 2 * Number(_shiftToMiddle))
+    };
 }
 
 export function returnGridCanvas(_h: number = 9, _w: number = 9, _gridPixels: number = 500, groundImage?: Image): Canvas {
@@ -560,7 +571,7 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
 // }
 
 export async function Test() {
-    const dungeon = Dungeon.Start(dungeonData.farmstead);
+    const dungeon = Dungeon.Generate(dungeonData.farmstead);
 
     const channel = BotClient.channels.fetch("926372977539424296")
         .then(_c => {

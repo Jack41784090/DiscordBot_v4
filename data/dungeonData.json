@@ -4,8 +4,8 @@
         "minLength": 1,
         "maxRoom": 100,
         "minRoom": 100,
-        "maxBattle": 8,
-        "minBattle": 4,
+        "maxBattle": 25,
+        "minBattle": 25,
         "width": 10,
         "height": 10,
 

@@ -87,6 +87,7 @@ var MinHeap_1 = require("./MinHeap");
 var typedef_1 = require("../typedef");
 var hGraphTheory_1 = require("./hGraphTheory");
 var WeaponEffect_1 = require("./WeaponEffect");
+var BattleManager_1 = require("./BattleManager");
 var Battle = /** @class */ (function () {
     function Battle(_mapData, _author, _message, _client, _pvp, _party) {
         var _this = this;
@@ -124,8 +125,8 @@ var Battle = /** @class */ (function () {
             }
         });
     }
-    /** Main function to access in order to start a thread of battle */
-    Battle.Start = function (_mapData, _author, _message, _party, _client, _pvp) {
+    /** Generate a Battle but does not start it */
+    Battle.Generate = function (_mapData, _author, _message, _party, _client, _pvp) {
         if (_pvp === void 0) { _pvp = false; }
         return __awaiter(this, void 0, void 0, function () {
             var battle, i, ownerID, userData, blankStat, _b, _c, _d, key, value, Eclass, mod, enemyBase, spawnCount, i;
@@ -176,8 +177,25 @@ var Battle = /** @class */ (function () {
                                 finally { if (e_1) throw e_1.error; }
                             }
                         }
-                        battle.StartRound();
+                        // attach ongoing battle to Manager
+                        BattleManager_1.BattleManager.Manager.set(_author.id, battle);
                         return [2 /*return*/, battle];
+                }
+            });
+        });
+    };
+    /** Main function to access in order to start a thread of battle */
+    Battle.Start = function (_mapData, _author, _message, _party, _client, _pvp) {
+        if (_pvp === void 0) { _pvp = false; }
+        return __awaiter(this, void 0, void 0, function () {
+            var battle;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, Battle.Generate(_mapData, _author, _message, _party, _client, _pvp)];
+                    case 1:
+                        battle = _b.sent();
+                        battle.StartRound();
+                        return [2 /*return*/];
                 }
             });
         });
@@ -552,8 +570,7 @@ var Battle = /** @class */ (function () {
                         (0, Utility_1.log)("Reporting phase finished.");
                         // allPromise.forEach(console.log);
                         //#endregion
-                        this.FinishRound();
-                        return [2 /*return*/];
+                        return [2 /*return*/, this.FinishRound()];
                 }
             });
         });
@@ -586,9 +603,10 @@ var Battle = /** @class */ (function () {
                         fields: endEmbedFields_1,
                     })]
             });
+            return this.totalEnemyCount === 0;
         }
         else {
-            this.StartRound();
+            return this.StartRound();
         }
     };
     /** Execute function on every stat of players */
@@ -727,15 +745,8 @@ var Battle = /** @class */ (function () {
     Battle.prototype.getStatsRoundActions = function (stat) {
         return this.roundActionsArray.filter(function (a) { return a.from.index === stat.index; });
     };
-    Battle.prototype.getCanvasCoordsFromBattleCoord = function (s, shift) {
-        if (shift === void 0) { shift = true; }
-        return {
-            x: s.x * this.pixelsPerTile + (this.pixelsPerTile / 2 * Number(shift)),
-            y: (this.height - s.y - 1) * this.pixelsPerTile + (this.pixelsPerTile / 2 * Number(shift))
-        };
-    };
     Battle.prototype.drawSquareOnBattleCoords = function (ctx, coord, rgba) {
-        var canvasCoord = this.getCanvasCoordsFromBattleCoord(coord, false);
+        var canvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(coord, this.pixelsPerTile, this.height, false);
         if (rgba) {
             ctx.fillStyle = (0, Utility_1.stringifyRGBA)(rgba);
         }
@@ -1571,10 +1582,10 @@ var Battle = /** @class */ (function () {
                         if (!stat.owner && iconCache.get(baseClass) === undefined) {
                             iconCache.set(baseClass, iconCanvas);
                         }
-                        imageCanvasCoord = this.getCanvasCoordsFromBattleCoord({
+                        imageCanvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)({
                             x: X,
                             y: Y
-                        }, false);
+                        }, this.pixelsPerTile, this.height, false);
                         ctx.drawImage(iconCanvas, imageCanvasCoord.x, imageCanvasCoord.y, Math.min(iconCanvas.width, this.pixelsPerTile), Math.min(iconCanvas.height, this.pixelsPerTile));
                         _d.label = 8;
                     case 8:
@@ -1720,9 +1731,9 @@ var Battle = /** @class */ (function () {
                                                 "red" :
                                                 "black";
                                             ctx.lineWidth = _width;
-                                            fromCanvasCoord = this.getCanvasCoordsFromBattleCoord(_fromBattleCoord);
+                                            fromCanvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(_fromBattleCoord, this.pixelsPerTile, this.height);
                                             ctx.moveTo(fromCanvasCoord.x + _offset.x, fromCanvasCoord.y + _offset.y);
-                                            toCanvasCoord = this.getCanvasCoordsFromBattleCoord(_toBattleCoord);
+                                            toCanvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(_toBattleCoord, this.pixelsPerTile, this.height);
                                             ctx.lineTo(toCanvasCoord.x + _offset.x, toCanvasCoord.y + _offset.y);
                                             ctx.stroke();
                                             ctx.closePath();
@@ -1743,10 +1754,10 @@ var Battle = /** @class */ (function () {
                                             ctx.drawImage(hitImage, toCanvasCoord.x + _offset.x - (imageWidth / 2), toCanvasCoord.y + _offset.y - (imageHeight / 2), imageWidth, imageHeight);
                                             _c.label = 5;
                                         case 5:
-                                            textCanvasCoordinate = this.getCanvasCoordsFromBattleCoord({
+                                            textCanvasCoordinate = (0, Utility_1.getCanvasCoordsFromBattleCoord)({
                                                 x: (_fromBattleCoord.x + _toBattleCoord.x) / 2,
                                                 y: (_fromBattleCoord.y + _toBattleCoord.y) / 2
-                                            });
+                                            }, this.pixelsPerTile, this.height);
                                             x = _toBattleCoord.x - _fromBattleCoord.x;
                                             y = _toBattleCoord.y - _fromBattleCoord.y;
                                             angle = Math.atan2(y, x);
@@ -1774,11 +1785,11 @@ var Battle = /** @class */ (function () {
                             (0, Utility_1.log)("Drawing move action: (" + _fromBattleCoord.x + "," + _fromBattleCoord.y + ")=>(" + _toBattleCoord.x + "," + _toBattleCoord.y + ") (width:" + _width + ")(offset x:" + _offsetCanvas.x + " y:" + _offsetCanvas.y + ")");
                             ctx.lineWidth = _width;
                             // get position before move
-                            var beforeCanvasCoord = _this.getCanvasCoordsFromBattleCoord(_fromBattleCoord);
+                            var beforeCanvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(_fromBattleCoord, _this.pixelsPerTile, _this.height);
                             ctx.beginPath();
                             ctx.moveTo(beforeCanvasCoord.x, beforeCanvasCoord.y);
                             // draw a line to the coord after move action
-                            var afterCanvasCoord = _this.getCanvasCoordsFromBattleCoord(_toBattleCoord);
+                            var afterCanvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(_toBattleCoord, _this.pixelsPerTile, _this.height);
                             ctx.lineTo(afterCanvasCoord.x, afterCanvasCoord.y);
                             ctx.stroke();
                             ctx.closePath();
@@ -1997,7 +2008,7 @@ var Battle = /** @class */ (function () {
                 b: 0,
                 alpha: 1
             });
-            var canvasCoord = this.getCanvasCoordsFromBattleCoord(stat);
+            var canvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(stat, this.pixelsPerTile, this.height);
             (0, Utility_1.drawCircle)(ctx, {
                 x: canvasCoord.x,
                 y: canvasCoord.y
@@ -2010,7 +2021,7 @@ var Battle = /** @class */ (function () {
         var allStats = this.allStats();
         for (var i = 0; i < allStats.length; i++) {
             var stat = allStats[i];
-            var canvasCoord = this.getCanvasCoordsFromBattleCoord(stat, false);
+            var canvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(stat, this.pixelsPerTile, this.height, false);
             // attach index
             (0, Utility_1.drawCircle)(ctx, {
                 x: canvasCoord.x + this.pixelsPerTile * 9 / 10,

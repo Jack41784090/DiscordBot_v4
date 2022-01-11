@@ -1,47 +1,40 @@
-import { Coordinate, NumericDirection, RoomDirections } from "../typedef";
+import { Coordinate, MapData, NumericDirection, OwnerID, RoomDirections, Treasure } from "../typedef";
 import { Battle } from "./Battle";
+import { BattleManager } from "./BattleManager";
 import { Dungeon } from "./Dungeon";
 
 export class Room {
+    battle: Battle | null = null;
+    treasure: Treasure | null = null;
+    isBattleRoom: boolean;
+
     dungeon: Dungeon;
-    attachedBattle: Battle | null;
     directions: RoomDirections;
     coordinate: Coordinate;
 
-    constructor(_battle: Battle | null, _roomDir: RoomDirections, _dungeon: Dungeon, _coordinate: Coordinate) {
-        this.attachedBattle = _battle;
+    constructor(_roomDir: RoomDirections, _dungeon: Dungeon, _coordinate: Coordinate, _hasBattle = false) {
         this.directions = _roomDir;
         this.dungeon = _dungeon;
         this.coordinate = _coordinate;
+        this.isBattleRoom = _hasBattle;
     }
 
-    Start() {
-
+    StartBattle() {
+        if (this.battle) {
+            return this.battle.StartRound()
+                .then(_r => {
+                    this.isBattleRoom = false;
+                    const leader: OwnerID | undefined = this.dungeon.leaderUser?.id;
+                    if (leader) {
+                        BattleManager.Manager.delete(leader);
+                    }
+                    return _r;
+                });
+        }
+        return null;
     }
 
-    async Next(_direction: NumericDirection) {
-    //     let entranceOpened = this.directions[_direction];
+    Move(_direction: NumericDirection) {
         
-    //     if (entranceOpened) {
-    //         const fromDirection: NumericDirection = (_direction + 2) % 4;
-    //         const newRoomDirections: RoomDirections = [null, null, null, null];
-
-    //         const {
-    //             mapData,
-    //             message,
-    //             author,
-    //             pvp,
-    //             client,
-    //             party,
-    //         } = this.attachedBattle;
-    //         const newBattle = await Battle.Start(mapData, author, message, party, client, pvp);
-    //         const newRoom = new Room(newBattle, newRoomDirections, this.dungeon);
-    //         newRoomDirections[fromDirection] = newRoom;
-
-    //         return newRoom;
-    //     }
-    //     else {
-    //         return null;
-    //     }
     }
 }

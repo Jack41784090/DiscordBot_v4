@@ -156,6 +156,9 @@ export interface DungeonData {
 
     start: Coordinate,
 }
+export interface Treasure {
+    
+}
 
 export interface Settings {
 

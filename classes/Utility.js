@@ -77,8 +77,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.getLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = void 0;
+exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
+exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.getLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var classData_json_1 = __importDefault(require("../data/classData.json"));
@@ -242,6 +242,10 @@ function findLongArm(weapons) {
     }, weapons[0]);
 }
 exports.findLongArm = findLongArm;
+function findEqualCoordinate(_c, __c) {
+    return _c.x === __c.x && _c.y === __c.y;
+}
+exports.findEqualCoordinate = findEqualCoordinate;
 function flatten(array) {
     var flat = [];
     for (var i = 0; i < array.length; i++) {
@@ -374,6 +378,14 @@ function startDrawing(width, height) {
     };
 }
 exports.startDrawing = startDrawing;
+function getCanvasCoordsFromBattleCoord(_c, _pixelsPerTile, _maxHeight, _shiftToMiddle) {
+    if (_shiftToMiddle === void 0) { _shiftToMiddle = true; }
+    return {
+        x: _c.x * _pixelsPerTile + (_pixelsPerTile / 2 * Number(_shiftToMiddle)),
+        y: (_maxHeight - _c.y - 1) * _pixelsPerTile + (_pixelsPerTile / 2 * Number(_shiftToMiddle))
+    };
+}
+exports.getCanvasCoordsFromBattleCoord = getCanvasCoordsFromBattleCoord;
 function returnGridCanvas(_h, _w, _gridPixels, groundImage) {
     if (_h === void 0) { _h = 9; }
     if (_w === void 0) { _w = 9; }
@@ -542,7 +554,7 @@ function Test() {
     return __awaiter(this, void 0, void 0, function () {
         var dungeon, channel;
         return __generator(this, function (_a) {
-            dungeon = Dungeon_1.Dungeon.Start(dungeonData_json_1.default.farmstead);
+            dungeon = Dungeon_1.Dungeon.Generate(dungeonData_json_1.default.farmstead);
             channel = __1.BotClient.channels.fetch("926372977539424296")
                 .then(function (_c) {
                 dungeon.print(_c);
