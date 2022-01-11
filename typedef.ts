@@ -1,5 +1,6 @@
 import { Client, Guild, GuildMember, Message, TextChannel, User } from "discord.js";
 import { Battle } from "./classes/Battle";
+import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
 
 export type Round = number;
@@ -8,12 +9,25 @@ export type StringCoordinate = string;
 export type OwnerID = string;
 
 export const COMMAND_CALL = ";"
+export const EMOJI_TICK = '✅';
+export const EMOJI_CROSS = '❎';
+
+export type RoomDirections = [Room | null, Room | null, Room | null, Room | null];
 
 export const preludeQuotes = ["Life slips away...", "You've breathed your last...", "Misfortune comes...", "You release your grip...", "You yearn for rest...", "The cold embrace..."];
 export const deathQuotes = ["Survival is a tenuous proposition in this sprawling tomb.", "More blood soaks the soil, feeding the evil therein.", "Another life wasted in the pursuit of glory and gold.", "This is no place for the weak, or the foolhardy.", "More dust, more ashes, more disappointment.", "Driven into the mud and bit the dust.", "Another pawn falls, in the grand scheme of things."];
 
+export type Location=
+    "farmstead"
+
 export type ActionType = 'Attack' | 'Move'
 export type Direction = 'up' | 'down' | 'left' | 'right'
+export enum NumericDirection {
+    up,
+    right,
+    down,
+    left,
+}
 
 export interface RGBA {
     r: number,
@@ -123,12 +137,24 @@ export interface Map {
     height: number,
     groundURL: string,
 }
-export interface Mapdata {
+export interface MapData {
     map: Map,
     enemiesInfo: { [key in EnemyClass]: {
         min: number,
         max: number,
     } },
+}
+export interface DungeonData {
+    maxLength: number,
+    minLength: number,
+    maxRoom: number,
+    minRoom: number,
+    maxBattle: number,
+    minBattle: number,
+    width: number,
+    height: number,
+
+    start: Coordinate,
 }
 
 export interface Settings {
@@ -146,6 +172,8 @@ export interface UserData {
 export type UserStatus = "idle" | "busy"; 
 
 export type Team = "block" | "player" | "enemy";
+
+export type Axis = "x" | "y";
 
 export enum BotType {
     naught,

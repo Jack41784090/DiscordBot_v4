@@ -1,13 +1,13 @@
-import { CategoryChannel, Client, EmbedField, EmbedFieldData, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, formalize, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect } from "./Utility";
+import { CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { getFileImage, getIcon, getUserData, saveBattle } from "./Database";
+import { getFileImage, getIcon, getUserData } from "./Database";
 import enemiesData from "../data/enemiesData.json";
 import weaponData from "../data/weaponData.json";
 
 import fs from 'fs';
 import { MinHeap } from "./MinHeap";
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, Mapdata, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
@@ -21,9 +21,10 @@ export class Battle {
     channel: TextChannel;
     client: Client;
     guild: Guild;
+    party: OwnerID[];
 
     // Map-related Information
-    mapData: Mapdata;
+    mapData: MapData;
     width: number;
     height: number;
     CSMap: Map<string, Stat>;
@@ -46,12 +47,13 @@ export class Battle {
     // gamemode
     pvp: boolean;
 
-    private constructor(_mapData: Mapdata, _author: User, _message: Message, _client: Client, _pvp = false) {
+    private constructor(_mapData: MapData, _author: User, _message: Message, _client: Client, _pvp: boolean, _party: OwnerID[]) {
         this.author = _author;
         this.message = _message;
         this.channel = _message.channel as TextChannel;
         this.client = _client;
         this.guild = _message.guild as Guild;
+        this.party = _party;
 
         this.mapData = _mapData;
         this.width = _mapData.map.width;
@@ -89,9 +91,8 @@ export class Battle {
     }
 
     /** Main function to access in order to start a thread of battle */
-    static async Start(_mapData: Mapdata, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
-        debug("pvp", _pvp);
-        const battle = new Battle(_mapData, _author, _message, _client, _pvp);
+    static async Start(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
+        const battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
 
         // add players to spawning list
         for (let i = 0; i < _party.length; i++) {
@@ -121,6 +122,8 @@ export class Battle {
         }
 
         battle.StartRound();
+
+        return battle;
     }
 
     /** Begin a new round
@@ -160,19 +163,19 @@ export class Battle {
 
             // randomly assign tokens
             for (let i = 0; i < 2; i++) {
-                // const token = random(0, 2);
-                // log(`\t${s.base.class} (${s.index}) got ${token}`)
-                // switch (token) {
-                    // case 0:
+                const token = random(0, 2);
+                log(`\t${s.base.class} (${s.index}) got ${token}`)
+                switch (token) {
+                    case 0:
                         s.sword++;
-                    //     break;
-                    // case 1:
-                    //     s.shield++;
-                    //     break;
-                    // case 2:
-                    //     s.sprint++;
-                    //     break;
-                // }
+                        break;
+                    case 1:
+                        s.shield++;
+                        break;
+                    case 2:
+                        s.sprint++;
+                        break;
+                }
             }
 
             // limit the entity's tokens
@@ -760,13 +763,9 @@ export class Battle {
                     let valid: boolean = false;
                     switch (actionName) {
                         case "up":
-                        case "u":
                         case "down":
-                        case "d":
                         case "right":
-                        case "r":
                         case "left":
-                        case "l":
                             // get moveAction based on input (blackboxed)
                             const moveAction = getMoveAction(_vS, actionName, infoMessagesQueue.length, moveMagnitude);
 
@@ -869,17 +868,13 @@ export class Battle {
                         case "reck":
                             // 2 shields => 1 sword
                             if (_vS.shield >= 2) {
+                                valid = true;
                                 _vS.shield -= 2;
                                 _vS.sword++;
-                                valid = true;
+
                                 const recklessAction = getAttackAction(_rS, _rS, weaponData.Reckless as Weapon, _vS, infoMessagesQueue.length);
                                 executingActions.push(recklessAction);
                             }
-                            break;
-
-                        case "smash":
-                        case "sm":
-                            // use 2 sprints to perform an attack
                             break;
 
                         case "brace":
@@ -930,7 +925,7 @@ export class Battle {
                     debug("\tvalid", valid !== null);
 
                     if (valid) {
-                        mes.react('✅');
+                        mes.react(EMOJI_TICK);
                         // send the predicted map of the next move to channel
                         const messageOptions = await this.getFullPlayerEmbedMessageOptions(_vS, executingActions);
                         channel.send(messageOptions)
@@ -947,7 +942,7 @@ export class Battle {
                             })
                     }
                     else {
-                        mes.react('❎');
+                        mes.react(EMOJI_CROSS);
                         listenToQueue();
                     }
                 }
@@ -1083,9 +1078,6 @@ export class Battle {
         // weapon effects
         const weaponEffect: WeaponEffect = new WeaponEffect(_aA, _cR, this);
         const activationString = weaponEffect.activate();
-        if (activationString) {
-            returnString += activationString + "\n";
-        }
 
         // reduce shielding
         if (_cR.fate !== "Miss" && target.shield > 0) {
@@ -1094,6 +1086,11 @@ export class Battle {
 
         // apply basic weapon damage
         returnString += this.applyClashDamage(_aA, _cR);
+
+        // attach weapon effects string
+        if (activationString) {
+            returnString += activationString + "\n";
+        }
 
         return returnString;
     }
@@ -1152,7 +1149,7 @@ export class Battle {
             case WeaponTarget.ally:
                 if (attacker.index === target.index) {
                     returnString +=
-                        `**${attackerClass}** (${attacker.index})) Activates __*${weapon.Name}*__`;
+                        `**${attackerClass}** (${attacker.index}) Activates __*${weapon.Name}*__`;
                 }
                 else {
                     returnString +=
@@ -2255,7 +2252,7 @@ export class Battle {
             return eM;
         }
         // targetting a teammate without pvp on
-        if (attackerStat.team === targetStat.team && (!targetStat.pvp || !attackerStat.pvp)) {
+        if (weapon.targetting.target === WeaponTarget.enemy && weapon.targetting.AOE !== "self" && weapon.targetting.AOE !== "selfCircle" && attackerStat.team === targetStat.team && (!targetStat.pvp || !attackerStat.pvp)) {
             eM.reason = "Attempted to attack a teammate without pvp on.";
             return eM;
         }

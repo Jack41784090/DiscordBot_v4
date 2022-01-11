@@ -52,19 +52,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var discord_js_1 = require("discord.js");
 var Utility_1 = require("../classes/Utility");
-var Battle_1 = require("../classes/Battle");
+var typedef_1 = require("../typedef");
 var areasData_json_1 = __importDefault(require("../data/areasData.json"));
+var dungeonData_json_1 = __importDefault(require("../data/dungeonData.json"));
+var Dungeon_1 = require("../classes/Dungeon");
 module.exports = {
     commands: ['embark', 'adventure', 'go'],
     expectedArgs: '[location]',
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var locationsEmbed, _a, _b, locationName, formalName, mapData;
+        var locationsEmbed, _a, _b, locationName, formalName, location_1, dungeon;
         var e_1, _c;
         return __generator(this, function (_d) {
-            // if (args[0] === undefined) {
-            if (false) {
+            if (args[0] === undefined) {
                 locationsEmbed = new discord_js_1.MessageEmbed({
                     title: "Here are all the places you can go...",
                     description: '',
@@ -89,75 +90,31 @@ module.exports = {
                 channel.send({ embeds: [locationsEmbed] });
                 //#endregion
             }
-            // else if (areasData[args[0]]) {
-            else {
-                message.delete();
-                mapData = (0, Utility_1.getNewObject)(areasData_json_1.default.farmstead, {});
-                // const locationName = "Farmstead" // temporary
-                // //#endregion
-                // //#region BATTLEDATA INIT (SPAWN PLAYERS)
-                (0, Utility_1.log)("Defining battleData...");
-                // const battleData = new Battle(mapData, author, message, [author.id], client);
-                // // battleData.Spawn(battleData.Party);
-                // //#endregion
-                // // battleData.syncronizeData();
-                // //#region CALCULATE SPAWNING ALGORITHM AND PUSH TO BATTLEDATA
-                // const difficultyRoll = random(0.0, 100.0);
-                // let difficulty = 'common';
-                // if (difficultyRoll > 50) difficulty = 'squad'
-                // if (difficultyRoll > 80) difficulty = 'mob';
-                // if (difficultyRoll > 95) difficulty = 'raid';
-                // if (difficultyRoll > 97.5) difficulty = 'legion';
-                // log(`Difficulty is ${difficulty}`);
-                // const difficultyInformation = mapData.enemiesInfo['common']; // this is temporary: change 'common' to difficulty
-                // const minSpawnCount = difficultyInformation.count[0];
-                // const maxSpawnCount = difficultyInformation.count[1];
-                // const spawnEnemyCount = random(minSpawnCount, maxSpawnCount);
-                // const enemyTypeCount = Object.keys(difficultyInformation.enemies).length;
-                // let spawningIndex = 1;
-                // let enemyCountNow = 0;
-                // log(Object.entries(difficultyInformation.enemies));
-                // for (const [enemyName, enemyInfo] of Object.entries(difficultyInformation.enemies)) {
-                //     const min = enemyInfo.min;
-                //     const max = enemyInfo.max;
-                //     if (!enemiesData[enemyName]) {
-                //         log(`Unknown enemy: ${enemyName}`);
-                //         continue;
-                //     }
-                //     // spawn the minimum amount
-                //     for (let i = 0; i < min; i++) {
-                //         battleData.spawning.push(Object.assign({}, enemiesData[enemyName]));
-                //         battleData.totalEnemyCount++;
-                //         enemyCountNow++;
-                //     }
-                //     if (spawningIndex === enemyTypeCount)
-                //     {
-                //         // spawn in remaining amount to fill the quota
-                //         const quotaReach = spawnEnemyCount - enemyCountNow;
-                //         for (let i = 0; i < quotaReach; i++) {
-                //             battleData.spawning.push(Object.assign({}, enemiesData[enemyName]));
-                //             battleData.totalEnemyCount++;
-                //         }
-                //     }
-                //     else
-                //     {
-                //         // randomly choose the exceeding amount
-                //         const exceeding = Math.round(random(0, (max - min) * 0.75));
-                //         for (let i = 0; i < exceeding; i++) {
-                //             battleData.spawning.push(Object.assign({}, enemiesData[enemyName]));
-                //             battleData.totalEnemyCount++;
-                //             enemyCountNow++;
-                //         }
-                //     }
-                //     spawningIndex++;
-                // }
-                //#endregion
-                // Database.WriteBattle(author, battleData.returnObject());
-                try {
-                    Battle_1.Battle.Start(mapData, author, message, authorData.party, client);
+            else if (args[0]) {
+                location_1 = args[0];
+                //#region STATUS WORK
+                if (!authorData) {
+                    message.reply("You don't have an account set up yet. Use the `//begin` command first!");
+                    return [2 /*return*/];
                 }
-                catch (_err) {
-                    channel.send("" + _err);
+                if (authorData.status !== "idle") {
+                    message.reply("You need to be in an 'idle' state. You are currently in this state: " + authorData.status);
+                    return [2 /*return*/];
+                }
+                if (!authorData.equippedClass) {
+                    message.reply("You have yet to have a class equipped.");
+                    return [2 /*return*/];
+                }
+                dungeon = dungeonData_json_1.default[location_1] ?
+                    (0, Utility_1.getNewObject)(dungeonData_json_1.default[location_1], {}) :
+                    null;
+                // BATTLEDATA INIT (SPAWN PLAYERS)
+                if (dungeon) {
+                    message.react(typedef_1.EMOJI_TICK);
+                    Dungeon_1.Dungeon.Start(dungeon);
+                }
+                else {
+                    message.reply("The location \"" + location_1 + "\" is not valid.");
                 }
             }
             return [2 /*return*/];

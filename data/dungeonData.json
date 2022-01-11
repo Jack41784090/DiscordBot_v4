@@ -1,0 +1,17 @@
+{
+    "farmstead": {
+        "maxLength": 1,
+        "minLength": 1,
+        "maxRoom": 100,
+        "minRoom": 100,
+        "maxBattle": 8,
+        "minBattle": 4,
+        "width": 10,
+        "height": 10,
+
+        "start": {
+            "x": 4,
+            "y": 4
+        }
+    }
+}

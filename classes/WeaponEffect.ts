@@ -39,7 +39,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
             if (previousLabour[0] === undefined) {
                 affected.statusEffects.push(new StatusEffect("labouring", 999, 0, affected, affected, _bd));
             }
-            return "Hercules: __**Endless Labour**__"
+            return ""
         }
     ],
     [
@@ -59,7 +59,8 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
                     addingValue += 10;
                 }
 
-                returnString += `🔥 +${addingValue} Fury!`
+                furyStatus.value += addingValue;
+                returnString += `🔥 +${roundToDecimalPlace(addingValue)} Fury!`
                 _action.affected.statusEffects.push(new StatusEffect("bleed", 1, _cR.damage * (0.33 * furyStatus.value / 100), _action.from, _action.affected, _bd));
             }
             return returnString;
@@ -82,7 +83,8 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
                     addingValue += 10;
                 }
 
-                returnString += `🔥 +${addingValue} Fury!`
+                furyStatus.value += addingValue;
+                returnString += `🔥 +${roundToDecimalPlace(addingValue)} Fury!`
                 _action.affected.statusEffects.push(new StatusEffect("bleed", 1, _cR.damage * (0.25 * furyStatus.value / 100), _action.from, _action.affected, _bd));
             }
             return returnString;
@@ -100,7 +102,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
 
             // decrease fury
             if (_action.from.base.class === _action.affected.base.class && _action.from.index === _action.affected.index) {
-                furyStatus.value -= 5;
+                furyStatus.value -= 2;
             }
             furyStatus.value = clamp(furyStatus.value, 0, 100);
             return "";

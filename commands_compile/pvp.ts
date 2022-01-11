@@ -1,6 +1,6 @@
 import { Client, Guild, Message, TextChannel, User } from "discord.js";
 import { Battle } from "../classes/Battle";
-import { CommandModule, Mapdata, UserData } from "../typedef";
+import { CommandModule, MapData, UserData } from "../typedef";
 import areasData from "../data/areasData.json"
 import { getNewObject } from "../classes/Utility";
 
@@ -14,7 +14,7 @@ module.exports = {
             message.reply("Have more than just yourself in the team!");
         }
         else {
-            const mapData: Mapdata = getNewObject<Mapdata, unknown>(areasData.farmstead as Mapdata, {});
+            const mapData: MapData = getNewObject<MapData, unknown>(areasData.pvp_5x5 as MapData, {});
             Battle.Start(mapData, author, message, authorUserData.party, client, true);
         }
     }

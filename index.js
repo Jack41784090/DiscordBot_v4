@@ -140,6 +140,8 @@ exports.BotClient.on('ready', function () { return __awaiter(void 0, void 0, voi
         exports.BotClient.setMaxListeners(15);
         console.log("Ready.");
         importCommands();
+        // quickEmbark();
+        (0, Utility_js_1.Test)();
         return [2 /*return*/];
     });
 }); });

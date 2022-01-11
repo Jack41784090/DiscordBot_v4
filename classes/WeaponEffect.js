@@ -38,7 +38,7 @@ var statusEffect_effects = new Map([
             if (previousLabour[0] === undefined) {
                 affected.statusEffects.push(new StatusEffect_1.StatusEffect("labouring", 999, 0, affected, affected, _bd));
             }
-            return "Hercules: __**Endless Labour**__";
+            return "";
         }
     ],
     [
@@ -56,7 +56,8 @@ var statusEffect_effects = new Map([
                 if (_action.affected.HP - _cR.damage <= 0) {
                     addingValue += 10;
                 }
-                returnString += "\uD83D\uDD25 +" + addingValue + " Fury!";
+                furyStatus_1.value += addingValue;
+                returnString += "\uD83D\uDD25 +" + (0, Utility_1.roundToDecimalPlace)(addingValue) + " Fury!";
                 _action.affected.statusEffects.push(new StatusEffect_1.StatusEffect("bleed", 1, _cR.damage * (0.33 * furyStatus_1.value / 100), _action.from, _action.affected, _bd));
             }
             return returnString;
@@ -77,7 +78,8 @@ var statusEffect_effects = new Map([
                 if (_action.affected.HP - _cR.damage <= 0) {
                     addingValue += 10;
                 }
-                returnString += "\uD83D\uDD25 +" + addingValue + " Fury!";
+                furyStatus_2.value += addingValue;
+                returnString += "\uD83D\uDD25 +" + (0, Utility_1.roundToDecimalPlace)(addingValue) + " Fury!";
                 _action.affected.statusEffects.push(new StatusEffect_1.StatusEffect("bleed", 1, _cR.damage * (0.25 * furyStatus_2.value / 100), _action.from, _action.affected, _bd));
             }
             return returnString;
@@ -94,7 +96,7 @@ var statusEffect_effects = new Map([
             }
             // decrease fury
             if (_action.from.base.class === _action.affected.base.class && _action.from.index === _action.affected.index) {
-                furyStatus.value -= 5;
+                furyStatus.value -= 2;
             }
             furyStatus.value = (0, Utility_1.clamp)(furyStatus.value, 0, 100);
             return "";

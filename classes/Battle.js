@@ -88,14 +88,14 @@ var typedef_1 = require("../typedef");
 var hGraphTheory_1 = require("./hGraphTheory");
 var WeaponEffect_1 = require("./WeaponEffect");
 var Battle = /** @class */ (function () {
-    function Battle(_mapData, _author, _message, _client, _pvp) {
+    function Battle(_mapData, _author, _message, _client, _pvp, _party) {
         var _this = this;
-        if (_pvp === void 0) { _pvp = false; }
         this.author = _author;
         this.message = _message;
         this.channel = _message.channel;
         this.client = _client;
         this.guild = _message.guild;
+        this.party = _party;
         this.mapData = _mapData;
         this.width = _mapData.map.width;
         this.height = _mapData.map.height;
@@ -133,8 +133,7 @@ var Battle = /** @class */ (function () {
             return __generator(this, function (_f) {
                 switch (_f.label) {
                     case 0:
-                        (0, Utility_1.debug)("pvp", _pvp);
-                        battle = new Battle(_mapData, _author, _message, _client, _pvp);
+                        battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
                         i = 0;
                         _f.label = 1;
                     case 1:
@@ -178,7 +177,7 @@ var Battle = /** @class */ (function () {
                             }
                         }
                         battle.StartRound();
-                        return [2 /*return*/];
+                        return [2 /*return*/, battle];
                 }
             });
         });
@@ -221,19 +220,19 @@ var Battle = /** @class */ (function () {
                                 return "continue";
                             // randomly assign tokens
                             for (var i_1 = 0; i_1 < 2; i_1++) {
-                                // const token = random(0, 2);
-                                // log(`\t${s.base.class} (${s.index}) got ${token}`)
-                                // switch (token) {
-                                // case 0:
-                                s.sword++;
-                                //     break;
-                                // case 1:
-                                //     s.shield++;
-                                //     break;
-                                // case 2:
-                                //     s.sprint++;
-                                //     break;
-                                // }
+                                var token = (0, Utility_1.random)(0, 2);
+                                (0, Utility_1.log)("\t" + s.base.class + " (" + s.index + ") got " + token);
+                                switch (token) {
+                                    case 0:
+                                        s.sword++;
+                                        break;
+                                    case 1:
+                                        s.shield++;
+                                        break;
+                                    case 2:
+                                        s.sprint++;
+                                        break;
+                                }
                             }
                             // limit the entity's tokens
                             (0, Utility_1.HandleTokens)(s, function (p, t) {
@@ -832,13 +831,9 @@ var Battle = /** @class */ (function () {
                             _b = actionName_1;
                             switch (_b) {
                                 case "up": return [3 /*break*/, 2];
-                                case "u": return [3 /*break*/, 2];
                                 case "down": return [3 /*break*/, 2];
-                                case "d": return [3 /*break*/, 2];
                                 case "right": return [3 /*break*/, 2];
-                                case "r": return [3 /*break*/, 2];
                                 case "left": return [3 /*break*/, 2];
-                                case "l": return [3 /*break*/, 2];
                                 case "attack": return [3 /*break*/, 3];
                                 case "clear": return [3 /*break*/, 4];
                                 case "cr": return [3 /*break*/, 4];
@@ -847,14 +842,12 @@ var Battle = /** @class */ (function () {
                                 case "undo": return [3 /*break*/, 8];
                                 case "reckless": return [3 /*break*/, 11];
                                 case "reck": return [3 /*break*/, 11];
-                                case "smash": return [3 /*break*/, 12];
-                                case "sm": return [3 /*break*/, 12];
-                                case "brace": return [3 /*break*/, 13];
-                                case "defend": return [3 /*break*/, 13];
-                                case "br": return [3 /*break*/, 13];
-                                case "df": return [3 /*break*/, 13];
+                                case "brace": return [3 /*break*/, 12];
+                                case "defend": return [3 /*break*/, 12];
+                                case "br": return [3 /*break*/, 12];
+                                case "df": return [3 /*break*/, 12];
                             }
-                            return [3 /*break*/, 14];
+                            return [3 /*break*/, 13];
                         case 2:
                             moveAction = (0, Utility_1.getMoveAction)(_vS, actionName_1, infoMessagesQueue.length, moveMagnitude);
                             isFirstMove = !_vS.moved;
@@ -879,7 +872,7 @@ var Battle = /** @class */ (function () {
                                     });
                                 }
                             }
-                            return [3 /*break*/, 15];
+                            return [3 /*break*/, 14];
                         case 3:
                             attackTarget = this.findEntity_args(actionArgs, _vS);
                             if (attackTarget === null) {
@@ -911,7 +904,7 @@ var Battle = /** @class */ (function () {
                                     }
                                 }
                             }
-                            return [3 /*break*/, 15];
+                            return [3 /*break*/, 14];
                         case 4:
                             executingActions = [];
                             infoMessagesQueue = [_infoMessage];
@@ -919,17 +912,17 @@ var Battle = /** @class */ (function () {
                             return [4 /*yield*/, (0, Utility_1.clearChannel)(channel, _infoMessage)];
                         case 5:
                             _c.sent();
-                            return [3 /*break*/, 15];
+                            return [3 /*break*/, 14];
                         case 6:
                             newCollector.stop();
                             (0, Utility_1.log)("\tEnded turn for \"" + _vS.name + "\" (" + _vS.base.class + ")");
-                            return [3 /*break*/, 15];
+                            return [3 /*break*/, 14];
                         case 7:
                             Utility_1.log.apply(void 0, __spreadArray([], __read(this.allStats().filter(function (s) { return s.team !== "block"; }).map(function (s) {
                                 var string = s.base.class + " (" + s.index + ") (" + s.team + ") " + s.HP + "/" + (0, Utility_1.getAHP)(s) + " (" + s.x + ", " + s.y + ")";
                                 return string;
                             })), false));
-                            return [3 /*break*/, 15];
+                            return [3 /*break*/, 14];
                         case 8:
                             if (!(infoMessagesQueue.length > 1)) return [3 /*break*/, 10];
                             undoAction = executingActions.pop();
@@ -939,24 +932,21 @@ var Battle = /** @class */ (function () {
                         case 9:
                             _c.sent();
                             _c.label = 10;
-                        case 10: return [3 /*break*/, 15];
+                        case 10: return [3 /*break*/, 14];
                         case 11:
                             // 2 shields => 1 sword
                             if (_vS.shield >= 2) {
+                                valid_1 = true;
                                 _vS.shield -= 2;
                                 _vS.sword++;
-                                valid_1 = true;
                                 recklessAction = (0, Utility_1.getAttackAction)(_rS, _rS, weaponData_json_1.default.Reckless, _vS, infoMessagesQueue.length);
                                 executingActions.push(recklessAction);
                             }
-                            return [3 /*break*/, 15];
+                            return [3 /*break*/, 14];
                         case 12: 
-                        // use 2 sprints to perform an attack
-                        return [3 /*break*/, 15];
-                        case 13: 
                         // no drawing next turn. +1 shield.
-                        return [3 /*break*/, 15];
-                        case 14:
+                        return [3 /*break*/, 14];
+                        case 13:
                             if (actionName_1.length >= 3) {
                                 weaponChosen = _vS.base.weapons.find(function (w) {
                                     return w.Name.toLowerCase().search(actionName_1) !== -1;
@@ -990,13 +980,13 @@ var Battle = /** @class */ (function () {
                                     setTimeout(function () { return mes.delete().catch(console.log); }, 10 * 1000);
                                 }
                             }
-                            return [3 /*break*/, 15];
-                        case 15:
+                            return [3 /*break*/, 14];
+                        case 14:
                             (0, Utility_1.debug)("\tvalid", valid_1 !== null);
-                            if (!valid_1) return [3 /*break*/, 17];
-                            mes.react('✅');
+                            if (!valid_1) return [3 /*break*/, 16];
+                            mes.react(typedef_1.EMOJI_TICK);
                             return [4 /*yield*/, this.getFullPlayerEmbedMessageOptions(_vS, executingActions)];
-                        case 16:
+                        case 15:
                             messageOptions = _c.sent();
                             channel.send(messageOptions)
                                 .then(function (m) {
@@ -1010,12 +1000,12 @@ var Battle = /** @class */ (function () {
                                     listenToQueue();
                                 }
                             });
-                            return [3 /*break*/, 18];
-                        case 17:
-                            mes.react('❎');
+                            return [3 /*break*/, 17];
+                        case 16:
+                            mes.react(typedef_1.EMOJI_CROSS);
                             listenToQueue();
-                            _c.label = 18;
-                        case 18: return [2 /*return*/];
+                            _c.label = 17;
+                        case 17: return [2 /*return*/];
                     }
                 });
             }); };
@@ -1153,15 +1143,16 @@ var Battle = /** @class */ (function () {
         // weapon effects
         var weaponEffect = new WeaponEffect_1.WeaponEffect(_aA, _cR, this);
         var activationString = weaponEffect.activate();
-        if (activationString) {
-            returnString += activationString + "\n";
-        }
         // reduce shielding
         if (_cR.fate !== "Miss" && target.shield > 0) {
             target.shield--;
         }
         // apply basic weapon damage
         returnString += this.applyClashDamage(_aA, _cR);
+        // attach weapon effects string
+        if (activationString) {
+            returnString += activationString + "\n";
+        }
         return returnString;
     };
     Battle.prototype.applyClashDamage = function (_aA, clashResult) {
@@ -1205,7 +1196,7 @@ var Battle = /** @class */ (function () {
             case typedef_1.WeaponTarget.ally:
                 if (attacker.index === target.index) {
                     returnString +=
-                        "**" + attackerClass + "** (" + attacker.index + ")) Activates __*" + weapon.Name + "*__";
+                        "**" + attackerClass + "** (" + attacker.index + ") Activates __*" + weapon.Name + "*__";
                 }
                 else {
                     returnString +=
@@ -2286,7 +2277,7 @@ var Battle = /** @class */ (function () {
             return eM;
         }
         // targetting a teammate without pvp on
-        if (attackerStat.team === targetStat.team && (!targetStat.pvp || !attackerStat.pvp)) {
+        if (weapon.targetting.target === typedef_1.WeaponTarget.enemy && weapon.targetting.AOE !== "self" && weapon.targetting.AOE !== "selfCircle" && attackerStat.team === targetStat.team && (!targetStat.pvp || !attackerStat.pvp)) {
             eM.reason = "Attempted to attack a teammate without pvp on.";
             return eM;
         }

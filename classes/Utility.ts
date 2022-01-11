@@ -2,10 +2,12 @@ import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions } from "discord.js";
 import { Type } from "typescript";
 import classData from "../data/classData.json"
+import dungeonData from "../data/dungeonData.json"
 
 import { BotClient } from "..";
-import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType } from "../typedef";
+import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection } from "../typedef";
 import { Battle } from "./Battle";
+import { Dungeon } from "./Dungeon";
 
 export function clamp(value: number, min: number, max: number) {
     return Math.max(Math.min(value, max), min);
@@ -70,6 +72,9 @@ export function random(num1: number, num2: number): number {
     return parametersIntegers?
         Math.floor(result):
         result;
+}
+export function getRandomInArray<Type>(array: Type[]) {
+    return array[random(0, array.length - 1)];
 }
 export function average(...nums: Array<number>) {
     let total = 0;
@@ -282,27 +287,28 @@ export function startDrawing(width: number, height: number) {
     }
 }
 
-export function returnGridCanvas(height: number = 9, width: number = 9, size: number = 500, groundImage?: Image): Canvas {
-    const canvas = new Canvas(width * size, height * size);
+export function returnGridCanvas(_h: number = 9, _w: number = 9, _gridPixels: number = 500, groundImage?: Image): Canvas {
+    const canvas = new Canvas(_w * _gridPixels, _h * _gridPixels);
     const ctx = canvas.getContext('2d');
 
     if (groundImage) {
-        ctx.drawImage(groundImage, 0, 0, width * size, height * size);
+        ctx.drawImage(groundImage, 0, 0, _w * _gridPixels, _h * _gridPixels);
     }
     else {
         ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, width * size, height * size);
+        ctx.fillRect(0, 0, _w * _gridPixels, _h * _gridPixels);
     }
     
     ctx.strokeStyle = 'black';
+    ctx.lineWidth = _gridPixels / 5;
     ctx.beginPath();
-    for (let i = 1; i < height; i++) {
-        ctx.moveTo(0, i * size);
-        ctx.lineTo(width * size, i * size);
+    for (let i = 1; i < _h; i++) {
+        ctx.moveTo(0, i * _gridPixels);
+        ctx.lineTo(_w * _gridPixels, i * _gridPixels);
     }
-    for (let i = 1; i < width; i++) {
-        ctx.moveTo(i * size, 0);
-        ctx.lineTo(i * size, height * size);
+    for (let i = 1; i < _w; i++) {
+        ctx.moveTo(i * _gridPixels, 0);
+        ctx.lineTo(i * _gridPixels, _h * _gridPixels);
     }
     ctx.stroke();
 
@@ -436,35 +442,11 @@ export function getMoveAction(_stat: Stat, args2: string | number, _round: numbe
     if (args2_isAction) {
         const action: string = args2 as string;
         const moveMagnitude: number = args4 as number;
-        let axis: "x" | "y", magnitude: number;
-        switch (action) {
-            // move vertically
-            case "up":
-            case "v":
-                magnitude = moveMagnitude;
-                axis = 'y';
-                break;
-            case "down":
-            case "d":
-                magnitude = -1 * moveMagnitude;
-                axis = 'y';
-                break;
-            // move horizontally
-            case "right":
-            case "r":
-                magnitude = moveMagnitude;
-                axis = 'x';
-                break;
-            case "left":
-            case "l":
-                magnitude = -1 * moveMagnitude;
-                axis = 'x';
-                break;
-            default:
-                throw Error("Fatal error at getMoveAction: invalid actionName is invalid.")
-        }
-        moveAction.axis = axis;
-        moveAction.magnitude = magnitude;
+
+        const translated = directionToMagnitudeAxis(action as Direction);
+
+        moveAction.axis = translated.axis;
+        moveAction.magnitude = translated.magnitude * moveMagnitude;
     }
     else if (args2_isMagnitude) {
         const moveMagnitude: number = args2 as number;
@@ -475,6 +457,62 @@ export function getMoveAction(_stat: Stat, args2: string | number, _round: numbe
     }
     moveAction.readiness = Math.abs(moveAction.magnitude * Battle.MOVE_READINESS);
     return moveAction;
+}
+
+export function numericDirectionToDirection(_numericDir: NumericDirection): Direction {
+    switch(_numericDir) {
+        case NumericDirection.down:
+            return "down";
+        case NumericDirection.up:
+            return "up";
+        case NumericDirection.right:
+            return "right";
+        case NumericDirection.left:
+            return "left";
+    }
+}
+export function directionToNumericDirection(_direction: Direction): NumericDirection {
+    switch (_direction) {
+        case "down":
+            return NumericDirection.down;
+        case "up":
+            return NumericDirection.up;
+        case "right":
+            return NumericDirection.right;
+        case "left":
+            return NumericDirection.left;
+    }
+}
+
+export function directionToMagnitudeAxis(_direction: Direction) {
+    let magnitude, axis: Axis;
+    switch (_direction) {
+        // move vertically
+        case "up":
+            magnitude = 1;
+            axis = 'y';
+            break;
+        case "down":
+            magnitude = -1;
+            axis = 'y';
+            break;
+        // move horizontally
+        case "right":
+            magnitude = 1;
+            axis = 'x';
+            break;
+        case "left":
+            magnitude = -1;
+            axis = 'x';
+            break;
+        default:
+            throw Error("Fatal error at getMoveAction: invalid actionName is invalid.")
+    }
+
+    return {
+        magnitude: magnitude,
+        axis: axis,
+    };
 }
 
 export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon, _coord: Coordinate, _round: Round): AttackAction {
@@ -522,7 +560,13 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
 // }
 
 export async function Test() {
-    
+    const dungeon = Dungeon.Start(dungeonData.farmstead);
+
+    const channel = BotClient.channels.fetch("926372977539424296")
+        .then(_c => {
+            dungeon.print(_c as TextChannel);
+        })
+        .catch(_e => console.log);
 }
 
 export function findReferenceAngle(_angle: number): number {

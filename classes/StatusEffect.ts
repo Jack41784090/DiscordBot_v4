@@ -100,8 +100,6 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     ],
 ]);
 
-
-
 export class StatusEffect {
     type: StatusEffectType;
     duration: number;

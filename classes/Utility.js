@@ -77,14 +77,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.getLastElement = void 0;
+exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
+exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.getLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var classData_json_1 = __importDefault(require("../data/classData.json"));
+var dungeonData_json_1 = __importDefault(require("../data/dungeonData.json"));
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
+var Dungeon_1 = require("./Dungeon");
 function clamp(value, min, max) {
     return Math.max(Math.min(value, max), min);
 }
@@ -150,6 +152,10 @@ function random(num1, num2) {
         result;
 }
 exports.random = random;
+function getRandomInArray(array) {
+    return array[random(0, array.length - 1)];
+}
+exports.getRandomInArray = getRandomInArray;
 function average() {
     var nums = [];
     for (var _i = 0; _i < arguments.length; _i++) {
@@ -368,28 +374,29 @@ function startDrawing(width, height) {
     };
 }
 exports.startDrawing = startDrawing;
-function returnGridCanvas(height, width, size, groundImage) {
-    if (height === void 0) { height = 9; }
-    if (width === void 0) { width = 9; }
-    if (size === void 0) { size = 500; }
-    var canvas = new canvas_1.Canvas(width * size, height * size);
+function returnGridCanvas(_h, _w, _gridPixels, groundImage) {
+    if (_h === void 0) { _h = 9; }
+    if (_w === void 0) { _w = 9; }
+    if (_gridPixels === void 0) { _gridPixels = 500; }
+    var canvas = new canvas_1.Canvas(_w * _gridPixels, _h * _gridPixels);
     var ctx = canvas.getContext('2d');
     if (groundImage) {
-        ctx.drawImage(groundImage, 0, 0, width * size, height * size);
+        ctx.drawImage(groundImage, 0, 0, _w * _gridPixels, _h * _gridPixels);
     }
     else {
         ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, width * size, height * size);
+        ctx.fillRect(0, 0, _w * _gridPixels, _h * _gridPixels);
     }
     ctx.strokeStyle = 'black';
+    ctx.lineWidth = _gridPixels / 5;
     ctx.beginPath();
-    for (var i = 1; i < height; i++) {
-        ctx.moveTo(0, i * size);
-        ctx.lineTo(width * size, i * size);
+    for (var i = 1; i < _h; i++) {
+        ctx.moveTo(0, i * _gridPixels);
+        ctx.lineTo(_w * _gridPixels, i * _gridPixels);
     }
-    for (var i = 1; i < width; i++) {
-        ctx.moveTo(i * size, 0);
-        ctx.lineTo(i * size, height * size);
+    for (var i = 1; i < _w; i++) {
+        ctx.moveTo(i * _gridPixels, 0);
+        ctx.lineTo(i * _gridPixels, _h * _gridPixels);
     }
     ctx.stroke();
     return canvas;
@@ -425,35 +432,9 @@ function getMoveAction(_stat, args2, _round, args4) {
     if (args2_isAction) {
         var action = args2;
         var moveMagnitude = args4;
-        var axis = void 0, magnitude = void 0;
-        switch (action) {
-            // move vertically
-            case "up":
-            case "v":
-                magnitude = moveMagnitude;
-                axis = 'y';
-                break;
-            case "down":
-            case "d":
-                magnitude = -1 * moveMagnitude;
-                axis = 'y';
-                break;
-            // move horizontally
-            case "right":
-            case "r":
-                magnitude = moveMagnitude;
-                axis = 'x';
-                break;
-            case "left":
-            case "l":
-                magnitude = -1 * moveMagnitude;
-                axis = 'x';
-                break;
-            default:
-                throw Error("Fatal error at getMoveAction: invalid actionName is invalid.");
-        }
-        moveAction.axis = axis;
-        moveAction.magnitude = magnitude;
+        var translated = directionToMagnitudeAxis(action);
+        moveAction.axis = translated.axis;
+        moveAction.magnitude = translated.magnitude * moveMagnitude;
     }
     else if (args2_isMagnitude) {
         var moveMagnitude = args2;
@@ -466,6 +447,62 @@ function getMoveAction(_stat, args2, _round, args4) {
     return moveAction;
 }
 exports.getMoveAction = getMoveAction;
+function numericDirectionToDirection(_numericDir) {
+    switch (_numericDir) {
+        case typedef_1.NumericDirection.down:
+            return "down";
+        case typedef_1.NumericDirection.up:
+            return "up";
+        case typedef_1.NumericDirection.right:
+            return "right";
+        case typedef_1.NumericDirection.left:
+            return "left";
+    }
+}
+exports.numericDirectionToDirection = numericDirectionToDirection;
+function directionToNumericDirection(_direction) {
+    switch (_direction) {
+        case "down":
+            return typedef_1.NumericDirection.down;
+        case "up":
+            return typedef_1.NumericDirection.up;
+        case "right":
+            return typedef_1.NumericDirection.right;
+        case "left":
+            return typedef_1.NumericDirection.left;
+    }
+}
+exports.directionToNumericDirection = directionToNumericDirection;
+function directionToMagnitudeAxis(_direction) {
+    var magnitude, axis;
+    switch (_direction) {
+        // move vertically
+        case "up":
+            magnitude = 1;
+            axis = 'y';
+            break;
+        case "down":
+            magnitude = -1;
+            axis = 'y';
+            break;
+        // move horizontally
+        case "right":
+            magnitude = 1;
+            axis = 'x';
+            break;
+        case "left":
+            magnitude = -1;
+            axis = 'x';
+            break;
+        default:
+            throw Error("Fatal error at getMoveAction: invalid actionName is invalid.");
+    }
+    return {
+        magnitude: magnitude,
+        axis: axis,
+    };
+}
+exports.directionToMagnitudeAxis = directionToMagnitudeAxis;
 function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
     var actionType = "Attack";
     var attackAction = {
@@ -503,7 +540,14 @@ exports.getAttackAction = getAttackAction;
 // }
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
+        var dungeon, channel;
         return __generator(this, function (_a) {
+            dungeon = Dungeon_1.Dungeon.Start(dungeonData_json_1.default.farmstead);
+            channel = __1.BotClient.channels.fetch("926372977539424296")
+                .then(function (_c) {
+                dungeon.print(_c);
+            })
+                .catch(function (_e) { return console.log; });
             return [2 /*return*/];
         });
     });
@@ -743,18 +787,18 @@ function getMapFromCS(coordStat) {
     var e_2, _a, e_3, _b;
     var mapReturn = new Map();
     try {
-        for (var _c = __values(Object.values(coordStat)), _d = _c.next(); !_d.done; _d = _c.next()) {
-            var yStat = _d.value;
+        for (var _d = __values(Object.values(coordStat)), _f = _d.next(); !_f.done; _f = _d.next()) {
+            var yStat = _f.value;
             try {
-                for (var _f = (e_3 = void 0, __values(Object.values(yStat))), _g = _f.next(); !_g.done; _g = _f.next()) {
-                    var stat = _g.value;
+                for (var _g = (e_3 = void 0, __values(Object.values(yStat))), _j = _g.next(); !_j.done; _j = _g.next()) {
+                    var stat = _j.value;
                     mapReturn.set(getCoordString(stat), getStat(stat));
                 }
             }
             catch (e_3_1) { e_3 = { error: e_3_1 }; }
             finally {
                 try {
-                    if (_g && !_g.done && (_b = _f.return)) _b.call(_f);
+                    if (_j && !_j.done && (_b = _g.return)) _b.call(_g);
                 }
                 finally { if (e_3) throw e_3.error; }
             }
@@ -763,7 +807,7 @@ function getMapFromCS(coordStat) {
     catch (e_2_1) { e_2 = { error: e_2_1 }; }
     finally {
         try {
-            if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
+            if (_f && !_f.done && (_a = _d.return)) _a.call(_d);
         }
         finally { if (e_2) throw e_2.error; }
     }
@@ -1005,16 +1049,16 @@ function sendInvitation(_user_id, _from, channel) {
     return __awaiter(this, void 0, void 0, function () {
         var inviterUser, _a, user, _b;
         var _this = this;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
                     if (!_from.avatar) return [3 /*break*/, 1];
                     _a = _from;
                     return [3 /*break*/, 3];
                 case 1: return [4 /*yield*/, __1.BotClient.users.fetch(_from).then(function (u) { return u; }).catch(function (e) { return undefined; })];
                 case 2:
-                    _a = _c.sent();
-                    _c.label = 3;
+                    _a = _d.sent();
+                    _d.label = 3;
                 case 3:
                     inviterUser = _a;
                     if (!_user_id.avatar) return [3 /*break*/, 4];
@@ -1022,8 +1066,8 @@ function sendInvitation(_user_id, _from, channel) {
                     return [3 /*break*/, 6];
                 case 4: return [4 /*yield*/, __1.BotClient.users.fetch(_user_id).then(function (u) { return u; }).catch(function (e) { return undefined; })];
                 case 5:
-                    _b = _c.sent();
-                    _c.label = 6;
+                    _b = _d.sent();
+                    _d.label = 6;
                 case 6:
                     user = _b;
                     return [2 /*return*/, new Promise(function (resolve) {
