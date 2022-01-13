@@ -2,7 +2,6 @@ import { Client, Guild, GuildMember, Message, MessageEmbed, TextChannel, User } 
 import { formalize, getNewObject, log, random } from "../classes/Utility";
 import { Class, CommandModule, Location, MapData, EMOJI_TICK, UserData, UserStatus, DungeonData } from "../typedef";
 import { Battle } from "../classes/Battle";
-import areasData from "../data/areasData.json";
 import dungeonData from "../data/dungeonData.json";
 import enemiesData from "../data/enemiesData.json"
 import * as Database from "../classes/Database";
@@ -24,7 +23,7 @@ module.exports = {
                 }
             });
 
-            for (const locationName of Object.keys(areasData)) {
+            for (const locationName of Object.keys(dungeonData)) {
                 const formalName = formalize(locationName);
                 locationsEmbed.description += `**${formalName}**\n`;
             }
@@ -57,7 +56,7 @@ module.exports = {
             // BATTLEDATA INIT (SPAWN PLAYERS)
             if (dungeon) {
                 message.react(EMOJI_TICK);
-                Dungeon.Generate(dungeon);
+                Dungeon.Start(dungeon, message);
             }
             else {
                 message.reply(`The location "${location}" is not valid.`)

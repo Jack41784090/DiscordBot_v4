@@ -1,17 +1,28 @@
 {
     "farmstead": {
-        "maxLength": 1,
+        "name": "Farmstead Epicenter",
+
+        "maxLength": 3,
         "minLength": 1,
-        "maxRoom": 100,
-        "minRoom": 100,
-        "maxBattle": 25,
-        "minBattle": 25,
+        "maxRoom": 10,
+        "minRoom": 5,
+        "maxBattle": 3,
+        "minBattle": 3,
         "width": 10,
         "height": 10,
 
         "start": {
             "x": 4,
             "y": 4
-        }
+        },
+
+        "encounterMaps": [
+            "farmstead_walkers1",
+            "farmstead_walkers2",
+            "farmstead_walkers3"
+        ],
+        "eliteMaps": [
+            "farmstead_horde1"
+        ]
     }
 }

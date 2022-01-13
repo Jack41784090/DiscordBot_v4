@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { Battle } from "./classes/Battle.js";
 import { getDefaultUserData, getUserData } from "./classes/Database.js";
-import { extractCommands, Test } from "./classes/Utility.js";
+import { extractCommands, log, Test } from "./classes/Utility.js";
 import { CommandModule, COMMAND_CALL } from "./typedef.js";
 
 const commandReferral: { [key: string]: CommandModule } = {};
@@ -16,7 +16,7 @@ async function quickEmbark() {
     const channel = await BotClient.channels.fetch("900951147391623259").then(c => c as TextChannel);
     const server = await BotClient.guilds.fetch("828827482785579038").then(g => g);
     const message = await channel.send("hi world");
-    embark.callback(Ike, getDefaultUserData(Ike), "go exp", channel, server, ["test2"], message, BotClient);
+    embark.callback(Ike, getDefaultUserData(Ike), ";go farmstead", channel, server, ["farmstead"], message, BotClient);
 }
 
 function importCommands() {
@@ -46,7 +46,7 @@ BotClient.on('ready', async () => {
     console.log("Ready.");
     importCommands();
     // quickEmbark();
-    Test();
+    // Test();
 });
 
 BotClient.on('messageCreate', async m => {
@@ -56,8 +56,8 @@ BotClient.on('messageCreate', async m => {
 
     if (content[0] === COMMAND_CALL) {
         const firebaseAuthor = await getUserData(author);
-        const sections = extractCommands(content);
-        const command = sections[0];
+        const sections = extractCommands(content); log(sections)
+        const command = sections[0]; sections.shift();
         if (commandReferral[command]) {
             commandReferral[command].callback(author, firebaseAuthor, content, channel as TextChannel, guild!, sections, m, BotClient);
         }

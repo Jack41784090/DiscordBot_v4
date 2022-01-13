@@ -95,7 +95,7 @@ function quickEmbark() {
                     return [4 /*yield*/, channel.send("hi world")];
                 case 4:
                     message = _a.sent();
-                    embark.callback(Ike, (0, Database_js_1.getDefaultUserData)(Ike), "go exp", channel, server, ["test2"], message, exports.BotClient);
+                    embark.callback(Ike, (0, Database_js_1.getDefaultUserData)(Ike), ";go farmstead", channel, server, ["farmstead"], message, exports.BotClient);
                     return [2 /*return*/];
             }
         });
@@ -140,8 +140,6 @@ exports.BotClient.on('ready', function () { return __awaiter(void 0, void 0, voi
         exports.BotClient.setMaxListeners(15);
         console.log("Ready.");
         importCommands();
-        // quickEmbark();
-        (0, Utility_js_1.Test)();
         return [2 /*return*/];
     });
 }); });
@@ -158,7 +156,9 @@ exports.BotClient.on('messageCreate', function (m) { return __awaiter(void 0, vo
             case 1:
                 firebaseAuthor = _a.sent();
                 sections = (0, Utility_js_1.extractCommands)(content);
+                (0, Utility_js_1.log)(sections);
                 command = sections[0];
+                sections.shift();
                 if (commandReferral[command]) {
                     commandReferral[command].callback(author, firebaseAuthor, content, channel, guild, sections, m, exports.BotClient);
                 }

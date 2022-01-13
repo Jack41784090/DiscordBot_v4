@@ -99,7 +99,7 @@
 				"Damage": [8,13],
 				"Range": [0,5],
 				"Readiness": 10,
-				"sword": 1,
+				"sword": 0,
 				"shield": 0,
 				"sprint": 0,
 				"Crit": 5,

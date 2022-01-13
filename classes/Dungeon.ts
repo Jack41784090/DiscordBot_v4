@@ -1,32 +1,38 @@
-import { TextChannel, User } from "discord.js";
+import { Message, MessageAttachment, MessageCollector, MessageEmbed, MessageOptions, TextChannel, User } from "discord.js";
 import { BotClient } from "..";
-import { Coordinate, CoordStat, Direction, DungeonData, NumericDirection, RoomDirections, UserData } from "../typedef";
+import { Coordinate, CoordStat, Direction, DungeonData, EMOJI_CROSS, EMOJI_TICK, MapData, MapName, NumericDirection, RoomDirections, UserData } from "../typedef";
 import { Battle } from "./Battle";
 import { Room } from "./Room";
-import { debug, directionToMagnitudeAxis, findEqualCoordinate, getCanvasCoordsFromBattleCoord, getNewObject, getRandomInArray, log, numericDirectionToDirection, random, returnGridCanvas, startDrawing, stringifyRGBA } from "./Utility";
+import { debug, directionToMagnitudeAxis, directionToNumericDirection, extractCommands, findEqualCoordinate, getCanvasCoordsFromBattleCoord, getNewObject, getRandomInArray, log, numericDirectionToDirection, random, returnGridCanvas, startDrawing, stringifyRGBA } from "./Utility";
+
+import areasData from "../data/areasData.json";
+import { getUserData } from "./Database";
 
 export class Dungeon {
     static readonly BRANCHOUT_CHANCE = 0.1;
     static readonly BLOCKEDOFF_ROOMDIR: RoomDirections = [null, null, null, null];
 
-    leaderLocation: Coordinate;
+    leaderCoordinate: Coordinate;
+    callMessage: Message | null;
     leaderUser: User | null;
     leaderUserData: UserData | null;
-    rooms: Room[] = [];
     data: DungeonData;
+    rooms: Room[] = [];
     CS: CoordStat<Room> = {};
 
-    private constructor(_data: DungeonData, _user?: User, _userData?: UserData) {
+    private constructor(_data: DungeonData, _message?: Message, _user?: User, _userData?: UserData) {
         this.data = _data;
         this.leaderUser = _user || null;
         this.leaderUserData = _userData || null;
+        this.callMessage = _message || null;
 
-        this.leaderLocation = _data.start;
+        this.leaderCoordinate = getNewObject(_data.start);
     }
 
-    static Start(_dungeonData: DungeonData, _author: User, _authorData: UserData) {
+    static async Start(_dungeonData: DungeonData, _message: Message) {
         const dungeon = Dungeon.Generate(_dungeonData);
-        dungeon.initialiseUsers(_author, _authorData);
+        await dungeon.initialiseUsers(_message);
+        dungeon.readAction();
     }
 
     static Generate(_dungeonData: DungeonData) {
@@ -203,6 +209,7 @@ export class Dungeon {
             const roomQueue: Room[] = [dungeon.getRoom(_dungeonData.start)!];
             const exploredRooms: Room[] = [];
 
+            // branch out and seek the longest dead end
             let currentRoom = roomQueue.shift();
             while (currentRoom) {
                 for (let i = 0; i < currentRoom.directions.length; i++) {
@@ -213,22 +220,168 @@ export class Dungeon {
                     }
                 }
 
-                if (currentRoom.directions.filter(_d => _d === null).length === 3) {
+                if (
+                    !findEqualCoordinate(currentRoom.coordinate, startingCoord)&&
+                    currentRoom.directions.filter(_d => _d === null).length === 3
+                ) {
                     deadEndRooms.unshift(currentRoom);
                 }
 
                 currentRoom = roomQueue.shift();
             }
 
+            // deadEndRooms is sorted longest to shortest. Spawn treasures and boss rooms in the longest ones
             for (let i = 0; i < difference; i++) {
                 const deadEnd = deadEndRooms[i];
                 if (deadEnd) {
                     deadEnd.isBattleRoom = true;
+                    // TODO: spawn treasure
+
                 }
             }
         }
 
         return dungeon;
+    }
+
+    validateMovement(_direction: NumericDirection | Direction): boolean {
+        const direction: Direction = Number.isInteger(_direction)?
+            numericDirectionToDirection(_direction as NumericDirection):
+            _direction as Direction;
+        const numericDirection: NumericDirection = directionToNumericDirection(direction);
+
+        let valid = false;
+
+        const currentRoom = this.getRoom(this.leaderCoordinate);
+        if (currentRoom) {
+            valid = currentRoom.directions[numericDirection] !== null;
+        }
+        else {
+            this.leaderCoordinate = getNewObject(this.data.start);
+            valid = this.validateMovement(_direction);
+        }
+
+        return valid;
+    }
+
+    getImageEmbedMessageOptions() {
+        const attachment = new MessageAttachment(
+            this.getMapString().toBuffer(),
+            "map.png"
+        );
+        const mapEmbed = new MessageEmbed().setImage("attachment://map.png");
+        const messageOption: MessageOptions = {
+            embeds: [mapEmbed],
+            files: [attachment]
+        }
+
+        return messageOption;
+    }
+
+    async readAction() {
+        let currentListener: NodeJS.Timer;
+        const responseQueue: Message[] = [];
+        const channel = this.callMessage!.channel;
+        const mapMessage: Message = await channel.send(this.getImageEmbedMessageOptions());
+
+        /** Listens to the responseQueue every 300ms, clears the interval and handles the request when detected. */
+        const listenToQueue = () => {
+            log("\tListening to queue...");
+            if (currentListener) {
+                clearInterval(currentListener);
+            }
+            currentListener = setInterval(async () => {
+                if (responseQueue[0]) {
+                    clearInterval(currentListener);
+                    handleQueue();
+                }
+            }, 300);
+        }
+        /** Handles the response (response is Discord.Message) */
+        const handleQueue = async () => {
+            log("\tHandling queue...");
+            const mes: Message | undefined = responseQueue.shift();
+            if (mes === undefined) {
+                throw Error("HandleQueue received an undefined message.")
+            }
+            else {
+                const sections = extractCommands(mes.content);
+                const direction = sections[0].toLocaleLowerCase();
+                const actionArgs = sections.slice(1, sections.length);
+                // const moveMagnitude = parseInt(actionArgs[0]) || 1;
+
+                let valid: boolean = false;
+                switch (direction) {
+                    case "up":
+                    case "down":
+                    case "right":
+                    case "left":
+                        const magAxis = directionToMagnitudeAxis(direction);
+                        // validate + act on (if valid) movement on virtual map
+                        valid = this.validateMovement(direction);
+
+                        // movement is permitted
+                        if (valid) {
+                            this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
+                        }
+                        break;
+
+                    default:
+                        valid = false;
+                        break;
+                }
+
+                debug("\tvalid", valid !== null);
+
+                if (valid) {
+                    mes.react(EMOJI_TICK);
+
+                    // update map
+                    channel.send(this.getImageEmbedMessageOptions());
+                    
+                    // check new room's battle
+                    const numericDirection = directionToNumericDirection(direction as Direction);
+                    const nextRoom = this.getRoom(this.leaderCoordinate)!;
+                    if (nextRoom.isBattleRoom) {
+                        nextRoom.StartBattle()
+                            ?.then(_sieg => {
+                                if (_sieg) {
+                                    listenToQueue();
+                                }
+                            })
+                    }
+                    else {
+                        listenToQueue();
+                    }
+                }
+                else {
+                    mes.react(EMOJI_CROSS);
+                    listenToQueue();
+                }
+            }
+        }
+
+        const newCollector = new MessageCollector(channel, {
+            filter: m => m.author.id === this.leaderUser?.id,
+        });
+        newCollector.on('collect', mes => {
+            if (responseQueue.length < 3) {
+                responseQueue.push(mes);
+            }
+            else {
+                mes.react("⏱️")
+            }
+        });
+        newCollector.on('end', async () => {
+            clearInterval(currentListener);
+            for (let i = 0; i < responseQueue.length; i++) {
+                await handleQueue();
+            }
+            
+            // enter battle
+        });
+
+        listenToQueue();
     }
 
     getRoom(_c: Coordinate) {
@@ -237,21 +390,7 @@ export class Dungeon {
         }
     }
 
-    async initialiseUsers(_user: User, _userData: UserData) {
-        this.leaderUser = _user;
-        this.leaderUserData = _userData;
-        for (let i = 0; i < this.rooms.length; i++) {
-            const room = this.rooms[i];
-            if (room.isBattleRoom) {
-                // await Battle.Generate(mapdata, _user, message, _userData.party, BotClient, false)
-                //     .then(_b => {
-                //         room.battle = _b;
-                //     });
-            }
-        }
-    }
-
-    print(_channel: TextChannel) {
+    getMapString() {
         const pixelsPerTile = 250 / this.data.width;
         const { canvas, ctx } = startDrawing(250, 250);
 
@@ -267,7 +406,7 @@ export class Dungeon {
 
             ctx.fillStyle = stringifyRGBA({
                 r: 255 * Number(room.isBattleRoom),
-                b: 0,
+                b: 255 * Number(findEqualCoordinate(room.coordinate, this.leaderCoordinate)),
                 g: 255 * Number(findEqualCoordinate(room.coordinate, this.data.start)),
                 alpha: 1
             });
@@ -302,10 +441,38 @@ export class Dungeon {
             ctx.closePath();
         }
 
+        return canvas;
+    }
+
+    print(_channel: TextChannel) {
+        const canvas = this.getMapString();
         _channel.send({
             files: [
                 canvas.toBuffer()
             ]
         });
+    }
+
+    async initialiseUsers(_message: Message) {
+        const user = _message.author;
+        const userData = await getUserData(user.id);
+
+        this.leaderUser = user;
+        this.leaderUserData = userData;
+        this.callMessage = _message;
+
+        for (let i = 0; i < this.rooms.length; i++) {
+            const room = this.rooms[i];
+            if (room.isBattleRoom) {
+                const encounterName: MapName = getRandomInArray(this.data.encounterMaps);
+                if (encounterName && areasData[encounterName]) {
+                    const mapdata: MapData = getNewObject(areasData[encounterName]) as MapData;
+                    await Battle.Generate(mapdata, user, _message, userData.party, BotClient, false)
+                        .then(_b => {
+                            room.battle = _b;
+                        });
+                }
+            }
+        }
     }
 }

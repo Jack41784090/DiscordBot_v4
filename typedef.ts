@@ -130,6 +130,7 @@ export interface Spawner extends Coordinate {
     spawns: Team,
 }
 export type CoordStat<Type> = { [x: string]: { [y: string]: Type } }
+
 export interface Map {
     coordStat: CoordStat<SimpleStat>,
     spawners: Array<Spawner>,
@@ -137,6 +138,13 @@ export interface Map {
     height: number,
     groundURL: string,
 }
+export type MapName =
+    "pvp_5x5"|
+    "farmstead_walkers1"|
+    "farmstead_walkers2"|
+    "farmstead_walkers3"|
+    "farmstead_horde1"
+
 export interface MapData {
     map: Map,
     enemiesInfo: { [key in EnemyClass]: {
@@ -145,6 +153,8 @@ export interface MapData {
     } },
 }
 export interface DungeonData {
+    name: string,
+
     maxLength: number,
     minLength: number,
     maxRoom: number,
@@ -153,6 +163,9 @@ export interface DungeonData {
     minBattle: number,
     width: number,
     height: number,
+
+    encounterMaps: MapName[],
+    eliteMaps: MapName[],
 
     start: Coordinate,
 }

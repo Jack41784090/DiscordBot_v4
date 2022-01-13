@@ -552,9 +552,10 @@ exports.getAttackAction = getAttackAction;
 // }
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
-        var dungeon, channel;
+        var data, dungeon, channel;
         return __generator(this, function (_a) {
-            dungeon = Dungeon_1.Dungeon.Generate(dungeonData_json_1.default.farmstead);
+            data = getNewObject(dungeonData_json_1.default.farmstead);
+            dungeon = Dungeon_1.Dungeon.Generate(data);
             channel = __1.BotClient.channels.fetch("926372977539424296")
                 .then(function (_c) {
                 dungeon.print(_c);

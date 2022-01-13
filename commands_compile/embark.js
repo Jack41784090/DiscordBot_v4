@@ -53,7 +53,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var discord_js_1 = require("discord.js");
 var Utility_1 = require("../classes/Utility");
 var typedef_1 = require("../typedef");
-var areasData_json_1 = __importDefault(require("../data/areasData.json"));
 var dungeonData_json_1 = __importDefault(require("../data/dungeonData.json"));
 var Dungeon_1 = require("../classes/Dungeon");
 module.exports = {
@@ -74,7 +73,7 @@ module.exports = {
                     }
                 });
                 try {
-                    for (_a = __values(Object.keys(areasData_json_1.default)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                    for (_a = __values(Object.keys(dungeonData_json_1.default)), _b = _a.next(); !_b.done; _b = _a.next()) {
                         locationName = _b.value;
                         formalName = (0, Utility_1.formalize)(locationName);
                         locationsEmbed.description += "**" + formalName + "**\n";
@@ -111,7 +110,7 @@ module.exports = {
                 // BATTLEDATA INIT (SPAWN PLAYERS)
                 if (dungeon) {
                     message.react(typedef_1.EMOJI_TICK);
-                    Dungeon_1.Dungeon.Generate(dungeon);
+                    Dungeon_1.Dungeon.Start(dungeon, message);
                 }
                 else {
                     message.reply("The location \"" + location_1 + "\" is not valid.");

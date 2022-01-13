@@ -35,23 +35,44 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Dungeon = void 0;
+var discord_js_1 = require("discord.js");
+var __1 = require("..");
 var typedef_1 = require("../typedef");
+var Battle_1 = require("./Battle");
 var Room_1 = require("./Room");
 var Utility_1 = require("./Utility");
+var areasData_json_1 = __importDefault(require("../data/areasData.json"));
+var Database_1 = require("./Database");
 var Dungeon = /** @class */ (function () {
-    function Dungeon(_data, _user, _userData) {
+    function Dungeon(_data, _message, _user, _userData) {
         this.rooms = [];
         this.CS = {};
         this.data = _data;
         this.leaderUser = _user || null;
         this.leaderUserData = _userData || null;
-        this.leaderLocation = _data.start;
+        this.callMessage = _message || null;
+        this.leaderCoordinate = (0, Utility_1.getNewObject)(_data.start);
     }
-    Dungeon.Start = function (_dungeonData, _author, _authorData) {
-        var dungeon = Dungeon.Generate(_dungeonData);
-        dungeon.initialiseUsers(_author, _authorData);
+    Dungeon.Start = function (_dungeonData, _message) {
+        return __awaiter(this, void 0, void 0, function () {
+            var dungeon;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        dungeon = Dungeon.Generate(_dungeonData);
+                        return [4 /*yield*/, dungeon.initialiseUsers(_message)];
+                    case 1:
+                        _a.sent();
+                        dungeon.readAction();
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
     Dungeon.Generate = function (_dungeonData) {
         var dungeon = new Dungeon(_dungeonData);
@@ -206,6 +227,7 @@ var Dungeon = /** @class */ (function () {
             var deadEndRooms = [];
             var roomQueue = [dungeon.getRoom(_dungeonData.start)];
             var exploredRooms = [];
+            // branch out and seek the longest dead end
             var currentRoom = roomQueue.shift();
             while (currentRoom) {
                 for (var i = 0; i < currentRoom.directions.length; i++) {
@@ -215,45 +237,176 @@ var Dungeon = /** @class */ (function () {
                         exploredRooms.push(r);
                     }
                 }
-                if (currentRoom.directions.filter(function (_d) { return _d === null; }).length === 3) {
+                if (!(0, Utility_1.findEqualCoordinate)(currentRoom.coordinate, startingCoord) &&
+                    currentRoom.directions.filter(function (_d) { return _d === null; }).length === 3) {
                     deadEndRooms.unshift(currentRoom);
                 }
                 currentRoom = roomQueue.shift();
             }
+            // deadEndRooms is sorted longest to shortest. Spawn treasures and boss rooms in the longest ones
             for (var i = 0; i < difference; i++) {
                 var deadEnd = deadEndRooms[i];
                 if (deadEnd) {
                     deadEnd.isBattleRoom = true;
+                    // TODO: spawn treasure
                 }
             }
         }
         return dungeon;
+    };
+    Dungeon.prototype.validateMovement = function (_direction) {
+        var direction = Number.isInteger(_direction) ?
+            (0, Utility_1.numericDirectionToDirection)(_direction) :
+            _direction;
+        var numericDirection = (0, Utility_1.directionToNumericDirection)(direction);
+        var valid = false;
+        var currentRoom = this.getRoom(this.leaderCoordinate);
+        if (currentRoom) {
+            valid = currentRoom.directions[numericDirection] !== null;
+        }
+        else {
+            this.leaderCoordinate = (0, Utility_1.getNewObject)(this.data.start);
+            valid = this.validateMovement(_direction);
+        }
+        return valid;
+    };
+    Dungeon.prototype.getImageEmbedMessageOptions = function () {
+        var attachment = new discord_js_1.MessageAttachment(this.getCanvas().toBuffer(), "map.png");
+        var mapEmbed = new discord_js_1.MessageEmbed().setImage("attachment://map.png");
+        var messageOption = {
+            embeds: [mapEmbed],
+            files: [attachment]
+        };
+        return messageOption;
+    };
+    Dungeon.prototype.readAction = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var currentListener, responseQueue, channel, mapMessage, listenToQueue, handleQueue, newCollector;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        responseQueue = [];
+                        channel = this.callMessage.channel;
+                        return [4 /*yield*/, channel.send(this.getImageEmbedMessageOptions())];
+                    case 1:
+                        mapMessage = _a.sent();
+                        listenToQueue = function () {
+                            (0, Utility_1.log)("\tListening to queue...");
+                            if (currentListener) {
+                                clearInterval(currentListener);
+                            }
+                            currentListener = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
+                                return __generator(this, function (_a) {
+                                    if (responseQueue[0]) {
+                                        clearInterval(currentListener);
+                                        handleQueue();
+                                    }
+                                    return [2 /*return*/];
+                                });
+                            }); }, 300);
+                        };
+                        handleQueue = function () { return __awaiter(_this, void 0, void 0, function () {
+                            var mes, sections, direction, actionArgs, valid, magAxis, numericDirection, nextRoom;
+                            var _a;
+                            return __generator(this, function (_e) {
+                                (0, Utility_1.log)("\tHandling queue...");
+                                mes = responseQueue.shift();
+                                if (mes === undefined) {
+                                    throw Error("HandleQueue received an undefined message.");
+                                }
+                                else {
+                                    sections = (0, Utility_1.extractCommands)(mes.content);
+                                    direction = sections[0].toLocaleLowerCase();
+                                    actionArgs = sections.slice(1, sections.length);
+                                    valid = false;
+                                    switch (direction) {
+                                        case "up":
+                                        case "down":
+                                        case "right":
+                                        case "left":
+                                            magAxis = (0, Utility_1.directionToMagnitudeAxis)(direction);
+                                            // validate + act on (if valid) movement on virtual map
+                                            valid = this.validateMovement(direction);
+                                            // movement is permitted
+                                            if (valid) {
+                                                this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
+                                            }
+                                            break;
+                                        default:
+                                            valid = false;
+                                            break;
+                                    }
+                                    (0, Utility_1.debug)("\tvalid", valid !== null);
+                                    if (valid) {
+                                        mes.react(typedef_1.EMOJI_TICK);
+                                        // update map
+                                        channel.send(this.getImageEmbedMessageOptions());
+                                        numericDirection = (0, Utility_1.directionToNumericDirection)(direction);
+                                        nextRoom = this.getRoom(this.leaderCoordinate);
+                                        if (nextRoom.isBattleRoom) {
+                                            (_a = nextRoom.StartBattle()) === null || _a === void 0 ? void 0 : _a.then(function (_sieg) {
+                                                if (_sieg) {
+                                                    listenToQueue();
+                                                }
+                                            });
+                                        }
+                                        else {
+                                            listenToQueue();
+                                        }
+                                    }
+                                    else {
+                                        mes.react(typedef_1.EMOJI_CROSS);
+                                        listenToQueue();
+                                    }
+                                }
+                                return [2 /*return*/];
+                            });
+                        }); };
+                        newCollector = new discord_js_1.MessageCollector(channel, {
+                            filter: function (m) { var _a; return m.author.id === ((_a = _this.leaderUser) === null || _a === void 0 ? void 0 : _a.id); },
+                        });
+                        newCollector.on('collect', function (mes) {
+                            if (responseQueue.length < 3) {
+                                responseQueue.push(mes);
+                            }
+                            else {
+                                mes.react("⏱️");
+                            }
+                        });
+                        newCollector.on('end', function () { return __awaiter(_this, void 0, void 0, function () {
+                            var i;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        clearInterval(currentListener);
+                                        i = 0;
+                                        _a.label = 1;
+                                    case 1:
+                                        if (!(i < responseQueue.length)) return [3 /*break*/, 4];
+                                        return [4 /*yield*/, handleQueue()];
+                                    case 2:
+                                        _a.sent();
+                                        _a.label = 3;
+                                    case 3:
+                                        i++;
+                                        return [3 /*break*/, 1];
+                                    case 4: return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                        listenToQueue();
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
     Dungeon.prototype.getRoom = function (_c) {
         if (this.CS[_c.x]) {
             return this.CS[_c.x][_c.y];
         }
     };
-    Dungeon.prototype.initialiseUsers = function (_user, _userData) {
-        return __awaiter(this, void 0, void 0, function () {
-            var i, room;
-            return __generator(this, function (_a) {
-                this.leaderUser = _user;
-                this.leaderUserData = _userData;
-                for (i = 0; i < this.rooms.length; i++) {
-                    room = this.rooms[i];
-                    if (room.isBattleRoom) {
-                        // await Battle.Generate(mapdata, _user, message, _userData.party, BotClient, false)
-                        //     .then(_b => {
-                        //         room.battle = _b;
-                        //     });
-                    }
-                }
-                return [2 /*return*/];
-            });
-        });
-    };
-    Dungeon.prototype.print = function (_channel) {
+    Dungeon.prototype.getCanvas = function () {
         var pixelsPerTile = 250 / this.data.width;
         var _a = (0, Utility_1.startDrawing)(250, 250), canvas = _a.canvas, ctx = _a.ctx;
         var grid = (0, Utility_1.returnGridCanvas)(this.data.height, this.data.width, pixelsPerTile);
@@ -266,7 +419,7 @@ var Dungeon = /** @class */ (function () {
             };
             ctx.fillStyle = (0, Utility_1.stringifyRGBA)({
                 r: 255 * Number(room.isBattleRoom),
-                b: 0,
+                b: 255 * Number((0, Utility_1.findEqualCoordinate)(room.coordinate, this.leaderCoordinate)),
                 g: 255 * Number((0, Utility_1.findEqualCoordinate)(room.coordinate, this.data.start)),
                 alpha: 1
             });
@@ -297,10 +450,65 @@ var Dungeon = /** @class */ (function () {
             ctx.stroke();
             ctx.closePath();
         }
+        return canvas;
+    };
+    Dungeon.prototype.print = function (_channel) {
+        var canvas = this.getCanvas();
         _channel.send({
             files: [
                 canvas.toBuffer()
             ]
+        });
+    };
+    Dungeon.prototype.initialiseUsers = function (_message) {
+        return __awaiter(this, void 0, void 0, function () {
+            var user, userData, _loop_2, this_1, i;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        user = _message.author;
+                        return [4 /*yield*/, (0, Database_1.getUserData)(user.id)];
+                    case 1:
+                        userData = _a.sent();
+                        this.leaderUser = user;
+                        this.leaderUserData = userData;
+                        this.callMessage = _message;
+                        _loop_2 = function (i) {
+                            var room, encounterName, mapdata;
+                            return __generator(this, function (_e) {
+                                switch (_e.label) {
+                                    case 0:
+                                        room = this_1.rooms[i];
+                                        if (!room.isBattleRoom) return [3 /*break*/, 2];
+                                        encounterName = (0, Utility_1.getRandomInArray)(this_1.data.encounterMaps);
+                                        if (!(encounterName && areasData_json_1.default[encounterName])) return [3 /*break*/, 2];
+                                        mapdata = (0, Utility_1.getNewObject)(areasData_json_1.default[encounterName]);
+                                        return [4 /*yield*/, Battle_1.Battle.Generate(mapdata, user, _message, userData.party, __1.BotClient, false)
+                                                .then(function (_b) {
+                                                room.battle = _b;
+                                            })];
+                                    case 1:
+                                        _e.sent();
+                                        _e.label = 2;
+                                    case 2: return [2 /*return*/];
+                                }
+                            });
+                        };
+                        this_1 = this;
+                        i = 0;
+                        _a.label = 2;
+                    case 2:
+                        if (!(i < this.rooms.length)) return [3 /*break*/, 5];
+                        return [5 /*yield**/, _loop_2(i)];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4:
+                        i++;
+                        return [3 /*break*/, 2];
+                    case 5: return [2 /*return*/];
+                }
+            });
         });
     };
     Dungeon.BRANCHOUT_CHANCE = 0.1;

@@ -5,7 +5,7 @@ import classData from "../data/classData.json"
 import dungeonData from "../data/dungeonData.json"
 
 import { BotClient } from "..";
-import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection } from "../typedef";
+import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData } from "../typedef";
 import { Battle } from "./Battle";
 import { Dungeon } from "./Dungeon";
 
@@ -571,7 +571,8 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
 // }
 
 export async function Test() {
-    const dungeon = Dungeon.Generate(dungeonData.farmstead);
+    const data = getNewObject(dungeonData.farmstead);
+    const dungeon = Dungeon.Generate(data as DungeonData);
 
     const channel = BotClient.channels.fetch("926372977539424296")
         .then(_c => {

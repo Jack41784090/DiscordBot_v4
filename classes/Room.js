@@ -6,6 +6,7 @@ var Room = /** @class */ (function () {
     function Room(_roomDir, _dungeon, _coordinate, _hasBattle) {
         if (_hasBattle === void 0) { _hasBattle = false; }
         this.battle = null;
+        this.treasure = null;
         this.directions = _roomDir;
         this.dungeon = _dungeon;
         this.coordinate = _coordinate;
