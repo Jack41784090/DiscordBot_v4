@@ -495,6 +495,26 @@ export function directionToNumericDirection(_direction: Direction): NumericDirec
     }
 }
 
+export function replaceCharacterAtIndex(_string: string, _replace: string, _index: number) {
+    return _string.substring(0, _index) + _replace + _string.substring(_index+1, _string.length);
+}
+
+export function directionToEmoji(_direction: Direction | NumericDirection) {
+    const direction: Direction = Number.isInteger(_direction) ?
+        numericDirectionToDirection(_direction as NumericDirection) :
+        _direction as Direction;
+
+    switch(direction) {
+        case "down":
+            return "⏬";
+        case "up":
+            return "⏫";
+        case "left":
+            return "⬅️";
+        case "right":
+            return "➡️";
+    }
+}
 export function directionToMagnitudeAxis(_direction: Direction) {
     let magnitude, axis: Axis;
     switch (_direction) {

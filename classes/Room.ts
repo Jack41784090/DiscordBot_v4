@@ -2,11 +2,13 @@ import { Coordinate, MapData, NumericDirection, OwnerID, RoomDirections, Treasur
 import { Battle } from "./Battle";
 import { BattleManager } from "./BattleManager";
 import { Dungeon } from "./Dungeon";
+import { findEqualCoordinate } from "./Utility";
 
 export class Room {
     battle: Battle | null = null;
     treasure: Treasure | null = null;
     isBattleRoom: boolean;
+    isDiscovered: boolean;
 
     dungeon: Dungeon;
     directions: RoomDirections;
@@ -17,6 +19,7 @@ export class Room {
         this.dungeon = _dungeon;
         this.coordinate = _coordinate;
         this.isBattleRoom = _hasBattle;
+        this.isDiscovered = findEqualCoordinate(this.dungeon.data.start, _coordinate);
     }
 
     StartBattle() {

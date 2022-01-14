@@ -11,6 +11,10 @@ export type OwnerID = string;
 export const COMMAND_CALL = ";"
 export const EMOJI_TICK = '✅';
 export const EMOJI_CROSS = '❎';
+export const EMOJI_STAR = '🌠';
+export const EMOJI_WHITEB = '⬜';
+export const EMOJI_BLACKB = '⬛';
+export const EMOJI_BROWNB = '🟫';
 
 export type RoomDirections = [Room | null, Room | null, Room | null, Room | null];
 

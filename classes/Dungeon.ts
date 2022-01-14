@@ -1,9 +1,9 @@
-import { Message, MessageAttachment, MessageCollector, MessageEmbed, MessageOptions, TextChannel, User } from "discord.js";
+import { ButtonInteraction, Message, MessageAttachment, MessageButtonOptions, MessageCollector, MessageEmbed, MessageOptions, TextChannel, User } from "discord.js";
 import { BotClient } from "..";
-import { Coordinate, CoordStat, Direction, DungeonData, EMOJI_CROSS, EMOJI_TICK, MapData, MapName, NumericDirection, RoomDirections, UserData } from "../typedef";
+import { Coordinate, CoordStat, Direction, DungeonData, EMOJI_BLACKB, EMOJI_BROWNB, EMOJI_STAR, EMOJI_CROSS, EMOJI_TICK, EMOJI_WHITEB, MapData, MapName, NumericDirection, RoomDirections, UserData } from "../typedef";
 import { Battle } from "./Battle";
 import { Room } from "./Room";
-import { debug, directionToMagnitudeAxis, directionToNumericDirection, extractCommands, findEqualCoordinate, getCanvasCoordsFromBattleCoord, getNewObject, getRandomInArray, log, numericDirectionToDirection, random, returnGridCanvas, startDrawing, stringifyRGBA } from "./Utility";
+import { debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, extractCommands, findEqualCoordinate, getButtonsActionRow, getCanvasCoordsFromBattleCoord, getDirection, getDistance, getNewObject, getRandomInArray, log, numericDirectionToDirection, random, replaceCharacterAtIndex, returnGridCanvas, setUpInteractionCollect, startDrawing, stringifyRGBA } from "./Utility";
 
 import areasData from "../data/areasData.json";
 import { getUserData } from "./Database";
@@ -19,6 +19,7 @@ export class Dungeon {
     data: DungeonData;
     rooms: Room[] = [];
     CS: CoordStat<Room> = {};
+    mapDoubleArray: string[][] = [];
 
     private constructor(_data: DungeonData, _message?: Message, _user?: User, _userData?: UserData) {
         this.data = _data;
@@ -101,16 +102,16 @@ export class Dungeon {
                 previousRoom.directions[_direction] = newRoom;
 
                 // chance for battle
-                if (battleRoomsSpawned < battleRoomsCount) {
-                    battleEncounterChanceAccumulator++;
-                    const encounterChance = battleEncounterChanceAccumulator / (roomsPerBattle * 8);
-                    const encounterRoll = random(Number.EPSILON, 1.0);
-                    if (encounterRoll < encounterChance) {
-                        newRoom.isBattleRoom = true;
-                        battleEncounterChanceAccumulator = 0;
-                        battleRoomsSpawned++;
-                    }
-                }
+                // if (battleRoomsSpawned < battleRoomsCount) {
+                //     battleEncounterChanceAccumulator++;
+                //     const encounterChance = battleEncounterChanceAccumulator / (roomsPerBattle * 8);
+                //     const encounterRoll = random(Number.EPSILON, 1.0);
+                //     if (encounterRoll < encounterChance) {
+                //         newRoom.isBattleRoom = true;
+                //         battleEncounterChanceAccumulator = 0;
+                //         battleRoomsSpawned++;
+                //     }
+                // }
 
                 // chance to branch out again
                 const roll = random(Number.EPSILON, 1.0);
@@ -203,43 +204,43 @@ export class Dungeon {
         }
 
         // spawn remaining battle rooms
-        if (battleRoomsSpawned < battleRoomsCount) {
-            const difference = battleRoomsCount - battleRoomsSpawned;
-            const deadEndRooms: Room[] = [];
-            const roomQueue: Room[] = [dungeon.getRoom(_dungeonData.start)!];
-            const exploredRooms: Room[] = [];
+        // if (battleRoomsSpawned < battleRoomsCount) {
+        //     const difference = battleRoomsCount - battleRoomsSpawned;
+        //     const deadEndRooms: Room[] = [];
+        //     const roomQueue: Room[] = [dungeon.getRoom(_dungeonData.start)!];
+        //     const exploredRooms: Room[] = [];
 
-            // branch out and seek the longest dead end
-            let currentRoom = roomQueue.shift();
-            while (currentRoom) {
-                for (let i = 0; i < currentRoom.directions.length; i++) {
-                    const r = currentRoom.directions[i];
-                    if (r && !exploredRooms.includes(r)) {
-                        roomQueue.push(r);
-                        exploredRooms.push(r);
-                    }
-                }
+        //     // branch out and seek the longest dead end
+        //     let currentRoom = roomQueue.shift();
+        //     while (currentRoom) {
+        //         for (let i = 0; i < currentRoom.directions.length; i++) {
+        //             const r = currentRoom.directions[i];
+        //             if (r && !exploredRooms.includes(r)) {
+        //                 roomQueue.push(r);
+        //                 exploredRooms.push(r);
+        //             }
+        //         }
 
-                if (
-                    !findEqualCoordinate(currentRoom.coordinate, startingCoord)&&
-                    currentRoom.directions.filter(_d => _d === null).length === 3
-                ) {
-                    deadEndRooms.unshift(currentRoom);
-                }
+        //         if (
+        //             !findEqualCoordinate(currentRoom.coordinate, startingCoord)&&
+        //             currentRoom.directions.filter(_d => _d === null).length === 3
+        //         ) {
+        //             deadEndRooms.unshift(currentRoom);
+        //         }
 
-                currentRoom = roomQueue.shift();
-            }
+        //         currentRoom = roomQueue.shift();
+        //     }
 
-            // deadEndRooms is sorted longest to shortest. Spawn treasures and boss rooms in the longest ones
-            for (let i = 0; i < difference; i++) {
-                const deadEnd = deadEndRooms[i];
-                if (deadEnd) {
-                    deadEnd.isBattleRoom = true;
-                    // TODO: spawn treasure
+        //     // deadEndRooms is sorted longest to shortest. Spawn treasures and boss rooms in the longest ones
+        //     for (let i = 0; i < difference; i++) {
+        //         const deadEnd = deadEndRooms[i];
+        //         if (deadEnd) {
+        //             deadEnd.isBattleRoom = true;
+        //             // TODO: spawn treasure
 
-                }
-            }
-        }
+        //         }
+        //     }
+        // }
 
         return dungeon;
     }
@@ -265,121 +266,105 @@ export class Dungeon {
     }
 
     getImageEmbedMessageOptions() {
-        const attachment = new MessageAttachment(
-            this.getMapString().toBuffer(),
-            "map.png"
-        );
-        const mapEmbed = new MessageEmbed().setImage("attachment://map.png");
+        const mapEmbed = new MessageEmbed().setDescription(`${this.getMapString()}`);
+        let currentRoom: Room | undefined;
+        if ((currentRoom = this.getRoom(this.leaderCoordinate)) && currentRoom?.isBattleRoom) {
+            mapEmbed.setTitle(`Danger! Enemy Spotted!`);
+        }
         const messageOption: MessageOptions = {
             embeds: [mapEmbed],
-            files: [attachment]
         }
 
         return messageOption;
     }
 
     async readAction() {
-        let currentListener: NodeJS.Timer;
-        const responseQueue: Message[] = [];
         const channel = this.callMessage!.channel;
         const mapMessage: Message = await channel.send(this.getImageEmbedMessageOptions());
+        const buttonOptions: MessageButtonOptions[] = [
+            {
+                label: "⬆️",
+                style: "PRIMARY",
+                customId: "up"
+            },
+            {
+                label: "⬇️",
+                style: "SECONDARY",
+                customId: "down"
+            },
+            {
+                label: "➡️",
+                style: "PRIMARY",
+                customId: "right"
+            },
+            {
+                label: "⬅️",
+                style: "SECONDARY",
+                customId: "left"
+            },
+        ];
 
         /** Listens to the responseQueue every 300ms, clears the interval and handles the request when detected. */
         const listenToQueue = () => {
-            log("\tListening to queue...");
-            if (currentListener) {
-                clearInterval(currentListener);
+            // log("\tListening to queue...");
+            const messagePayload: MessageOptions = {
+                components: [getButtonsActionRow(buttonOptions)],
             }
-            currentListener = setInterval(async () => {
-                if (responseQueue[0]) {
-                    clearInterval(currentListener);
-                    handleQueue();
+            mapMessage.edit(messagePayload);
+            setUpInteractionCollect(mapMessage, async itr => {
+                if (itr.isButton() && itr.user.id === this.leaderUser!.id) {
+                    await handleQueue(itr);
+                    await itr.update(this.getImageEmbedMessageOptions());
                 }
-            }, 300);
+            }, 1);
         }
         /** Handles the response (response is Discord.Message) */
-        const handleQueue = async () => {
-            log("\tHandling queue...");
-            const mes: Message | undefined = responseQueue.shift();
-            if (mes === undefined) {
-                throw Error("HandleQueue received an undefined message.")
+        const handleQueue = async (_itr: ButtonInteraction) => {
+            // log("\tHandling queue...");
+            const direction = _itr.customId;
+            // const moveMagnitude = parseInt(actionArgs[0]) || 1;
+
+            let valid: boolean = false;
+            switch (direction) {
+                case "up":
+                case "down":
+                case "right":
+                case "left":
+                    const magAxis = directionToMagnitudeAxis(direction);
+                    // validate + act on (if valid) movement on virtual map
+                    valid = this.validateMovement(direction);
+
+                    // movement is permitted
+                    if (valid) {
+                        this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
+                    }
+                    break;
+
+                default:
+                    valid = false;
+                    break;
             }
-            else {
-                const sections = extractCommands(mes.content);
-                const direction = sections[0].toLocaleLowerCase();
-                const actionArgs = sections.slice(1, sections.length);
-                // const moveMagnitude = parseInt(actionArgs[0]) || 1;
 
-                let valid: boolean = false;
-                switch (direction) {
-                    case "up":
-                    case "down":
-                    case "right":
-                    case "left":
-                        const magAxis = directionToMagnitudeAxis(direction);
-                        // validate + act on (if valid) movement on virtual map
-                        valid = this.validateMovement(direction);
-
-                        // movement is permitted
-                        if (valid) {
-                            this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
-                        }
-                        break;
-
-                    default:
-                        valid = false;
-                        break;
-                }
-
-                debug("\tvalid", valid !== null);
-
-                if (valid) {
-                    mes.react(EMOJI_TICK);
-
-                    // update map
-                    channel.send(this.getImageEmbedMessageOptions());
-                    
-                    // check new room's battle
-                    const numericDirection = directionToNumericDirection(direction as Direction);
-                    const nextRoom = this.getRoom(this.leaderCoordinate)!;
-                    if (nextRoom.isBattleRoom) {
-                        nextRoom.StartBattle()
-                            ?.then(_sieg => {
-                                if (_sieg) {
-                                    listenToQueue();
-                                }
-                            })
-                    }
-                    else {
-                        listenToQueue();
-                    }
+            if (valid) {
+                // check new room's battle
+                const nextRoom = this.getRoom(this.leaderCoordinate)!;
+                nextRoom.isDiscovered = true;
+                if (nextRoom.isBattleRoom) {
+                    nextRoom.StartBattle()
+                        ?.then(_sieg => {
+                            if (_sieg) {
+                                listenToQueue();
+                            }
+                        })
                 }
                 else {
-                    mes.react(EMOJI_CROSS);
                     listenToQueue();
                 }
             }
-        }
-
-        const newCollector = new MessageCollector(channel, {
-            filter: m => m.author.id === this.leaderUser?.id,
-        });
-        newCollector.on('collect', mes => {
-            if (responseQueue.length < 3) {
-                responseQueue.push(mes);
-            }
             else {
-                mes.react("⏱️")
+                listenToQueue();
             }
-        });
-        newCollector.on('end', async () => {
-            clearInterval(currentListener);
-            for (let i = 0; i < responseQueue.length; i++) {
-                await handleQueue();
-            }
-            
-            // enter battle
-        });
+        }
 
         listenToQueue();
     }
@@ -390,65 +375,102 @@ export class Dungeon {
         }
     }
 
-    getMapString() {
-        const pixelsPerTile = 250 / this.data.width;
-        const { canvas, ctx } = startDrawing(250, 250);
-
-        const grid = returnGridCanvas(this.data.height, this.data.width, pixelsPerTile);
-        ctx.drawImage(grid, 0, 0, 250, 250);
-
-        for (let i = 0; i < this.rooms.length; i++) {
-            const room = this.rooms[i];
-            const canvasCoord = {
-                x: room.coordinate.x * pixelsPerTile,
-                y: (this.data.height - room.coordinate.y - 1) * pixelsPerTile
-            };
-
-            ctx.fillStyle = stringifyRGBA({
-                r: 255 * Number(room.isBattleRoom),
-                b: 255 * Number(findEqualCoordinate(room.coordinate, this.leaderCoordinate)),
-                g: 255 * Number(findEqualCoordinate(room.coordinate, this.data.start)),
-                alpha: 1
-            });
-            ctx.fillRect(canvasCoord.x, canvasCoord.y, pixelsPerTile, pixelsPerTile);
+    getMapDoubleArray(_c: Coordinate): string | undefined {
+        if (this.mapDoubleArray[this.data.height - 1 - _c.y] === undefined) {
+            this.mapDoubleArray[this.data.height - 1 - _c.y] = [];
         }
+        return this.mapDoubleArray[this.data.height - 1 - _c.y][_c.x]
+    }
+    setMapDoubleArray(_c: Coordinate, _string: string): void {
+        if (this.mapDoubleArray[this.data.height - 1 - _c.y] === undefined) {
+            this.mapDoubleArray[this.data.height - 1 - _c.y] = [];
+        }
+        this.mapDoubleArray[this.data.height - 1 - _c.y][_c.x] = _string;
+    }
 
-        for (let i = 0; i < this.rooms.length; i++) {
-            const room = this.rooms[i];
+    getMapString() {
+        const width = this.data.width;
+        const height = this.data.height;
+        const widthP1 = width + 1;
 
-            const canvasCoordShifted = {
-                x: room.coordinate.x * pixelsPerTile + (pixelsPerTile / 2),
-                y: (this.data.height - room.coordinate.y - 1) * pixelsPerTile + (pixelsPerTile / 2)
-            };
+        // debug("mapstring", map)
 
-            ctx.beginPath();
-            ctx.strokeStyle = stringifyRGBA({
-                r: 255,
-                b: 255,
-                g: 255,
-                alpha: 1
-            });
-            ctx.lineWidth = 3;
-            for (let i = 0; i < room.directions.length; i++) {
-                const otherRoom = room.directions[i];
-                if (otherRoom) {
-                    const otherRoomCanvasCoord = getCanvasCoordsFromBattleCoord(otherRoom.coordinate, pixelsPerTile, this.data.height);
-                    ctx.moveTo(canvasCoordShifted.x, canvasCoordShifted.y);
-                    ctx.lineTo(otherRoomCanvasCoord.x, otherRoomCanvasCoord.y);
+        // draw initial
+        if (this.mapDoubleArray.length === 0) {
+            let levelArray = [];
+            for (let i = 0; i < (width + 1) * height; i++) {
+                const level = Math.floor(i / widthP1);
+
+                // if new line
+                if (i === (widthP1 * level) + width) {
+                    this.mapDoubleArray.push(levelArray);
+                    levelArray = [];
+                }
+                else {
+                    levelArray.push(EMOJI_BLACKB);
                 }
             }
-            ctx.stroke();
-            ctx.closePath();
         }
 
-        return canvas;
+        // debug("init", map);
+
+        // get rooms accessible
+        const leaderRoom = this.getRoom(this.leaderCoordinate)!;
+        const accessibleRooms: Room[] = this.rooms.filter(_r => _r.isDiscovered);
+
+        // update all the accesible rooms
+        for (let i = 0; i < accessibleRooms.length; i++) {
+            const room = accessibleRooms[i];
+            let icon = '';
+            // leader's location
+            if (findEqualCoordinate(this.leaderCoordinate, room.coordinate)) {
+                icon = '🌠';
+            }
+            // starting mark
+            else if (findEqualCoordinate(this.data.start, room.coordinate)) {
+                icon = '❎';
+            }
+            // empty room
+            else {
+                icon = this.getMapDoubleArray(room.coordinate) || EMOJI_WHITEB;
+            }
+            this.setMapDoubleArray(room.coordinate, icon);
+        }
+
+        // draw brown walls
+        for (let w = 0; w < leaderRoom.directions.length; w++) {
+            const leaderRoomCoordinate = getNewObject(leaderRoom.coordinate);
+            const accessible = leaderRoom.directions[w];
+            const magAxis = directionToMagnitudeAxis(numericDirectionToDirection(w));
+            leaderRoomCoordinate[magAxis.axis] += magAxis.magnitude;
+            const withinWorld = leaderRoomCoordinate.x >= 0 && leaderRoomCoordinate.y >= 0 && leaderRoomCoordinate.x < width && leaderRoomCoordinate.y < height;
+
+            if (withinWorld) {
+                const icon =
+                    accessible && leaderRoom.directions[w]?.isDiscovered === false?
+                        directionToEmoji(numericDirectionToDirection(w)) :
+                            accessible?
+                                EMOJI_WHITEB:
+                                EMOJI_BROWNB;
+                this.setMapDoubleArray(leaderRoomCoordinate, icon);
+            }
+        }
+
+        const returnString = [];
+        for (let i = 0; i < this.mapDoubleArray.length; i++) {
+            const a = this.mapDoubleArray[i];
+            const string = a.join("");
+            returnString.push(string);
+        }
+
+        return returnString.join("\n");
     }
 
     print(_channel: TextChannel) {
         const canvas = this.getMapString();
         _channel.send({
-            files: [
-                canvas.toBuffer()
+            embeds: [
+                new MessageEmbed().setDescription(canvas)
             ]
         });
     }

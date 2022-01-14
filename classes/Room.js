@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Room = void 0;
 var BattleManager_1 = require("./BattleManager");
+var Utility_1 = require("./Utility");
 var Room = /** @class */ (function () {
     function Room(_roomDir, _dungeon, _coordinate, _hasBattle) {
         if (_hasBattle === void 0) { _hasBattle = false; }
@@ -11,6 +12,7 @@ var Room = /** @class */ (function () {
         this.dungeon = _dungeon;
         this.coordinate = _coordinate;
         this.isBattleRoom = _hasBattle;
+        this.isDiscovered = (0, Utility_1.findEqualCoordinate)(this.dungeon.data.start, _coordinate);
     }
     Room.prototype.StartBattle = function () {
         var _this = this;

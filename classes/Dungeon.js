@@ -52,6 +52,7 @@ var Dungeon = /** @class */ (function () {
     function Dungeon(_data, _message, _user, _userData) {
         this.rooms = [];
         this.CS = {};
+        this.mapDoubleArray = [];
         this.data = _data;
         this.leaderUser = _user || null;
         this.leaderUserData = _userData || null;
@@ -130,16 +131,16 @@ var Dungeon = /** @class */ (function () {
                 // connecting previous room to new room
                 previousRoom.directions[_direction] = newRoom;
                 // chance for battle
-                if (battleRoomsSpawned < battleRoomsCount) {
-                    battleEncounterChanceAccumulator++;
-                    var encounterChance = battleEncounterChanceAccumulator / (roomsPerBattle * 8);
-                    var encounterRoll = (0, Utility_1.random)(Number.EPSILON, 1.0);
-                    if (encounterRoll < encounterChance) {
-                        newRoom.isBattleRoom = true;
-                        battleEncounterChanceAccumulator = 0;
-                        battleRoomsSpawned++;
-                    }
-                }
+                // if (battleRoomsSpawned < battleRoomsCount) {
+                //     battleEncounterChanceAccumulator++;
+                //     const encounterChance = battleEncounterChanceAccumulator / (roomsPerBattle * 8);
+                //     const encounterRoll = random(Number.EPSILON, 1.0);
+                //     if (encounterRoll < encounterChance) {
+                //         newRoom.isBattleRoom = true;
+                //         battleEncounterChanceAccumulator = 0;
+                //         battleRoomsSpawned++;
+                //     }
+                // }
                 // chance to branch out again
                 var roll = (0, Utility_1.random)(Number.EPSILON, 1.0);
                 if (roll < Dungeon.BRANCHOUT_CHANCE) {
@@ -222,36 +223,38 @@ var Dungeon = /** @class */ (function () {
                 break;
         }
         // spawn remaining battle rooms
-        if (battleRoomsSpawned < battleRoomsCount) {
-            var difference = battleRoomsCount - battleRoomsSpawned;
-            var deadEndRooms = [];
-            var roomQueue = [dungeon.getRoom(_dungeonData.start)];
-            var exploredRooms = [];
-            // branch out and seek the longest dead end
-            var currentRoom = roomQueue.shift();
-            while (currentRoom) {
-                for (var i = 0; i < currentRoom.directions.length; i++) {
-                    var r = currentRoom.directions[i];
-                    if (r && !exploredRooms.includes(r)) {
-                        roomQueue.push(r);
-                        exploredRooms.push(r);
-                    }
-                }
-                if (!(0, Utility_1.findEqualCoordinate)(currentRoom.coordinate, startingCoord) &&
-                    currentRoom.directions.filter(function (_d) { return _d === null; }).length === 3) {
-                    deadEndRooms.unshift(currentRoom);
-                }
-                currentRoom = roomQueue.shift();
-            }
-            // deadEndRooms is sorted longest to shortest. Spawn treasures and boss rooms in the longest ones
-            for (var i = 0; i < difference; i++) {
-                var deadEnd = deadEndRooms[i];
-                if (deadEnd) {
-                    deadEnd.isBattleRoom = true;
-                    // TODO: spawn treasure
-                }
-            }
-        }
+        // if (battleRoomsSpawned < battleRoomsCount) {
+        //     const difference = battleRoomsCount - battleRoomsSpawned;
+        //     const deadEndRooms: Room[] = [];
+        //     const roomQueue: Room[] = [dungeon.getRoom(_dungeonData.start)!];
+        //     const exploredRooms: Room[] = [];
+        //     // branch out and seek the longest dead end
+        //     let currentRoom = roomQueue.shift();
+        //     while (currentRoom) {
+        //         for (let i = 0; i < currentRoom.directions.length; i++) {
+        //             const r = currentRoom.directions[i];
+        //             if (r && !exploredRooms.includes(r)) {
+        //                 roomQueue.push(r);
+        //                 exploredRooms.push(r);
+        //             }
+        //         }
+        //         if (
+        //             !findEqualCoordinate(currentRoom.coordinate, startingCoord)&&
+        //             currentRoom.directions.filter(_d => _d === null).length === 3
+        //         ) {
+        //             deadEndRooms.unshift(currentRoom);
+        //         }
+        //         currentRoom = roomQueue.shift();
+        //     }
+        //     // deadEndRooms is sorted longest to shortest. Spawn treasures and boss rooms in the longest ones
+        //     for (let i = 0; i < difference; i++) {
+        //         const deadEnd = deadEndRooms[i];
+        //         if (deadEnd) {
+        //             deadEnd.isBattleRoom = true;
+        //             // TODO: spawn treasure
+        //         }
+        //     }
+        // }
         return dungeon;
     };
     Dungeon.prototype.validateMovement = function (_direction) {
@@ -271,130 +274,115 @@ var Dungeon = /** @class */ (function () {
         return valid;
     };
     Dungeon.prototype.getImageEmbedMessageOptions = function () {
-        var attachment = new discord_js_1.MessageAttachment(this.getCanvas().toBuffer(), "map.png");
-        var mapEmbed = new discord_js_1.MessageEmbed().setImage("attachment://map.png");
+        var mapEmbed = new discord_js_1.MessageEmbed().setDescription("" + this.getMapString());
+        var currentRoom;
+        if ((currentRoom = this.getRoom(this.leaderCoordinate)) && (currentRoom === null || currentRoom === void 0 ? void 0 : currentRoom.isBattleRoom)) {
+            mapEmbed.setTitle("Danger! Enemy Spotted!");
+        }
         var messageOption = {
             embeds: [mapEmbed],
-            files: [attachment]
         };
         return messageOption;
     };
     Dungeon.prototype.readAction = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var currentListener, responseQueue, channel, mapMessage, listenToQueue, handleQueue, newCollector;
+            var channel, mapMessage, buttonOptions, listenToQueue, handleQueue;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        responseQueue = [];
                         channel = this.callMessage.channel;
                         return [4 /*yield*/, channel.send(this.getImageEmbedMessageOptions())];
                     case 1:
                         mapMessage = _a.sent();
+                        buttonOptions = [
+                            {
+                                label: "⬆️",
+                                style: "PRIMARY",
+                                customId: "up"
+                            },
+                            {
+                                label: "⬇️",
+                                style: "SECONDARY",
+                                customId: "down"
+                            },
+                            {
+                                label: "➡️",
+                                style: "PRIMARY",
+                                customId: "right"
+                            },
+                            {
+                                label: "⬅️",
+                                style: "SECONDARY",
+                                customId: "left"
+                            },
+                        ];
                         listenToQueue = function () {
-                            (0, Utility_1.log)("\tListening to queue...");
-                            if (currentListener) {
-                                clearInterval(currentListener);
-                            }
-                            currentListener = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
+                            // log("\tListening to queue...");
+                            var messagePayload = {
+                                components: [(0, Utility_1.getButtonsActionRow)(buttonOptions)],
+                            };
+                            mapMessage.edit(messagePayload);
+                            (0, Utility_1.setUpInteractionCollect)(mapMessage, function (itr) { return __awaiter(_this, void 0, void 0, function () {
                                 return __generator(this, function (_a) {
-                                    if (responseQueue[0]) {
-                                        clearInterval(currentListener);
-                                        handleQueue();
+                                    switch (_a.label) {
+                                        case 0:
+                                            if (!(itr.isButton() && itr.user.id === this.leaderUser.id)) return [3 /*break*/, 3];
+                                            return [4 /*yield*/, handleQueue(itr)];
+                                        case 1:
+                                            _a.sent();
+                                            return [4 /*yield*/, itr.update(this.getImageEmbedMessageOptions())];
+                                        case 2:
+                                            _a.sent();
+                                            _a.label = 3;
+                                        case 3: return [2 /*return*/];
                                     }
-                                    return [2 /*return*/];
                                 });
-                            }); }, 300);
+                            }); }, 1);
                         };
-                        handleQueue = function () { return __awaiter(_this, void 0, void 0, function () {
-                            var mes, sections, direction, actionArgs, valid, magAxis, numericDirection, nextRoom;
+                        handleQueue = function (_itr) { return __awaiter(_this, void 0, void 0, function () {
+                            var direction, valid, magAxis, nextRoom;
                             var _a;
-                            return __generator(this, function (_e) {
-                                (0, Utility_1.log)("\tHandling queue...");
-                                mes = responseQueue.shift();
-                                if (mes === undefined) {
-                                    throw Error("HandleQueue received an undefined message.");
+                            return __generator(this, function (_d) {
+                                direction = _itr.customId;
+                                valid = false;
+                                switch (direction) {
+                                    case "up":
+                                    case "down":
+                                    case "right":
+                                    case "left":
+                                        magAxis = (0, Utility_1.directionToMagnitudeAxis)(direction);
+                                        // validate + act on (if valid) movement on virtual map
+                                        valid = this.validateMovement(direction);
+                                        // movement is permitted
+                                        if (valid) {
+                                            this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
+                                        }
+                                        break;
+                                    default:
+                                        valid = false;
+                                        break;
                                 }
-                                else {
-                                    sections = (0, Utility_1.extractCommands)(mes.content);
-                                    direction = sections[0].toLocaleLowerCase();
-                                    actionArgs = sections.slice(1, sections.length);
-                                    valid = false;
-                                    switch (direction) {
-                                        case "up":
-                                        case "down":
-                                        case "right":
-                                        case "left":
-                                            magAxis = (0, Utility_1.directionToMagnitudeAxis)(direction);
-                                            // validate + act on (if valid) movement on virtual map
-                                            valid = this.validateMovement(direction);
-                                            // movement is permitted
-                                            if (valid) {
-                                                this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
+                                if (valid) {
+                                    nextRoom = this.getRoom(this.leaderCoordinate);
+                                    nextRoom.isDiscovered = true;
+                                    if (nextRoom.isBattleRoom) {
+                                        (_a = nextRoom.StartBattle()) === null || _a === void 0 ? void 0 : _a.then(function (_sieg) {
+                                            if (_sieg) {
+                                                listenToQueue();
                                             }
-                                            break;
-                                        default:
-                                            valid = false;
-                                            break;
-                                    }
-                                    (0, Utility_1.debug)("\tvalid", valid !== null);
-                                    if (valid) {
-                                        mes.react(typedef_1.EMOJI_TICK);
-                                        // update map
-                                        channel.send(this.getImageEmbedMessageOptions());
-                                        numericDirection = (0, Utility_1.directionToNumericDirection)(direction);
-                                        nextRoom = this.getRoom(this.leaderCoordinate);
-                                        if (nextRoom.isBattleRoom) {
-                                            (_a = nextRoom.StartBattle()) === null || _a === void 0 ? void 0 : _a.then(function (_sieg) {
-                                                if (_sieg) {
-                                                    listenToQueue();
-                                                }
-                                            });
-                                        }
-                                        else {
-                                            listenToQueue();
-                                        }
+                                        });
                                     }
                                     else {
-                                        mes.react(typedef_1.EMOJI_CROSS);
                                         listenToQueue();
                                     }
+                                }
+                                else {
+                                    listenToQueue();
                                 }
                                 return [2 /*return*/];
                             });
                         }); };
-                        newCollector = new discord_js_1.MessageCollector(channel, {
-                            filter: function (m) { var _a; return m.author.id === ((_a = _this.leaderUser) === null || _a === void 0 ? void 0 : _a.id); },
-                        });
-                        newCollector.on('collect', function (mes) {
-                            if (responseQueue.length < 3) {
-                                responseQueue.push(mes);
-                            }
-                            else {
-                                mes.react("⏱️");
-                            }
-                        });
-                        newCollector.on('end', function () { return __awaiter(_this, void 0, void 0, function () {
-                            var i;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        clearInterval(currentListener);
-                                        i = 0;
-                                        _a.label = 1;
-                                    case 1:
-                                        if (!(i < responseQueue.length)) return [3 /*break*/, 4];
-                                        return [4 /*yield*/, handleQueue()];
-                                    case 2:
-                                        _a.sent();
-                                        _a.label = 3;
-                                    case 3:
-                                        i++;
-                                        return [3 /*break*/, 1];
-                                    case 4: return [2 /*return*/];
-                                }
-                            });
-                        }); });
                         listenToQueue();
                         return [2 /*return*/];
                 }
@@ -406,57 +394,90 @@ var Dungeon = /** @class */ (function () {
             return this.CS[_c.x][_c.y];
         }
     };
-    Dungeon.prototype.getCanvas = function () {
-        var pixelsPerTile = 250 / this.data.width;
-        var _a = (0, Utility_1.startDrawing)(250, 250), canvas = _a.canvas, ctx = _a.ctx;
-        var grid = (0, Utility_1.returnGridCanvas)(this.data.height, this.data.width, pixelsPerTile);
-        ctx.drawImage(grid, 0, 0, 250, 250);
-        for (var i = 0; i < this.rooms.length; i++) {
-            var room = this.rooms[i];
-            var canvasCoord = {
-                x: room.coordinate.x * pixelsPerTile,
-                y: (this.data.height - room.coordinate.y - 1) * pixelsPerTile
-            };
-            ctx.fillStyle = (0, Utility_1.stringifyRGBA)({
-                r: 255 * Number(room.isBattleRoom),
-                b: 255 * Number((0, Utility_1.findEqualCoordinate)(room.coordinate, this.leaderCoordinate)),
-                g: 255 * Number((0, Utility_1.findEqualCoordinate)(room.coordinate, this.data.start)),
-                alpha: 1
-            });
-            ctx.fillRect(canvasCoord.x, canvasCoord.y, pixelsPerTile, pixelsPerTile);
+    Dungeon.prototype.getMapDoubleArray = function (_c) {
+        if (this.mapDoubleArray[this.data.height - 1 - _c.y] === undefined) {
+            this.mapDoubleArray[this.data.height - 1 - _c.y] = [];
         }
-        for (var i = 0; i < this.rooms.length; i++) {
-            var room = this.rooms[i];
-            var canvasCoordShifted = {
-                x: room.coordinate.x * pixelsPerTile + (pixelsPerTile / 2),
-                y: (this.data.height - room.coordinate.y - 1) * pixelsPerTile + (pixelsPerTile / 2)
-            };
-            ctx.beginPath();
-            ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
-                r: 255,
-                b: 255,
-                g: 255,
-                alpha: 1
-            });
-            ctx.lineWidth = 3;
-            for (var i_1 = 0; i_1 < room.directions.length; i_1++) {
-                var otherRoom = room.directions[i_1];
-                if (otherRoom) {
-                    var otherRoomCanvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(otherRoom.coordinate, pixelsPerTile, this.data.height);
-                    ctx.moveTo(canvasCoordShifted.x, canvasCoordShifted.y);
-                    ctx.lineTo(otherRoomCanvasCoord.x, otherRoomCanvasCoord.y);
+        return this.mapDoubleArray[this.data.height - 1 - _c.y][_c.x];
+    };
+    Dungeon.prototype.setMapDoubleArray = function (_c, _string) {
+        if (this.mapDoubleArray[this.data.height - 1 - _c.y] === undefined) {
+            this.mapDoubleArray[this.data.height - 1 - _c.y] = [];
+        }
+        this.mapDoubleArray[this.data.height - 1 - _c.y][_c.x] = _string;
+    };
+    Dungeon.prototype.getMapString = function () {
+        var _a;
+        var width = this.data.width;
+        var height = this.data.height;
+        var widthP1 = width + 1;
+        // debug("mapstring", map)
+        // draw initial
+        if (this.mapDoubleArray.length === 0) {
+            var levelArray = [];
+            for (var i = 0; i < (width + 1) * height; i++) {
+                var level = Math.floor(i / widthP1);
+                // if new line
+                if (i === (widthP1 * level) + width) {
+                    this.mapDoubleArray.push(levelArray);
+                    levelArray = [];
+                }
+                else {
+                    levelArray.push(typedef_1.EMOJI_BLACKB);
                 }
             }
-            ctx.stroke();
-            ctx.closePath();
         }
-        return canvas;
+        // debug("init", map);
+        // get rooms accessible
+        var leaderRoom = this.getRoom(this.leaderCoordinate);
+        var accessibleRooms = this.rooms.filter(function (_r) { return _r.isDiscovered; });
+        // update all the accesible rooms
+        for (var i = 0; i < accessibleRooms.length; i++) {
+            var room = accessibleRooms[i];
+            var icon = '';
+            // leader's location
+            if ((0, Utility_1.findEqualCoordinate)(this.leaderCoordinate, room.coordinate)) {
+                icon = '🌠';
+            }
+            // starting mark
+            else if ((0, Utility_1.findEqualCoordinate)(this.data.start, room.coordinate)) {
+                icon = '❎';
+            }
+            // empty room
+            else {
+                icon = this.getMapDoubleArray(room.coordinate) || typedef_1.EMOJI_WHITEB;
+            }
+            this.setMapDoubleArray(room.coordinate, icon);
+        }
+        // draw brown walls
+        for (var w = 0; w < leaderRoom.directions.length; w++) {
+            var leaderRoomCoordinate = (0, Utility_1.getNewObject)(leaderRoom.coordinate);
+            var accessible = leaderRoom.directions[w];
+            var magAxis = (0, Utility_1.directionToMagnitudeAxis)((0, Utility_1.numericDirectionToDirection)(w));
+            leaderRoomCoordinate[magAxis.axis] += magAxis.magnitude;
+            var withinWorld = leaderRoomCoordinate.x >= 0 && leaderRoomCoordinate.y >= 0 && leaderRoomCoordinate.x < width && leaderRoomCoordinate.y < height;
+            if (withinWorld) {
+                var icon = accessible && ((_a = leaderRoom.directions[w]) === null || _a === void 0 ? void 0 : _a.isDiscovered) === false ?
+                    (0, Utility_1.directionToEmoji)((0, Utility_1.numericDirectionToDirection)(w)) :
+                    accessible ?
+                        typedef_1.EMOJI_WHITEB :
+                        typedef_1.EMOJI_BROWNB;
+                this.setMapDoubleArray(leaderRoomCoordinate, icon);
+            }
+        }
+        var returnString = [];
+        for (var i = 0; i < this.mapDoubleArray.length; i++) {
+            var a = this.mapDoubleArray[i];
+            var string = a.join("");
+            returnString.push(string);
+        }
+        return returnString.join("\n");
     };
     Dungeon.prototype.print = function (_channel) {
-        var canvas = this.getCanvas();
+        var canvas = this.getMapString();
         _channel.send({
-            files: [
-                canvas.toBuffer()
+            embeds: [
+                new discord_js_1.MessageEmbed().setDescription(canvas)
             ]
         });
     };
@@ -475,8 +496,8 @@ var Dungeon = /** @class */ (function () {
                         this.callMessage = _message;
                         _loop_2 = function (i) {
                             var room, encounterName, mapdata;
-                            return __generator(this, function (_e) {
-                                switch (_e.label) {
+                            return __generator(this, function (_d) {
+                                switch (_d.label) {
                                     case 0:
                                         room = this_1.rooms[i];
                                         if (!room.isBattleRoom) return [3 /*break*/, 2];
@@ -488,8 +509,8 @@ var Dungeon = /** @class */ (function () {
                                                 room.battle = _b;
                                             })];
                                     case 1:
-                                        _e.sent();
-                                        _e.label = 2;
+                                        _d.sent();
+                                        _d.label = 2;
                                     case 2: return [2 /*return*/];
                                 }
                             });
