@@ -1,5 +1,5 @@
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions } from "discord.js";
+import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions, MessageSelectOptionData } from "discord.js";
 import { Type } from "typescript";
 import classData from "../data/classData.json"
 import dungeonData from "../data/dungeonData.json"
@@ -624,7 +624,7 @@ export function setUpInteractionCollect(msg: Message, cb: (itr: Interaction) => 
     return interCollectr;
 }
 
-export function getSelectMenuActionRow(options: { label: string, value: string }[], id: string = 'customId', min: number = 1, max: number = 1) {
+export function getSelectMenuActionRow(options: MessageSelectOptionData[], id: string = 'customId', min: number = 1, max: number = 1) {
     const menu = new MessageSelectMenu({
         customId: id,
         minValues: min,

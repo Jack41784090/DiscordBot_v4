@@ -2,18 +2,18 @@
     "farmstead": {
         "name": "Farmstead Epicenter",
 
-        "maxLength": 1,
-        "minLength": 1,
-        "maxRoom": 100,
-        "minRoom": 100,
+        "maxLength": 5,
+        "minLength": 2,
+        "maxRoom": 40,
+        "minRoom": 30,
         "maxBattle": 3,
-        "minBattle": 3,
-        "width": 10,
-        "height": 10,
+        "minBattle": 5,
+        "width": 14,
+        "height": 14,
 
         "start": {
-            "x": 4,
-            "y": 4
+            "x": 6,
+            "y": 6
         },
 
         "encounterMaps": [

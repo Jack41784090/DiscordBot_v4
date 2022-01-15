@@ -7,7 +7,7 @@ import weaponData from "../data/weaponData.json";
 
 import fs from 'fs';
 import { MinHeap } from "./MinHeap";
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
@@ -98,7 +98,7 @@ export class Battle {
         // add players to spawning list
         for (let i = 0; i < _party.length; i++) {
             const ownerID = _party[i];
-            const userData = await getUserData(ownerID);
+            const userData: UserData = await getUserData(ownerID);
             const blankStat = getStat(getBaseStat(userData.equippedClass), ownerID);
             if (_pvp) {
                 blankStat.pvp = true;
@@ -131,6 +131,16 @@ export class Battle {
     static async Start(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
         const battle = await Battle.Generate(_mapData, _author, _message, _party, _client, _pvp);
         battle.StartRound();
+    }
+
+    /** An alternative to Start when the battle is already initiated. Gives additional options to begin. */
+    StartBattle(_options: StartBattleOptions) {
+        // check player welfare
+        const allStats = this.allStats();
+        const playerStats = this.party.map(_ownerID => allStats.find(_s => _s.owner === _ownerID));
+        
+
+        // ambush
     }
 
     /** Begin a new round

@@ -50,6 +50,13 @@ var areasData_json_1 = __importDefault(require("../data/areasData.json"));
 var Database_1 = require("./Database");
 var Dungeon = /** @class */ (function () {
     function Dungeon(_data, _message, _user, _userData) {
+        this.inventory = [{
+                type: 'torch',
+                uses: 5,
+            }, {
+                type: 'scout',
+                uses: 5,
+            }];
         this.rooms = [];
         this.CS = {};
         this.mapDoubleArray = [];
@@ -108,8 +115,8 @@ var Dungeon = /** @class */ (function () {
             for (var i = 0; i < _length; i++) {
                 coord[magAxis.axis] += magAxis.magnitude;
                 var newRoom = void 0;
+                // empty space
                 if (coordEmpty(coord)) {
-                    // log("\tMaking room @ " + JSON.stringify(coord));
                     // initiate room
                     initiateCoord(coord);
                     // connect to previous room
@@ -120,27 +127,27 @@ var Dungeon = /** @class */ (function () {
                     dungeon.CS[coord.x][coord.y] = newRoom;
                     dungeon.rooms.push(newRoom);
                 }
+                // room is initiated by previous branchOut
                 else {
-                    // log("\tExisting room @ " + JSON.stringify(coord));
                     newRoom = dungeon.getRoom(coord);
                     // connect to previous room
-                    var newRoomDir = Array.from(Dungeon.BLOCKEDOFF_ROOMDIR);
+                    var newRoomDir = newRoom.directions;
                     newRoomDir[oppositeDirection(_direction)] = previousRoom;
                     newRoom.directions = newRoomDir;
                 }
                 // connecting previous room to new room
                 previousRoom.directions[_direction] = newRoom;
                 // chance for battle
-                // if (battleRoomsSpawned < battleRoomsCount) {
-                //     battleEncounterChanceAccumulator++;
-                //     const encounterChance = battleEncounterChanceAccumulator / (roomsPerBattle * 8);
-                //     const encounterRoll = random(Number.EPSILON, 1.0);
-                //     if (encounterRoll < encounterChance) {
-                //         newRoom.isBattleRoom = true;
-                //         battleEncounterChanceAccumulator = 0;
-                //         battleRoomsSpawned++;
-                //     }
-                // }
+                if (battleRoomsSpawned < battleRoomsCount) {
+                    battleEncounterChanceAccumulator++;
+                    var encounterChance = battleEncounterChanceAccumulator / (roomsPerBattle * 8);
+                    var encounterRoll = (0, Utility_1.random)(Number.EPSILON, 1.0);
+                    if (encounterRoll < encounterChance) {
+                        newRoom.isBattleRoom = true;
+                        battleEncounterChanceAccumulator = 0;
+                        battleRoomsSpawned++;
+                    }
+                }
                 // chance to branch out again
                 var roll = (0, Utility_1.random)(Number.EPSILON, 1.0);
                 if (roll < Dungeon.BRANCHOUT_CHANCE) {
@@ -152,15 +159,19 @@ var Dungeon = /** @class */ (function () {
         };
         var getAvailableDirections = function (_c, _length) {
             var availableDirections = [];
+            // look left
             if (_c.x - 1 >= 0 && _c.x - _length >= 0 && coordEmpty((0, Utility_1.getNewObject)(_c, { x: _c.x - 1 }))) {
                 availableDirections.push(typedef_1.NumericDirection.left);
             }
+            // look down
             if (_c.y - 1 >= 0 && _c.y - _length >= 0 && coordEmpty((0, Utility_1.getNewObject)(_c, { y: _c.y - 1 }))) {
                 availableDirections.push(typedef_1.NumericDirection.down);
             }
+            // look right
             if (_c.x + 1 < _dungeonData.width && _c.x + _length < _dungeonData.width && coordEmpty((0, Utility_1.getNewObject)(_c, { x: _c.x + 1 }))) {
                 availableDirections.push(typedef_1.NumericDirection.right);
             }
+            // look up
             if (_c.y + 1 < _dungeonData.height && _c.y + _length < _dungeonData.height && coordEmpty((0, Utility_1.getNewObject)(_c, { y: _c.y + 1 }))) {
                 availableDirections.push(typedef_1.NumericDirection.up);
             }
@@ -190,6 +201,7 @@ var Dungeon = /** @class */ (function () {
         }
         // branch out paths
         var battleRoomsCount = (0, Utility_1.random)(_dungeonData.minBattle, _dungeonData.maxBattle);
+        (0, Utility_1.debug)("battleRoomsCount", battleRoomsCount);
         var battleRoomsSpawned = 0;
         var roomsPerBattle = roomCount / battleRoomsCount;
         var battleEncounterChanceAccumulator = 0;
@@ -223,39 +235,47 @@ var Dungeon = /** @class */ (function () {
                 break;
         }
         // spawn remaining battle rooms
-        // if (battleRoomsSpawned < battleRoomsCount) {
-        //     const difference = battleRoomsCount - battleRoomsSpawned;
-        //     const deadEndRooms: Room[] = [];
-        //     const roomQueue: Room[] = [dungeon.getRoom(_dungeonData.start)!];
-        //     const exploredRooms: Room[] = [];
-        //     // branch out and seek the longest dead end
-        //     let currentRoom = roomQueue.shift();
-        //     while (currentRoom) {
-        //         for (let i = 0; i < currentRoom.directions.length; i++) {
-        //             const r = currentRoom.directions[i];
-        //             if (r && !exploredRooms.includes(r)) {
-        //                 roomQueue.push(r);
-        //                 exploredRooms.push(r);
-        //             }
-        //         }
-        //         if (
-        //             !findEqualCoordinate(currentRoom.coordinate, startingCoord)&&
-        //             currentRoom.directions.filter(_d => _d === null).length === 3
-        //         ) {
-        //             deadEndRooms.unshift(currentRoom);
-        //         }
-        //         currentRoom = roomQueue.shift();
-        //     }
-        //     // deadEndRooms is sorted longest to shortest. Spawn treasures and boss rooms in the longest ones
-        //     for (let i = 0; i < difference; i++) {
-        //         const deadEnd = deadEndRooms[i];
-        //         if (deadEnd) {
-        //             deadEnd.isBattleRoom = true;
-        //             // TODO: spawn treasure
-        //         }
-        //     }
-        // }
+        if (battleRoomsSpawned < battleRoomsCount) {
+            var difference = battleRoomsCount - battleRoomsSpawned;
+            var startingRoom = dungeon.getRoom(_dungeonData.start);
+            var deadEndRooms = dungeon.breathFirstSearch(startingRoom, function (_q, _c) { return true; }, function (_c) {
+                return !(0, Utility_1.findEqualCoordinate)(_c.coordinate, startingCoord) &&
+                    _c.directions.filter(function (_d) { return _d === null; }).length === 3;
+            });
+            deadEndRooms.reverse();
+            // Spawn treasures and boss rooms in the longest ones
+            for (var i = 0; i < difference; i++) {
+                var deadEnd = deadEndRooms[i];
+                if (deadEnd) {
+                    deadEnd.isBattleRoom = true;
+                    // TODO: spawn treasure
+                }
+            }
+        }
         return dungeon;
+    };
+    Dungeon.prototype.breathFirstSearch = function (_startingRoom, _pushToQueueCondition, _pushToResultCondition) {
+        var queue = [_startingRoom];
+        var result = [];
+        var exploredRooms = [];
+        // branch out and seek the longest dead end
+        var currentRoom = queue.shift();
+        while (currentRoom) {
+            for (var i = 0; i < currentRoom.directions.length; i++) {
+                var r = currentRoom.directions[i];
+                if (r && !exploredRooms.includes(r)) {
+                    exploredRooms.push(r);
+                    if (_pushToQueueCondition(queue, currentRoom)) {
+                        queue.push(r);
+                    }
+                }
+            }
+            if (_pushToResultCondition(currentRoom)) {
+                result.push(currentRoom);
+            }
+            currentRoom = queue.shift();
+        }
+        return result;
     };
     Dungeon.prototype.validateMovement = function (_direction) {
         var direction = Number.isInteger(_direction) ?
@@ -273,28 +293,29 @@ var Dungeon = /** @class */ (function () {
         }
         return valid;
     };
-    Dungeon.prototype.getImageEmbedMessageOptions = function () {
-        var mapEmbed = new discord_js_1.MessageEmbed().setDescription("" + this.getMapString());
+    Dungeon.prototype.getImageEmbedMessageOptions = function (_messageOption) {
+        var _a, _e, _f;
+        if (_messageOption === void 0) { _messageOption = {}; }
+        var mapEmbed = new discord_js_1.MessageEmbed()
+            .setFooter("" + ((_a = this.leaderUser) === null || _a === void 0 ? void 0 : _a.username), "" + (((_e = this.leaderUser) === null || _e === void 0 ? void 0 : _e.displayAvatarURL()) || ((_f = this.leaderUser) === null || _f === void 0 ? void 0 : _f.defaultAvatarURL)))
+            .setDescription("" + this.getMapString());
         var currentRoom;
         if ((currentRoom = this.getRoom(this.leaderCoordinate)) && (currentRoom === null || currentRoom === void 0 ? void 0 : currentRoom.isBattleRoom)) {
             mapEmbed.setTitle("Danger! Enemy Spotted!");
         }
-        var messageOption = {
+        var messageOption = (0, Utility_1.getNewObject)({
             embeds: [mapEmbed],
-        };
+        }, _messageOption);
         return messageOption;
     };
     Dungeon.prototype.readAction = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var channel, mapMessage, buttonOptions, listenToQueue, handleQueue;
+            var channel, buttonOptions, selectMenuOptions, allComponents, messagePayload, mapMessage, listenToQueue, handleItem, handleMovement;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         channel = this.callMessage.channel;
-                        return [4 /*yield*/, channel.send(this.getImageEmbedMessageOptions())];
-                    case 1:
-                        mapMessage = _a.sent();
                         buttonOptions = [
                             {
                                 label: "⬆️",
@@ -317,33 +338,76 @@ var Dungeon = /** @class */ (function () {
                                 customId: "left"
                             },
                         ];
-                        listenToQueue = function () {
-                            // log("\tListening to queue...");
-                            var messagePayload = {
-                                components: [(0, Utility_1.getButtonsActionRow)(buttonOptions)],
+                        selectMenuOptions = this.inventory.map(function (_dItem) {
+                            return {
+                                label: _dItem.type + " x" + _dItem.uses,
+                                value: _dItem.type,
                             };
-                            mapMessage.edit(messagePayload);
+                        });
+                        allComponents = [(0, Utility_1.getButtonsActionRow)(buttonOptions)];
+                        if (selectMenuOptions.length > 0) {
+                            allComponents.push((0, Utility_1.getSelectMenuActionRow)(selectMenuOptions));
+                        }
+                        messagePayload = {
+                            components: allComponents,
+                        };
+                        return [4 /*yield*/, channel.send(this.getImageEmbedMessageOptions(messagePayload))];
+                    case 1:
+                        mapMessage = _a.sent();
+                        listenToQueue = function () {
                             (0, Utility_1.setUpInteractionCollect)(mapMessage, function (itr) { return __awaiter(_this, void 0, void 0, function () {
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0:
-                                            if (!(itr.isButton() && itr.user.id === this.leaderUser.id)) return [3 /*break*/, 3];
-                                            return [4 /*yield*/, handleQueue(itr)];
+                                            if (!(itr.user.id === this.leaderUser.id)) return [3 /*break*/, 5];
+                                            if (!itr.isButton()) return [3 /*break*/, 3];
+                                            return [4 /*yield*/, handleMovement(itr)];
                                         case 1:
                                             _a.sent();
-                                            return [4 /*yield*/, itr.update(this.getImageEmbedMessageOptions())];
+                                            return [4 /*yield*/, itr.update(this.getImageEmbedMessageOptions(messagePayload))];
                                         case 2:
                                             _a.sent();
-                                            _a.label = 3;
-                                        case 3: return [2 /*return*/];
+                                            return [3 /*break*/, 5];
+                                        case 3:
+                                            if (!itr.isSelectMenu()) return [3 /*break*/, 5];
+                                            handleItem(itr);
+                                            return [4 /*yield*/, itr.update(this.getImageEmbedMessageOptions(messagePayload))];
+                                        case 4:
+                                            _a.sent();
+                                            _a.label = 5;
+                                        case 5: return [2 /*return*/];
                                     }
                                 });
                             }); }, 1);
                         };
-                        handleQueue = function (_itr) { return __awaiter(_this, void 0, void 0, function () {
+                        handleItem = function (_itr) {
+                            var itemSelected = _itr.values[0];
+                            switch (itemSelected) {
+                                case "torch":
+                                    var discoveredRooms = _this.breathFirstSearch(_this.getRoom(_this.leaderCoordinate), function (_q, _c) {
+                                        return (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) <= 1;
+                                    }, function (_c) { return true; });
+                                    discoveredRooms.forEach(function (_r) { return _r.isDiscovered = true; });
+                                    break;
+                                case "scout":
+                                    var battleRooms = _this.rooms.filter(function (_r) { return _r.isBattleRoom; });
+                                    var closestBattle = battleRooms.reduce(function (_closest, _c) {
+                                        return _closest === null ||
+                                            (0, Utility_1.getDistance)(_closest.coordinate, _this.leaderCoordinate) > (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) ?
+                                            _c :
+                                            _closest;
+                                    }, null);
+                                    if (closestBattle) {
+                                        closestBattle.isDiscovered = true;
+                                    }
+                                    break;
+                            }
+                            listenToQueue();
+                        };
+                        handleMovement = function (_itr) { return __awaiter(_this, void 0, void 0, function () {
                             var direction, valid, magAxis, nextRoom;
                             var _a;
-                            return __generator(this, function (_d) {
+                            return __generator(this, function (_e) {
                                 direction = _itr.customId;
                                 valid = false;
                                 switch (direction) {
@@ -352,9 +416,7 @@ var Dungeon = /** @class */ (function () {
                                     case "right":
                                     case "left":
                                         magAxis = (0, Utility_1.directionToMagnitudeAxis)(direction);
-                                        // validate + act on (if valid) movement on virtual map
                                         valid = this.validateMovement(direction);
-                                        // movement is permitted
                                         if (valid) {
                                             this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
                                         }
@@ -363,22 +425,19 @@ var Dungeon = /** @class */ (function () {
                                         valid = false;
                                         break;
                                 }
-                                if (valid) {
-                                    nextRoom = this.getRoom(this.leaderCoordinate);
-                                    nextRoom.isDiscovered = true;
-                                    if (nextRoom.isBattleRoom) {
-                                        (_a = nextRoom.StartBattle()) === null || _a === void 0 ? void 0 : _a.then(function (_sieg) {
-                                            if (_sieg) {
-                                                listenToQueue();
-                                            }
-                                        });
-                                    }
-                                    else {
-                                        listenToQueue();
-                                    }
+                                if (valid && (nextRoom = this.getRoom(this.leaderCoordinate)) && nextRoom.isBattleRoom) {
+                                    // check new room's battle
+                                    (_a = nextRoom.StartBattle()) === null || _a === void 0 ? void 0 : _a.then(function (_sieg) {
+                                        if (_sieg) {
+                                            listenToQueue();
+                                        }
+                                    });
                                 }
                                 else {
                                     listenToQueue();
+                                }
+                                if (nextRoom) {
+                                    nextRoom.isDiscovered = true;
                                 }
                                 return [2 /*return*/];
                             });
@@ -407,11 +466,9 @@ var Dungeon = /** @class */ (function () {
         this.mapDoubleArray[this.data.height - 1 - _c.y][_c.x] = _string;
     };
     Dungeon.prototype.getMapString = function () {
-        var _a;
         var width = this.data.width;
         var height = this.data.height;
         var widthP1 = width + 1;
-        // debug("mapstring", map)
         // draw initial
         if (this.mapDoubleArray.length === 0) {
             var levelArray = [];
@@ -423,55 +480,105 @@ var Dungeon = /** @class */ (function () {
                     levelArray = [];
                 }
                 else {
-                    levelArray.push(typedef_1.EMOJI_BLACKB);
+                    levelArray.push("███");
                 }
             }
         }
-        // debug("init", map);
         // get rooms accessible
-        var leaderRoom = this.getRoom(this.leaderCoordinate);
         var accessibleRooms = this.rooms.filter(function (_r) { return _r.isDiscovered; });
+        // const accessibleRooms: Room[] = this.rooms;
         // update all the accesible rooms
         for (var i = 0; i < accessibleRooms.length; i++) {
             var room = accessibleRooms[i];
             var icon = '';
+            // standard room
+            var UD = 0;
+            if (room.directions[typedef_1.NumericDirection.up])
+                UD += 3;
+            if (room.directions[typedef_1.NumericDirection.down])
+                UD += 6;
+            var LR = 0;
+            if (room.directions[typedef_1.NumericDirection.right])
+                LR += 3;
+            if (room.directions[typedef_1.NumericDirection.left])
+                LR += 6;
+            var code = "" + UD + LR;
+            switch (code) {
+                case "00":
+                    icon = " + ";
+                    break;
+                case "03":
+                    icon = "╞══";
+                    break;
+                case "06":
+                    icon = "══╡";
+                    break;
+                case "09":
+                    icon = "═══";
+                    break;
+                case "30":
+                    icon = " ╨ ";
+                    break;
+                case "33":
+                    icon = " ╚═";
+                    break;
+                case "36":
+                    icon = "═╝ ";
+                    break;
+                case "39":
+                    icon = "═╩═";
+                    break;
+                case "60":
+                    icon = " ╥ ";
+                    break;
+                case "63":
+                    icon = " ╔═";
+                    break;
+                case "66":
+                    icon = "═╗ ";
+                    break;
+                case "69":
+                    icon = "═╦═";
+                    break;
+                case "90":
+                    icon = " ║ ";
+                    break;
+                case "93":
+                    icon = " ╠═";
+                    break;
+                case "96":
+                    icon = "═╣ ";
+                    break;
+                case "99":
+                    icon = "═╬═";
+                    break;
+            }
+            // replace middle emote
             // leader's location
             if ((0, Utility_1.findEqualCoordinate)(this.leaderCoordinate, room.coordinate)) {
-                icon = '🌠';
+                icon = (0, Utility_1.replaceCharacterAtIndex)(icon, '♦', 1);
             }
-            // starting mark
-            else if ((0, Utility_1.findEqualCoordinate)(this.data.start, room.coordinate)) {
-                icon = '❎';
+            // enemy spotted
+            else if (room.isBattleRoom) {
+                icon = (0, Utility_1.replaceCharacterAtIndex)(icon, '♠', 1);
+            }
+            // treasure room
+            else if (room.treasure !== null) {
+                icon = (0, Utility_1.replaceCharacterAtIndex)(icon, '♠', 1);
             }
             // empty room
             else {
-                icon = this.getMapDoubleArray(room.coordinate) || typedef_1.EMOJI_WHITEB;
             }
             this.setMapDoubleArray(room.coordinate, icon);
         }
-        // draw brown walls
-        for (var w = 0; w < leaderRoom.directions.length; w++) {
-            var leaderRoomCoordinate = (0, Utility_1.getNewObject)(leaderRoom.coordinate);
-            var accessible = leaderRoom.directions[w];
-            var magAxis = (0, Utility_1.directionToMagnitudeAxis)((0, Utility_1.numericDirectionToDirection)(w));
-            leaderRoomCoordinate[magAxis.axis] += magAxis.magnitude;
-            var withinWorld = leaderRoomCoordinate.x >= 0 && leaderRoomCoordinate.y >= 0 && leaderRoomCoordinate.x < width && leaderRoomCoordinate.y < height;
-            if (withinWorld) {
-                var icon = accessible && ((_a = leaderRoom.directions[w]) === null || _a === void 0 ? void 0 : _a.isDiscovered) === false ?
-                    (0, Utility_1.directionToEmoji)((0, Utility_1.numericDirectionToDirection)(w)) :
-                    accessible ?
-                        typedef_1.EMOJI_WHITEB :
-                        typedef_1.EMOJI_BROWNB;
-                this.setMapDoubleArray(leaderRoomCoordinate, icon);
-            }
-        }
+        // combine mapDoubleArray into one string
         var returnString = [];
         for (var i = 0; i < this.mapDoubleArray.length; i++) {
             var a = this.mapDoubleArray[i];
             var string = a.join("");
             returnString.push(string);
         }
-        return returnString.join("\n");
+        return "```" + returnString.join("\n") + "```";
     };
     Dungeon.prototype.print = function (_channel) {
         var canvas = this.getMapString();
@@ -496,21 +603,21 @@ var Dungeon = /** @class */ (function () {
                         this.callMessage = _message;
                         _loop_2 = function (i) {
                             var room, encounterName, mapdata;
-                            return __generator(this, function (_d) {
-                                switch (_d.label) {
+                            return __generator(this, function (_e) {
+                                switch (_e.label) {
                                     case 0:
                                         room = this_1.rooms[i];
                                         if (!room.isBattleRoom) return [3 /*break*/, 2];
                                         encounterName = (0, Utility_1.getRandomInArray)(this_1.data.encounterMaps);
                                         if (!(encounterName && areasData_json_1.default[encounterName])) return [3 /*break*/, 2];
                                         mapdata = (0, Utility_1.getNewObject)(areasData_json_1.default[encounterName]);
-                                        return [4 /*yield*/, Battle_1.Battle.Generate(mapdata, user, _message, userData.party, __1.BotClient, false)
+                                        return [4 /*yield*/, Battle_1.Battle.Generate(mapdata, this_1.leaderUser, _message, userData.party, __1.BotClient, false)
                                                 .then(function (_b) {
                                                 room.battle = _b;
                                             })];
                                     case 1:
-                                        _d.sent();
-                                        _d.label = 2;
+                                        _e.sent();
+                                        _e.label = 2;
                                     case 2: return [2 /*return*/];
                                 }
                             });

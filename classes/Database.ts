@@ -1,11 +1,11 @@
-import { Class, Settings, Stat, Team, UserData, UserStatus } from "../typedef"
+import { Class, Settings, Stat, UserData, UserStatus } from "../typedef"
 import { User } from "discord.js";
 
 import * as admin from 'firebase-admin'
 import * as serviceAccount from '../serviceAccount.json'
 import { Canvas, Image } from "canvas";
 import { ServiceAccount } from "firebase-admin";
-import { clamp, drawCircle, drawText, getBaseStat, getCSFromMap, getStat, log, random, startDrawing, stringifyRGBA } from "./Utility";
+import { drawCircle, getCSFromMap, getNewObject, log, random, startDrawing, stringifyRGBA } from "./Utility";
 import { Battle } from "./Battle";
 import { BotClient } from "..";
 
@@ -30,11 +30,11 @@ export async function getAnyData(collection: string, doc: string, failureCB?: (d
         null;
 }
 export async function saveUserData(_userData: UserData) {
-    const docRef = database.collection("Users").doc(_userData.party[0]);
-    const snapShot = await docRef.get();
+    const document = database.collection("Users").doc(_userData.party[0]);
+    const snapshotData = await document.get();
 
-    if (snapShot.exists) {
-        docRef.update(_userData);
+    if (snapshotData.exists) {
+        document.update(_userData);
     }
 }
 
@@ -67,6 +67,24 @@ export async function createNewUser(author: User): Promise<UserData> {
     });
     return data ? data as UserData : defaultData;
 }
+export async function getUserWelfare(_user: User): Promise<number | null> {
+    const document = database.collection("Users").doc(_user.id);
+    const snapshotData = await document.get();
+
+    let data: UserData | null = null;
+    if (snapshotData.exists) {
+        data = (snapshotData.data() as UserData);
+        if (data.welfare === undefined) {
+            await document.update(getNewObject(data, {
+                welfare: 1
+            }));
+            data.welfare = 1;
+        }
+    }
+    return snapshotData.exists?
+        data!.welfare:
+        null;
+}
 
 export function getDefaultUserData(author: User) {
     const _classes: Class[] = ["Hercules"];
@@ -78,6 +96,7 @@ export function getDefaultUserData(author: User) {
         settings: getDefaultSettings(),
         status: "idle" as UserStatus,
         equippedClass: "Hercules" as Class,
+        welfare: 1,
     };
 }
 

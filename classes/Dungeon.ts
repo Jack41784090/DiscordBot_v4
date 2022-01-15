@@ -1,9 +1,9 @@
-import { ButtonInteraction, Message, MessageAttachment, MessageButtonOptions, MessageCollector, MessageEmbed, MessageOptions, TextChannel, User } from "discord.js";
+import { ButtonInteraction, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectOptionData, SelectMenuInteraction, TextChannel, User } from "discord.js";
 import { BotClient } from "..";
-import { Coordinate, CoordStat, Direction, DungeonData, EMOJI_BLACKB, EMOJI_BROWNB, EMOJI_STAR, EMOJI_CROSS, EMOJI_TICK, EMOJI_WHITEB, MapData, MapName, NumericDirection, RoomDirections, UserData } from "../typedef";
+import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, DungeonItem, DungeonItemType } from "../typedef";
 import { Battle } from "./Battle";
 import { Room } from "./Room";
-import { debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, extractCommands, findEqualCoordinate, getButtonsActionRow, getCanvasCoordsFromBattleCoord, getDirection, getDistance, getNewObject, getRandomInArray, log, numericDirectionToDirection, random, replaceCharacterAtIndex, returnGridCanvas, setUpInteractionCollect, startDrawing, stringifyRGBA } from "./Utility";
+import { debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, getButtonsActionRow, getDistance, getNewObject, getRandomInArray, getSelectMenuActionRow, log, numericDirectionToDirection, random, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
 
 import areasData from "../data/areasData.json";
 import { getUserData } from "./Database";
@@ -12,6 +12,13 @@ export class Dungeon {
     static readonly BRANCHOUT_CHANCE = 0.1;
     static readonly BLOCKEDOFF_ROOMDIR: RoomDirections = [null, null, null, null];
 
+    inventory: DungeonItem[] = [{
+        type: 'torch',
+        uses: 5,
+    }, {
+            type: 'scout',
+            uses: 5,
+        }];
     leaderCoordinate: Coordinate;
     callMessage: Message | null;
     leaderUser: User | null;
@@ -73,9 +80,8 @@ export class Dungeon {
                 coord[magAxis.axis] += magAxis.magnitude;
 
                 let newRoom: Room;
+                // empty space
                 if (coordEmpty(coord)) {
-                    // log("\tMaking room @ " + JSON.stringify(coord));
-
                     // initiate room
                     initiateCoord(coord);
 
@@ -88,12 +94,12 @@ export class Dungeon {
                     dungeon.CS[coord.x][coord.y] = newRoom;
                     dungeon.rooms.push(newRoom);
                 }
+                // room is initiated by previous branchOut
                 else {
-                    // log("\tExisting room @ " + JSON.stringify(coord));
                     newRoom = dungeon.getRoom(coord)!;
 
                     // connect to previous room
-                    const newRoomDir = Array.from(Dungeon.BLOCKEDOFF_ROOMDIR) as RoomDirections;
+                    const newRoomDir = newRoom.directions as RoomDirections;
                     newRoomDir[oppositeDirection(_direction)] = previousRoom;
                     newRoom.directions = newRoomDir;
                 }
@@ -102,16 +108,16 @@ export class Dungeon {
                 previousRoom.directions[_direction] = newRoom;
 
                 // chance for battle
-                // if (battleRoomsSpawned < battleRoomsCount) {
-                //     battleEncounterChanceAccumulator++;
-                //     const encounterChance = battleEncounterChanceAccumulator / (roomsPerBattle * 8);
-                //     const encounterRoll = random(Number.EPSILON, 1.0);
-                //     if (encounterRoll < encounterChance) {
-                //         newRoom.isBattleRoom = true;
-                //         battleEncounterChanceAccumulator = 0;
-                //         battleRoomsSpawned++;
-                //     }
-                // }
+                if (battleRoomsSpawned < battleRoomsCount) {
+                    battleEncounterChanceAccumulator++;
+                    const encounterChance = battleEncounterChanceAccumulator / (roomsPerBattle * 8);
+                    const encounterRoll = random(Number.EPSILON, 1.0);
+                    if (encounterRoll < encounterChance) {
+                        newRoom.isBattleRoom = true;
+                        battleEncounterChanceAccumulator = 0;
+                        battleRoomsSpawned++;
+                    }
+                }
 
                 // chance to branch out again
                 const roll = random(Number.EPSILON, 1.0);
@@ -126,18 +132,24 @@ export class Dungeon {
         };
         const getAvailableDirections = (_c: Coordinate, _length: number) => {
             const availableDirections: NumericDirection[] = [];
+
+            // look left
             if (_c.x - 1 >= 0 && _c.x - _length >= 0 && coordEmpty(getNewObject(_c, { x: _c.x - 1 }))) {
                 availableDirections.push(NumericDirection.left);
             }
+            // look down
             if (_c.y - 1 >= 0 && _c.y - _length >= 0 && coordEmpty(getNewObject(_c, { y: _c.y - 1 }))) {
                 availableDirections.push(NumericDirection.down);
             }
+            // look right
             if (_c.x + 1 < _dungeonData.width && _c.x + _length < _dungeonData.width && coordEmpty(getNewObject(_c, { x: _c.x + 1 }))) {
                 availableDirections.push(NumericDirection.right);
             }
+            // look up
             if (_c.y + 1 < _dungeonData.height && _c.y + _length < _dungeonData.height && coordEmpty(getNewObject(_c, { y: _c.y + 1 }))) {
                 availableDirections.push(NumericDirection.up);
             }
+
             return availableDirections;
         }
         const takeRoot = (_c: Coordinate, _length: number): Coordinate | null | undefined => {
@@ -168,7 +180,7 @@ export class Dungeon {
         }
 
         // branch out paths
-        const battleRoomsCount = random(_dungeonData.minBattle, _dungeonData.maxBattle);
+        const battleRoomsCount = random(_dungeonData.minBattle, _dungeonData.maxBattle); debug("battleRoomsCount", battleRoomsCount);
         let battleRoomsSpawned = 0;
         const roomsPerBattle = roomCount / battleRoomsCount;
         let battleEncounterChanceAccumulator = 0;
@@ -204,45 +216,62 @@ export class Dungeon {
         }
 
         // spawn remaining battle rooms
-        // if (battleRoomsSpawned < battleRoomsCount) {
-        //     const difference = battleRoomsCount - battleRoomsSpawned;
-        //     const deadEndRooms: Room[] = [];
-        //     const roomQueue: Room[] = [dungeon.getRoom(_dungeonData.start)!];
-        //     const exploredRooms: Room[] = [];
+        if (battleRoomsSpawned < battleRoomsCount) {
+            const difference = battleRoomsCount - battleRoomsSpawned;
+            const startingRoom = dungeon.getRoom(_dungeonData.start)!;
+            const deadEndRooms: Room[] = dungeon.breathFirstSearch(startingRoom,
+                (_q, _c) => true,
+                (_c) => {
+                    return !findEqualCoordinate(_c.coordinate, startingCoord) &&
+                        _c.directions.filter(_d => _d === null).length === 3;
+                }
+            );
+            deadEndRooms.reverse();
 
-        //     // branch out and seek the longest dead end
-        //     let currentRoom = roomQueue.shift();
-        //     while (currentRoom) {
-        //         for (let i = 0; i < currentRoom.directions.length; i++) {
-        //             const r = currentRoom.directions[i];
-        //             if (r && !exploredRooms.includes(r)) {
-        //                 roomQueue.push(r);
-        //                 exploredRooms.push(r);
-        //             }
-        //         }
+            // Spawn treasures and boss rooms in the longest ones
+            for (let i = 0; i < difference; i++) {
+                const deadEnd = deadEndRooms[i];
+                if (deadEnd) {
+                    deadEnd.isBattleRoom = true;
+                    // TODO: spawn treasure
 
-        //         if (
-        //             !findEqualCoordinate(currentRoom.coordinate, startingCoord)&&
-        //             currentRoom.directions.filter(_d => _d === null).length === 3
-        //         ) {
-        //             deadEndRooms.unshift(currentRoom);
-        //         }
-
-        //         currentRoom = roomQueue.shift();
-        //     }
-
-        //     // deadEndRooms is sorted longest to shortest. Spawn treasures and boss rooms in the longest ones
-        //     for (let i = 0; i < difference; i++) {
-        //         const deadEnd = deadEndRooms[i];
-        //         if (deadEnd) {
-        //             deadEnd.isBattleRoom = true;
-        //             // TODO: spawn treasure
-
-        //         }
-        //     }
-        // }
+                }
+            }
+        }
 
         return dungeon;
+    }
+
+    breathFirstSearch(
+        _startingRoom: Room,
+        _pushToQueueCondition: (_q: Room[], _current: Room) => boolean,
+        _pushToResultCondition: (_current: Room) => boolean,
+    ) {
+        const queue: Room[] = [_startingRoom];
+        const result: Room[] = [];
+        const exploredRooms: Room[] = [];
+
+        // branch out and seek the longest dead end
+        let currentRoom = queue.shift();
+        while (currentRoom) {
+            for (let i = 0; i < currentRoom.directions.length; i++) {
+                const r = currentRoom.directions[i];
+                if (r && !exploredRooms.includes(r)) {
+                    exploredRooms.push(r);
+                    if (_pushToQueueCondition(queue, currentRoom)) {
+                        queue.push(r);
+                    }
+                }
+            }
+
+            if (_pushToResultCondition(currentRoom)) {
+                result.push(currentRoom);
+            }
+
+            currentRoom = queue.shift();
+        }
+
+        return result;
     }
 
     validateMovement(_direction: NumericDirection | Direction): boolean {
@@ -265,22 +294,23 @@ export class Dungeon {
         return valid;
     }
 
-    getImageEmbedMessageOptions() {
-        const mapEmbed = new MessageEmbed().setDescription(`${this.getMapString()}`);
+    getImageEmbedMessageOptions(_messageOption: MessageOptions = {}) {
+        const mapEmbed = new MessageEmbed()
+            .setFooter(`${this.leaderUser?.username}`, `${this.leaderUser?.displayAvatarURL() || this.leaderUser?.defaultAvatarURL}`)
+            .setDescription(`${this.getMapString()}`);
         let currentRoom: Room | undefined;
         if ((currentRoom = this.getRoom(this.leaderCoordinate)) && currentRoom?.isBattleRoom) {
             mapEmbed.setTitle(`Danger! Enemy Spotted!`);
         }
-        const messageOption: MessageOptions = {
+        const messageOption: MessageOptions = getNewObject({
             embeds: [mapEmbed],
-        }
+        }, _messageOption);
 
         return messageOption;
     }
 
     async readAction() {
         const channel = this.callMessage!.channel;
-        const mapMessage: Message = await channel.send(this.getImageEmbedMessageOptions());
         const buttonOptions: MessageButtonOptions[] = [
             {
                 label: "⬆️",
@@ -303,26 +333,67 @@ export class Dungeon {
                 customId: "left"
             },
         ];
-
-        /** Listens to the responseQueue every 300ms, clears the interval and handles the request when detected. */
-        const listenToQueue = () => {
-            // log("\tListening to queue...");
-            const messagePayload: MessageOptions = {
-                components: [getButtonsActionRow(buttonOptions)],
+        const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
+            return {
+                label: `${_dItem.type} x${_dItem.uses}`,
+                value: _dItem.type,
             }
-            mapMessage.edit(messagePayload);
+        });
+        const allComponents = [getButtonsActionRow(buttonOptions)];
+        if (selectMenuOptions.length > 0) {
+            allComponents.push(getSelectMenuActionRow(selectMenuOptions));
+        }
+        const messagePayload: MessageOptions = {
+            components: allComponents,
+        }
+        const mapMessage: Message = await channel.send(this.getImageEmbedMessageOptions(messagePayload));
+
+        const listenToQueue = () => {
             setUpInteractionCollect(mapMessage, async itr => {
-                if (itr.isButton() && itr.user.id === this.leaderUser!.id) {
-                    await handleQueue(itr);
-                    await itr.update(this.getImageEmbedMessageOptions());
+                if (itr.user.id === this.leaderUser!.id) {
+                    if (itr.isButton()) {
+                        await handleMovement(itr);
+                        await itr.update(this.getImageEmbedMessageOptions(messagePayload));
+                    }
+                    else if (itr.isSelectMenu()) {
+                        handleItem(itr);
+                        await itr.update(this.getImageEmbedMessageOptions(messagePayload));
+                    }
                 }
             }, 1);
         }
-        /** Handles the response (response is Discord.Message) */
-        const handleQueue = async (_itr: ButtonInteraction) => {
-            // log("\tHandling queue...");
+        const handleItem = (_itr: SelectMenuInteraction) => {
+            const itemSelected: DungeonItemType = _itr.values[0] as DungeonItemType;
+
+            switch(itemSelected) {
+                case "torch":
+                    const discoveredRooms = this.breathFirstSearch(
+                        this.getRoom(this.leaderCoordinate)!,
+                        (_q, _c) => {
+                            return getDistance(_c.coordinate, this.leaderCoordinate) <= 1;
+                        },
+                        (_c) => true
+                    );
+                    discoveredRooms.forEach(_r => _r.isDiscovered = true);
+                    break;
+
+                case "scout":
+                    const battleRooms = this.rooms.filter(_r => _r.isBattleRoom);
+                    const closestBattle = battleRooms.reduce((_closest: Room | null, _c: Room) => {
+                        return _closest === null||
+                            getDistance(_closest.coordinate, this.leaderCoordinate) > getDistance(_c.coordinate, this.leaderCoordinate) ?
+                                _c :
+                                _closest;
+                    }, null);
+                    if (closestBattle) {
+                        closestBattle.isDiscovered = true;
+                    }
+                    break;
+            }
+            listenToQueue();
+        }
+        const handleMovement = async (_itr: ButtonInteraction) => {
             const direction = _itr.customId;
-            // const moveMagnitude = parseInt(actionArgs[0]) || 1;
 
             let valid: boolean = false;
             switch (direction) {
@@ -331,10 +402,8 @@ export class Dungeon {
                 case "right":
                 case "left":
                     const magAxis = directionToMagnitudeAxis(direction);
-                    // validate + act on (if valid) movement on virtual map
                     valid = this.validateMovement(direction);
 
-                    // movement is permitted
                     if (valid) {
                         this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
                     }
@@ -345,24 +414,21 @@ export class Dungeon {
                     break;
             }
 
-            if (valid) {
+            let nextRoom: Room | undefined;
+            if (valid && (nextRoom = this.getRoom(this.leaderCoordinate)) && nextRoom.isBattleRoom) {
                 // check new room's battle
-                const nextRoom = this.getRoom(this.leaderCoordinate)!;
-                nextRoom.isDiscovered = true;
-                if (nextRoom.isBattleRoom) {
-                    nextRoom.StartBattle()
-                        ?.then(_sieg => {
-                            if (_sieg) {
-                                listenToQueue();
-                            }
-                        })
-                }
-                else {
-                    listenToQueue();
-                }
+                nextRoom.StartBattle()
+                    ?.then(_sieg => {
+                        if (_sieg) {
+                            listenToQueue();
+                        }
+                    })
             }
             else {
                 listenToQueue();
+            }
+            if (nextRoom) {
+                nextRoom.isDiscovered = true;
             }
         }
 
@@ -393,8 +459,6 @@ export class Dungeon {
         const height = this.data.height;
         const widthP1 = width + 1;
 
-        // debug("mapstring", map)
-
         // draw initial
         if (this.mapDoubleArray.length === 0) {
             let levelArray = [];
@@ -407,55 +471,102 @@ export class Dungeon {
                     levelArray = [];
                 }
                 else {
-                    levelArray.push(EMOJI_BLACKB);
+                    levelArray.push("███");
                 }
             }
         }
 
-        // debug("init", map);
-
         // get rooms accessible
-        const leaderRoom = this.getRoom(this.leaderCoordinate)!;
         const accessibleRooms: Room[] = this.rooms.filter(_r => _r.isDiscovered);
+        // const accessibleRooms: Room[] = this.rooms;
 
         // update all the accesible rooms
         for (let i = 0; i < accessibleRooms.length; i++) {
             const room = accessibleRooms[i];
             let icon = '';
+
+            // standard room
+            let UD = 0;
+            if (room.directions[NumericDirection.up]) UD += 3;
+            if (room.directions[NumericDirection.down]) UD += 6;
+
+            let LR = 0;
+            if (room.directions[NumericDirection.right]) LR += 3;
+            if (room.directions[NumericDirection.left]) LR += 6;
+
+            const code = `${UD}${LR}`;
+            switch (code) {
+                case "00":
+                    icon = " + ";
+                    break;
+                case "03":
+                    icon = "╞══"
+                    break;
+                case "06":
+                    icon = "══╡"
+                    break;
+                case "09":
+                    icon = "═══"
+                    break;
+                case "30":
+                    icon = " ╨ "
+                    break;
+                case "33":
+                    icon = " ╚═"
+                    break;
+                case "36":
+                    icon = "═╝ "
+                    break;
+                case "39":
+                    icon = "═╩═"
+                    break;
+                case "60":
+                    icon = " ╥ "
+                    break;
+                case "63":
+                    icon = " ╔═"
+                    break;
+                case "66":
+                    icon = "═╗ "
+                    break;
+                case "69":
+                    icon = "═╦═"
+                    break;
+                case "90":
+                    icon = " ║ "
+                    break;
+                case "93":
+                    icon = " ╠═"
+                    break;
+                case "96":
+                    icon = "═╣ "
+                    break;
+                case "99":
+                    icon = "═╬═"
+                    break;
+
+            }
+
+            // replace middle emote
             // leader's location
             if (findEqualCoordinate(this.leaderCoordinate, room.coordinate)) {
-                icon = '🌠';
+                icon = replaceCharacterAtIndex(icon, '♦', 1);
             }
-            // starting mark
-            else if (findEqualCoordinate(this.data.start, room.coordinate)) {
-                icon = '❎';
+            // enemy spotted
+            else if (room.isBattleRoom) {
+                icon = replaceCharacterAtIndex(icon, '♠', 1);
+            }
+            // treasure room
+            else if (room.treasure !== null) {
+                icon = replaceCharacterAtIndex(icon, '♠', 1);
             }
             // empty room
             else {
-                icon = this.getMapDoubleArray(room.coordinate) || EMOJI_WHITEB;
             }
             this.setMapDoubleArray(room.coordinate, icon);
         }
 
-        // draw brown walls
-        for (let w = 0; w < leaderRoom.directions.length; w++) {
-            const leaderRoomCoordinate = getNewObject(leaderRoom.coordinate);
-            const accessible = leaderRoom.directions[w];
-            const magAxis = directionToMagnitudeAxis(numericDirectionToDirection(w));
-            leaderRoomCoordinate[magAxis.axis] += magAxis.magnitude;
-            const withinWorld = leaderRoomCoordinate.x >= 0 && leaderRoomCoordinate.y >= 0 && leaderRoomCoordinate.x < width && leaderRoomCoordinate.y < height;
-
-            if (withinWorld) {
-                const icon =
-                    accessible && leaderRoom.directions[w]?.isDiscovered === false?
-                        directionToEmoji(numericDirectionToDirection(w)) :
-                            accessible?
-                                EMOJI_WHITEB:
-                                EMOJI_BROWNB;
-                this.setMapDoubleArray(leaderRoomCoordinate, icon);
-            }
-        }
-
+        // combine mapDoubleArray into one string
         const returnString = [];
         for (let i = 0; i < this.mapDoubleArray.length; i++) {
             const a = this.mapDoubleArray[i];
@@ -463,7 +574,7 @@ export class Dungeon {
             returnString.push(string);
         }
 
-        return returnString.join("\n");
+        return "```" + returnString.join("\n") + "```";
     }
 
     print(_channel: TextChannel) {
@@ -489,7 +600,7 @@ export class Dungeon {
                 const encounterName: MapName = getRandomInArray(this.data.encounterMaps);
                 if (encounterName && areasData[encounterName]) {
                     const mapdata: MapData = getNewObject(areasData[encounterName]) as MapData;
-                    await Battle.Generate(mapdata, user, _message, userData.party, BotClient, false)
+                    await Battle.Generate(mapdata, this.leaderUser, _message, userData.party, BotClient, false)
                         .then(_b => {
                             room.battle = _b;
                         });

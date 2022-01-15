@@ -176,6 +176,17 @@ export interface DungeonData {
 export interface Treasure {
     
 }
+export type DungeonItemType =
+    "torch"|
+    "scout"
+export interface DungeonItem {
+    uses: number,
+    type: DungeonItemType,
+}
+export interface StartBattleOptions {
+    ambush: Team | null,
+    
+}
 
 export interface Settings {
 
@@ -186,8 +197,9 @@ export interface UserData {
     money: number,
     name: string,
     party: Array<string>,
-    settings: Object,
-    status: UserStatus
+    settings: Settings,
+    status: UserStatus,
+    welfare: number,
 }
 export type UserStatus = "idle" | "busy"; 
 
