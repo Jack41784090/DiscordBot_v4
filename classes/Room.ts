@@ -1,4 +1,4 @@
-import { Coordinate, MapData, NumericDirection, OwnerID, RoomDirections, Treasure } from "../typedef";
+import { Coordinate, MapData, NumericDirection, OwnerID, RoomDirections, StartBattleOptions, Team, Treasure } from "../typedef";
 import { Battle } from "./Battle";
 import { BattleManager } from "./BattleManager";
 import { Dungeon } from "./Dungeon";
@@ -22,9 +22,12 @@ export class Room {
         this.isDiscovered = findEqualCoordinate(this.dungeon.data.start, _coordinate);
     }
 
-    StartBattle() {
+    StartBattle(_ambush: Team | null) {
         if (this.battle) {
-            return this.battle.StartRound()
+            const battleOptions: StartBattleOptions = {
+                ambush: _ambush,
+            };
+            return this.battle.StartBattle(battleOptions)
                 .then(_r => {
                     this.isBattleRoom = false;
                     const leader: OwnerID | undefined = this.dungeon.leaderUser?.id;

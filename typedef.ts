@@ -185,7 +185,6 @@ export interface DungeonItem {
 }
 export interface StartBattleOptions {
     ambush: Team | null,
-    
 }
 
 export interface Settings {

@@ -58,7 +58,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.saveBattle = exports.getBufferFromImage = exports.getIcon = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.saveUserData = exports.getAnyData = void 0;
+exports.saveBattle = exports.getBufferFromImage = exports.getIcon = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.getUserWelfare = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.saveUserData = exports.getAnyData = void 0;
 var admin = __importStar(require("firebase-admin"));
 var serviceAccount = __importStar(require("../serviceAccount.json"));
 var canvas_1 = require("canvas");
@@ -92,16 +92,16 @@ function getAnyData(collection, doc, failureCB) {
 exports.getAnyData = getAnyData;
 function saveUserData(_userData) {
     return __awaiter(this, void 0, void 0, function () {
-        var docRef, snapShot;
+        var document, snapshotData;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    docRef = database.collection("Users").doc(_userData.party[0]);
-                    return [4 /*yield*/, docRef.get()];
+                    document = database.collection("Users").doc(_userData.party[0]);
+                    return [4 /*yield*/, document.get()];
                 case 1:
-                    snapShot = _a.sent();
-                    if (snapShot.exists) {
-                        docRef.update(_userData);
+                    snapshotData = _a.sent();
+                    if (snapshotData.exists) {
+                        document.update(_userData);
                     }
                     return [2 /*return*/];
             }
@@ -180,6 +180,38 @@ function createNewUser(author) {
     });
 }
 exports.createNewUser = createNewUser;
+function getUserWelfare(_user) {
+    return __awaiter(this, void 0, void 0, function () {
+        var id, document, snapshotData, data;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    id = _user.client ?
+                        _user.id :
+                        _user;
+                    document = database.collection("Users").doc(id);
+                    return [4 /*yield*/, document.get()];
+                case 1:
+                    snapshotData = _a.sent();
+                    data = null;
+                    if (!snapshotData.exists) return [3 /*break*/, 3];
+                    data = snapshotData.data();
+                    if (!(data.welfare === undefined)) return [3 /*break*/, 3];
+                    return [4 /*yield*/, document.update((0, Utility_1.getNewObject)(data, {
+                            welfare: 1
+                        }))];
+                case 2:
+                    _a.sent();
+                    data.welfare = 1;
+                    _a.label = 3;
+                case 3: return [2 /*return*/, snapshotData.exists ?
+                        data.welfare :
+                        null];
+            }
+        });
+    });
+}
+exports.getUserWelfare = getUserWelfare;
 function getDefaultUserData(author) {
     var _classes = ["Hercules"];
     return {
@@ -190,6 +222,7 @@ function getDefaultUserData(author) {
         settings: getDefaultSettings(),
         status: "idle",
         equippedClass: "Hercules",
+        welfare: 1,
     };
 }
 exports.getDefaultUserData = getDefaultUserData;

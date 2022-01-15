@@ -1,9 +1,9 @@
 import { ButtonInteraction, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectOptionData, SelectMenuInteraction, TextChannel, User } from "discord.js";
 import { BotClient } from "..";
-import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, DungeonItem, DungeonItemType } from "../typedef";
+import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, DungeonItem, DungeonItemType, Team } from "../typedef";
 import { Battle } from "./Battle";
 import { Room } from "./Room";
-import { debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, getButtonsActionRow, getDistance, getNewObject, getRandomInArray, getSelectMenuActionRow, log, numericDirectionToDirection, random, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
+import { debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalize, getButtonsActionRow, getDistance, getNewObject, getRandomInArray, getSelectMenuActionRow, log, numericDirectionToDirection, random, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
 
 import areasData from "../data/areasData.json";
 import { getUserData } from "./Database";
@@ -14,11 +14,11 @@ export class Dungeon {
 
     inventory: DungeonItem[] = [{
         type: 'torch',
-        uses: 5,
+        uses: 1,
     }, {
-            type: 'scout',
-            uses: 5,
-        }];
+        type: 'scout',
+        uses: 1,
+    }];
     leaderCoordinate: Coordinate;
     callMessage: Message | null;
     leaderUser: User | null;
@@ -298,9 +298,14 @@ export class Dungeon {
         const mapEmbed = new MessageEmbed()
             .setFooter(`${this.leaderUser?.username}`, `${this.leaderUser?.displayAvatarURL() || this.leaderUser?.defaultAvatarURL}`)
             .setDescription(`${this.getMapString()}`);
-        let currentRoom: Room | undefined;
-        if ((currentRoom = this.getRoom(this.leaderCoordinate)) && currentRoom?.isBattleRoom) {
-            mapEmbed.setTitle(`Danger! Enemy Spotted!`);
+        let currentRoom: Room | undefined = this.getRoom(this.leaderCoordinate);
+        if (currentRoom && currentRoom.isBattleRoom) {
+            if (currentRoom.isDiscovered) {
+                mapEmbed.setTitle(`🪓 Prepare for Battle! 🪓`);
+            }
+            else {
+                mapEmbed.setTitle(`❗❗ Enemy Ambush! ❗❗`);
+            }
         }
         const messageOption: MessageOptions = getNewObject({
             embeds: [mapEmbed],
@@ -310,7 +315,6 @@ export class Dungeon {
     }
 
     async readAction() {
-        const channel = this.callMessage!.channel;
         const buttonOptions: MessageButtonOptions[] = [
             {
                 label: "⬆️",
@@ -333,31 +337,37 @@ export class Dungeon {
                 customId: "left"
             },
         ];
-        const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
-            return {
-                label: `${_dItem.type} x${_dItem.uses}`,
-                value: _dItem.type,
+        const returnMapMessage = () => {
+            const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
+                return {
+                    label: `${formalize(_dItem.type)} x${_dItem.uses}`,
+                    value: _dItem.type,
+                }
+            });
+            const messagePayload: MessageOptions = {
+                components: [getButtonsActionRow(buttonOptions)],
             }
-        });
-        const allComponents = [getButtonsActionRow(buttonOptions)];
-        if (selectMenuOptions.length > 0) {
-            allComponents.push(getSelectMenuActionRow(selectMenuOptions));
-        }
-        const messagePayload: MessageOptions = {
-            components: allComponents,
-        }
-        const mapMessage: Message = await channel.send(this.getImageEmbedMessageOptions(messagePayload));
+            if (selectMenuOptions.length > 0) {
+                messagePayload.components!.push(getSelectMenuActionRow(selectMenuOptions));
+            }
 
-        const listenToQueue = () => {
+            return this.getImageEmbedMessageOptions(messagePayload);
+        }
+        const listenToQueue = async () => {
             setUpInteractionCollect(mapMessage, async itr => {
                 if (itr.user.id === this.leaderUser!.id) {
-                    if (itr.isButton()) {
-                        await handleMovement(itr);
-                        await itr.update(this.getImageEmbedMessageOptions(messagePayload));
+                    try {
+                        if (itr.isButton()) {
+                            handleMovement(itr);
+                            await itr.update(returnMapMessage());
+                        }
+                        else if (itr.isSelectMenu()) {
+                            handleItem(itr);
+                            await itr.update(returnMapMessage());
+                        }
                     }
-                    else if (itr.isSelectMenu()) {
-                        handleItem(itr);
-                        await itr.update(this.getImageEmbedMessageOptions(messagePayload));
+                    catch (_err) {
+                        console.log(_err);
                     }
                 }
             }, 1);
@@ -365,31 +375,56 @@ export class Dungeon {
         const handleItem = (_itr: SelectMenuInteraction) => {
             const itemSelected: DungeonItemType = _itr.values[0] as DungeonItemType;
 
-            switch(itemSelected) {
-                case "torch":
-                    const discoveredRooms = this.breathFirstSearch(
-                        this.getRoom(this.leaderCoordinate)!,
-                        (_q, _c) => {
-                            return getDistance(_c.coordinate, this.leaderCoordinate) <= 1;
-                        },
-                        (_c) => true
-                    );
-                    discoveredRooms.forEach(_r => _r.isDiscovered = true);
-                    break;
+            // find item used
+            let itemIndex: number | null = null;
+            const invItem = this.inventory.find((_it, _i) => {
+                const valid = _it.type === itemSelected && _it.uses > 0;
+                if (valid) {
+                    itemIndex = _i;
+                }
+                return valid;
+            });
 
-                case "scout":
-                    const battleRooms = this.rooms.filter(_r => _r.isBattleRoom);
-                    const closestBattle = battleRooms.reduce((_closest: Room | null, _c: Room) => {
-                        return _closest === null||
-                            getDistance(_closest.coordinate, this.leaderCoordinate) > getDistance(_c.coordinate, this.leaderCoordinate) ?
-                                _c :
-                                _closest;
-                    }, null);
-                    if (closestBattle) {
-                        closestBattle.isDiscovered = true;
-                    }
-                    break;
+            if (invItem && itemIndex !== null) {
+                // consume item
+                invItem.uses--;
+                if (invItem.uses <= 0) {
+                    this.inventory.splice(itemIndex, 1);
+                }
+
+                // execute action
+                switch (itemSelected) {
+                    case "torch":
+                        const discoveredRooms = this.breathFirstSearch(
+                            this.getRoom(this.leaderCoordinate)!,
+                            (_q, _c) => {
+                                return getDistance(_c.coordinate, this.leaderCoordinate) <= 1;
+                            },
+                            (_c) => true
+                        );
+                        discoveredRooms.forEach(_r => _r.isDiscovered = true);
+                        break;
+
+                    case "scout":
+                        const battleRooms = this.rooms.filter(_r => _r.isBattleRoom);
+                        const closestBattle = battleRooms.reduce((_closest: Room | null, _c: Room) => {
+                            if (_c.isDiscovered) {
+                                return _closest
+                            }
+                            else {
+                                return _closest === null||
+                                    getDistance(_closest.coordinate, this.leaderCoordinate) > getDistance(_c.coordinate, this.leaderCoordinate)?
+                                        _c:
+                                        _closest;
+                            }
+                        }, null);
+                        if (closestBattle) {
+                            closestBattle.isDiscovered = true;
+                        }
+                        break;
+                }
             }
+
             listenToQueue();
         }
         const handleMovement = async (_itr: ButtonInteraction) => {
@@ -414,23 +449,42 @@ export class Dungeon {
                     break;
             }
 
+            // permitted movement and execute battle
             let nextRoom: Room | undefined;
             if (valid && (nextRoom = this.getRoom(this.leaderCoordinate)) && nextRoom.isBattleRoom) {
-                // check new room's battle
-                nextRoom.StartBattle()
-                    ?.then(_sieg => {
-                        if (_sieg) {
-                            listenToQueue();
-                        }
+                // check ambush
+                let ambush: Team | null = null;
+                if (!nextRoom.isDiscovered) {
+                    ambush = "enemy" as Team;
+                }
+
+                // start battle
+                await nextRoom.StartBattle(ambush)!
+                    .then(_sieg => {
+                        nextRoom!.isDiscovered = true;
+                        mapMessage.edit(returnMapMessage())
+                            .then(() => {
+                                if (_sieg) {
+                                    listenToQueue();
+                                }
+                            })
+                    })
+                    .catch(_err => {
+                        console.log(_err);
+                        listenToQueue();
                     })
             }
+            // movement is not valid or no battle, listen again
             else {
                 listenToQueue();
-            }
-            if (nextRoom) {
-                nextRoom.isDiscovered = true;
+                if (nextRoom) {
+                    nextRoom.isDiscovered = true;
+                }
             }
         }
+
+        const channel = this.callMessage!.channel;
+        const mapMessage: Message = await channel.send(returnMapMessage());
 
         listenToQueue();
     }

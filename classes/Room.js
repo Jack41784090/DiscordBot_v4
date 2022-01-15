@@ -14,10 +14,13 @@ var Room = /** @class */ (function () {
         this.isBattleRoom = _hasBattle;
         this.isDiscovered = (0, Utility_1.findEqualCoordinate)(this.dungeon.data.start, _coordinate);
     }
-    Room.prototype.StartBattle = function () {
+    Room.prototype.StartBattle = function (_ambush) {
         var _this = this;
         if (this.battle) {
-            return this.battle.StartRound()
+            var battleOptions = {
+                ambush: _ambush,
+            };
+            return this.battle.StartBattle(battleOptions)
                 .then(function (_r) {
                 var _a;
                 _this.isBattleRoom = false;

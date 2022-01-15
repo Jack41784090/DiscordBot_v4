@@ -1,4 +1,4 @@
-import { Class, Settings, Stat, UserData, UserStatus } from "../typedef"
+import { Class, OwnerID, Settings, Stat, UserData, UserStatus } from "../typedef"
 import { User } from "discord.js";
 
 import * as admin from 'firebase-admin'
@@ -67,8 +67,11 @@ export async function createNewUser(author: User): Promise<UserData> {
     });
     return data ? data as UserData : defaultData;
 }
-export async function getUserWelfare(_user: User): Promise<number | null> {
-    const document = database.collection("Users").doc(_user.id);
+export async function getUserWelfare(_user: User | OwnerID): Promise<number | null> {
+    const id = (_user as User).client?
+        (_user as User).id:
+        _user as OwnerID;
+    const document = database.collection("Users").doc(id);
     const snapshotData = await document.get();
 
     let data: UserData | null = null;

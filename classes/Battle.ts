@@ -1,7 +1,7 @@
 import { CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
 import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { getFileImage, getIcon, getUserData } from "./Database";
+import { getFileImage, getIcon, getUserData, getUserWelfare } from "./Database";
 import enemiesData from "../data/enemiesData.json";
 import weaponData from "../data/weaponData.json";
 
@@ -134,13 +134,34 @@ export class Battle {
     }
 
     /** An alternative to Start when the battle is already initiated. Gives additional options to begin. */
-    StartBattle(_options: StartBattleOptions) {
+    async StartBattle(_options: StartBattleOptions) {
         // check player welfare
         const allStats = this.allStats();
         const playerStats = this.party.map(_ownerID => allStats.find(_s => _s.owner === _ownerID));
-        
+        for (let i = 0; i < playerStats.length; i++) {
+            const player = playerStats[i];
+            if (player) {
+                const welfare = await getUserWelfare(player.owner);
+                if (welfare !== null) {
+                    player.HP = player.base.AHP * clamp(welfare, 0, 1);
+                }
+            }
+        }
 
         // ambush
+        if (_options.ambush && _options.ambush !== 'block') {
+            const ambushingTeam: Team = _options.ambush;
+            for (let i = 0; i < allStats.length; i++) {
+                const ambusher = allStats[i];
+                if (ambusher.team === ambushingTeam) {
+                    ambusher.readiness = 50;
+                    ambusher.sword = 3;
+                    ambusher.sprint = 3;
+                }
+            }
+        }
+
+        return this.StartRound();
     }
 
     /** Begin a new round

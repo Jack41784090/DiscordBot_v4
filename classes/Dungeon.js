@@ -52,10 +52,10 @@ var Dungeon = /** @class */ (function () {
     function Dungeon(_data, _message, _user, _userData) {
         this.inventory = [{
                 type: 'torch',
-                uses: 5,
+                uses: 1,
             }, {
                 type: 'scout',
-                uses: 5,
+                uses: 1,
             }];
         this.rooms = [];
         this.CS = {};
@@ -299,9 +299,14 @@ var Dungeon = /** @class */ (function () {
         var mapEmbed = new discord_js_1.MessageEmbed()
             .setFooter("" + ((_a = this.leaderUser) === null || _a === void 0 ? void 0 : _a.username), "" + (((_e = this.leaderUser) === null || _e === void 0 ? void 0 : _e.displayAvatarURL()) || ((_f = this.leaderUser) === null || _f === void 0 ? void 0 : _f.defaultAvatarURL)))
             .setDescription("" + this.getMapString());
-        var currentRoom;
-        if ((currentRoom = this.getRoom(this.leaderCoordinate)) && (currentRoom === null || currentRoom === void 0 ? void 0 : currentRoom.isBattleRoom)) {
-            mapEmbed.setTitle("Danger! Enemy Spotted!");
+        var currentRoom = this.getRoom(this.leaderCoordinate);
+        if (currentRoom && currentRoom.isBattleRoom) {
+            if (currentRoom.isDiscovered) {
+                mapEmbed.setTitle("\uD83E\uDE93 Prepare for Battle! \uD83E\uDE93");
+            }
+            else {
+                mapEmbed.setTitle("\u2757\u2757 Enemy Ambush! \u2757\u2757");
+            }
         }
         var messageOption = (0, Utility_1.getNewObject)({
             embeds: [mapEmbed],
@@ -310,12 +315,11 @@ var Dungeon = /** @class */ (function () {
     };
     Dungeon.prototype.readAction = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var channel, buttonOptions, selectMenuOptions, allComponents, messagePayload, mapMessage, listenToQueue, handleItem, handleMovement;
+            var buttonOptions, returnMapMessage, listenToQueue, handleItem, handleMovement, channel, mapMessage;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        channel = this.callMessage.channel;
                         buttonOptions = [
                             {
                                 label: "⬆️",
@@ -338,110 +342,164 @@ var Dungeon = /** @class */ (function () {
                                 customId: "left"
                             },
                         ];
-                        selectMenuOptions = this.inventory.map(function (_dItem) {
-                            return {
-                                label: _dItem.type + " x" + _dItem.uses,
-                                value: _dItem.type,
+                        returnMapMessage = function () {
+                            var selectMenuOptions = _this.inventory.map(function (_dItem) {
+                                return {
+                                    label: (0, Utility_1.formalize)(_dItem.type) + " x" + _dItem.uses,
+                                    value: _dItem.type,
+                                };
+                            });
+                            var messagePayload = {
+                                components: [(0, Utility_1.getButtonsActionRow)(buttonOptions)],
                             };
-                        });
-                        allComponents = [(0, Utility_1.getButtonsActionRow)(buttonOptions)];
-                        if (selectMenuOptions.length > 0) {
-                            allComponents.push((0, Utility_1.getSelectMenuActionRow)(selectMenuOptions));
-                        }
-                        messagePayload = {
-                            components: allComponents,
+                            if (selectMenuOptions.length > 0) {
+                                messagePayload.components.push((0, Utility_1.getSelectMenuActionRow)(selectMenuOptions));
+                            }
+                            return _this.getImageEmbedMessageOptions(messagePayload);
                         };
-                        return [4 /*yield*/, channel.send(this.getImageEmbedMessageOptions(messagePayload))];
-                    case 1:
-                        mapMessage = _a.sent();
-                        listenToQueue = function () {
-                            (0, Utility_1.setUpInteractionCollect)(mapMessage, function (itr) { return __awaiter(_this, void 0, void 0, function () {
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0:
-                                            if (!(itr.user.id === this.leaderUser.id)) return [3 /*break*/, 5];
-                                            if (!itr.isButton()) return [3 /*break*/, 3];
-                                            return [4 /*yield*/, handleMovement(itr)];
-                                        case 1:
-                                            _a.sent();
-                                            return [4 /*yield*/, itr.update(this.getImageEmbedMessageOptions(messagePayload))];
-                                        case 2:
-                                            _a.sent();
-                                            return [3 /*break*/, 5];
-                                        case 3:
-                                            if (!itr.isSelectMenu()) return [3 /*break*/, 5];
-                                            handleItem(itr);
-                                            return [4 /*yield*/, itr.update(this.getImageEmbedMessageOptions(messagePayload))];
-                                        case 4:
-                                            _a.sent();
-                                            _a.label = 5;
-                                        case 5: return [2 /*return*/];
-                                    }
-                                });
-                            }); }, 1);
-                        };
+                        listenToQueue = function () { return __awaiter(_this, void 0, void 0, function () {
+                            var _this = this;
+                            return __generator(this, function (_a) {
+                                (0, Utility_1.setUpInteractionCollect)(mapMessage, function (itr) { return __awaiter(_this, void 0, void 0, function () {
+                                    var _err_1;
+                                    return __generator(this, function (_a) {
+                                        switch (_a.label) {
+                                            case 0:
+                                                if (!(itr.user.id === this.leaderUser.id)) return [3 /*break*/, 7];
+                                                _a.label = 1;
+                                            case 1:
+                                                _a.trys.push([1, 6, , 7]);
+                                                if (!itr.isButton()) return [3 /*break*/, 3];
+                                                handleMovement(itr);
+                                                return [4 /*yield*/, itr.update(returnMapMessage())];
+                                            case 2:
+                                                _a.sent();
+                                                return [3 /*break*/, 5];
+                                            case 3:
+                                                if (!itr.isSelectMenu()) return [3 /*break*/, 5];
+                                                handleItem(itr);
+                                                return [4 /*yield*/, itr.update(returnMapMessage())];
+                                            case 4:
+                                                _a.sent();
+                                                _a.label = 5;
+                                            case 5: return [3 /*break*/, 7];
+                                            case 6:
+                                                _err_1 = _a.sent();
+                                                console.log(_err_1);
+                                                return [3 /*break*/, 7];
+                                            case 7: return [2 /*return*/];
+                                        }
+                                    });
+                                }); }, 1);
+                                return [2 /*return*/];
+                            });
+                        }); };
                         handleItem = function (_itr) {
                             var itemSelected = _itr.values[0];
-                            switch (itemSelected) {
-                                case "torch":
-                                    var discoveredRooms = _this.breathFirstSearch(_this.getRoom(_this.leaderCoordinate), function (_q, _c) {
-                                        return (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) <= 1;
-                                    }, function (_c) { return true; });
-                                    discoveredRooms.forEach(function (_r) { return _r.isDiscovered = true; });
-                                    break;
-                                case "scout":
-                                    var battleRooms = _this.rooms.filter(function (_r) { return _r.isBattleRoom; });
-                                    var closestBattle = battleRooms.reduce(function (_closest, _c) {
-                                        return _closest === null ||
-                                            (0, Utility_1.getDistance)(_closest.coordinate, _this.leaderCoordinate) > (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) ?
-                                            _c :
-                                            _closest;
-                                    }, null);
-                                    if (closestBattle) {
-                                        closestBattle.isDiscovered = true;
-                                    }
-                                    break;
+                            // find item used
+                            var itemIndex = null;
+                            var invItem = _this.inventory.find(function (_it, _i) {
+                                var valid = _it.type === itemSelected && _it.uses > 0;
+                                if (valid) {
+                                    itemIndex = _i;
+                                }
+                                return valid;
+                            });
+                            if (invItem && itemIndex !== null) {
+                                // consume item
+                                invItem.uses--;
+                                if (invItem.uses <= 0) {
+                                    _this.inventory.splice(itemIndex, 1);
+                                }
+                                // execute action
+                                switch (itemSelected) {
+                                    case "torch":
+                                        var discoveredRooms = _this.breathFirstSearch(_this.getRoom(_this.leaderCoordinate), function (_q, _c) {
+                                            return (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) <= 1;
+                                        }, function (_c) { return true; });
+                                        discoveredRooms.forEach(function (_r) { return _r.isDiscovered = true; });
+                                        break;
+                                    case "scout":
+                                        var battleRooms = _this.rooms.filter(function (_r) { return _r.isBattleRoom; });
+                                        var closestBattle = battleRooms.reduce(function (_closest, _c) {
+                                            if (_c.isDiscovered) {
+                                                return _closest;
+                                            }
+                                            else {
+                                                return _closest === null ||
+                                                    (0, Utility_1.getDistance)(_closest.coordinate, _this.leaderCoordinate) > (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) ?
+                                                    _c :
+                                                    _closest;
+                                            }
+                                        }, null);
+                                        if (closestBattle) {
+                                            closestBattle.isDiscovered = true;
+                                        }
+                                        break;
+                                }
                             }
                             listenToQueue();
                         };
                         handleMovement = function (_itr) { return __awaiter(_this, void 0, void 0, function () {
-                            var direction, valid, magAxis, nextRoom;
-                            var _a;
-                            return __generator(this, function (_e) {
-                                direction = _itr.customId;
-                                valid = false;
-                                switch (direction) {
-                                    case "up":
-                                    case "down":
-                                    case "right":
-                                    case "left":
-                                        magAxis = (0, Utility_1.directionToMagnitudeAxis)(direction);
-                                        valid = this.validateMovement(direction);
-                                        if (valid) {
-                                            this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
-                                        }
-                                        break;
-                                    default:
+                            var direction, valid, magAxis, nextRoom, ambush;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        direction = _itr.customId;
                                         valid = false;
-                                        break;
-                                }
-                                if (valid && (nextRoom = this.getRoom(this.leaderCoordinate)) && nextRoom.isBattleRoom) {
-                                    // check new room's battle
-                                    (_a = nextRoom.StartBattle()) === null || _a === void 0 ? void 0 : _a.then(function (_sieg) {
-                                        if (_sieg) {
-                                            listenToQueue();
+                                        switch (direction) {
+                                            case "up":
+                                            case "down":
+                                            case "right":
+                                            case "left":
+                                                magAxis = (0, Utility_1.directionToMagnitudeAxis)(direction);
+                                                valid = this.validateMovement(direction);
+                                                if (valid) {
+                                                    this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
+                                                }
+                                                break;
+                                            default:
+                                                valid = false;
+                                                break;
                                         }
-                                    });
+                                        if (!(valid && (nextRoom = this.getRoom(this.leaderCoordinate)) && nextRoom.isBattleRoom)) return [3 /*break*/, 2];
+                                        ambush = null;
+                                        if (!nextRoom.isDiscovered) {
+                                            ambush = "enemy";
+                                        }
+                                        // start battle
+                                        return [4 /*yield*/, nextRoom.StartBattle(ambush)
+                                                .then(function (_sieg) {
+                                                nextRoom.isDiscovered = true;
+                                                mapMessage.edit(returnMapMessage())
+                                                    .then(function () {
+                                                    if (_sieg) {
+                                                        listenToQueue();
+                                                    }
+                                                });
+                                            })
+                                                .catch(function (_err) {
+                                                console.log(_err);
+                                                listenToQueue();
+                                            })];
+                                    case 1:
+                                        // start battle
+                                        _a.sent();
+                                        return [3 /*break*/, 3];
+                                    case 2:
+                                        listenToQueue();
+                                        if (nextRoom) {
+                                            nextRoom.isDiscovered = true;
+                                        }
+                                        _a.label = 3;
+                                    case 3: return [2 /*return*/];
                                 }
-                                else {
-                                    listenToQueue();
-                                }
-                                if (nextRoom) {
-                                    nextRoom.isDiscovered = true;
-                                }
-                                return [2 /*return*/];
                             });
                         }); };
+                        channel = this.callMessage.channel;
+                        return [4 /*yield*/, channel.send(returnMapMessage())];
+                    case 1:
+                        mapMessage = _a.sent();
                         listenToQueue();
                         return [2 /*return*/];
                 }

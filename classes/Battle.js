@@ -200,6 +200,49 @@ var Battle = /** @class */ (function () {
             });
         });
     };
+    /** An alternative to Start when the battle is already initiated. Gives additional options to begin. */
+    Battle.prototype.StartBattle = function (_options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var allStats, playerStats, i, player, welfare, ambushingTeam, i, ambusher;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        allStats = this.allStats();
+                        playerStats = this.party.map(function (_ownerID) { return allStats.find(function (_s) { return _s.owner === _ownerID; }); });
+                        i = 0;
+                        _b.label = 1;
+                    case 1:
+                        if (!(i < playerStats.length)) return [3 /*break*/, 4];
+                        player = playerStats[i];
+                        if (!player) return [3 /*break*/, 3];
+                        return [4 /*yield*/, (0, Database_1.getUserWelfare)(player.owner)];
+                    case 2:
+                        welfare = _b.sent();
+                        if (welfare !== null) {
+                            player.HP = player.base.AHP * (0, Utility_1.clamp)(welfare, 0, 1);
+                        }
+                        _b.label = 3;
+                    case 3:
+                        i++;
+                        return [3 /*break*/, 1];
+                    case 4:
+                        // ambush
+                        if (_options.ambush && _options.ambush !== 'block') {
+                            ambushingTeam = _options.ambush;
+                            for (i = 0; i < allStats.length; i++) {
+                                ambusher = allStats[i];
+                                if (ambusher.team === ambushingTeam) {
+                                    ambusher.readiness = 50;
+                                    ambusher.sword = 3;
+                                    ambusher.sprint = 3;
+                                }
+                            }
+                        }
+                        return [2 /*return*/, this.StartRound()];
+                }
+            });
+        });
+    };
     /** Begin a new round
         Recurses into another StartRound until all enemies / players are defeated (HP <= 0). */
     Battle.prototype.StartRound = function () {
