@@ -1,7 +1,7 @@
-import { Action, AttackAction, ClashResult, Class, Coordinate, Direction, NumericDirection, WeaponEffectFunction, WeaponName } from "../typedef";
+import { Action, AttackAction, ClashResult, Coordinate, Direction, NumericDirection, WeaponEffectFunction, WeaponName } from "../typedef";
 import { Battle } from "./Battle";
 import { StatusEffect } from "./StatusEffect";
-import { clamp, directionToMagnitudeAxis, getBaseClassStat, getBaseEnemyStat, getNewObject, getStat, log, numericDirectionToDirection, roundToDecimalPlace } from "./Utility";
+import { clamp, directionToMagnitudeAxis, getBaseEnemyStat, getNewObject, getStat, log, numericDirectionToDirection, roundToDecimalPlace } from "./Utility";
 
 const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
     [
@@ -32,6 +32,16 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
         }
     ],
     [
+        "Blind Charge",
+        (_action: Action, _cR: ClashResult, _bd: Battle) => {
+            let returnString = '';
+            const attackAction = _action as AttackAction;
+
+
+            return returnString;
+        }
+    ],
+    [
         "Endless Labour",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             const affected = _action.from;
@@ -43,7 +53,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
         }
     ],
     [
-        "Vicious-Stab",
+        "Vicious Stab",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = '';
             if (_cR.fate !== "Miss") {
@@ -120,7 +130,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
         }
     ],
     [
-        "Wild-Hunt",
+        "Wild Hunt",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "";
 
@@ -212,7 +222,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
         }
     ],
     [
-        "Angelic-Blessings",
+        "Angelic Blessings",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "";
             const attacker = _action.from;

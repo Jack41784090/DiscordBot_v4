@@ -43,7 +43,7 @@
 				"Acc": 0,
 				"Damage": [0,0],
 				"Range": [0,0],
-				"Readiness": 20,
+				"Readiness": 0,
 				"sword": 0,
 				"shield": 0,
 				"sprint": 0,
@@ -58,7 +58,7 @@
 				"UPT": 1
 			},
 			{
-				"Name": "Blind-Charge",
+				"Name": "Blind Charge",
 				"Acc": 85,
 				"Damage": [5,10],
 				"Range": [1,2],
@@ -110,7 +110,7 @@
 		"iconURL": "images/Mars.png",
 		"weapons": [
 			{
-				"Name": "Vicious-Stab",
+				"Name": "Vicious Stab",
 				"Acc": 85,
 				"Damage": [8,13],
 				"Range": [1,1.5],
@@ -148,7 +148,7 @@
 				"UPT": 2
 			},
 			{
-				"Name": "Seize-Escape",
+				"Name": "Seize Escape",
 				"Acc": 95,
 				"Damage": [3,5],
 				"Range": [1,2],
@@ -219,7 +219,7 @@
 				"UPT": 5
 			},
 			{
-				"Name": "Wild-Hunt",
+				"Name": "Wild Hunt",
 				"Acc": 105,
 				"Damage": [0,0],
 				"Range": [0,0],
@@ -371,7 +371,7 @@
 				"UPT": 5
 			},
 			{
-				"Name": "Angelic-Blessings",
+				"Name": "Angelic Blessings",
 				"Acc": 0,
 				"Damage": [0,0],
 				"Range": [1,1],

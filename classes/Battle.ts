@@ -7,7 +7,7 @@ import weaponData from "../data/weaponData.json";
 
 import fs from 'fs';
 import { MinHeap } from "./MinHeap";
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions, VirtualStat } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
@@ -304,14 +304,16 @@ export class Battle {
                             console.log(err);
                             return null;
                         });
+                
+                if (user === null) continue;
 
                 // get a copy of stat (main reference in player control) from the CSMap
-                const virtualStat: Stat = getNewObject(realStat,
+                const virtualStat: VirtualStat = getNewObject(realStat,
                     {
-                        username: user?.username,
+                        username: user.username,
                         virtual: true
                     }
-                );
+                ) as VirtualStat;
                 virtualStat.weaponUses = realStat.weaponUses.map(_ => _);
 
                 // creating channel
@@ -766,7 +768,7 @@ export class Battle {
     };
 
     // action reader methods
-    readActions(_givenSeconds: number, _infoMessage: Message, _vS: Stat, _rS: Stat) {
+    readActions(_givenSeconds: number, _infoMessage: Message, _vS: VirtualStat, _rS: Stat) {
         // returns a Promise that resolves when the player is finished with their moves
         return new Promise((resolve) => {
             let currentListener: NodeJS.Timer;
@@ -828,54 +830,18 @@ export class Battle {
                             }
                             else {
                                 const check = this.validateMovement(_vS, moveAction)!;
-                                if (check) {
-                                    channel.send({
-                                        embeds: [new MessageEmbed({
-                                            title: check.reason,
-                                            description: `Failed to move. Reference value: __${check.value}__`,
-                                        })]
-                                    });
-                                }
+                                channel.send({
+                                    embeds: [new MessageEmbed({
+                                        title: check.reason,
+                                        description: `Failed to move. Reference value: __${check.value}__`,
+                                    })]
+                                });
                             }
                             break;
 
                         // attack
                         case "attack":
-                            const attackTarget = this.findEntity_args(actionArgs, _vS);
-                            if (attackTarget === null) {
-                                channel.send({
-                                    embeds: [new MessageEmbed({
-                                        title: `Invalid arguments given.`,
-                                        description: `Failed to attack.`,
-                                    })]
-                                });
-                            }
-                            else {
-                                const enemyTargetWeapons = _vS.base.weapons.filter(w => (
-                                    w.targetting.target === WeaponTarget.enemy
-                                ));
-                                const weaponChosen = enemyTargetWeapons[0];
-
-                                const virtualAttackAction = getAttackAction(_vS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
-                                valid = this.executeVirtualAttack(virtualAttackAction, _vS);
-
-                                if (valid) {
-                                    log(_rS.weaponUses);
-                                    const realAttackAction = getAttackAction(_rS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
-                                    executingActions.push(realAttackAction);
-                                }
-                                else {
-                                    const check = this.validateTarget(_vS, weaponChosen, attackTarget);
-                                    if (check) {
-                                        channel.send({
-                                            embeds: [new MessageEmbed({
-                                                title: check.reason,
-                                                description: `Failed to attack. Reference value: __${check.value}__`,
-                                            })]
-                                        });
-                                    }
-                                }
-                            }
+                            this.readAttackAction(_vS, _rS, 0, actionArgs);
                             break;
 
                         // clear
@@ -941,14 +907,12 @@ export class Battle {
                                         }
                                         else {
                                             const check = this.validateTarget(_vS, weaponChosen, attackTarget)!;
-                                            if (check) {
-                                                channel.send({
-                                                    embeds: [new MessageEmbed({
-                                                        title: check.reason,
-                                                        description: `Failed to attack. Reference value: __${check.value}__`,
-                                                    })]
-                                                });
-                                            }
+                                            channel.send({
+                                                embeds: [new MessageEmbed({
+                                                    title: check.reason,
+                                                    description: `Failed to attack. Reference value: __${check.value}__`,
+                                                })]
+                                            });
                                         }
                                     }
                                 }
@@ -1016,7 +980,37 @@ export class Battle {
             listenToQueue();
         })
     }
+    readAttackAction(_vS: VirtualStat, _rS: Stat, _round: Round, _args: string[]) {
+        const { weaponChosen, target } = this.decipherArgs(_args);
 
+        const virtualAttackAction = getAttackAction(_vS, target, weaponChosen, target, _round);
+        const valid = this.executeVirtualAttack(virtualAttackAction, _vS);
+
+        if (valid) {
+            const realAttackAction = getAttackAction(_rS, target, weaponChosen, target, _round);
+            // executingActions.push(realAttackAction);
+        }
+        else {
+            const check = this.validateTarget(_vS, weaponChosen, target)!;
+            // channel.send({
+            //     embeds: [new MessageEmbed({
+            //         title: check.reason,
+            //         description: `Failed to attack. Reference value: __${check.value}__`,
+            //     })]
+            // });
+        }
+    }
+    decipherArgs(_args: string[]) {
+        const result = {
+            weaponChosen: null,
+            target: null,
+        };
+
+        
+
+        return result; 
+    }
+    
     // index manipulation
     getIndex(stat?: Stat): number {
         let index: number | null = 0;
@@ -1507,6 +1501,7 @@ export class Battle {
         // expend resources
         _aA.executed = true;
         _aA.from.readiness -= _aA.readiness;
+        _aA.from.weaponUses[getWeaponIndex(_aA.weapon, _aA.from)]++;
         HandleTokens(_aA.from, (p, t) => {
             log(`\t\t${_aA.from.index}) ${t} --${_aA[t]}`)
             _aA.from[t] -= _aA[t]

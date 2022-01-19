@@ -129,6 +129,9 @@ export interface Stat extends Coordinate {
 
     pvp: boolean
 }
+export interface VirtualStat extends Stat {
+    virtual: true,
+}
 
 export interface Spawner extends Coordinate {
     spawns: Team,
@@ -265,15 +268,16 @@ export type WeaponName =
     "Obliterate"|
     "Endure"|
     "Endless Labour"|
+    "Blind Charge"|
 
     // Mars
-    "Vicious-Stab"|
+    "Vicious Stab"|
     "Decimate"|
     "Unrelenting Fury"|
 
     // Diana
     "Hunt"|
-    "Wild-Hunt"|
+    "Wild Hunt"|
 
     // Jupiter
     "Slay"|
@@ -283,9 +287,9 @@ export type WeaponName =
 
     // Victoria
     "Slice"|
-    "Angelic-Blessings"
+    "Angelic Blessings"
 export interface WeaponEffectFunction {
-    (_aA: Action, _cR: ClashResult, _bd: Battle): string;
+    (_aA: Action, _cR: ClashResult, _bd: Battle, _args: string[]): string;
 }
 
 // classes
