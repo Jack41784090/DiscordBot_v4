@@ -143,7 +143,7 @@ var Battle = /** @class */ (function () {
                         return [4 /*yield*/, (0, Database_1.getUserData)(ownerID)];
                     case 2:
                         userData = _f.sent();
-                        blankStat = (0, Utility_1.getStat)((0, Utility_1.getBaseStat)(userData.equippedClass), ownerID);
+                        blankStat = (0, Utility_1.getStat)((0, Utility_1.getBaseClassStat)(userData.equippedClass), ownerID);
                         if (_pvp) {
                             blankStat.pvp = true;
                         }
@@ -203,12 +203,13 @@ var Battle = /** @class */ (function () {
     /** An alternative to Start when the battle is already initiated. Gives additional options to begin. */
     Battle.prototype.StartBattle = function (_options) {
         return __awaiter(this, void 0, void 0, function () {
-            var allStats, playerStats, i, player, welfare, ambushingTeam, i, ambusher;
+            var playerStats, i, player, welfare, ambushingTeam, i, ambusher;
+            var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        allStats = this.allStats();
-                        playerStats = this.party.map(function (_ownerID) { return allStats.find(function (_s) { return _s.owner === _ownerID; }); });
+                        playerStats = this.party.map(function (_ownerID) { return _this.tobespawnedArray.find(function (_s) { return _s.owner === _ownerID; }); });
+                        (0, Utility_1.log)(playerStats);
                         i = 0;
                         _b.label = 1;
                     case 1:
@@ -218,8 +219,11 @@ var Battle = /** @class */ (function () {
                         return [4 /*yield*/, (0, Database_1.getUserWelfare)(player.owner)];
                     case 2:
                         welfare = _b.sent();
+                        (0, Utility_1.log)(welfare);
                         if (welfare !== null) {
                             player.HP = player.base.AHP * (0, Utility_1.clamp)(welfare, 0, 1);
+                            (0, Utility_1.log)((0, Utility_1.clamp)(welfare, 0, 1));
+                            (0, Utility_1.debug)("welfare reset to", player.HP);
                         }
                         _b.label = 3;
                     case 3:
@@ -229,8 +233,8 @@ var Battle = /** @class */ (function () {
                         // ambush
                         if (_options.ambush && _options.ambush !== 'block') {
                             ambushingTeam = _options.ambush;
-                            for (i = 0; i < allStats.length; i++) {
-                                ambusher = allStats[i];
+                            for (i = 0; i < this.tobespawnedArray.length; i++) {
+                                ambusher = this.tobespawnedArray[i];
                                 if (ambusher.team === ambushingTeam) {
                                     ambusher.readiness = 50;
                                     ambusher.sword = 3;
@@ -384,6 +388,7 @@ var Battle = /** @class */ (function () {
                                             username: user === null || user === void 0 ? void 0 : user.username,
                                             virtual: true
                                         });
+                                        virtualStat_1.weaponUses = realStat.weaponUses.map(function (_) { return _; });
                                         channelAlreadyExist = this_1.guild.channels.cache.find(function (c) { return c.name === virtualStat_1.owner && c.type === 'GUILD_TEXT'; });
                                         _j = channelAlreadyExist;
                                         if (_j) return [3 /*break*/, 4];
@@ -620,37 +625,53 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.FinishRound = function () {
         var _b;
-        (0, Utility_1.log)("Finishing Round...");
-        var PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
-        var PVP = this.playerCount === 1;
-        if ((this.pvp && PVP) || (!this.pvp && PVE)) {
-            // database work
-            // await Database.updateOrAddUser(author, { status: 'idle' });
-            // await Database.WriteBattle(author, Object.assign(this.returnObject(), { finished: true }));
-            // == ACCOLADES ==
-            var endEmbedFields_1 = [];
-            this.callbackOnParty(function (stat) {
-                var statAcco = stat.accolades;
-                var value = "Kills: " + statAcco.kill + "\n                        Damage Dealt: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageDealt) + "\n                        Healing Done: " + (0, Utility_1.roundToDecimalPlace)(statAcco.healingDone) + "\n                        Damage Absorbed: " + (0, Utility_1.roundToDecimalPlace)(statAcco.absorbed) + "\n                        Damage Taken: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageTaken) + "\n                        Dodged: " + statAcco.dodged + " times\n                        Critical Hits: " + statAcco.critNo + " times\n                        Clashed " + statAcco.clashNo + " times\n                        Average Rolls: " + ((0, Utility_1.roundToDecimalPlace)(statAcco.rollAverage) || "N/A");
-                endEmbedFields_1.push({
-                    name: stat.name + (" (" + stat.base.class + ")"),
-                    value: value,
-                });
+        return __awaiter(this, void 0, void 0, function () {
+            var PVE, PVP, allStats, i, id, stat, endEmbedFields_1, victoryTitle;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        (0, Utility_1.log)("Finishing Round...");
+                        PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
+                        PVP = this.playerCount === 1;
+                        if (!((this.pvp && PVP) || (!this.pvp && PVE))) return [3 /*break*/, 5];
+                        allStats = this.allStats();
+                        i = 0;
+                        _c.label = 1;
+                    case 1:
+                        if (!(i < this.party.length)) return [3 /*break*/, 4];
+                        id = this.party[i];
+                        stat = allStats[i];
+                        return [4 /*yield*/, (0, Database_1.setUserWelfare)(id, (0, Utility_1.clamp)(stat.HP / stat.base.AHP, 0, 1))];
+                    case 2:
+                        _c.sent();
+                        _c.label = 3;
+                    case 3:
+                        i++;
+                        return [3 /*break*/, 1];
+                    case 4:
+                        endEmbedFields_1 = [];
+                        this.callbackOnParty(function (stat) {
+                            var statAcco = stat.accolades;
+                            var value = "Kills: " + statAcco.kill + "\n                        Damage Dealt: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageDealt) + "\n                        Healing Done: " + (0, Utility_1.roundToDecimalPlace)(statAcco.healingDone) + "\n                        Damage Absorbed: " + (0, Utility_1.roundToDecimalPlace)(statAcco.absorbed) + "\n                        Damage Taken: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageTaken) + "\n                        Dodged: " + statAcco.dodged + " times\n                        Critical Hits: " + statAcco.critNo + " times\n                        Clashed " + statAcco.clashNo + " times\n                        Average Rolls: " + ((0, Utility_1.roundToDecimalPlace)(statAcco.rollAverage) || "N/A");
+                            endEmbedFields_1.push({
+                                name: stat.name + (" (" + stat.base.class + ")"),
+                                value: value,
+                            });
+                        });
+                        victoryTitle = this.pvp ?
+                            (((_b = this.allStats().find(function (_s) { return _s.owner && _s.HP > 0; })) === null || _b === void 0 ? void 0 : _b.base.class) || "What? No one ") + " wins!" :
+                            this.totalEnemyCount === 0 ? "VICTORY!" : "Defeat.";
+                        this.channel.send({
+                            embeds: [new discord_js_1.MessageEmbed({
+                                    title: victoryTitle,
+                                    fields: endEmbedFields_1,
+                                })]
+                        });
+                        return [2 /*return*/, this.totalEnemyCount === 0];
+                    case 5: return [2 /*return*/, this.StartRound()];
+                }
             });
-            var victoryTitle = this.pvp ?
-                (((_b = this.allStats().find(function (_s) { return _s.owner && _s.HP > 0; })) === null || _b === void 0 ? void 0 : _b.base.class) || "What? No one ") + " wins!" :
-                this.totalEnemyCount === 0 ? "VICTORY!" : "Defeat.";
-            this.channel.send({
-                embeds: [new discord_js_1.MessageEmbed({
-                        title: victoryTitle,
-                        fields: endEmbedFields_1,
-                    })]
-            });
-            return this.totalEnemyCount === 0;
-        }
-        else {
-            return this.StartRound();
-        }
+        });
     };
     /** Execute function on every stat of players */
     Battle.prototype.callbackOnParty = function (_callback) {
@@ -802,6 +823,8 @@ var Battle = /** @class */ (function () {
         var check = this.validateTarget(_virtualAttacker, _aA.weapon, target);
         if (check === null) { // attack goes through
             _virtualAttacker.weaponUses[(0, Utility_1.getWeaponIndex)(weapon, _virtualAttacker)]++;
+            (0, Utility_1.log)(_virtualAttacker.weaponUses);
+            (0, Utility_1.log)(_virtualAttacker.virtual);
             _virtualAttacker.readiness -= _aA.readiness;
             (0, Utility_1.HandleTokens)(_virtualAttacker, function (p, t) {
                 (0, Utility_1.log)("\t\t" + _virtualAttacker.index + ") " + t + " --" + _aA[t]);
@@ -896,12 +919,8 @@ var Battle = /** @class */ (function () {
                                 case "undo": return [3 /*break*/, 8];
                                 case "reckless": return [3 /*break*/, 11];
                                 case "reck": return [3 /*break*/, 11];
-                                case "brace": return [3 /*break*/, 12];
-                                case "defend": return [3 /*break*/, 12];
-                                case "br": return [3 /*break*/, 12];
-                                case "df": return [3 /*break*/, 12];
                             }
-                            return [3 /*break*/, 13];
+                            return [3 /*break*/, 12];
                         case 2:
                             moveAction = (0, Utility_1.getMoveAction)(_vS, actionName_1, infoMessagesQueue.length, moveMagnitude);
                             isFirstMove = !_vS.moved;
@@ -926,7 +945,7 @@ var Battle = /** @class */ (function () {
                                     });
                                 }
                             }
-                            return [3 /*break*/, 14];
+                            return [3 /*break*/, 13];
                         case 3:
                             attackTarget = this.findEntity_args(actionArgs, _vS);
                             if (attackTarget === null) {
@@ -943,6 +962,7 @@ var Battle = /** @class */ (function () {
                                 virtualAttackAction = (0, Utility_1.getAttackAction)(_vS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
                                 valid_1 = this.executeVirtualAttack(virtualAttackAction, _vS);
                                 if (valid_1) {
+                                    (0, Utility_1.log)(_rS.weaponUses);
                                     realAttackAction = (0, Utility_1.getAttackAction)(_rS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
                                     executingActions.push(realAttackAction);
                                 }
@@ -958,7 +978,7 @@ var Battle = /** @class */ (function () {
                                     }
                                 }
                             }
-                            return [3 /*break*/, 14];
+                            return [3 /*break*/, 13];
                         case 4:
                             executingActions = [];
                             infoMessagesQueue = [_infoMessage];
@@ -966,17 +986,17 @@ var Battle = /** @class */ (function () {
                             return [4 /*yield*/, (0, Utility_1.clearChannel)(channel, _infoMessage)];
                         case 5:
                             _c.sent();
-                            return [3 /*break*/, 14];
+                            return [3 /*break*/, 13];
                         case 6:
                             newCollector.stop();
                             (0, Utility_1.log)("\tEnded turn for \"" + _vS.name + "\" (" + _vS.base.class + ")");
-                            return [3 /*break*/, 14];
+                            return [3 /*break*/, 13];
                         case 7:
                             Utility_1.log.apply(void 0, __spreadArray([], __read(this.allStats().filter(function (s) { return s.team !== "block"; }).map(function (s) {
                                 var string = s.base.class + " (" + s.index + ") (" + s.team + ") " + s.HP + "/" + (0, Utility_1.getAHP)(s) + " (" + s.x + ", " + s.y + ")";
                                 return string;
                             })), false));
-                            return [3 /*break*/, 14];
+                            return [3 /*break*/, 13];
                         case 8:
                             if (!(infoMessagesQueue.length > 1)) return [3 /*break*/, 10];
                             undoAction = executingActions.pop();
@@ -986,7 +1006,7 @@ var Battle = /** @class */ (function () {
                         case 9:
                             _c.sent();
                             _c.label = 10;
-                        case 10: return [3 /*break*/, 14];
+                        case 10: return [3 /*break*/, 13];
                         case 11:
                             // 2 shields => 1 sword
                             if (_vS.shield >= 2) {
@@ -996,11 +1016,8 @@ var Battle = /** @class */ (function () {
                                 recklessAction = (0, Utility_1.getAttackAction)(_rS, _rS, weaponData_json_1.default.Reckless, _vS, infoMessagesQueue.length);
                                 executingActions.push(recklessAction);
                             }
-                            return [3 /*break*/, 14];
-                        case 12: 
-                        // no drawing next turn. +1 shield.
-                        return [3 /*break*/, 14];
-                        case 13:
+                            return [3 /*break*/, 13];
+                        case 12:
                             if (actionName_1.length >= 3) {
                                 weaponChosen = _vS.base.weapons.find(function (w) {
                                     return w.Name.toLowerCase().search(actionName_1) !== -1;
@@ -1034,13 +1051,16 @@ var Battle = /** @class */ (function () {
                                     setTimeout(function () { return mes.delete().catch(console.log); }, 10 * 1000);
                                 }
                             }
-                            return [3 /*break*/, 14];
-                        case 14:
+                            return [3 /*break*/, 13];
+                        case 13:
                             (0, Utility_1.debug)("\tvalid", valid_1 !== null);
-                            if (!valid_1) return [3 /*break*/, 16];
-                            mes.react(typedef_1.EMOJI_TICK);
+                            if (!valid_1) return [3 /*break*/, 15];
+                            if (!mes.deleted) {
+                                mes.react(typedef_1.EMOJI_TICK)
+                                    .catch(function (_err) { return console.log; });
+                            }
                             return [4 /*yield*/, this.getFullPlayerEmbedMessageOptions(_vS, executingActions)];
-                        case 15:
+                        case 14:
                             messageOptions = _c.sent();
                             channel.send(messageOptions)
                                 .then(function (m) {
@@ -1054,12 +1074,15 @@ var Battle = /** @class */ (function () {
                                     listenToQueue();
                                 }
                             });
-                            return [3 /*break*/, 17];
-                        case 16:
-                            mes.react(typedef_1.EMOJI_CROSS);
+                            return [3 /*break*/, 16];
+                        case 15:
+                            if (!mes.deleted) {
+                                mes.react(typedef_1.EMOJI_CROSS)
+                                    .catch(function (_err) { return console.log; });
+                            }
                             listenToQueue();
-                            _c.label = 17;
-                        case 17: return [2 /*return*/];
+                            _c.label = 16;
+                        case 16: return [2 /*return*/];
                     }
                 });
             }); };
@@ -1072,7 +1095,8 @@ var Battle = /** @class */ (function () {
                     responseQueue.push(mes);
                 }
                 else {
-                    mes.react("⏱️");
+                    mes.react("⏱️")
+                        .catch(function (_err) { return console.log; });
                 }
             });
             newCollector.on('end', function () { return __awaiter(_this, void 0, void 0, function () {
@@ -2159,6 +2183,9 @@ var Battle = /** @class */ (function () {
         });
     };
     // find entities
+    Battle.prototype.findEntity_coord = function (_coord) {
+        return this.CSMap.get((0, Utility_1.getCoordString)(_coord));
+    };
     Battle.prototype.findEntity_args = function (_args, _attacker, _weapon) {
         var allStats = this.allStats();
         var ignore = ["block"];

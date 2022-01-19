@@ -1,6 +1,5 @@
 {
 	"Block": {
-		"name": "Block",
 		"class": "Block",
 		"AHP": 100,
 		"Dodge": 0,
@@ -12,14 +11,13 @@
 		"botType": 1
 	},
 	"Hercules": {
-		"name": "Hercules",
 		"class": "Hercules",
-		"AHP": 60,
+		"AHP": 70,
 		"Dodge": 10,
-		"Prot": 0.5,
+		"Prot": 0.3,
 		"Spd": 5.5,
 		"maxMove": 1,
-		"iconURL": "images/Hercules.png",
+		"iconURL": "images/Hercules1.png",
 		"weapons": [
 			{
 				"Name": "Obliterate",
@@ -58,6 +56,25 @@
 				},
 				"CD": 0,
 				"UPT": 1
+			},
+			{
+				"Name": "Blind-Charge",
+				"Acc": 85,
+				"Damage": [5,10],
+				"Range": [1,2],
+				"Readiness": 30,
+				"sword": 0,
+				"shield": 0,
+				"sprint": 2,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 1,
+					"AOE": "line"
+				},
+				"CD": 0,
+				"UPT": 1
 			}
 		],
 		"autoWeapons": [
@@ -84,7 +101,6 @@
 		"botType": 0
 	},
 	"Mars": {
-		"name": "Mars",
 		"class": "Mars",
 		"AHP": 55,
 		"Dodge": 10,
@@ -94,10 +110,10 @@
 		"iconURL": "images/Mars.png",
 		"weapons": [
 			{
-				"Name": "Vicious Stab",
+				"Name": "Vicious-Stab",
 				"Acc": 85,
 				"Damage": [8,13],
-				"Range": [0,5],
+				"Range": [1,1.5],
 				"Readiness": 10,
 				"sword": 0,
 				"shield": 0,
@@ -130,6 +146,25 @@
 				},
 				"CD": 0,
 				"UPT": 2
+			},
+			{
+				"Name": "Seize-Escape",
+				"Acc": 95,
+				"Damage": [3,5],
+				"Range": [1,2],
+				"Readiness": 15,
+				"sword": 1,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 5,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 1,
+					"AOE": "single"
+				},
+				"CD": 0,
+				"UPT": 5
 			}
 		],
 		"autoWeapons": [
@@ -156,18 +191,209 @@
 		"botType": 0
 	},
 	"Diana": {
-		"name": "Diana",
 		"class": "Diana",
-		"AHP": 45,
+		"AHP": 40,
 		"Dodge": 20,
 		"Prot": 0.3,
 		"Spd": 7.5,
 		"maxMove": 1,
 		"iconURL": "images/Diana.png",
 		"weapons": [
-
+			{
+				"Name": "Hunt",
+				"Acc": 105,
+				"Damage": [8,13],
+				"Range": [1.5,3],
+				"Readiness": 10,
+				"sword": 1,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 15,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 1,
+					"AOE": "single"
+				},
+				"CD": 0,
+				"UPT": 5
+			},
+			{
+				"Name": "Wild-Hunt",
+				"Acc": 105,
+				"Damage": [0,0],
+				"Range": [0,0],
+				"Readiness": 30,
+				"sword": 0,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 0,
+					"AOE": "self"
+				},
+				"CD": 0,
+				"UPT": 1
+			}
 		],
 		"autoWeapons": [],
 		"botType": 0
+	},
+	"Jupiter": {
+		"class": "Jupiter",
+		"AHP": 50,
+		"Dodge": 5,
+		"Prot": 0.45,
+		"Spd": 6,
+		"maxMove": 1,
+		"iconURL": "images/Jupiter1.png",
+		"weapons": [
+			{
+				"Name": "Slay",
+				"Acc": 95,
+				"Damage": [8,13],
+				"Range": [1,1.5],
+				"Readiness": 10,
+				"sword": 1,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 1,
+					"AOE": "single"
+				},
+				"CD": 0,
+				"UPT": 5
+			},
+			{
+				"Name": "Attack-Order",
+				"Acc": 0,
+				"Damage": [0,0],
+				"Range": [1,3],
+				"Readiness": 25,
+				"sword": 0,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 0,
+					"AOE": "touch"
+				},
+				"CD": 0,
+				"UPT": 2
+			},
+			{
+				"Name": "Defence-Order",
+				"Acc": 0,
+				"Damage": [
+					0,
+					0
+				],
+				"Range": [
+					1,
+					3
+				],
+				"Readiness": 25,
+				"sword": 0,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 0,
+					"AOE": "touch"
+				},
+				"CD": 0,
+				"UPT": 2
+			},
+			{
+				"Name": "Manoeuvre-Order",
+				"Acc": 0,
+				"Damage": [
+					0,
+					0
+				],
+				"Range": [
+					1,
+					3
+				],
+				"Readiness": 25,
+				"sword": 0,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 0,
+					"AOE": "touch"
+				},
+				"CD": 0,
+				"UPT": 2
+			}
+		],
+		"autoWeapons": [],
+		"botType": 0
+	},
+	"Victoria": {
+		"class": "Victoria",
+		"AHP": 50,
+		"Dodge": 15,
+		"Prot": 0.3,
+		"Spd": 8,
+		"maxMove": 1,
+		"iconURL": "images/Victoria.png",
+		"weapons": [
+			{
+				"Name": "Slice",
+				"Acc": 105,
+				"Damage": [6,9],
+				"Range": [1,1.5],
+				"Readiness": 10,
+				"sword": 1,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 1,
+					"AOE": "single"
+				},
+				"CD": 0,
+				"UPT": 5
+			},
+			{
+				"Name": "Angelic-Blessings",
+				"Acc": 0,
+				"Damage": [0,0],
+				"Range": [1,1],
+				"Readiness": 25,
+				"sword": 0,
+				"shield": 0,
+				"sprint": 0,
+				"Crit": 0,
+				"Spd": 1,
+				"lifesteal": 0,
+				"targetting": {
+					"target": 0,
+					"AOE": "touch"
+				},
+				"CD": 0,
+				"UPT": 2
+			}
+		],
+		"autoWeapons": [],
+		"botType": 0
+	},
+	"Venus": {
+		
 	}
 }

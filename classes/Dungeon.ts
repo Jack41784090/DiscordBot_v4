@@ -1,16 +1,57 @@
-import { ButtonInteraction, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectOptionData, SelectMenuInteraction, TextChannel, User } from "discord.js";
+import { ButtonInteraction, EmbedField, EmbedFieldData, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectOptionData, SelectMenuInteraction, TextChannel, User } from "discord.js";
 import { BotClient } from "..";
-import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, DungeonItem, DungeonItemType, Team } from "../typedef";
+import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, DungeonItem, DungeonItemType, Team, DungeonDisplayMode, DungeonBlockCode, OwnerID } from "../typedef";
 import { Battle } from "./Battle";
 import { Room } from "./Room";
-import { debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalize, getButtonsActionRow, getDistance, getNewObject, getRandomInArray, getSelectMenuActionRow, log, numericDirectionToDirection, random, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
+import { addHPBar, debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalize, getButtonsActionRow, getDistance, getNewObject, getRandomInArray, getSelectMenuActionRow, log, numericDirectionToDirection, random, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
 
 import areasData from "../data/areasData.json";
-import { getUserData } from "./Database";
+import { getUserData, getUserWelfare } from "./Database";
 
 export class Dungeon {
     static readonly BRANCHOUT_CHANCE = 0.1;
-    static readonly BLOCKEDOFF_ROOMDIR: RoomDirections = [null, null, null, null];
+    static readonly BLOCKED_OFF_ROOMDIR: RoomDirections = [null, null, null, null];
+
+    static readonly BLOCKICONS_PC = {
+        "empty": "███",
+        "00": " + ",
+        "03": "╞══",
+        "06": "══╡",
+        "09": "═══",
+        "30": "_╨_",
+        "33": " ╚═",
+        "36": "═╝ ",
+        "39": "═╩═",
+        "60": "-╥-",
+        "63": " ╔═",
+        "66": "═╗ ",
+        "69": "═╦═",
+        "90": " ║ ",
+        "93": " ╠═",
+        "96": "═╣ ",
+        "99": "═╬═",
+    };
+    static readonly BLOCKICONS_MOBILE = {
+        "empty": "█",
+        "00": "+",
+        "03": "╞",
+        "06": "╡",
+        "09": "═",
+        "30": "╨",
+        "33": "╚",
+        "36": "╝",
+        "39": "╩",
+        "60": "╥",
+        "63": "╔",
+        "66": "╗",
+        "69": "╦",
+        "90": "║",
+        "93": "╠",
+        "96": "╣",
+        "99": "╬",
+    };
+
+    displayMode: DungeonDisplayMode = "pc";
 
     inventory: DungeonItem[] = [{
         type: 'torch',
@@ -19,21 +60,22 @@ export class Dungeon {
         type: 'scout',
         uses: 1,
     }];
+    callMessage: Message | null = null;
+
     leaderCoordinate: Coordinate;
-    callMessage: Message | null;
-    leaderUser: User | null;
-    leaderUserData: UserData | null;
+    leaderUser: User | null = null;
+    leaderUserData: UserData | null = null;
+    party: User[] = [];
+    partyWelfare: Map<OwnerID, number> = new Map<OwnerID, number>();
+
     data: DungeonData;
     rooms: Room[] = [];
     CS: CoordStat<Room> = {};
     mapDoubleArray: string[][] = [];
 
-    private constructor(_data: DungeonData, _message?: Message, _user?: User, _userData?: UserData) {
+    /** Be sure to follow it up with initialise users */
+    private constructor(_data: DungeonData) {
         this.data = _data;
-        this.leaderUser = _user || null;
-        this.leaderUserData = _userData || null;
-        this.callMessage = _message || null;
-
         this.leaderCoordinate = getNewObject(_data.start);
     }
 
@@ -86,7 +128,7 @@ export class Dungeon {
                     initiateCoord(coord);
 
                     // connect to previous room
-                    const newRoomDir = Array.from(Dungeon.BLOCKEDOFF_ROOMDIR) as RoomDirections;
+                    const newRoomDir = Array.from(Dungeon.BLOCKED_OFF_ROOMDIR) as RoomDirections;
                     newRoomDir[oppositeDirection(_direction)] = previousRoom;
 
                     // create room
@@ -207,7 +249,7 @@ export class Dungeon {
                 }
                 else {
                     log(`Failure to include all lengths @ ${i}.`)
-                    break;
+
                 }
             }
             else if (takeRootResult as Coordinate) {
@@ -240,6 +282,23 @@ export class Dungeon {
         }
 
         return dungeon;
+    }
+
+    async updateWelfare() {
+        for (let i = 0; i < this.party.length; i++) {
+            const user = this.party[i];
+            await getUserWelfare(user)
+                .then(_wel => {
+                    if (_wel === null) {
+                        // remove player
+                        this.party.splice(i, 1);
+                        i--;
+                    }
+                    else {
+                        this.partyWelfare.set(user.id, _wel);
+                    }
+                })
+        }
     }
 
     breathFirstSearch(
@@ -299,6 +358,8 @@ export class Dungeon {
             .setFooter(`${this.leaderUser?.username}`, `${this.leaderUser?.displayAvatarURL() || this.leaderUser?.defaultAvatarURL}`)
             .setDescription(`${this.getMapString()}`);
         let currentRoom: Room | undefined = this.getRoom(this.leaderCoordinate);
+        
+        // encounter text
         if (currentRoom && currentRoom.isBattleRoom) {
             if (currentRoom.isDiscovered) {
                 mapEmbed.setTitle(`🪓 Prepare for Battle! 🪓`);
@@ -307,6 +368,25 @@ export class Dungeon {
                 mapEmbed.setTitle(`❗❗ Enemy Ambush! ❗❗`);
             }
         }
+
+        // welfare report
+        const fields: EmbedField[] = [{
+            name: "‏",
+            value: "Welfare",
+            inline: false,
+        }];
+        for (let i = 0; i < this.party.length; i++) {
+            const welfare = this.partyWelfare.get(this.party[i].id);
+            if (welfare) {
+                fields.push({
+                    name: `${this.party[i].username}`,
+                    value: "`"+addHPBar(25, welfare * 25)+"`",
+                    inline: true,
+                })
+            }   
+        }
+        mapEmbed.fields = fields;
+
         const messageOption: MessageOptions = getNewObject({
             embeds: [mapEmbed],
         }, _messageOption);
@@ -315,29 +395,36 @@ export class Dungeon {
     }
 
     async readAction() {
-        const buttonOptions: MessageButtonOptions[] = [
-            {
-                label: "⬆️",
-                style: "PRIMARY",
-                customId: "up"
-            },
-            {
-                label: "⬇️",
-                style: "SECONDARY",
-                customId: "down"
-            },
-            {
-                label: "➡️",
-                style: "PRIMARY",
-                customId: "right"
-            },
-            {
-                label: "⬅️",
-                style: "SECONDARY",
-                customId: "left"
-            },
-        ];
         const returnMapMessage = () => {
+            const buttonOptions: MessageButtonOptions[] = [
+                {
+                    label: "UP ⬆️",
+                    style: "PRIMARY",
+                    customId: "up"
+                },
+                {
+                    label: "DOWN ⬇️",
+                    style: "SECONDARY",
+                    customId: "down"
+                },
+                {
+                    label: "RIGHT ➡️",
+                    style: "PRIMARY",
+                    customId: "right"
+                },
+                {
+                    label: "LEFT ⬅️",
+                    style: "SECONDARY",
+                    customId: "left"
+                },
+                {
+                    label: this.displayMode === "pc"?
+                        "📱":
+                        "🖥️",
+                    style: "SUCCESS",
+                    customId: "switch"
+                }
+            ];
             const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
                 return {
                     label: `${formalize(_dItem.type)} x${_dItem.uses}`,
@@ -444,14 +531,19 @@ export class Dungeon {
                     }
                     break;
 
+                case "switch":
+                    this.displayMode = this.displayMode === 'pc'?
+                        'mobile':
+                        'pc';
+                    break;
+
                 default:
                     valid = false;
-                    break;
             }
 
             // permitted movement and execute battle
-            let nextRoom: Room | undefined;
-            if (valid && (nextRoom = this.getRoom(this.leaderCoordinate)) && nextRoom.isBattleRoom) {
+            let nextRoom: Room | undefined = this.getRoom(this.leaderCoordinate);
+            if (valid && nextRoom?.isBattleRoom) {
                 // check ambush
                 let ambush: Team | null = null;
                 if (!nextRoom.isDiscovered) {
@@ -459,19 +551,14 @@ export class Dungeon {
                 }
 
                 // start battle
-                await nextRoom.StartBattle(ambush)!
-                    .then(_sieg => {
-                        nextRoom!.isDiscovered = true;
-                        mapMessage.edit(returnMapMessage())
-                            .then(() => {
-                                if (_sieg) {
-                                    listenToQueue();
-                                }
-                            })
-                    })
-                    .catch(_err => {
-                        console.log(_err);
-                        listenToQueue();
+                const victory = await nextRoom.StartBattle(ambush)!
+                nextRoom.isDiscovered = true;
+                await this.updateWelfare();
+                mapMessage.edit(returnMapMessage())
+                    .then(() => {
+                        if (victory) {
+                            listenToQueue();
+                        }
                     })
             }
             // movement is not valid or no battle, listen again
@@ -512,112 +599,54 @@ export class Dungeon {
         const width = this.data.width;
         const height = this.data.height;
         const widthP1 = width + 1;
+        const referObj = this.displayMode === "pc"?
+            Dungeon.BLOCKICONS_PC:
+            Dungeon.BLOCKICONS_MOBILE;
 
-        // draw initial
-        if (this.mapDoubleArray.length === 0) {
-            let levelArray = [];
-            for (let i = 0; i < (width + 1) * height; i++) {
-                const level = Math.floor(i / widthP1);
-
-                // if new line
-                if (i === (widthP1 * level) + width) {
-                    this.mapDoubleArray.push(levelArray);
-                    levelArray = [];
-                }
-                else {
-                    levelArray.push("███");
-                }
-            }
-        }
-
-        // get rooms accessible
-        const accessibleRooms: Room[] = this.rooms.filter(_r => _r.isDiscovered);
-        // const accessibleRooms: Room[] = this.rooms;
-
-        // update all the accesible rooms
-        for (let i = 0; i < accessibleRooms.length; i++) {
-            const room = accessibleRooms[i];
+        // draw
+        for (let i = 0; i < (width + 1) * height; i++) {
+            const level = Math.floor(i / widthP1);
+            const x = (i - (level * widthP1));
+            const y = ((height - 1) - level);
+            let room: Room | undefined = this.getRoom({ x: x, y: y });
             let icon = '';
 
-            // standard room
-            let UD = 0;
-            if (room.directions[NumericDirection.up]) UD += 3;
-            if (room.directions[NumericDirection.down]) UD += 6;
+            // if there is a room and room is discovered
+            if (room && room.isDiscovered) {
+                // get room code
+                let UD = 0;
+                if (room.directions[NumericDirection.up]) UD += 3;
+                if (room.directions[NumericDirection.down]) UD += 6;
+                let LR = 0;
+                if (room.directions[NumericDirection.right]) LR += 3;
+                if (room.directions[NumericDirection.left]) LR += 6;
 
-            let LR = 0;
-            if (room.directions[NumericDirection.right]) LR += 3;
-            if (room.directions[NumericDirection.left]) LR += 6;
+                const code: DungeonBlockCode = `${UD}${LR}` as DungeonBlockCode;
+                icon = referObj[code] as string;
 
-            const code = `${UD}${LR}`;
-            switch (code) {
-                case "00":
-                    icon = " + ";
-                    break;
-                case "03":
-                    icon = "╞══"
-                    break;
-                case "06":
-                    icon = "══╡"
-                    break;
-                case "09":
-                    icon = "═══"
-                    break;
-                case "30":
-                    icon = " ╨ "
-                    break;
-                case "33":
-                    icon = " ╚═"
-                    break;
-                case "36":
-                    icon = "═╝ "
-                    break;
-                case "39":
-                    icon = "═╩═"
-                    break;
-                case "60":
-                    icon = " ╥ "
-                    break;
-                case "63":
-                    icon = " ╔═"
-                    break;
-                case "66":
-                    icon = "═╗ "
-                    break;
-                case "69":
-                    icon = "═╦═"
-                    break;
-                case "90":
-                    icon = " ║ "
-                    break;
-                case "93":
-                    icon = " ╠═"
-                    break;
-                case "96":
-                    icon = "═╣ "
-                    break;
-                case "99":
-                    icon = "═╬═"
-                    break;
-
+                // replace middle character
+                // leader's location
+                if (findEqualCoordinate(this.leaderCoordinate, room.coordinate)) {
+                    icon = replaceCharacterAtIndex(icon, '♦', Number(this.displayMode === 'pc'));
+                }
+                // enemy spotted
+                else if (room.isBattleRoom) {
+                    icon = replaceCharacterAtIndex(icon, '♠', Number(this.displayMode === 'pc'));
+                }
+                // treasure room
+                else if (room.treasure !== null) {
+                    icon = replaceCharacterAtIndex(icon, '♠', Number(this.displayMode === 'pc'));
+                }
             }
-
-            // replace middle emote
-            // leader's location
-            if (findEqualCoordinate(this.leaderCoordinate, room.coordinate)) {
-                icon = replaceCharacterAtIndex(icon, '♦', 1);
-            }
-            // enemy spotted
-            else if (room.isBattleRoom) {
-                icon = replaceCharacterAtIndex(icon, '♠', 1);
-            }
-            // treasure room
-            else if (room.treasure !== null) {
-                icon = replaceCharacterAtIndex(icon, '♠', 1);
-            }
-            // empty room
+            // empty
             else {
+                icon = referObj.empty;
             }
-            this.setMapDoubleArray(room.coordinate, icon);
+
+            this.setMapDoubleArray({
+                x: x,
+                y: y,
+            }, icon);
         }
 
         // combine mapDoubleArray into one string
@@ -644,10 +673,14 @@ export class Dungeon {
         const user = _message.author;
         const userData = await getUserData(user.id);
 
+        // set leader data
         this.leaderUser = user;
         this.leaderUserData = userData;
         this.callMessage = _message;
+        this.party = await Promise.all(userData.party.map(async _id => BotClient.users.fetch(_id)))
+        await this.updateWelfare();
 
+        // initialise all battles
         for (let i = 0; i < this.rooms.length; i++) {
             const room = this.rooms[i];
             if (room.isBattleRoom) {

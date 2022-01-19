@@ -2,6 +2,7 @@ import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions, MessageSelectOptionData } from "discord.js";
 import { Type } from "typescript";
 import classData from "../data/classData.json"
+import enemyData from "../data/enemiesData.json"
 import dungeonData from "../data/dungeonData.json"
 
 import { BotClient } from "..";
@@ -831,8 +832,11 @@ export function getWeaponIndex(weapon: Weapon, stat: Stat) {
     return stat.base.weapons.indexOf(weapon);
 }
 
-export function getBaseStat(className: Class) {
+export function getBaseClassStat(className: Class) {
     return classData[className] as BaseStat;
+}
+export function getBaseEnemyStat(enemyClassName: EnemyClass) {
+    return enemyData[enemyClassName] as BaseStat;
 }
 
 export function getEmptyBuff(): Buffs {

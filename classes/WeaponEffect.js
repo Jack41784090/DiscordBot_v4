@@ -42,7 +42,7 @@ var statusEffect_effects = new Map([
         }
     ],
     [
-        "Vicious Stab",
+        "Vicious-Stab",
         function (_action, _cR, _bd) {
             var returnString = '';
             if (_cR.fate !== "Miss") {
@@ -100,6 +100,119 @@ var statusEffect_effects = new Map([
             }
             furyStatus.value = (0, Utility_1.clamp)(furyStatus.value, 0, 100);
             return "";
+        }
+    ],
+    [
+        "Hunt",
+        function (_action, _cR, _bd) {
+            var returnString = "";
+            if (_cR.fate !== "Miss") {
+                _action.affected.readiness -= 10;
+                returnString += "💦 Exhaust!";
+            }
+            return returnString;
+        }
+    ],
+    [
+        "Wild-Hunt",
+        function (_action, _cR, _bd) {
+            var returnString = "";
+            for (var i = 0; i < 4; i++) {
+                var coord = (0, Utility_1.getNewObject)(_action.from);
+                var numDir = i;
+                var dir = (0, Utility_1.numericDirectionToDirection)(numDir);
+                var magAxis = (0, Utility_1.directionToMagnitudeAxis)(dir);
+                coord[magAxis.axis] += magAxis.magnitude;
+                if (_bd.findEntity_coord(coord) === undefined) {
+                    var wolf = (0, Utility_1.getStat)((0, Utility_1.getBaseEnemyStat)("Diana's Wolf"));
+                    wolf.team = 'player';
+                    _bd.Spawn(wolf, coord);
+                    returnString += "🐺";
+                }
+            }
+            return returnString;
+        }
+    ],
+    [
+        "Slay",
+        function (_action, _cR, _bd) {
+            var returnString = '';
+            var target = _action.affected;
+            if (_cR.fate !== "Miss" && (target.HP / target.base.AHP) <= (1 / 3)) {
+                _cR.damage = _cR.damage * 1.5;
+                _cR.u_damage = _cR.u_damage * 1.5;
+                returnString += 'x1.5❗❗';
+            }
+            return returnString;
+        }
+    ],
+    [
+        "Attack-Order",
+        function (_action, _cR, _bd) {
+            var returnString = "+🗡️";
+            var swords = _action.from.sword;
+            if (swords > 0) {
+                _action.affected.sword++;
+                _action.from.sword--;
+                returnString += '🗡️';
+            }
+            _action.affected.sword++;
+            return returnString;
+        }
+    ],
+    [
+        "Defence-Order",
+        function (_action, _cR, _bd) {
+            var returnString = "+🛡️";
+            var shields = _action.from.shield;
+            if (shields > 0) {
+                _action.affected.shield++;
+                _action.from.shield--;
+                returnString += '🛡️';
+            }
+            _action.affected.shield++;
+            return returnString;
+        }
+    ],
+    [
+        "Manoeuvre-Order",
+        function (_action, _cR, _bd) {
+            var returnString = "+👢";
+            var sprints = _action.from.sprint;
+            if (sprints > 0) {
+                _action.affected.sprint++;
+                _action.from.sprint--;
+                returnString += '👢';
+            }
+            _action.affected.sprint++;
+            return returnString;
+        }
+    ],
+    [
+        "Slice",
+        function (_action, _cR, _bd) {
+            var returnString = "";
+            var sprints = _action.from.sprint;
+            if (sprints > 0) {
+                _cR.damage += sprints;
+                _cR.u_damage += sprints;
+                returnString += " (+" + sprints + ")";
+                _action.from.sprint--;
+            }
+            return returnString;
+        }
+    ],
+    [
+        "Angelic-Blessings",
+        function (_action, _cR, _bd) {
+            var returnString = "";
+            var attacker = _action.from;
+            var target = _action.affected;
+            returnString += target.base.class + " (" + target.index + "): " + _bd.heal(target, 10) + " +👢";
+            returnString += "\n" + attacker.base.class + " (" + attacker.index + "): " + _bd.heal(attacker, 10) + " +👢";
+            attacker.sprint++;
+            target.sprint++;
+            return returnString;
         }
     ],
 ]);

@@ -4,19 +4,18 @@ import * as fs from "fs";
 import * as path from "path";
 import { Battle } from "./classes/Battle.js";
 import { getDefaultUserData, getUserData } from "./classes/Database.js";
-import { extractCommands, log, Test } from "./classes/Utility.js";
-import { CommandModule, COMMAND_CALL } from "./typedef.js";
+import { extractCommands, getNewObject, log, Test } from "./classes/Utility.js";
+import { CommandModule, COMMAND_CALL, MapData } from "./typedef.js";
+
+import areasData from "./data/areasData.json";
 
 const commandReferral: { [key: string]: CommandModule } = {};
 
 export const BotClient = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.DIRECT_MESSAGE_REACTIONS] });
 async function quickEmbark() {
-    const embark: CommandModule = require('./commands/embark.js');
-    const Ike = await BotClient.users.fetch("262871357455466496").then(u => u);
-    const channel = await BotClient.channels.fetch("900951147391623259").then(c => c as TextChannel);
-    const server = await BotClient.guilds.fetch("828827482785579038").then(g => g);
-    const message = await channel.send("hi world");
-    embark.callback(Ike, getDefaultUserData(Ike), ";go farmstead", channel, server, ["farmstead"], message, BotClient);
+    const Ike = await BotClient.users.fetch("262871357455466496");
+    const mes = await (await BotClient.channels.fetch("926372977539424296") as TextChannel).send("Stuff");
+    Battle.Start(getNewObject(areasData.farmstead_empty) as MapData, Ike, mes, ["262871357455466496", "558906484126253096"], BotClient, false);
 }
 
 function importCommands() {
@@ -45,7 +44,7 @@ BotClient.on('ready', async () => {
     BotClient.setMaxListeners(15);
     console.log("Ready.");
     importCommands();
-    // quickEmbark();
+    quickEmbark();
     // Test();
 });
 

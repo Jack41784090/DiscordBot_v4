@@ -58,7 +58,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.saveBattle = exports.getBufferFromImage = exports.getIcon = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.getUserWelfare = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.saveUserData = exports.getAnyData = void 0;
+exports.saveBattle = exports.getBufferFromImage = exports.getIcon = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.getUserWelfare = exports.setUserWelfare = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.saveUserData = exports.getAnyData = void 0;
 var admin = __importStar(require("firebase-admin"));
 var serviceAccount = __importStar(require("../serviceAccount.json"));
 var canvas_1 = require("canvas");
@@ -130,33 +130,35 @@ function getMapFromLocal(mapName) {
 exports.getMapFromLocal = getMapFromLocal;
 function getUserData(id_author) {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, user, id, _b, data, _c;
-        var _d;
-        return __generator(this, function (_e) {
-            switch (_e.label) {
+        var _a, user, id, _b, data, _c, _d, _e;
+        var _f;
+        return __generator(this, function (_g) {
+            switch (_g.label) {
                 case 0:
                     if (!(typeof id_author !== 'string')) return [3 /*break*/, 1];
                     _b = { user: id_author, id: id_author.id };
                     return [3 /*break*/, 3];
                 case 1:
-                    _d = {};
+                    _f = {};
                     return [4 /*yield*/, __1.BotClient.users.fetch(id_author)];
                 case 2:
-                    _b = (_d.user = _e.sent(), _d.id = id_author, _d);
-                    _e.label = 3;
+                    _b = (_f.user = _g.sent(), _f.id = id_author, _f);
+                    _g.label = 3;
                 case 3:
                     _a = _b, user = _a.user, id = _a.id;
+                    _c = Utility_1.getNewObject;
+                    _d = [getDefaultSettings()];
                     return [4 /*yield*/, getAnyData('Users', id)];
                 case 4:
-                    data = _e.sent();
+                    data = _c.apply(void 0, _d.concat([_g.sent()]));
                     if (!data) return [3 /*break*/, 5];
-                    _c = data;
+                    _e = data;
                     return [3 /*break*/, 7];
                 case 5: return [4 /*yield*/, createNewUser(user)];
                 case 6:
-                    _c = _e.sent();
-                    _e.label = 7;
-                case 7: return [2 /*return*/, _c];
+                    _e = _g.sent();
+                    _g.label = 7;
+                case 7: return [2 /*return*/, _e];
             }
         });
     });
@@ -180,6 +182,32 @@ function createNewUser(author) {
     });
 }
 exports.createNewUser = createNewUser;
+function setUserWelfare(_user, _welfare) {
+    return __awaiter(this, void 0, void 0, function () {
+        var id, document, snapshotData;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    id = _user.client ?
+                        _user.id :
+                        _user;
+                    document = database.collection("Users").doc(id);
+                    return [4 /*yield*/, document.get()];
+                case 1:
+                    snapshotData = _a.sent();
+                    if (!snapshotData.exists) return [3 /*break*/, 3];
+                    return [4 /*yield*/, document.update({
+                            welfare: _welfare
+                        })];
+                case 2:
+                    _a.sent();
+                    _a.label = 3;
+                case 3: return [2 /*return*/, snapshotData.exists];
+            }
+        });
+    });
+}
+exports.setUserWelfare = setUserWelfare;
 function getUserWelfare(_user) {
     return __awaiter(this, void 0, void 0, function () {
         var id, document, snapshotData, data;
@@ -197,9 +225,7 @@ function getUserWelfare(_user) {
                     if (!snapshotData.exists) return [3 /*break*/, 3];
                     data = snapshotData.data();
                     if (!(data.welfare === undefined)) return [3 /*break*/, 3];
-                    return [4 /*yield*/, document.update((0, Utility_1.getNewObject)(data, {
-                            welfare: 1
-                        }))];
+                    return [4 /*yield*/, document.update((0, Utility_1.getNewObject)(data, { welfare: 1 }))];
                 case 2:
                     _a.sent();
                     data.welfare = 1;

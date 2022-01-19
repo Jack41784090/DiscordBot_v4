@@ -1,7 +1,7 @@
 import { CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord } from "./Utility";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { getFileImage, getIcon, getUserData, getUserWelfare } from "./Database";
+import { getFileImage, getIcon, getUserData, getUserWelfare, setUserWelfare } from "./Database";
 import enemiesData from "../data/enemiesData.json";
 import weaponData from "../data/weaponData.json";
 
@@ -99,7 +99,7 @@ export class Battle {
         for (let i = 0; i < _party.length; i++) {
             const ownerID = _party[i];
             const userData: UserData = await getUserData(ownerID);
-            const blankStat = getStat(getBaseStat(userData.equippedClass), ownerID);
+            const blankStat = getStat(getBaseClassStat(userData.equippedClass), ownerID);
             if (_pvp) {
                 blankStat.pvp = true;
             }
@@ -136,14 +136,17 @@ export class Battle {
     /** An alternative to Start when the battle is already initiated. Gives additional options to begin. */
     async StartBattle(_options: StartBattleOptions) {
         // check player welfare
-        const allStats = this.allStats();
-        const playerStats = this.party.map(_ownerID => allStats.find(_s => _s.owner === _ownerID));
+        const playerStats = this.party.map(_ownerID => this.tobespawnedArray.find(_s => _s.owner === _ownerID));
+        log(playerStats);
         for (let i = 0; i < playerStats.length; i++) {
             const player = playerStats[i];
             if (player) {
                 const welfare = await getUserWelfare(player.owner);
+                log(welfare);
                 if (welfare !== null) {
                     player.HP = player.base.AHP * clamp(welfare, 0, 1);
+                    log(clamp(welfare, 0, 1));
+                    debug("welfare reset to", player.HP)
                 }
             }
         }
@@ -151,8 +154,8 @@ export class Battle {
         // ambush
         if (_options.ambush && _options.ambush !== 'block') {
             const ambushingTeam: Team = _options.ambush;
-            for (let i = 0; i < allStats.length; i++) {
-                const ambusher = allStats[i];
+            for (let i = 0; i < this.tobespawnedArray.length; i++) {
+                const ambusher = this.tobespawnedArray[i];
                 if (ambusher.team === ambushingTeam) {
                     ambusher.readiness = 50;
                     ambusher.sword = 3;
@@ -166,7 +169,7 @@ export class Battle {
 
     /** Begin a new round
         Recurses into another StartRound until all enemies / players are defeated (HP <= 0). */
-    async StartRound() {
+    async StartRound(): Promise<boolean> {
         log("======= New Round =======");
 
         // resetting action list and round current maps
@@ -309,6 +312,7 @@ export class Battle {
                         virtual: true
                     }
                 );
+                virtualStat.weaponUses = realStat.weaponUses.map(_ => _);
 
                 // creating channel
                 const channelAlreadyExist = this.guild.channels.cache.find(c => c.name === virtualStat.owner && c.type === 'GUILD_TEXT') as TextChannel;
@@ -361,7 +365,7 @@ export class Battle {
 
             //#region AI
             if (realStat.botType === BotType.enemy) {
-                const virtualStat = getNewObject<Stat, unknown>(realStat);
+                const virtualStat = getNewObject(realStat);
 
                 // target selection
                 // option 1: select the closest target
@@ -521,7 +525,7 @@ export class Battle {
         return this.FinishRound();
     }
 
-    FinishRound(): Promise<boolean> | boolean {
+    async FinishRound(): Promise<boolean> {
         log("Finishing Round...");
         const PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
         const PVP = this.playerCount === 1;
@@ -529,7 +533,12 @@ export class Battle {
         {
             // database work
             // await Database.updateOrAddUser(author, { status: 'idle' });
-            // await Database.WriteBattle(author, Object.assign(this.returnObject(), { finished: true }));
+            const allStats = this.allStats();
+            for (let i = 0; i < this.party.length; i++) {
+                const id = this.party[i];
+                const stat = allStats[i];
+                await setUserWelfare(id, clamp(stat.HP / stat.base.AHP, 0, 1));
+            }
 
             // == ACCOLADES ==
             const endEmbedFields: EmbedFieldData[] = [];
@@ -715,6 +724,8 @@ export class Battle {
 
         if (check === null) { // attack goes through
             _virtualAttacker.weaponUses[getWeaponIndex(weapon, _virtualAttacker)]++;
+            log(_virtualAttacker.weaponUses)
+            log((_virtualAttacker as any).virtual)
 
             _virtualAttacker.readiness -= _aA.readiness;
             HandleTokens(_virtualAttacker, (p, t) => {
@@ -849,11 +860,12 @@ export class Battle {
                                 valid = this.executeVirtualAttack(virtualAttackAction, _vS);
 
                                 if (valid) {
+                                    log(_rS.weaponUses);
                                     const realAttackAction = getAttackAction(_rS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
                                     executingActions.push(realAttackAction);
                                 }
                                 else {
-                                    const check = this.validateTarget(_vS, weaponChosen, attackTarget)!;
+                                    const check = this.validateTarget(_vS, weaponChosen, attackTarget);
                                     if (check) {
                                         channel.send({
                                             embeds: [new MessageEmbed({
@@ -909,13 +921,6 @@ export class Battle {
                             }
                             break;
 
-                        case "brace":
-                        case "defend":
-                        case "br":
-                        case "df":
-                            // no drawing next turn. +1 shield.
-                            break;
-
                         default:
                             if (actionName.length >= 3) {
                                 const weaponChosen = _vS.base.weapons.find(w => {
@@ -957,7 +962,10 @@ export class Battle {
                     debug("\tvalid", valid !== null);
 
                     if (valid) {
-                        mes.react(EMOJI_TICK);
+                        if (!mes.deleted) {
+                            mes.react(EMOJI_TICK)
+                                .catch(_err => console.log);
+                        }
                         // send the predicted map of the next move to channel
                         const messageOptions = await this.getFullPlayerEmbedMessageOptions(_vS, executingActions);
                         channel.send(messageOptions)
@@ -974,7 +982,10 @@ export class Battle {
                             })
                     }
                     else {
-                        mes.react(EMOJI_CROSS);
+                        if (!mes.deleted) {
+                            mes.react(EMOJI_CROSS)
+                                .catch(_err => console.log);
+                        }
                         listenToQueue();
                     }
                 }
@@ -990,6 +1001,7 @@ export class Battle {
                 }
                 else {
                     mes.react("⏱️")
+                        .catch(_err => console.log);
                 }
             });
             newCollector.on('end', async () => {
@@ -2094,6 +2106,9 @@ export class Battle {
     }
 
     // find entities
+    findEntity_coord(_coord: Coordinate): Stat | undefined {
+        return this.CSMap.get(getCoordString(_coord));
+    }
     findEntity_args(_args: Array<string>, _attacker: Stat, _weapon?: Weapon): Stat | null {
         const allStats = this.allStats();
         const ignore: Team[] = ["block"];

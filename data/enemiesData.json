@@ -7,7 +7,6 @@
         "Spd": 5,
         "maxMove": 1,
         "iconURL": "images/Barbar.png",
-        "portraitURL": "images/Barbar.png",
         "weapons": [
             {
                 "Name": "Bite",
@@ -46,7 +45,6 @@
         "Spd": 5,
         "maxMove": 1,
         "iconURL": "images/Barcher.png",
-        "portraitURL": "images/Barbar.png",
         "weapons": [
             {
                 "Name": "Arrow Shot",
@@ -64,6 +62,38 @@
                     "target": 1,
                     "AOE": "single"
                 }
+            }
+        ],
+        "autoWeapons": [],
+        "botType": 1
+    },
+    "Diana's Wolf": {
+        "class": "Diana's Wolf",
+        "AHP": 8,
+        "Dodge": 0,
+        "Prot": 0,
+        "Spd": 5,
+        "maxMove": 1,
+        "iconURL": "images/wolf.png",
+        "weapons": [
+            {
+                "Name": "Bite",
+                "Acc": 95,
+                "Damage": [5,6],
+                "Range": [1,1],
+                "Readiness": 15,
+                "sword": 1,
+                "shield": 0,
+                "sprint": 0,
+                "Crit": 0,
+                "Spd": 1,
+                "lifesteal": 0,
+                "targetting": {
+                    "target": 1,
+                    "AOE": "single"
+                },
+                "CD": 0,
+                "UPT": 255
             }
         ],
         "autoWeapons": [],

@@ -173,6 +173,26 @@ export interface DungeonData {
 
     start: Coordinate,
 }
+export type DungeonBlockCode =
+    "00"|
+    "03"|
+    "06"|
+    "09"|
+    "30"|
+    "33"|
+    "36"|
+    "39"|
+    "60"|
+    "63"|
+    "66"|
+    "69"|
+    "90"|
+    "93"|
+    "96"|
+    "99"
+export type DungeonDisplayMode =
+    "pc"|
+    "mobile"
 export interface Treasure {
     
 }
@@ -247,16 +267,40 @@ export type WeaponName =
     "Endless Labour"|
 
     // Mars
-    "Vicious Stab"|
+    "Vicious-Stab"|
     "Decimate"|
-    "Unrelenting Fury"
+    "Unrelenting Fury"|
+
+    // Diana
+    "Hunt"|
+    "Wild-Hunt"|
+
+    // Jupiter
+    "Slay"|
+    "Attack-Order" |
+    "Defence-Order" |
+    "Manoeuvre-Order"|
+
+    // Victoria
+    "Slice"|
+    "Angelic-Blessings"
 export interface WeaponEffectFunction {
     (_aA: Action, _cR: ClashResult, _bd: Battle): string;
 }
 
 // classes
-export type Class = "Block" | "Hercules";
-export type EnemyClass = "Barbar" | "Barcher";
+export type Class = 
+    "Block"|
+    "Hercules"|
+    "Mars"|
+    "Diana"|
+    "Jupiter"
+;
+export type EnemyClass =
+    "Barbar"|
+    "Barcher"|
+    "Diana's Wolf"
+;
 export type GetBuffOption = 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff';
 export interface Buffs {
     AHP: number,

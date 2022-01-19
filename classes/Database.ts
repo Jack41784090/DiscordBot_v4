@@ -56,8 +56,10 @@ export async function getUserData(id_author: string | User): Promise<UserData> {
         { user: id_author, id: id_author.id }:
         { user: await BotClient.users.fetch(id_author), id: id_author };
 
-    const data = await getAnyData('Users', id);
-    return data ? data as UserData : await createNewUser(user);
+    const data = getNewObject(getDefaultSettings(), await getAnyData('Users', id));
+    return data?
+        data as UserData:
+        await createNewUser(user);
 }
 
 export async function createNewUser(author: User): Promise<UserData> {
@@ -66,6 +68,21 @@ export async function createNewUser(author: User): Promise<UserData> {
         dr.create(defaultData);
     });
     return data ? data as UserData : defaultData;
+}
+export async function setUserWelfare(_user: User | OwnerID, _welfare: number): Promise<boolean> {
+    const id = (_user as User).client ?
+        (_user as User).id :
+        _user as OwnerID;
+    const document = database.collection("Users").doc(id);
+    const snapshotData = await document.get();
+
+    if (snapshotData.exists) {
+        await document.update({
+            welfare: _welfare
+        });
+    }
+
+    return snapshotData.exists;
 }
 export async function getUserWelfare(_user: User | OwnerID): Promise<number | null> {
     const id = (_user as User).client?
@@ -78,9 +95,7 @@ export async function getUserWelfare(_user: User | OwnerID): Promise<number | nu
     if (snapshotData.exists) {
         data = (snapshotData.data() as UserData);
         if (data.welfare === undefined) {
-            await document.update(getNewObject(data, {
-                welfare: 1
-            }));
+            await document.update(getNewObject(data, { welfare: 1 }));
             data.welfare = 1;
         }
     }

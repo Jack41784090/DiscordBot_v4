@@ -49,7 +49,9 @@ var Utility_1 = require("./Utility");
 var areasData_json_1 = __importDefault(require("../data/areasData.json"));
 var Database_1 = require("./Database");
 var Dungeon = /** @class */ (function () {
-    function Dungeon(_data, _message, _user, _userData) {
+    /** Be sure to follow it up with initialise users */
+    function Dungeon(_data) {
+        this.displayMode = "pc";
         this.inventory = [{
                 type: 'torch',
                 uses: 1,
@@ -57,13 +59,15 @@ var Dungeon = /** @class */ (function () {
                 type: 'scout',
                 uses: 1,
             }];
+        this.callMessage = null;
+        this.leaderUser = null;
+        this.leaderUserData = null;
+        this.party = [];
+        this.partyWelfare = new Map();
         this.rooms = [];
         this.CS = {};
         this.mapDoubleArray = [];
         this.data = _data;
-        this.leaderUser = _user || null;
-        this.leaderUserData = _userData || null;
-        this.callMessage = _message || null;
         this.leaderCoordinate = (0, Utility_1.getNewObject)(_data.start);
     }
     Dungeon.Start = function (_dungeonData, _message) {
@@ -120,7 +124,7 @@ var Dungeon = /** @class */ (function () {
                     // initiate room
                     initiateCoord(coord);
                     // connect to previous room
-                    var newRoomDir = Array.from(Dungeon.BLOCKEDOFF_ROOMDIR);
+                    var newRoomDir = Array.from(Dungeon.BLOCKED_OFF_ROOMDIR);
                     newRoomDir[oppositeDirection(_direction)] = previousRoom;
                     // create room
                     newRoom = new Room_1.Room(newRoomDir, dungeon, (0, Utility_1.getNewObject)(coord, {}));
@@ -222,7 +226,6 @@ var Dungeon = /** @class */ (function () {
                 }
                 else {
                     (0, Utility_1.log)("Failure to include all lengths @ " + i + ".");
-                    return "break";
                 }
             }
             else if (takeRootResult) {
@@ -230,9 +233,7 @@ var Dungeon = /** @class */ (function () {
             }
         };
         for (var i = 0; i < pathLengths.length; i++) {
-            var state_1 = _loop_1(i);
-            if (state_1 === "break")
-                break;
+            _loop_1(i);
         }
         // spawn remaining battle rooms
         if (battleRoomsSpawned < battleRoomsCount) {
@@ -253,6 +254,55 @@ var Dungeon = /** @class */ (function () {
             }
         }
         return dungeon;
+    };
+    Dungeon.prototype.updateWelfare = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _loop_2, this_1, out_i_1, i;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _loop_2 = function (i) {
+                            var user;
+                            return __generator(this, function (_e) {
+                                switch (_e.label) {
+                                    case 0:
+                                        user = this_1.party[i];
+                                        return [4 /*yield*/, (0, Database_1.getUserWelfare)(user)
+                                                .then(function (_wel) {
+                                                if (_wel === null) {
+                                                    // remove player
+                                                    _this.party.splice(i, 1);
+                                                    i--;
+                                                }
+                                                else {
+                                                    _this.partyWelfare.set(user.id, _wel);
+                                                }
+                                            })];
+                                    case 1:
+                                        _e.sent();
+                                        out_i_1 = i;
+                                        return [2 /*return*/];
+                                }
+                            });
+                        };
+                        this_1 = this;
+                        i = 0;
+                        _a.label = 1;
+                    case 1:
+                        if (!(i < this.party.length)) return [3 /*break*/, 4];
+                        return [5 /*yield**/, _loop_2(i)];
+                    case 2:
+                        _a.sent();
+                        i = out_i_1;
+                        _a.label = 3;
+                    case 3:
+                        i++;
+                        return [3 /*break*/, 1];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
     };
     Dungeon.prototype.breathFirstSearch = function (_startingRoom, _pushToQueueCondition, _pushToResultCondition) {
         var queue = [_startingRoom];
@@ -300,6 +350,7 @@ var Dungeon = /** @class */ (function () {
             .setFooter("" + ((_a = this.leaderUser) === null || _a === void 0 ? void 0 : _a.username), "" + (((_e = this.leaderUser) === null || _e === void 0 ? void 0 : _e.displayAvatarURL()) || ((_f = this.leaderUser) === null || _f === void 0 ? void 0 : _f.defaultAvatarURL)))
             .setDescription("" + this.getMapString());
         var currentRoom = this.getRoom(this.leaderCoordinate);
+        // encounter text
         if (currentRoom && currentRoom.isBattleRoom) {
             if (currentRoom.isDiscovered) {
                 mapEmbed.setTitle("\uD83E\uDE93 Prepare for Battle! \uD83E\uDE93");
@@ -308,6 +359,23 @@ var Dungeon = /** @class */ (function () {
                 mapEmbed.setTitle("\u2757\u2757 Enemy Ambush! \u2757\u2757");
             }
         }
+        // welfare report
+        var fields = [{
+                name: "‏",
+                value: "Welfare",
+                inline: false,
+            }];
+        for (var i = 0; i < this.party.length; i++) {
+            var welfare = this.partyWelfare.get(this.party[i].id);
+            if (welfare) {
+                fields.push({
+                    name: "" + this.party[i].username,
+                    value: "`" + (0, Utility_1.addHPBar)(25, welfare * 25) + "`",
+                    inline: true,
+                });
+            }
+        }
+        mapEmbed.fields = fields;
         var messageOption = (0, Utility_1.getNewObject)({
             embeds: [mapEmbed],
         }, _messageOption);
@@ -315,34 +383,41 @@ var Dungeon = /** @class */ (function () {
     };
     Dungeon.prototype.readAction = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var buttonOptions, returnMapMessage, listenToQueue, handleItem, handleMovement, channel, mapMessage;
+            var returnMapMessage, listenToQueue, handleItem, handleMovement, channel, mapMessage;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        buttonOptions = [
-                            {
-                                label: "⬆️",
-                                style: "PRIMARY",
-                                customId: "up"
-                            },
-                            {
-                                label: "⬇️",
-                                style: "SECONDARY",
-                                customId: "down"
-                            },
-                            {
-                                label: "➡️",
-                                style: "PRIMARY",
-                                customId: "right"
-                            },
-                            {
-                                label: "⬅️",
-                                style: "SECONDARY",
-                                customId: "left"
-                            },
-                        ];
                         returnMapMessage = function () {
+                            var buttonOptions = [
+                                {
+                                    label: "UP ⬆️",
+                                    style: "PRIMARY",
+                                    customId: "up"
+                                },
+                                {
+                                    label: "DOWN ⬇️",
+                                    style: "SECONDARY",
+                                    customId: "down"
+                                },
+                                {
+                                    label: "RIGHT ➡️",
+                                    style: "PRIMARY",
+                                    customId: "right"
+                                },
+                                {
+                                    label: "LEFT ⬅️",
+                                    style: "SECONDARY",
+                                    customId: "left"
+                                },
+                                {
+                                    label: _this.displayMode === "pc" ?
+                                        "📱" :
+                                        "🖥️",
+                                    style: "SUCCESS",
+                                    customId: "switch"
+                                }
+                            ];
                             var selectMenuOptions = _this.inventory.map(function (_dItem) {
                                 return {
                                     label: (0, Utility_1.formalize)(_dItem.type) + " x" + _dItem.uses,
@@ -441,7 +516,7 @@ var Dungeon = /** @class */ (function () {
                             listenToQueue();
                         };
                         handleMovement = function (_itr) { return __awaiter(_this, void 0, void 0, function () {
-                            var direction, valid, magAxis, nextRoom, ambush;
+                            var direction, valid, magAxis, nextRoom, ambush, victory_1;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -458,41 +533,41 @@ var Dungeon = /** @class */ (function () {
                                                     this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;
                                                 }
                                                 break;
+                                            case "switch":
+                                                this.displayMode = this.displayMode === 'pc' ?
+                                                    'mobile' :
+                                                    'pc';
+                                                break;
                                             default:
                                                 valid = false;
-                                                break;
                                         }
-                                        if (!(valid && (nextRoom = this.getRoom(this.leaderCoordinate)) && nextRoom.isBattleRoom)) return [3 /*break*/, 2];
+                                        nextRoom = this.getRoom(this.leaderCoordinate);
+                                        if (!(valid && (nextRoom === null || nextRoom === void 0 ? void 0 : nextRoom.isBattleRoom))) return [3 /*break*/, 3];
                                         ambush = null;
                                         if (!nextRoom.isDiscovered) {
                                             ambush = "enemy";
                                         }
-                                        // start battle
-                                        return [4 /*yield*/, nextRoom.StartBattle(ambush)
-                                                .then(function (_sieg) {
-                                                nextRoom.isDiscovered = true;
-                                                mapMessage.edit(returnMapMessage())
-                                                    .then(function () {
-                                                    if (_sieg) {
-                                                        listenToQueue();
-                                                    }
-                                                });
-                                            })
-                                                .catch(function (_err) {
-                                                console.log(_err);
-                                                listenToQueue();
-                                            })];
+                                        return [4 /*yield*/, nextRoom.StartBattle(ambush)];
                                     case 1:
-                                        // start battle
-                                        _a.sent();
-                                        return [3 /*break*/, 3];
+                                        victory_1 = _a.sent();
+                                        nextRoom.isDiscovered = true;
+                                        return [4 /*yield*/, this.updateWelfare()];
                                     case 2:
+                                        _a.sent();
+                                        mapMessage.edit(returnMapMessage())
+                                            .then(function () {
+                                            if (victory_1) {
+                                                listenToQueue();
+                                            }
+                                        });
+                                        return [3 /*break*/, 4];
+                                    case 3:
                                         listenToQueue();
                                         if (nextRoom) {
                                             nextRoom.isDiscovered = true;
                                         }
-                                        _a.label = 3;
-                                    case 3: return [2 /*return*/];
+                                        _a.label = 4;
+                                    case 4: return [2 /*return*/];
                                 }
                             });
                         }); };
@@ -527,107 +602,53 @@ var Dungeon = /** @class */ (function () {
         var width = this.data.width;
         var height = this.data.height;
         var widthP1 = width + 1;
-        // draw initial
-        if (this.mapDoubleArray.length === 0) {
-            var levelArray = [];
-            for (var i = 0; i < (width + 1) * height; i++) {
-                var level = Math.floor(i / widthP1);
-                // if new line
-                if (i === (widthP1 * level) + width) {
-                    this.mapDoubleArray.push(levelArray);
-                    levelArray = [];
-                }
-                else {
-                    levelArray.push("███");
-                }
-            }
-        }
-        // get rooms accessible
-        var accessibleRooms = this.rooms.filter(function (_r) { return _r.isDiscovered; });
-        // const accessibleRooms: Room[] = this.rooms;
-        // update all the accesible rooms
-        for (var i = 0; i < accessibleRooms.length; i++) {
-            var room = accessibleRooms[i];
+        var referObj = this.displayMode === "pc" ?
+            Dungeon.BLOCKICONS_PC :
+            Dungeon.BLOCKICONS_MOBILE;
+        // draw
+        for (var i = 0; i < (width + 1) * height; i++) {
+            var level = Math.floor(i / widthP1);
+            var x = (i - (level * widthP1));
+            var y = ((height - 1) - level);
+            var room = this.getRoom({ x: x, y: y });
             var icon = '';
-            // standard room
-            var UD = 0;
-            if (room.directions[typedef_1.NumericDirection.up])
-                UD += 3;
-            if (room.directions[typedef_1.NumericDirection.down])
-                UD += 6;
-            var LR = 0;
-            if (room.directions[typedef_1.NumericDirection.right])
-                LR += 3;
-            if (room.directions[typedef_1.NumericDirection.left])
-                LR += 6;
-            var code = "" + UD + LR;
-            switch (code) {
-                case "00":
-                    icon = " + ";
-                    break;
-                case "03":
-                    icon = "╞══";
-                    break;
-                case "06":
-                    icon = "══╡";
-                    break;
-                case "09":
-                    icon = "═══";
-                    break;
-                case "30":
-                    icon = " ╨ ";
-                    break;
-                case "33":
-                    icon = " ╚═";
-                    break;
-                case "36":
-                    icon = "═╝ ";
-                    break;
-                case "39":
-                    icon = "═╩═";
-                    break;
-                case "60":
-                    icon = " ╥ ";
-                    break;
-                case "63":
-                    icon = " ╔═";
-                    break;
-                case "66":
-                    icon = "═╗ ";
-                    break;
-                case "69":
-                    icon = "═╦═";
-                    break;
-                case "90":
-                    icon = " ║ ";
-                    break;
-                case "93":
-                    icon = " ╠═";
-                    break;
-                case "96":
-                    icon = "═╣ ";
-                    break;
-                case "99":
-                    icon = "═╬═";
-                    break;
+            // if there is a room and room is discovered
+            if (room && room.isDiscovered) {
+                // get room code
+                var UD = 0;
+                if (room.directions[typedef_1.NumericDirection.up])
+                    UD += 3;
+                if (room.directions[typedef_1.NumericDirection.down])
+                    UD += 6;
+                var LR = 0;
+                if (room.directions[typedef_1.NumericDirection.right])
+                    LR += 3;
+                if (room.directions[typedef_1.NumericDirection.left])
+                    LR += 6;
+                var code = "" + UD + LR;
+                icon = referObj[code];
+                // replace middle character
+                // leader's location
+                if ((0, Utility_1.findEqualCoordinate)(this.leaderCoordinate, room.coordinate)) {
+                    icon = (0, Utility_1.replaceCharacterAtIndex)(icon, '♦', Number(this.displayMode === 'pc'));
+                }
+                // enemy spotted
+                else if (room.isBattleRoom) {
+                    icon = (0, Utility_1.replaceCharacterAtIndex)(icon, '♠', Number(this.displayMode === 'pc'));
+                }
+                // treasure room
+                else if (room.treasure !== null) {
+                    icon = (0, Utility_1.replaceCharacterAtIndex)(icon, '♠', Number(this.displayMode === 'pc'));
+                }
             }
-            // replace middle emote
-            // leader's location
-            if ((0, Utility_1.findEqualCoordinate)(this.leaderCoordinate, room.coordinate)) {
-                icon = (0, Utility_1.replaceCharacterAtIndex)(icon, '♦', 1);
-            }
-            // enemy spotted
-            else if (room.isBattleRoom) {
-                icon = (0, Utility_1.replaceCharacterAtIndex)(icon, '♠', 1);
-            }
-            // treasure room
-            else if (room.treasure !== null) {
-                icon = (0, Utility_1.replaceCharacterAtIndex)(icon, '♠', 1);
-            }
-            // empty room
+            // empty
             else {
+                icon = referObj.empty;
             }
-            this.setMapDoubleArray(room.coordinate, icon);
+            this.setMapDoubleArray({
+                x: x,
+                y: y,
+            }, icon);
         }
         // combine mapDoubleArray into one string
         var returnString = [];
@@ -648,57 +669,106 @@ var Dungeon = /** @class */ (function () {
     };
     Dungeon.prototype.initialiseUsers = function (_message) {
         return __awaiter(this, void 0, void 0, function () {
-            var user, userData, _loop_2, this_1, i;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var user, userData, _a, _loop_3, this_2, i;
+            var _this = this;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
                     case 0:
                         user = _message.author;
                         return [4 /*yield*/, (0, Database_1.getUserData)(user.id)];
                     case 1:
-                        userData = _a.sent();
+                        userData = _e.sent();
+                        // set leader data
                         this.leaderUser = user;
                         this.leaderUserData = userData;
                         this.callMessage = _message;
-                        _loop_2 = function (i) {
+                        _a = this;
+                        return [4 /*yield*/, Promise.all(userData.party.map(function (_id) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                                return [2 /*return*/, __1.BotClient.users.fetch(_id)];
+                            }); }); }))];
+                    case 2:
+                        _a.party = _e.sent();
+                        return [4 /*yield*/, this.updateWelfare()];
+                    case 3:
+                        _e.sent();
+                        _loop_3 = function (i) {
                             var room, encounterName, mapdata;
-                            return __generator(this, function (_e) {
-                                switch (_e.label) {
+                            return __generator(this, function (_f) {
+                                switch (_f.label) {
                                     case 0:
-                                        room = this_1.rooms[i];
+                                        room = this_2.rooms[i];
                                         if (!room.isBattleRoom) return [3 /*break*/, 2];
-                                        encounterName = (0, Utility_1.getRandomInArray)(this_1.data.encounterMaps);
+                                        encounterName = (0, Utility_1.getRandomInArray)(this_2.data.encounterMaps);
                                         if (!(encounterName && areasData_json_1.default[encounterName])) return [3 /*break*/, 2];
                                         mapdata = (0, Utility_1.getNewObject)(areasData_json_1.default[encounterName]);
-                                        return [4 /*yield*/, Battle_1.Battle.Generate(mapdata, this_1.leaderUser, _message, userData.party, __1.BotClient, false)
+                                        return [4 /*yield*/, Battle_1.Battle.Generate(mapdata, this_2.leaderUser, _message, userData.party, __1.BotClient, false)
                                                 .then(function (_b) {
                                                 room.battle = _b;
                                             })];
                                     case 1:
-                                        _e.sent();
-                                        _e.label = 2;
+                                        _f.sent();
+                                        _f.label = 2;
                                     case 2: return [2 /*return*/];
                                 }
                             });
                         };
-                        this_1 = this;
+                        this_2 = this;
                         i = 0;
-                        _a.label = 2;
-                    case 2:
-                        if (!(i < this.rooms.length)) return [3 /*break*/, 5];
-                        return [5 /*yield**/, _loop_2(i)];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
+                        _e.label = 4;
                     case 4:
+                        if (!(i < this.rooms.length)) return [3 /*break*/, 7];
+                        return [5 /*yield**/, _loop_3(i)];
+                    case 5:
+                        _e.sent();
+                        _e.label = 6;
+                    case 6:
                         i++;
-                        return [3 /*break*/, 2];
-                    case 5: return [2 /*return*/];
+                        return [3 /*break*/, 4];
+                    case 7: return [2 /*return*/];
                 }
             });
         });
     };
     Dungeon.BRANCHOUT_CHANCE = 0.1;
-    Dungeon.BLOCKEDOFF_ROOMDIR = [null, null, null, null];
+    Dungeon.BLOCKED_OFF_ROOMDIR = [null, null, null, null];
+    Dungeon.BLOCKICONS_PC = {
+        "empty": "███",
+        "00": " + ",
+        "03": "╞══",
+        "06": "══╡",
+        "09": "═══",
+        "30": "_╨_",
+        "33": " ╚═",
+        "36": "═╝ ",
+        "39": "═╩═",
+        "60": "-╥-",
+        "63": " ╔═",
+        "66": "═╗ ",
+        "69": "═╦═",
+        "90": " ║ ",
+        "93": " ╠═",
+        "96": "═╣ ",
+        "99": "═╬═",
+    };
+    Dungeon.BLOCKICONS_MOBILE = {
+        "empty": "█",
+        "00": "+",
+        "03": "╞",
+        "06": "╡",
+        "09": "═",
+        "30": "╨",
+        "33": "╚",
+        "36": "╝",
+        "39": "╩",
+        "60": "╥",
+        "63": "╔",
+        "66": "╗",
+        "69": "╦",
+        "90": "║",
+        "93": "╠",
+        "96": "╣",
+        "99": "╬",
+    };
     return Dungeon;
 }());
 exports.Dungeon = Dungeon;
