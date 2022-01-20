@@ -1,13 +1,13 @@
-import { CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageCollector, MessageEmbed, MessageOptions, OverwriteData, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord } from "./Utility";
+import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageCollector, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, removeItemArray } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIcon, getUserData, getUserWelfare, setUserWelfare } from "./Database";
 import enemiesData from "../data/enemiesData.json";
-import weaponData from "../data/weaponData.json";
+import globalWeaponsData from "../data/universalWeaponsData.json";
 
 import fs from 'fs';
 import { MinHeap } from "./MinHeap";
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions, VirtualStat } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, WeaponName, UniversalWeaponName } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
@@ -104,6 +104,13 @@ export class Battle {
                 blankStat.pvp = true;
             }
             battle.tobespawnedArray.push(blankStat);
+
+            // universal weapon
+            for (let i = 0; i < Object.keys(globalWeaponsData).length; i++) {
+                const universalWeaponName: UniversalWeaponName = Object.keys(globalWeaponsData)[i] as UniversalWeaponName;
+                const uniWeapon: Weapon = getNewObject(globalWeaponsData[universalWeaponName] as Weapon);
+                blankStat.base.weapons.push(uniWeapon);
+            }
         }
 
         // add enemies to the spawning list
@@ -353,12 +360,19 @@ export class Battle {
                 createdChannel.send(`<@${user?.id}>`).then(mes => mes.delete().catch(console.log));
 
                 // send time, player embed, and input manual
-                createdChannel.send("``` ```");
+                createdChannel.send({
+                    files: [
+                        { attachment: await this.getCurrentMapBuffer(), name: "map.png" }
+                    ],
+                    embeds: [
+                        new MessageEmbed()
+                            .setImage("attachment://map.png")
+                    ]
+                });
                 // const timerMessage: Message = await createdChannel.send({ embeds: [this.getTimerEmbed(stat, timeLeft, getActionsTranslate(this.getStatActions(stat)).join(''))] });
-                const playerInfoMessage: Message = await createdChannel.send(await this.getFullPlayerEmbedMessageOptions(virtualStat));
 
                 // listen to actions with collector
-                const readingPlayerPromise = this.readActions(120, playerInfoMessage, virtualStat, realStat).then(() => {
+                const readingPlayerPromise = this.readActions(120, createdChannel, virtualStat, realStat).then(() => {
                     createdChannel.send({ embeds: [new MessageEmbed().setTitle("Your turn has ended.")] });
                 });
                 reportPromises.push(readingPlayerPromise);
@@ -591,39 +605,25 @@ export class Battle {
     }
 
     /** Get a string showing all nearby enemies reachable by weapon */
-    getNearbyEnemiesInfo(stat: Stat): string {
-        let enemyCount = 0;
-        let string = "";
-        const longArm = findLongArm(stat.base.weapons);
-        const longestRange = longArm.Range[1];
-        const nearbyEnemies = this.findEntities_radius(stat, longestRange);
-        const nearbyEnemiesSorted = nearbyEnemies.sort((a, b) => getDistance(stat, a) - getDistance(stat, b));
-        while (nearbyEnemiesSorted[0] && enemyCount < 10) {
-            const s = nearbyEnemies.shift() as Stat;
-            const distanceBetween = getDistance(stat, s);
-            const IsWithinDistance = checkWithinDistance(newWeapon(longArm, { Range: [1, 5] }), distanceBetween);
-            const AHP = getAHP(s);
-            if (IsWithinDistance && string.length < 990) {
-                string += (`(**${s.index}**) ${s.base.class} (${s.x}, ${s.y})` + "`" + addHPBar(AHP * (30 / AHP), s.HP * (30 / AHP))) + "` (" + roundToDecimalPlace(s.HP, 1) + ")";
-                for (let i = 0; i < stat.base.weapons.length; i++) {
-                    const isAlly = s.team === "player";
-                    const isEnemy = s.team === "enemy";
-                    const weapon = stat.base.weapons[i];
-                    if (checkWithinDistance(stat.base.weapons[i], distanceBetween)) {
-                        if (isAlly && weapon.targetting.target === WeaponTarget.ally) {
-                            string += `${"`"}🛡️${stat.base.weapons[i].Name}${"`"}`;
-                        }
-                        if (isEnemy && weapon.targetting.target === WeaponTarget.enemy) {
-                            string += `${"`"}🗡️${stat.base.weapons[i].Name}${"`"}`;
-                        }
-                    }
-                }
-                string += "";
-            }
-            enemyCount++;
-        }
+    getAllPossibleAttacksInfo(_stat: Stat, _domain: Stat[] = this.allStats()): PossibleAttackInfo[] {
+        return _stat.base.weapons.map(_w => {
+            const shortestRange = _w.Range[0];
+            const longestRange = _w.Range[1];
+            const reachableEntities = this.findEntities_radius(_stat, longestRange, shortestRange === 0, ['block'], _domain);
+            const targettedEntities = reachableEntities.filter(_s => 
+                _w.targetting.target === WeaponTarget.ally?
+                    _s.team === _stat.team:
+                    _s.team !== _stat.team
+            );
 
-        return string;
+            return targettedEntities.map(_e => {
+                return {
+                    attacker: _stat,
+                    target: _e,
+                    weapon: _w,
+                }
+            })
+        }).flat();
     }
 
     /** Return an array of coordinates that are not occupied currently, based on the moveAction magnitude and direction */
@@ -673,7 +673,6 @@ export class Battle {
             // add description as actions done and done-to
             const associatedStat = this.allStats(true).find(_s => _s.owner === roomID);
             if (associatedStat && associatedStat.actionsAssociatedStrings[round] !== undefined) {
-                log(associatedStat.actionsAssociatedStrings[round]);
                 embed.description = shortenString(associatedStat.actionsAssociatedStrings[round].join('\n\n'));
             }
 
@@ -726,8 +725,6 @@ export class Battle {
 
         if (check === null) { // attack goes through
             _virtualAttacker.weaponUses[getWeaponIndex(weapon, _virtualAttacker)]++;
-            log(_virtualAttacker.weaponUses)
-            log((_virtualAttacker as any).virtual)
 
             _virtualAttacker.readiness -= _aA.readiness;
             HandleTokens(_virtualAttacker, (p, t) => {
@@ -768,249 +765,215 @@ export class Battle {
     };
 
     // action reader methods
-    readActions(_givenSeconds: number, _infoMessage: Message, _vS: VirtualStat, _rS: Stat) {
+    async readActions(_givenSeconds: number, _ownerTextChannel: TextChannel, _vS: VirtualStat, _rS: Stat) {
+        let possibleError: string = '';
+        const domain = this.allStats().map(_s =>
+            _s.index === _vS.index?
+                _vS:
+                _s
+        );
+        const buttonOptions: MessageButtonOptions[] = [
+            {
+                label: "UP ⬆️",
+                style: "PRIMARY",
+                customId: "up"
+            },
+            {
+                label: "DOWN ⬇️",
+                style: "SECONDARY",
+                customId: "down"
+            },
+            {
+                label: "RIGHT ➡️",
+                style: "PRIMARY",
+                customId: "right"
+            },
+            {
+                label: "LEFT ⬅️",
+                style: "SECONDARY",
+                customId: "left"
+            },
+            {
+                label: "Undo",
+                style: "SUCCESS",
+                customId: "undo"
+            },
+        ];
+        const returnMessageInteractionMenus = async () => {
+            const selectMenuOptions: MessageSelectOptionData[] =
+                this.getAllPossibleAttacksInfo(_vS, domain).map(_attackInfo => {
+                    const weapon = _attackInfo.weapon;
+                    const target = _attackInfo.target;
+                    const icon = weapon.targetting.target === WeaponTarget.ally ?
+                        EMOJI_SHIELD :
+                        EMOJI_SWORD;
+                    return {
+                        emoji: icon,
+                        label: `${weapon.Name}`,
+                        description: `${target.base.class} (${target.index})`,
+                        value: `${_attackInfo.attacker.index} ${getWeaponIndex(weapon, _attackInfo.attacker)} ${target.index}`,
+                    }
+                });
+            selectMenuOptions.push({
+                emoji: EMOJI_TICK,
+                label: "End Turn",
+                description: "Preemptively end your turn to save time.",
+                value: "end"
+            })
+
+            const messagePayload: MessageOptions = {
+                components: [getButtonsActionRow(buttonOptions)],
+            }
+            if (selectMenuOptions.length > 0) {
+                const selectMenuActionRow = getSelectMenuActionRow(selectMenuOptions);
+                const selectMenu = selectMenuActionRow.components[0] as MessageSelectMenu;
+                
+                selectMenu.placeholder = "Select an Action";
+                messagePayload.components!.push(selectMenuActionRow);
+            }
+
+            // attach interaction components
+            const m = await this.getFullPlayerEmbedMessageOptions(_vS);
+            m.components = messagePayload.components;
+
+            // add/remove error field
+            let errorField = m.embeds![0].fields?.find(_f => _f.name === "ERROR:");
+            if (errorField && possibleError) {
+                errorField.value = possibleError;
+            }
+            else if (errorField) {
+                removeItemArray(m.embeds![0].fields!, errorField);
+            }
+            else if (possibleError) {
+                m.embeds![0].fields?.push({
+                    name: "ERROR:",
+                    value: possibleError,
+                    inline: false,
+                });
+            }
+
+            return m;
+        }
+        const _infoMessage = await _ownerTextChannel.send(await returnMessageInteractionMenus());
         // returns a Promise that resolves when the player is finished with their moves
         return new Promise((resolve) => {
-            let currentListener: NodeJS.Timer;
-            const responseQueue: Message[] = [];
-            const { x, y, readiness, sword, shield, sprint } = _vS;
-
             let executingActions: Action[] = [];
-            let infoMessagesQueue: Message[] = [_infoMessage];
-            const channel = _infoMessage.channel;
 
-            /** Listens to the responseQueue every 300ms, clears the interval and handles the request when detected. */
             const listenToQueue = () => {
-                log("\tListening to queue...");
-                if (currentListener) {
-                    clearInterval(currentListener);
-                }
-                currentListener = setInterval(async () => {
-                    if (responseQueue[0]) {
-                        clearInterval(currentListener);
-                        handleQueue();
-                    }
-                }, 300);
-            }
-            /** Handles the response (response is Discord.Message) */
-            const handleQueue = async () => {
-                log("\tHandling queue...");
-                const mes = responseQueue.shift();
-                if (mes === undefined) {
-                    throw Error("HandleQueue received an undefined message.")
-                }
-                else {
-                    const sections = extractCommands(mes.content);
-                    const actionName = sections[0].toLocaleLowerCase();
-                    const actionArgs = sections.slice(1, sections.length);
-                    const moveMagnitude = parseInt(actionArgs[0]) || 1;
-
-                    let valid: boolean = false;
-                    switch (actionName) {
-                        case "up":
-                        case "down":
-                        case "right":
-                        case "left":
-                            // get moveAction based on input (blackboxed)
-                            const moveAction = getMoveAction(_vS, actionName, infoMessagesQueue.length, moveMagnitude);
-
-                            // record if it is first move or not
-                            const isFirstMove = !_vS.moved;
-
-                            // validate + act on (if valid) movement on virtual map
-                            valid = this.executeVirtualMovement(moveAction!, _vS);
-
-                            // movement is permitted
-                            if (valid) {
-                                const realMoveStat = getMoveAction(_rS, actionName, infoMessagesQueue.length, moveMagnitude);
-                                if (!isFirstMove) {
-                                    realMoveStat.sprint = 1;
-                                }
-                                executingActions.push(realMoveStat);
+                setUpInteractionCollect(_infoMessage, async itr => {
+                    if (itr.user.id === _rS.owner) {
+                        try {
+                            if (itr.isButton()) {
+                                const valid = handleButton(itr);
+                                await itr.update(await returnMessageInteractionMenus());
                             }
-                            else {
-                                const check = this.validateMovement(_vS, moveAction)!;
-                                channel.send({
-                                    embeds: [new MessageEmbed({
-                                        title: check.reason,
-                                        description: `Failed to move. Reference value: __${check.value}__`,
-                                    })]
-                                });
+                            else if (itr.isSelectMenu()) {
+                                const valid = handleSelectMenu(itr);
+                                await itr.update(await returnMessageInteractionMenus());
                             }
-                            break;
-
-                        // attack
-                        case "attack":
-                            this.readAttackAction(_vS, _rS, 0, actionArgs);
-                            break;
-
-                        // clear
-                        case "clear":
-                        case "cr":
-                            executingActions = [];
-                            infoMessagesQueue = [_infoMessage];
-                            Object.assign(_vS, { x: x, y: y, readiness: readiness, sword: sword, shield: shield, sprint: sprint });
-                            await clearChannel(channel as TextChannel, _infoMessage);
-                            break;
-
-                        case "end":
-                            newCollector.stop();
-                            log(`\tEnded turn for "${_vS.name}" (${_vS.base.class})`);
-                            break;
-
-                        case "log":
-                            log(...this.allStats().filter(s => s.team !== "block").map(s => {
-                                let string = `${s.base.class} (${s.index}) (${s.team}) ${s.HP}/${getAHP(s)} (${s.x}, ${s.y})`
-                                return string;
-                            }));
-                            break;
-
-                        case "undo":
-                            if (infoMessagesQueue.length > 1) {
-                                const undoAction = executingActions.pop();
-                                dealWithUndoAction(_vS, undoAction!);
-                                infoMessagesQueue.pop();
-                                await clearChannel(channel as TextChannel, getLastElement(infoMessagesQueue));
-                            }
-                            break;
-
-                        case "reckless":
-                        case "reck":
-                            // 2 shields => 1 sword
-                            if (_vS.shield >= 2) {
-                                valid = true;
-                                _vS.shield -= 2;
-                                _vS.sword++;
-
-                                const recklessAction = getAttackAction(_rS, _rS, weaponData.Reckless as Weapon, _vS, infoMessagesQueue.length);
-                                executingActions.push(recklessAction);
-                            }
-                            break;
-
-                        default:
-                            if (actionName.length >= 3) {
-                                const weaponChosen = _vS.base.weapons.find(w => {
-                                    return w.Name.toLowerCase().search(actionName) !== -1;
-                                });
-                                if (weaponChosen) {
-                                    const attackTarget = this.findEntity_args(actionArgs, _vS, weaponChosen);
-                                    if (attackTarget === null) {
-                                        valid = false;
-                                    }
-                                    else {
-                                        const virtualAttackAction = getAttackAction(_vS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
-                                        valid = this.executeVirtualAttack(virtualAttackAction, _vS);
-
-                                        if (valid) {
-                                            const realAttackAction = getAttackAction(_rS, attackTarget, weaponChosen, attackTarget, infoMessagesQueue.length);
-                                            executingActions.push(realAttackAction);
-                                        }
-                                        else {
-                                            const check = this.validateTarget(_vS, weaponChosen, attackTarget)!;
-                                            channel.send({
-                                                embeds: [new MessageEmbed({
-                                                    title: check.reason,
-                                                    description: `Failed to attack. Reference value: __${check.value}__`,
-                                                })]
-                                            });
-                                        }
-                                    }
-                                }
-                                else {
-                                    setTimeout(() => mes.delete().catch(console.log), 10 * 1000);
-                                }
-                            }
-                            break;
-                    }
-
-                    debug("\tvalid", valid !== null);
-
-                    if (valid) {
-                        if (!mes.deleted) {
-                            mes.react(EMOJI_TICK)
-                                .catch(_err => console.log);
                         }
-                        // send the predicted map of the next move to channel
-                        const messageOptions = await this.getFullPlayerEmbedMessageOptions(_vS, executingActions);
-                        channel.send(messageOptions)
-                            .then(m => {
-                                if (valid) {
-                                    infoMessagesQueue.push(m);
-                                }
-                                if (responseQueue[0]) {
-                                    handleQueue();
-                                }
-                                else {
-                                    listenToQueue();
-                                }
-                            })
+                        catch (_err) {
+                            console.log(_err);
+                        }
                     }
                     else {
-                        if (!mes.deleted) {
-                            mes.react(EMOJI_CROSS)
-                                .catch(_err => console.log);
-                        }
                         listenToQueue();
                     }
-                }
+                }, 1);
             }
+            const handleSelectMenu = (_sMItr: SelectMenuInteraction): boolean => {
+                const round = executingActions.length + 1;
+                // [attacker index] [weapon index] [target index]
+                const code = _sMItr.values[0];
+                const codeSections = code.split(" ");
+                let valid = false;
 
-            const newCollector = new MessageCollector(channel, {
-                filter: m => m.author.id === _vS.owner,
-                time: _givenSeconds * 1000,
-            });
-            newCollector.on('collect', mes => {
-                if (responseQueue.length < 3) {
-                    responseQueue.push(mes);
+                if (codeSections[0] && codeSections[1] && codeSections[2]) {
+                    const attackerIndex = parseInt(codeSections[0]);
+                    const weaponIndex = parseInt(codeSections[1]);
+                    const targetIndex = parseInt(codeSections[2]);
+
+                    const attacker = _vS.index === attackerIndex?
+                        _vS:
+                        this.allStats().find(_s => _s.index === attackerIndex);
+                    const weapon = attacker?.base.weapons[weaponIndex];
+                    const target = this.allStats().find(_s => _s.index === targetIndex);
+
+                    if (attacker && weapon && target) {
+                        const virtualAttackAction = getAttackAction(_vS, target, weapon, target, round);
+                        valid = this.executeVirtualAttack(virtualAttackAction, _vS);
+                        if (valid) {
+                            possibleError = '';
+                            const realAttackAction = getAttackAction(_rS, target, weapon, target, round);
+                            executingActions.push(realAttackAction);
+                        }
+                        else {
+                            const error = this.validateTarget(virtualAttackAction)!;
+                            possibleError = `${error.reason} Reference value: ${error.value}`;
+                        }
+                    }
+                    listenToQueue();
                 }
-                else {
-                    mes.react("⏱️")
-                        .catch(_err => console.log);
+                else if (code === "end") {
+                    this.roundActionsArray.push(...executingActions);
+                    resolve(void 0);
                 }
-            });
-            newCollector.on('end', async () => {
-                clearInterval(currentListener);
-                for (let i = 0; i < responseQueue.length; i++) {
-                    await handleQueue();
+
+                return valid;
+            }
+            const handleButton = (_btnItr: ButtonInteraction): boolean => {
+                const round = executingActions.length + 1;
+                const direction = _btnItr.customId as Direction;
+                let valid = false;
+
+                switch (_btnItr.customId) {
+                    case "up":
+                    case "right":
+                    case "down":
+                    case "left":
+                        // get moveAction based on input (blackboxed)
+                        const moveAction = getMoveAction(_vS, direction, round, 1);
+
+                        // record if it is first move or not
+                        const isFirstMove = !_vS.moved;
+
+                        // validate + act on (if valid) movement on virtual map
+                        valid = this.executeVirtualMovement(moveAction!, _vS);
+
+                        // movement is permitted
+                        if (valid) {
+                            possibleError = '';
+                            const realMoveStat = getMoveAction(_rS, direction, round, 1);
+                            if (!isFirstMove) {
+                                realMoveStat.sprint = 1;
+                            }
+                            executingActions.push(realMoveStat);
+                        }
+                        else {
+                            const error = this.validateMovement(_vS, moveAction)!;
+                            possibleError = `${error.reason} Reference value: ${error.value}`;
+                        }
+                        break;
+                    
+                    case "undo":
+                        possibleError = '';
+                        if (executingActions.length > 0) {
+                            const undoAction = executingActions.pop()!;
+                            dealWithUndoAction(_vS, undoAction);
+                            valid = true;
+                        }
+                        break;
                 }
-                this.roundActionsArray.push(...executingActions);
-                resolve(void 0);
-            });
+
+                listenToQueue();
+
+                return valid;
+            }
 
             listenToQueue();
         })
     }
-    readAttackAction(_vS: VirtualStat, _rS: Stat, _round: Round, _args: string[]) {
-        const { weaponChosen, target } = this.decipherArgs(_args);
 
-        const virtualAttackAction = getAttackAction(_vS, target, weaponChosen, target, _round);
-        const valid = this.executeVirtualAttack(virtualAttackAction, _vS);
-
-        if (valid) {
-            const realAttackAction = getAttackAction(_rS, target, weaponChosen, target, _round);
-            // executingActions.push(realAttackAction);
-        }
-        else {
-            const check = this.validateTarget(_vS, weaponChosen, target)!;
-            // channel.send({
-            //     embeds: [new MessageEmbed({
-            //         title: check.reason,
-            //         description: `Failed to attack. Reference value: __${check.value}__`,
-            //     })]
-            // });
-        }
-    }
-    decipherArgs(_args: string[]) {
-        const result = {
-            weaponChosen: null,
-            target: null,
-        };
-
-        
-
-        return result; 
-    }
-    
     // index manipulation
     getIndex(stat?: Stat): number {
         let index: number | null = 0;
@@ -1549,24 +1512,6 @@ export class Battle {
             '';
     }
 
-    // return Battle-related information
-    getTimerEmbed(stat: Stat, timeLeft: number, actions: string): MessageEmbed {
-        const titleString = `${timeLeft} seconds remaining...`;
-        const explorerEmbed = new MessageEmbed({
-            title: titleString,
-            description: actions || "( *No actions* )",
-        });
-
-        // dealing with nearby enemies
-        const string = this.getNearbyEnemiesInfo(stat);
-        if (string) explorerEmbed.fields.push({
-            name: "Nearby",
-            value: string || "*( no enemies nearby )*",
-            inline: true,
-        });
-        return explorerEmbed;
-    }
-
     /** Draws the base map and character icons. Does not contain health arcs or indexi */
     async getNewCanvasMap(): Promise<Canvas> {
         const allStats = this.allStats();
@@ -2028,9 +1973,8 @@ export class Battle {
     }
 
     async getFullPlayerEmbedMessageOptions(stat: Stat, actions?: Array<Action>): Promise<MessageOptions> {
-        // log("actions",actions);
-        const mapCanvas = await this.getCurrentMapWithArrowsCanvas(stat, actions);
-        const map: Buffer = mapCanvas.toBuffer();
+        // const mapCanvas = await this.getCurrentMapWithArrowsCanvas(stat, actions);
+        // const map: Buffer = mapCanvas.toBuffer();
 
         const frameImage: Image = await getFileImage('images/frame.png');
         const characterBaseImage: Image = await getFileImage(stat.base.iconURL);
@@ -2039,9 +1983,7 @@ export class Battle {
         ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
         ctx.textAlign = "center";
         ctx.font = '90px serif';
-        
         ctx.fillStyle = "rgba(255, 255, 255, 1)";
-        
         ctx.fillText(stat.base.class, canvas.width / 2, canvas.height * 0.95);
         ctx.strokeText(stat.base.class, canvas.width / 2, canvas.height * 0.95);
 
@@ -2050,7 +1992,7 @@ export class Battle {
         return {
             embeds: [embed],
             files: [
-                { attachment: map, name: "map.png" },
+                // { attachment: map, name: "map.png" },
                 { attachment: canvas.toBuffer(), name: "thumbnail.png" }
             ]
         };
@@ -2080,14 +2022,17 @@ export class Battle {
                     value: "👢".repeat(stat.sprint > 0 ? stat.sprint : 0) || '❎',
                     inline: true,
                 },
-            ]
+            ],
+            footer: {
+                text: `Coordinate: (${stat.x}, ${stat.y})`
+            }
         });
 
         // thumbnail
         explorerEmbed.setThumbnail("attachment://thumbnail.png")
 
         // dealing with map
-        explorerEmbed.setImage(`attachment://map.png`);
+        // explorerEmbed.setImage(`attachment://map.png`);
 
         // embed color to HP
         let green = (Math.round((stat.HP) * (255 / getAHP(stat)))).toString(16);
@@ -2200,13 +2145,13 @@ export class Battle {
             s.index === _i
         ));
     }
-    findEntities_allInAxis(_attacker: Stat, _axis: 'x' | 'y', magnitude: number, ignore: Team[] = []): Array<Stat> {
+    findEntities_allInAxis(_attacker: Stat, _axis: 'x' | 'y', magnitude: number, _ignoring: Team[] = []): Array<Stat> {
         const allStats = this.allStats();
 
         if (magnitude === 0) return [];
         const cAxis = counterAxis(_axis);
         const result = allStats.filter(s => {
-            if (s.team && ignore.includes(s.team)) return false;
+            if (s.team && _ignoring.includes(s.team)) return false;
 
             const checkNeg = s[_axis] >= _attacker[_axis] + magnitude && s[_axis] < _attacker[_axis];
             const checkPos = s[_axis] <= _attacker[_axis] + magnitude && s[_axis] > _attacker[_axis];
@@ -2217,17 +2162,17 @@ export class Battle {
         });
         return result;
     }
-    findEntities_radius(_stat: Coordinate, _r: number, includeSelf: boolean = false, ignore: Array<Team> = ["block"]): Array<Stat> {
-        // console.log(_stat, radius, includeSelf, ignore); 
+    findEntities_radius(_stat: Coordinate, _r: number, _includeSelf: boolean = false, _ignoring: Array<Team> = ["block"], _domain: Stat[] = this.allStats()): Array<Stat> { 
+        const ignored = (c: Stat) => c.team && _ignoring.includes(c.team);
+        const stat = _stat as (Stat | any);
+        const isStat = stat.index !== undefined;
+        const entities = _domain.filter(s =>
+            (s.index !== stat.index || (isStat && _includeSelf)) &&
+            !ignored(s) &&
+            Math.sqrt(Math.pow((s.x - stat.x), 2) + Math.pow((s.y - stat.y), 2)) <= _r
+        );
         
-        const targetNotInIgnore = (c: Stat) => c.team && !ignore.includes(c.team);
-        const stat = _stat as Stat;
-        
-        return this.allStats().filter(s => {
-            return (s.index !== stat.index || (typeof stat.index === 'number' && includeSelf))&&
-                targetNotInIgnore(s)&&
-                Math.sqrt(Math.pow((s.x - stat.x), 2) + Math.pow((s.y - stat.y), 2)) <= _r;
-        });
+        return entities;
     }
     findEntities_inLine(_x1: Coordinate, _x2: Coordinate): Stat[] {
         const dx = _x2.x - _x1.x;
@@ -2327,10 +2272,9 @@ export class Battle {
         }
 
         // weapon uses
-        if (weapon.UPT < getWeaponUses(weapon, attackerStat)) {
+        if (weapon.UPT <= getWeaponUses(weapon, attackerStat)) {
             eM.reason = `You can only use this ability ${weapon.UPT} time(s) per turn.`;
             eM.value = getWeaponUses(weapon, attackerStat);
-            log(weapon, attackerStat, getWeaponUses(weapon, attackerStat));
             return eM;
         }
 
@@ -2449,9 +2393,11 @@ export class Battle {
                 }
             }
         }
-        const startAINode = AINodeMap.get(getCoordString(start))!;
-        startAINode.disC = 0;
-        startAINode.totalC = startAINode.desC;
+        const startAINode = AINodeMap.get(getCoordString(start));
+        if (startAINode) {
+            startAINode.disC = 0;
+            startAINode.totalC = startAINode.desC;
+        }
 
         // 
         const results = [];

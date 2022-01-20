@@ -42,22 +42,17 @@
                 {
                     "spawns": "player",
                     "x": 1,
+                    "y": 0
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 0,
                     "y": 1
                 },
                 {
                     "spawns": "enemy",
-                    "x": 3,
-                    "y": 3
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 4,
-                    "y": 4
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 4,
-                    "y": 2
+                    "x": 1,
+                    "y": 1
                 }
             ],
             "width": 5,
@@ -84,6 +79,11 @@
                     "spawns": "player",
                     "x": 1,
                     "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 2,
+                    "y": 2
                 },
                 {
                     "spawns": "enemy",
@@ -131,6 +131,11 @@
                     "y": 1
                 },
                 {
+                    "spawns": "player",
+                    "x": 2,
+                    "y": 2
+                },
+                {
                     "spawns": "enemy",
                     "x": 3,
                     "y": 3
@@ -176,6 +181,11 @@
                     "y": 1
                 },
                 {
+                    "spawns": "player",
+                    "x": 2,
+                    "y": 2
+                },
+                {
                     "spawns": "enemy",
                     "x": 3,
                     "y": 3
@@ -219,6 +229,11 @@
                     "spawns": "player",
                     "x": 1,
                     "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 2,
+                    "y": 2
                 },
                 {
                     "spawns": "enemy",

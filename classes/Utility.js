@@ -77,8 +77,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.getLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = void 0;
+exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.removeItemArray = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
+exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.getLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var classData_json_1 = __importDefault(require("../data/classData.json"));
@@ -332,6 +332,14 @@ function getLargestInArray(array, _getValue) {
     }, array[0]);
 }
 exports.getLargestInArray = getLargestInArray;
+function removeItemArray(_array, _item) {
+    var index = _array.indexOf(_item);
+    if (index !== undefined) {
+        _array.splice(index);
+    }
+    return index !== undefined;
+}
+exports.removeItemArray = removeItemArray;
 function getBuffStatusEffect(_buff) {
     return _buff + "Up";
 }
@@ -611,15 +619,10 @@ function setUpInteractionCollect(msg, cb, collectCount) {
     return interCollectr;
 }
 exports.setUpInteractionCollect = setUpInteractionCollect;
-function getSelectMenuActionRow(options, id, min, max) {
-    if (id === void 0) { id = 'customId'; }
-    if (min === void 0) { min = 1; }
-    if (max === void 0) { max = 1; }
+function getSelectMenuActionRow(options) {
     var menu = new discord_js_1.MessageSelectMenu({
-        customId: id,
-        minValues: min,
-        maxValues: max,
         options: options,
+        customId: "custom",
     });
     var messageActionRow = new discord_js_1.MessageActionRow({ components: [menu] });
     return messageActionRow;
@@ -733,6 +736,76 @@ function getLoadingEmbed() {
     return loadingEmbed;
 }
 exports.getLoadingEmbed = getLoadingEmbed;
+function getWeaponEmbed(_weapon) {
+    var mWeaponDamage = _weapon.Damage;
+    var mWeaponAcc = _weapon.Acc;
+    var mWeaponRange = _weapon.Range;
+    var mWeaponReadiness = _weapon.Readiness;
+    var embed = new discord_js_1.MessageEmbed({
+        title: _weapon.Name,
+        fields: [],
+    });
+    if (_weapon.desc) {
+        embed.description = _weapon.desc;
+    }
+    // friendly skill: Readiness, Range, Token Requirements
+    // aggressive skill: everything
+    switch (_weapon.targetting.target) {
+        case typedef_1.WeaponTarget.enemy:
+            var damageField = {
+                name: "Damage",
+                value: mWeaponDamage[0] + " - " + mWeaponDamage[1],
+                inline: false,
+            };
+            var accField = {
+                name: "Accuracy",
+                value: "" + mWeaponAcc,
+                inline: false,
+            };
+            var critField = {
+                name: "Critical Chance",
+                value: "+" + _weapon.Crit + "%",
+                inline: false,
+            };
+            embed.fields.push(damageField, accField, critField);
+        case typedef_1.WeaponTarget.ally:
+            var rangeField = {
+                name: "Range",
+                value: mWeaponRange[0] + " - " + mWeaponRange[1],
+                inline: false,
+            };
+            var readinessField = {
+                name: "Readiness",
+                value: "" + mWeaponReadiness,
+                inline: false,
+            };
+            var tokensField = {
+                name: "Tokens",
+                value: "" + typedef_1.EMOJI_SWORD.repeat(_weapon.sword) + typedef_1.EMOJI_SHIELD.repeat(_weapon.shield) + typedef_1.EMOJI_SPRINT.repeat(_weapon.sprint) || "(no token requirement)",
+                inline: false,
+            };
+            embed.fields.push(rangeField, readinessField, tokensField);
+            break;
+    }
+    return embed;
+}
+exports.getWeaponEmbed = getWeaponEmbed;
+function getStatsEmbed(_class) {
+    var embed = new discord_js_1.MessageEmbed();
+    var classChosen = getNewObject(classData_json_1.default[_class]);
+    for (var i = 0; i < Object.keys(typedef_1.StatMaximus).length; i++) {
+        var statName = Object.keys(typedef_1.StatMaximus)[i];
+        var maxBar = 50;
+        var nowBar = classChosen[statName] * (50 / typedef_1.StatMaximus[statName]);
+        embed.fields.push({
+            name: statName + " (" + classChosen[statName] + "/" + typedef_1.StatMaximus[statName] + ")",
+            value: "`" + addHPBar(maxBar, nowBar) + "`",
+            inline: false,
+        });
+    }
+    return embed;
+}
+exports.getStatsEmbed = getStatsEmbed;
 function getCompass(focus, other) {
     return { x: Math.sign(other.x - focus.x), y: Math.sign(other.y - focus.y) };
 }
@@ -1003,9 +1076,13 @@ function dealWithUndoAction(stat, action) {
     stat.readiness += action.readiness;
     action.executed = false;
     var moveAction = action;
-    // if action is a free movement action
-    if (moveAction.magnitude !== undefined && moveAction.sprint === 0) {
-        stat.moved = false;
+    if (moveAction.magnitude !== undefined) {
+        // if action is a free movement action
+        if (moveAction.sprint === 0) {
+            stat.moved = false;
+        }
+        // reposition
+        stat[moveAction.axis] += moveAction.magnitude * -1;
     }
 }
 exports.dealWithUndoAction = dealWithUndoAction;

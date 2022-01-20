@@ -1,15 +1,4 @@
 {
-	"Block": {
-		"class": "Block",
-		"AHP": 100,
-		"Dodge": 0,
-		"Prot": 0.9,
-		"Spd": 0,
-		"iconURL": "images/black.jpg",
-		"weapons": [],
-		"autoWeapons": [],
-		"botType": 1
-	},
 	"Hercules": {
 		"class": "Hercules",
 		"AHP": 70,
@@ -36,14 +25,15 @@
 					"AOE": "single"
 				},
 				"CD": 0,
-				"UPT": 3
+				"UPT": 3,
+				"desc": "Hercules brings down his club and destroys an enemy within range. If the damage is above 14, a Shield token is taken away from the enemy."
 			},
 			{
 				"Name": "Endure",
 				"Acc": 0,
 				"Damage": [0,0],
 				"Range": [0,0],
-				"Readiness": 0,
+				"Readiness": 30,
 				"sword": 0,
 				"shield": 0,
 				"sprint": 0,
@@ -55,31 +45,13 @@
 					"AOE": "self"
 				},
 				"CD": 0,
-				"UPT": 1
-			},
-			{
-				"Name": "Blind Charge",
-				"Acc": 85,
-				"Damage": [5,10],
-				"Range": [1,2],
-				"Readiness": 30,
-				"sword": 0,
-				"shield": 0,
-				"sprint": 2,
-				"Crit": 0,
-				"Spd": 1,
-				"lifesteal": 0,
-				"targetting": {
-					"target": 1,
-					"AOE": "line"
-				},
-				"CD": 0,
-				"UPT": 1
+				"UPT": 1,
+				"desc": "Hercules summons the burning will to survive, giving himself a shield and healing that is equivalent to 33% of current Labour value."
 			}
 		],
 		"autoWeapons": [
 			{
-				"Name": "Endless Labour",
+				"Name": "Passive: Endless Labour",
 				"Acc": 0,
 				"Damage": [0,0],
 				"Range": [0,0],
@@ -95,7 +67,8 @@
 					"AOE": "self"
 				},
 				"CD": 0,
-				"UPT": 1
+				"UPT": 1,
+				"desc": "All damage taken by Hercules is saved as the 'Labour' value, giving extra effects to specific abilities."
 			}
 		],
 		"botType": 0
@@ -126,7 +99,8 @@
 					"AOE": "single"
 				},
 				"CD": 0,
-				"UPT": 5
+				"UPT": 5,
+				"desc": "Mars stabs his *gladius* viciously into the enemy, bleeding the target with a value proportionate to his Fury, up to 33% extra damage at max 100 Fury."
 			},
 			{
 				"Name": "Decimate",
@@ -145,31 +119,13 @@
 					"AOE": "selfCircle"
 				},
 				"CD": 0,
-				"UPT": 2
-			},
-			{
-				"Name": "Seize Escape",
-				"Acc": 95,
-				"Damage": [3,5],
-				"Range": [1,2],
-				"Readiness": 15,
-				"sword": 1,
-				"shield": 0,
-				"sprint": 0,
-				"Crit": 5,
-				"Spd": 1,
-				"lifesteal": 0,
-				"targetting": {
-					"target": 1,
-					"AOE": "single"
-				},
-				"CD": 0,
-				"UPT": 5
+				"UPT": 2,
+				"desc": "Mars grasps his spear and recklessly spins around once, dealing damage to anyone adjacent or diagonal to him."
 			}
 		],
 		"autoWeapons": [
 			{
-				"Name": "Unrelenting Fury",
+				"Name": "Passive: Unrelenting Fury",
 				"Acc": 0,
 				"Damage": [0,0],
 				"Range": [0,0],
@@ -185,7 +141,8 @@
 					"AOE": "self"
 				},
 				"CD": 0,
-				"UPT": 1
+				"UPT": 1,
+				"desc": "All damage dealt by Mars is stored as Fury. When an enemy's health is below 0 after an attack, stores an extra 15 Fury. When Fury is above 66, Mars becomes ENRAGED "
 			}
 		],
 		"botType": 0
@@ -216,7 +173,8 @@
 					"AOE": "single"
 				},
 				"CD": 0,
-				"UPT": 5
+				"UPT": 5,
+				"desc": "Diana pulls her bow and unreleashes a swift shot, reduces the target's Readiness by 10."
 			},
 			{
 				"Name": "Wild Hunt",
@@ -226,7 +184,7 @@
 				"Readiness": 30,
 				"sword": 0,
 				"shield": 0,
-				"sprint": 0,
+				"sprint": 3,
 				"Crit": 0,
 				"Spd": 1,
 				"lifesteal": 0,
@@ -235,7 +193,8 @@
 					"AOE": "self"
 				},
 				"CD": 0,
-				"UPT": 1
+				"UPT": 1,
+				"desc": "Diana calls upon her connection with the wilderness, summoning up to 4 wolves (8HP) adjacent to her to assist her."
 			}
 		],
 		"autoWeapons": [],
@@ -267,7 +226,8 @@
 					"AOE": "single"
 				},
 				"CD": 0,
-				"UPT": 5
+				"UPT": 5,
+				"desc": "Jupiter slashes his *gladius*, executing the enemy who dared approach him. If the enemy's health is below 33%, damage is multiplied by x1.5."
 			},
 			{
 				"Name": "Attack-Order",
@@ -286,7 +246,8 @@
 					"AOE": "touch"
 				},
 				"CD": 0,
-				"UPT": 2
+				"UPT": 2,
+				"desc": "Jupiter commands his associate into an aggressive formation, giving the target 1 Sword token, and an extra 1 Sword token if Jupiter himself holds one; Jupiter will consume 1 Sword token if it is so."
 			},
 			{
 				"Name": "Defence-Order",
@@ -311,7 +272,8 @@
 					"AOE": "touch"
 				},
 				"CD": 0,
-				"UPT": 2
+				"UPT": 2,
+				"desc": "Jupiter commands his associate into a defensive formation, giving the target 1 Shield token, and an extra 1 Shield token if Jupiter himself holds one; Jupiter will consume 1 Shield token if it is so."
 			},
 			{
 				"Name": "Manoeuvre-Order",
@@ -336,7 +298,8 @@
 					"AOE": "touch"
 				},
 				"CD": 0,
-				"UPT": 2
+				"UPT": 2,
+				"desc": "Jupiter commands his associate into a manoeuvrable formation, giving the target 1 Sprint token, and an extra 1 Sprint token if Jupiter himself holds one; Jupiter will consume 1 Sprint token if it is so."
 			}
 		],
 		"autoWeapons": [],
@@ -368,7 +331,8 @@
 					"AOE": "single"
 				},
 				"CD": 0,
-				"UPT": 5
+				"UPT": 5,
+				"desc": "Victoria charges forward and slices the enemy with precision and elegance. If Victoria currently holds Sprint tokens, extra damage, ignoring defence, will be dealt towards the target equivalent to the number of Sprint tokens she has; this action will consume 1 Sprint token if it is so."
 			},
 			{
 				"Name": "Angelic Blessings",
@@ -387,13 +351,11 @@
 					"AOE": "touch"
 				},
 				"CD": 0,
-				"UPT": 2
+				"UPT": 2,
+				"desc": "Victoria calls upon her light magic, and blesses the target, giving both 1 Sprint token and healing for 10 HP."
 			}
 		],
 		"autoWeapons": [],
 		"botType": 0
-	},
-	"Venus": {
-		
 	}
 }

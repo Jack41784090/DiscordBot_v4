@@ -442,6 +442,7 @@ export class Dungeon {
         }
         const listenToQueue = async () => {
             setUpInteractionCollect(mapMessage, async itr => {
+                log(itr.user.id, this.leaderUser!.id);
                 if (itr.user.id === this.leaderUser!.id) {
                     try {
                         if (itr.isButton()) {
@@ -456,6 +457,9 @@ export class Dungeon {
                     catch (_err) {
                         console.log(_err);
                     }
+                }
+                else {
+                    listenToQueue();
                 }
             }, 1);
         }

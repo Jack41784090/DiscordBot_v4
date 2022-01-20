@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WeaponEffect = void 0;
+var typedef_1 = require("../typedef");
 var StatusEffect_1 = require("./StatusEffect");
 var Utility_1 = require("./Utility");
 var statusEffect_effects = new Map([
@@ -31,7 +32,15 @@ var statusEffect_effects = new Map([
         }
     ],
     [
-        "Endless Labour",
+        "Blind Charge",
+        function (_action, _cR, _bd) {
+            var returnString = '';
+            var attackAction = _action;
+            return returnString;
+        }
+    ],
+    [
+        "Passive: Endless Labour",
         function (_action, _cR, _bd) {
             var affected = _action.from;
             var previousLabour = _bd.getStatus(affected, "labouring");
@@ -42,7 +51,7 @@ var statusEffect_effects = new Map([
         }
     ],
     [
-        "Vicious-Stab",
+        "Vicious Stab",
         function (_action, _cR, _bd) {
             var returnString = '';
             if (_cR.fate !== "Miss") {
@@ -86,7 +95,7 @@ var statusEffect_effects = new Map([
         }
     ],
     [
-        "Unrelenting Fury",
+        "Passive: Unrelenting Fury",
         function (_action, _cR, _bd) {
             // initialise fury status
             var attacker = _action.from;
@@ -114,7 +123,7 @@ var statusEffect_effects = new Map([
         }
     ],
     [
-        "Wild-Hunt",
+        "Wild Hunt",
         function (_action, _cR, _bd) {
             var returnString = "";
             for (var i = 0; i < 4; i++) {
@@ -154,7 +163,7 @@ var statusEffect_effects = new Map([
             if (swords > 0) {
                 _action.affected.sword++;
                 _action.from.sword--;
-                returnString += '🗡️';
+                returnString += typedef_1.EMOJI_SWORD;
             }
             _action.affected.sword++;
             return returnString;
@@ -168,7 +177,7 @@ var statusEffect_effects = new Map([
             if (shields > 0) {
                 _action.affected.shield++;
                 _action.from.shield--;
-                returnString += '🛡️';
+                returnString += typedef_1.EMOJI_SHIELD;
             }
             _action.affected.shield++;
             return returnString;
@@ -203,7 +212,7 @@ var statusEffect_effects = new Map([
         }
     ],
     [
-        "Angelic-Blessings",
+        "Angelic Blessings",
         function (_action, _cR, _bd) {
             var returnString = "";
             var attacker = _action.from;

@@ -440,7 +440,8 @@ var Dungeon = /** @class */ (function () {
                                     return __generator(this, function (_a) {
                                         switch (_a.label) {
                                             case 0:
-                                                if (!(itr.user.id === this.leaderUser.id)) return [3 /*break*/, 7];
+                                                (0, Utility_1.log)(itr.user.id, this.leaderUser.id);
+                                                if (!(itr.user.id === this.leaderUser.id)) return [3 /*break*/, 8];
                                                 _a.label = 1;
                                             case 1:
                                                 _a.trys.push([1, 6, , 7]);
@@ -462,7 +463,11 @@ var Dungeon = /** @class */ (function () {
                                                 _err_1 = _a.sent();
                                                 console.log(_err_1);
                                                 return [3 /*break*/, 7];
-                                            case 7: return [2 /*return*/];
+                                            case 7: return [3 /*break*/, 9];
+                                            case 8:
+                                                listenToQueue();
+                                                _a.label = 9;
+                                            case 9: return [2 /*return*/];
                                         }
                                     });
                                 }); }, 1);

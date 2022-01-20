@@ -15,6 +15,9 @@ export const EMOJI_STAR = '🌠';
 export const EMOJI_WHITEB = '⬜';
 export const EMOJI_BLACKB = '⬛';
 export const EMOJI_BROWNB = '🟫';
+export const EMOJI_SHIELD = '🛡️';
+export const EMOJI_SWORD = '🗡️';
+export const EMOJI_SPRINT = '👢'
 
 export type RoomDirections = [Room | null, Room | null, Room | null, Room | null];
 
@@ -99,6 +102,14 @@ export interface BaseStat {
     iconURL: string,
     botType: BotType,
 }
+export const StatMaximus = {
+    AHP: 100,
+    Dodge: 30,
+    Prot: 0.5,
+    Spd: 10,
+}
+export type StatPrimus =
+    "AHP" | "Dodge" | "Prot" | "Spd"
 export interface Stat extends Coordinate {
     base: BaseStat,
 
@@ -259,21 +270,21 @@ export interface Weapon {
     },
     CD: number,
     UPT: number,
+    desc: string | null,
 }
+export type UniversalWeaponName =
+    "Reckless"
 export type WeaponName =
-    // universal
-    "Reckless"|
-
     // Hercules
+    "Passive: Endless Labour" |
     "Obliterate"|
     "Endure"|
-    "Endless Labour"|
     "Blind Charge"|
 
     // Mars
+    "Passive: Unrelenting Fury" |
     "Vicious Stab"|
     "Decimate"|
-    "Unrelenting Fury"|
 
     // Diana
     "Hunt"|
@@ -289,12 +300,16 @@ export type WeaponName =
     "Slice"|
     "Angelic Blessings"
 export interface WeaponEffectFunction {
-    (_aA: Action, _cR: ClashResult, _bd: Battle, _args: string[]): string;
+    (_aA: Action, _cR: ClashResult, _bd: Battle): string;
+}
+export interface PossibleAttackInfo {
+    attacker: Stat,
+    target: Stat,
+    weapon: Weapon,
 }
 
 // classes
-export type Class = 
-    "Block"|
+export type Class =
     "Hercules"|
     "Mars"|
     "Diana"|

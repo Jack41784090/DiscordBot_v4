@@ -31,7 +31,8 @@
                     "AOE": "single"
                 },
 				"CD": 0,
-                "UPT": 255
+                "UPT": 255,
+                "desc": null
             }
         ],
         "autoWeapons": [],
@@ -61,7 +62,10 @@
                 "targetting": {
                     "target": 1,
                     "AOE": "single"
-                }
+                },
+                "CD": 0,
+                "UPT": 255,
+                "desc": null
             }
         ],
         "autoWeapons": [],
@@ -93,7 +97,8 @@
                     "AOE": "single"
                 },
                 "CD": 0,
-                "UPT": 255
+                "UPT": 255,
+                "desc": null
             }
         ],
         "autoWeapons": [],

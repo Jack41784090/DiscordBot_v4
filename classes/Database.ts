@@ -56,7 +56,7 @@ export async function getUserData(id_author: string | User): Promise<UserData> {
         { user: id_author, id: id_author.id }:
         { user: await BotClient.users.fetch(id_author), id: id_author };
 
-    const data = getNewObject(getDefaultSettings(), await getAnyData('Users', id));
+    const data = await getAnyData('Users', id);
     return data?
         data as UserData:
         await createNewUser(user);

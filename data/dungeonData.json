@@ -17,7 +17,9 @@
         },
 
         "encounterMaps": [
-            "farmstead_empty"
+            "farmstead_walkers1",
+            "farmstead_walkers2",
+            "farmstead_walkers3"
         ],
         "eliteMaps": [
             "farmstead_horde1"

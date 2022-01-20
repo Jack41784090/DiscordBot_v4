@@ -1,4 +1,4 @@
-import { Action, AttackAction, ClashResult, Coordinate, Direction, NumericDirection, WeaponEffectFunction, WeaponName } from "../typedef";
+import { Action, AttackAction, ClashResult, Coordinate, Direction, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, WeaponEffectFunction, WeaponName } from "../typedef";
 import { Battle } from "./Battle";
 import { StatusEffect } from "./StatusEffect";
 import { clamp, directionToMagnitudeAxis, getBaseEnemyStat, getNewObject, getStat, log, numericDirectionToDirection, roundToDecimalPlace } from "./Utility";
@@ -42,7 +42,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
         }
     ],
     [
-        "Endless Labour",
+        "Passive: Endless Labour",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             const affected = _action.from;
             const previousLabour = _bd.getStatus(affected, "labouring");
@@ -101,7 +101,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
         }
     ],
     [
-        "Unrelenting Fury",
+        "Passive: Unrelenting Fury",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             // initialise fury status
             const attacker = _action.from;
@@ -173,7 +173,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
             if (swords > 0) {
                 _action.affected.sword++;
                 _action.from.sword--;
-                returnString += '🗡️'
+                returnString += EMOJI_SWORD;
             }
             _action.affected.sword++;
             return returnString;
@@ -187,7 +187,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
             if (shields > 0) {
                 _action.affected.shield++;
                 _action.from.shield--;
-                returnString += '🛡️'
+                returnString += EMOJI_SHIELD;
             }
             _action.affected.shield++;
             return returnString;

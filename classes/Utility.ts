@@ -6,7 +6,7 @@ import enemyData from "../data/enemiesData.json"
 import dungeonData from "../data/dungeonData.json"
 
 import { BotClient } from "..";
-import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData } from "../typedef";
+import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus } from "../typedef";
 import { Battle } from "./Battle";
 import { Dungeon } from "./Dungeon";
 
@@ -233,6 +233,14 @@ export function getLargestInArray<Type>(array: Type[], _getValue: (_item: Type) 
     }, array[0]);
 }
 
+export function removeItemArray<Type>(_array: Type[], _item: Type) {
+    const index = _array.indexOf(_item);
+    if (index !== undefined) {
+        _array.splice(index);
+    }
+    return index !== undefined;
+}
+
 export function getBuffStatusEffect(_buff: Buff) {
     return `${_buff}Up` as StatusEffectType;
 }
@@ -427,7 +435,7 @@ export function getDirection(axis: 'x' | 'y', moveMagnitude: number) {
 //     console.log(message.embeds[0].image);
 // }
 
-export function getMoveAction(_stat: Stat, action: string, _round: number, moveMagnitude: number): MoveAction;
+export function getMoveAction(_stat: Stat, _direction: Direction, _round: number, moveMagnitude: number): MoveAction;
 export function getMoveAction(_stat: Stat, magnitude: number, _round: number, axis: "x" | "y"): MoveAction;
 export function getMoveAction(_stat: Stat, args2: string | number, _round: number, args4: number | "x" | "y"): MoveAction {
     const movetype: ActionType = "Move";
@@ -625,12 +633,10 @@ export function setUpInteractionCollect(msg: Message, cb: (itr: Interaction) => 
     return interCollectr;
 }
 
-export function getSelectMenuActionRow(options: MessageSelectOptionData[], id: string = 'customId', min: number = 1, max: number = 1) {
+export function getSelectMenuActionRow(options: MessageSelectOptionData[]) {
     const menu = new MessageSelectMenu({
-        customId: id,
-        minValues: min,
-        maxValues: max,
         options: options,
+        customId: "custom",
     });
     const messageActionRow = new MessageActionRow({ components: [menu] });
     return messageActionRow;
@@ -707,6 +713,79 @@ export function getLoadingEmbed() {
         .setAuthor("Wait a while.", url, url)
         .setTitle("Now Loading...");
     return loadingEmbed;
+}
+export function getWeaponEmbed(_weapon: Weapon) {
+    const mWeaponDamage = _weapon.Damage;
+    const mWeaponAcc = _weapon.Acc;
+    const mWeaponRange = _weapon.Range;
+    const mWeaponReadiness = _weapon.Readiness;
+    const embed = new MessageEmbed({
+        title: _weapon.Name,
+        fields: [],
+    });
+
+    if (_weapon.desc) {
+        embed.description = _weapon.desc;
+    }
+
+    // friendly skill: Readiness, Range, Token Requirements
+    // aggressive skill: everything
+    switch (_weapon.targetting.target) {
+        case WeaponTarget.enemy:
+            const damageField = {
+                name: "Damage",
+                value: `${mWeaponDamage[0]} - ${mWeaponDamage[1]}`,
+                inline: false,
+            };
+            const accField = {
+                name: "Accuracy",
+                value: `${mWeaponAcc}`,
+                inline: false,
+            };
+            const critField = {
+                name: "Critical Chance",
+                value: `+${_weapon.Crit}%`,
+                inline: false,
+            };
+
+            embed.fields.push(damageField, accField, critField);
+        case WeaponTarget.ally:
+            const rangeField = {
+                name: "Range",
+                value: `${mWeaponRange[0]} - ${mWeaponRange[1]}`,
+                inline: false,
+            };
+            const readinessField = {
+                name: "Readiness",
+                value: `${mWeaponReadiness}`,
+                inline: false,
+            }
+            const tokensField = {
+                name: "Tokens",
+                value: `${EMOJI_SWORD.repeat(_weapon.sword)}${EMOJI_SHIELD.repeat(_weapon.shield)}${EMOJI_SPRINT.repeat(_weapon.sprint)}` || "(no token requirement)",
+                inline: false,
+            }
+
+            embed.fields.push(rangeField, readinessField, tokensField);
+            break;
+    }
+
+    return embed;
+}
+export function getStatsEmbed(_class: Class) {
+    const embed = new MessageEmbed();
+    const classChosen = getNewObject(classData[_class]);
+    for (let i = 0; i < Object.keys(StatMaximus).length; i++) {
+        const statName: StatPrimus = Object.keys(StatMaximus)[i] as StatPrimus;
+        const maxBar = 50;
+        const nowBar = classChosen[statName] * (50 / StatMaximus[statName]);
+        embed.fields.push({
+            name: `${statName} (${classChosen[statName]}/${StatMaximus[statName]})`,
+            value: `\`${addHPBar(maxBar, nowBar)}\``,
+            inline: false,
+        })
+    }
+    return embed;
 }
 
 export function getCompass(focus: Coordinate, other: Coordinate): Vector2 {
@@ -955,9 +1034,14 @@ export function dealWithUndoAction(stat: Stat, action: Action) {
     action.executed = false;
 
     const moveAction: MoveAction = action as MoveAction;
-    // if action is a free movement action
-    if (moveAction.magnitude !== undefined && moveAction.sprint === 0) {
-        stat.moved = false;
+    if (moveAction.magnitude !== undefined) {
+        // if action is a free movement action
+        if (moveAction.sprint === 0) {
+            stat.moved = false;
+        }
+
+        // reposition
+        stat[moveAction.axis] += moveAction.magnitude * -1;
     }
 }
 
