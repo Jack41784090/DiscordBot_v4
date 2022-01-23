@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WeaponTarget = exports.BotType = exports.AllTeams = exports.StatMaximus = exports.NumericDirection = exports.deathQuotes = exports.preludeQuotes = exports.EMOJI_SPRINT = exports.EMOJI_SWORD = exports.EMOJI_SHIELD = exports.EMOJI_BROWNB = exports.EMOJI_BLACKB = exports.EMOJI_WHITEB = exports.EMOJI_STAR = exports.EMOJI_CROSS = exports.EMOJI_TICK = exports.COMMAND_CALL = void 0;
+exports.WeaponTarget = exports.BotType = exports.AllTeams = exports.DungeonItemInfoChart = exports.StatMaximus = exports.NumericDirection = exports.deathQuotes = exports.preludeQuotes = exports.EMOJI_SPRINT = exports.EMOJI_SWORD = exports.EMOJI_SHIELD = exports.EMOJI_BROWNB = exports.EMOJI_BLACKB = exports.EMOJI_WHITEB = exports.EMOJI_STAR = exports.EMOJI_CROSS = exports.EMOJI_TICK = exports.COMMAND_CALL = void 0;
 exports.COMMAND_CALL = ";";
 exports.EMOJI_TICK = '✅';
 exports.EMOJI_CROSS = '❎';
@@ -26,6 +26,22 @@ exports.StatMaximus = {
     Prot: 0.5,
     Spd: 10,
 };
+exports.DungeonItemInfoChart = new Map([
+    [
+        "torch",
+        {
+            emoji: '🔦',
+            prize: 20,
+        }
+    ],
+    [
+        "scout",
+        {
+            emoji: '👾',
+            prize: 20,
+        }
+    ]
+]);
 exports.AllTeams = [
     'block',
     'player',

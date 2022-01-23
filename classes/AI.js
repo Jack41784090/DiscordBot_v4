@@ -122,7 +122,6 @@ var AIFunctions = new Map([
                     break;
             }
             // run away from danger if possible
-            virtualStat.sprint += 3;
             if (!virtualStat.moved || (virtualStat.sprint > 0)) {
                 var coordMap_2 = new Map();
                 var reachableEnemiesCoordinates = (0, Utility_1.breadthFirstSearch)({ x: virtualStat.x, y: virtualStat.y }, function (_c) {

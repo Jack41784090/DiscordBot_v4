@@ -217,6 +217,26 @@ export interface DungeonItem {
     uses: number,
     type: DungeonItemType,
 }
+export interface DungeonItemInfo {
+    emoji: string,
+    prize: number,
+}
+export const DungeonItemInfoChart = new Map<DungeonItemType, DungeonItemInfo>([
+    [
+        "torch",
+        {
+            emoji: '🔦',
+            prize: 20,
+        }
+    ],
+    [
+        "scout",
+        {
+            emoji: '👾',
+            prize: 20,
+        }
+    ]
+])
 export interface StartBattleOptions {
     ambush: Team | null,
 }

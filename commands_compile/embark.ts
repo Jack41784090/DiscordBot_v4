@@ -1,10 +1,7 @@
-import { Client, Guild, GuildMember, Message, MessageEmbed, TextChannel, User } from "discord.js";
-import { formalize, getNewObject, log, random } from "../classes/Utility";
-import { Class, CommandModule, Location, MapData, EMOJI_TICK, UserData, UserStatus, DungeonData } from "../typedef";
-import { Battle } from "../classes/Battle";
+import { Client, Guild, Message, MessageEmbed, TextChannel, User } from "discord.js";
+import { formalize, getNewObject } from "../classes/Utility";
+import { CommandModule, Location, EMOJI_TICK, UserData, DungeonData } from "../typedef";
 import dungeonData from "../data/dungeonData.json";
-import enemiesData from "../data/enemiesData.json"
-import * as Database from "../classes/Database";
 import { Dungeon } from "../classes/Dungeon";
 
 module.exports = {

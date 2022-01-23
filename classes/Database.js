@@ -83,7 +83,7 @@ function getAnyData(collection, doc, failureCB) {
                         failureCB(docRef, snapShot);
                     }
                     return [2 /*return*/, snapShot.exists ?
-                            snapShot.data() :
+                            (0, Utility_1.getNewObject)(getDefaultUserData(), snapShot.data()) :
                             null];
             }
         });
@@ -92,7 +92,7 @@ function getAnyData(collection, doc, failureCB) {
 exports.getAnyData = getAnyData;
 function saveUserData(_userData) {
     return __awaiter(this, void 0, void 0, function () {
-        var document, snapshotData;
+        var document, snapshotData, defaultUserData;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -101,7 +101,8 @@ function saveUserData(_userData) {
                 case 1:
                     snapshotData = _a.sent();
                     if (snapshotData.exists) {
-                        document.update(_userData);
+                        defaultUserData = getDefaultUserData();
+                        document.update((0, Utility_1.getNewObject)(defaultUserData, _userData));
                     }
                     return [2 /*return*/];
             }
@@ -174,7 +175,9 @@ function createNewUser(author) {
                         })];
                 case 1:
                     data = _a.sent();
-                    return [2 /*return*/, data ? data : defaultData];
+                    return [2 /*return*/, data ?
+                            data :
+                            defaultData];
             }
         });
     });
@@ -236,17 +239,22 @@ function getUserWelfare(_user) {
     });
 }
 exports.getUserWelfare = getUserWelfare;
-function getDefaultUserData(author) {
-    var _classes = ["Hercules"];
+function getDefaultUserData(_user) {
+    var _a = _user || {
+        username: "",
+        id: "",
+    }, username = _a.username, id = _a.id;
+    var classes = ["Hercules"];
     return {
-        classes: _classes,
+        classes: classes,
         money: 0,
-        name: author.username,
-        party: [author.id],
+        name: username,
+        party: [id],
         settings: getDefaultSettings(),
         status: "idle",
         equippedClass: "Hercules",
         welfare: 1,
+        inventory: [],
     };
 }
 exports.getDefaultUserData = getDefaultUserData;
