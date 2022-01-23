@@ -3,7 +3,7 @@ import { BotClient } from "..";
 import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, DungeonItem, DungeonItemType, Team, DungeonDisplayMode, DungeonBlockCode, OwnerID } from "../typedef";
 import { Battle } from "./Battle";
 import { Room } from "./Room";
-import { addHPBar, debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalize, getButtonsActionRow, getDistance, getNewObject, getRandomInArray, getSelectMenuActionRow, log, numericDirectionToDirection, random, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
+import { addHPBar, breadthFirstSearch, debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalize, getButtonsActionRow, getDistance, getNewObject, getRandomInArray, getSelectMenuActionRow, log, numericDirectionToDirection, random, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
 
 import areasData from "../data/areasData.json";
 import { getUserData, getUserWelfare } from "./Database";
@@ -261,7 +261,9 @@ export class Dungeon {
         if (battleRoomsSpawned < battleRoomsCount) {
             const difference = battleRoomsCount - battleRoomsSpawned;
             const startingRoom = dungeon.getRoom(_dungeonData.start)!;
-            const deadEndRooms: Room[] = dungeon.breathFirstSearch(startingRoom,
+            const deadEndRooms: Room[] = breadthFirstSearch(
+                startingRoom,
+                _ => _.directions,
                 (_q, _c) => true,
                 (_c) => {
                     return !findEqualCoordinate(_c.coordinate, startingCoord) &&
@@ -299,38 +301,6 @@ export class Dungeon {
                     }
                 })
         }
-    }
-
-    breathFirstSearch(
-        _startingRoom: Room,
-        _pushToQueueCondition: (_q: Room[], _current: Room) => boolean,
-        _pushToResultCondition: (_current: Room) => boolean,
-    ) {
-        const queue: Room[] = [_startingRoom];
-        const result: Room[] = [];
-        const exploredRooms: Room[] = [];
-
-        // branch out and seek the longest dead end
-        let currentRoom = queue.shift();
-        while (currentRoom) {
-            for (let i = 0; i < currentRoom.directions.length; i++) {
-                const r = currentRoom.directions[i];
-                if (r && !exploredRooms.includes(r)) {
-                    exploredRooms.push(r);
-                    if (_pushToQueueCondition(queue, currentRoom)) {
-                        queue.push(r);
-                    }
-                }
-            }
-
-            if (_pushToResultCondition(currentRoom)) {
-                result.push(currentRoom);
-            }
-
-            currentRoom = queue.shift();
-        }
-
-        return result;
     }
 
     validateMovement(_direction: NumericDirection | Direction): boolean {
@@ -486,8 +456,9 @@ export class Dungeon {
                 // execute action
                 switch (itemSelected) {
                     case "torch":
-                        const discoveredRooms = this.breathFirstSearch(
+                        const discoveredRooms = breadthFirstSearch(
                             this.getRoom(this.leaderCoordinate)!,
+                            _ => _.directions,
                             (_q, _c) => {
                                 return getDistance(_c.coordinate, this.leaderCoordinate) <= 1;
                             },

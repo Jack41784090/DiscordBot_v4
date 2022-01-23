@@ -233,17 +233,26 @@ export interface UserData {
     settings: Settings,
     status: UserStatus,
     welfare: number,
+    inventory: DungeonItem[],
 }
 export type UserStatus = "idle" | "busy"; 
 
 export type Team = "block" | "player" | "enemy";
+export const AllTeams: Team[] = [
+    'block',
+    'player',
+    'enemy',
+]
 
 export type Axis = "x" | "y";
 
 export enum BotType {
     naught,
-    enemy,
-    sentry
+    approach_attack,
+    passive_supportive
+}
+export interface AIFunction {
+    (_s: Stat, _bd: Battle): void;
 }
 
 // weapons
@@ -318,6 +327,7 @@ export type Class =
 export type EnemyClass =
     "Barbar"|
     "Barcher"|
+    "Bardar"|
     "Diana's Wolf"
 ;
 export type GetBuffOption = 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff';
@@ -373,9 +383,11 @@ export interface CommandModule {
 }
 
 export interface AINode extends Coordinate {
-    desC: number,
-    disC: number,
-    totalC: number
+    distanceToDestination: number,
+    distanceTravelled: number,
+    totalCost: number
     lastNode: AINode | null,
     nextNode: AINode | null,
 }
+
+export type PathFindMethod = "lowest" | "highest";

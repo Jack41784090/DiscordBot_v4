@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MinHeap = void 0;
-var Utility_1 = require("./Utility");
+var Utility_1 = require("../classes/Utility");
 var MinHeap = /** @class */ (function () {
     function MinHeap(sortBy, array) {
         this.sortBy = sortBy;

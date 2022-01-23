@@ -4,9 +4,10 @@ import { Type } from "typescript";
 import classData from "../data/classData.json"
 import enemyData from "../data/enemiesData.json"
 import dungeonData from "../data/dungeonData.json"
+import areasData from "../data/areasData.json";
 
 import { BotClient } from "..";
-import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus } from "../typedef";
+import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData } from "../typedef";
 import { Battle } from "./Battle";
 import { Dungeon } from "./Dungeon";
 
@@ -83,7 +84,7 @@ export function average(...nums: Array<number>) {
         const n = nums[i];
         total += n;
     }
-    return total / nums.length;
+    return total / (nums.length || 1);
 }
 
 // get battle stats
@@ -147,22 +148,6 @@ export function findEqualCoordinate(_c: Coordinate, __c: Coordinate) {
     return _c.x === __c.x && _c.y === __c.y;
 }
 
-export function flatten(array: Array<Type>) {
-    let flat: Type[] = [];
-
-    for (let i = 0; i < array.length; i++) {
-        const el = array[i];
-        if (Array.isArray(el)) {
-            flat = flat.concat(flatten(el));
-        }
-        else {
-            flat.push(el);
-        }
-    }
-
-    return flat;
-}
-
 export function getDistance(stat1: Coordinate, stat2: Coordinate): number {
     const xDif = stat1.x - stat2.x;
     const yDif = stat1.y - stat2.y;
@@ -223,22 +208,6 @@ export function getCoordsWithinRadius(radius: number, center: Coordinate, inclus
         }
     }
     return result;
-}
-
-export function getLargestInArray<Type>(array: Type[], _getValue: (_item: Type) => number): Type | undefined {
-    return array.reduce((la, c) => {
-        return _getValue(la) < _getValue(c) ?
-            c:
-            la;
-    }, array[0]);
-}
-
-export function removeItemArray<Type>(_array: Type[], _item: Type) {
-    const index = _array.indexOf(_item);
-    if (index !== undefined) {
-        _array.splice(index);
-    }
-    return index !== undefined;
 }
 
 export function getBuffStatusEffect(_buff: Buff) {
@@ -524,8 +493,12 @@ export function directionToEmoji(_direction: Direction | NumericDirection) {
             return "➡️";
     }
 }
-export function directionToMagnitudeAxis(_direction: Direction) {
+export function directionToMagnitudeAxis(_direction: Direction | NumericDirection) {
     let magnitude, axis: Axis;
+    if (typeof _direction === 'number') {
+        _direction = numericDirectionToDirection(_direction);
+    }
+
     switch (_direction) {
         // move vertically
         case "up":
@@ -600,12 +573,14 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
 // }
 
 export async function Test() {
-    const data = getNewObject(dungeonData.farmstead);
-    const dungeon = Dungeon.Generate(data as DungeonData);
-
+    const Ike = await BotClient.users.fetch("262871357455466496");
+    const mes = await (await BotClient.channels.fetch("926372977539424296") as TextChannel).send("Stuff");
     const channel = BotClient.channels.fetch("926372977539424296")
-        .then(_c => {
-            dungeon.print(_c as TextChannel);
+        .then(async _c => {
+            const battle = await Battle.Generate(areasData.farmstead_empty as MapData, Ike, mes, ["262871357455466496"], BotClient, false);
+            battle.StartBattle({
+                ambush: 'enemy'
+            });
         })
         .catch(_e => console.log);
 }
@@ -836,25 +811,24 @@ export function getNewObject<Type, Type2>(origin: Type, _mod?: Type2): Type & Ty
     const mod = (_mod || {}) as Type2;
     return Object.assign({...origin}, mod);
 }
-// export function getDeepCopyObject<Type extends Object>(obj: Type) {
-//     const result: Type = Object.assign({}, obj);
-//     if (typeof obj === 'object') {
-//         for (const [key, value] of Object.entries(obj)) {
-//             if (typeof value === 'object' && !Array.isArray(value) && value) {
-//                 const maximumCallExceeded = Object.assign({ ...getDeepCopyObject(value) });
-//                 result[key] = maximumCallExceeded;
-//             }
-//             else {
-//                 result[key] = value;
-//             }
-//         }
-//     }
-//     return result;
-// }
 
-export function getLastElement<Type>(array: Array<Type>): Type {
+export function arrayGetLastElement<Type>(array: Array<Type>): Type {
     if (array.length < 1) return array[0];
     return array[array.length - 1];
+}
+export function arrayGetLargestInArray<Type>(array: Type[], _getValue: (_item: Type) => number): Type | undefined {
+    return array.reduce((la, c) => {
+        return _getValue(la) < _getValue(c) ?
+            c :
+            la;
+    }, array[0]);
+}
+export function arrayRemoveItemArray<Type>(_array: Type[], _item: Type) {
+    const index = _array.indexOf(_item);
+    if (index !== undefined) {
+        _array.splice(index, 1);
+    }
+    return index !== undefined;
 }
 
 export function getWeaponUses(weapon: Weapon, owner: Stat) {
@@ -966,7 +940,7 @@ export function getStat(bss: SimpleStat | BaseStat, _owner: string = ''): Stat {
                 "player":
                 "enemy":
             ss.team,
-        botType: ss.botType || (_owner ? BotType.naught : BotType.enemy),
+        botType: ss.botType || (_owner ? BotType.naught : BotType.approach_attack),
         accolades: getEmptyAccolade(),
         buffs: getEmptyBuff(),
         debuffs: getEmptyBuff(),
@@ -1065,9 +1039,9 @@ export function getNewNode(_x: number, _y: number, _destination: Coordinate, _di
         y: _y,
         lastNode: null,
         nextNode: null,
-        disC: _distanceTravelled,
-        desC: desC,
-        totalC: totalC,
+        distanceTravelled: _distanceTravelled,
+        distanceToDestination: desC,
+        totalCost: totalC,
     };
     return object;
 }
@@ -1207,4 +1181,39 @@ export async function sendInvitation(_user_id: User | string, _from: User | stri
                 });
         }
     });
+}
+
+export function breadthFirstSearch<Type>(
+    _startingRoom: Type,
+    _extender: (_: Type) => (Type | null)[],
+    _pushToQueueCondition: (_q: Type[], _current: Type) => boolean,
+    _pushToResultCondition: (_current: Type) => boolean,
+) {
+    const result: Type[] = [];
+
+    const queue: Type[] = [_startingRoom];
+    const exploredRooms: Type[] = [];
+
+    // branch out and seek
+    let currentRoom = queue.shift();
+    while (currentRoom) {
+        const extension = _extender(currentRoom);
+        for (let i = 0; i < extension.length; i++) {
+            const r = extension[i];
+            if (r && !exploredRooms.includes(r)) {
+                exploredRooms.push(r);
+                if (_pushToQueueCondition(queue, currentRoom)) {
+                    queue.push(r);
+                }
+            }
+        }
+
+        if (_pushToResultCondition(currentRoom)) {
+            result.push(currentRoom);
+        }
+
+        currentRoom = queue.shift();
+    }
+
+    return result;
 }

@@ -1,17 +1,17 @@
 import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageCollector, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, getLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, getLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, removeItemArray } from "./Utility";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIcon, getUserData, getUserWelfare, setUserWelfare } from "./Database";
 import enemiesData from "../data/enemiesData.json";
 import globalWeaponsData from "../data/universalWeaponsData.json";
 
 import fs from 'fs';
-import { MinHeap } from "./MinHeap";
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, WeaponName, UniversalWeaponName } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, WeaponName, UniversalWeaponName, NumericDirection, PathFindMethod as PathfindMethod } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
 import { BattleManager } from "./BattleManager";
+import { AI } from "./AI";
 
 export class Battle {
     static readonly MOVE_READINESS = 10;
@@ -109,6 +109,7 @@ export class Battle {
             for (let i = 0; i < Object.keys(globalWeaponsData).length; i++) {
                 const universalWeaponName: UniversalWeaponName = Object.keys(globalWeaponsData)[i] as UniversalWeaponName;
                 const uniWeapon: Weapon = getNewObject(globalWeaponsData[universalWeaponName] as Weapon);
+                log("Pushing universal weapon " + universalWeaponName + " into the arsenal of " + `${blankStat.base.class} (${blankStat.index})`)
                 blankStat.base.weapons.push(uniWeapon);
             }
         }
@@ -143,17 +144,29 @@ export class Battle {
     /** An alternative to Start when the battle is already initiated. Gives additional options to begin. */
     async StartBattle(_options: StartBattleOptions) {
         // check player welfare
+        log("Checking welfare...")
         const playerStats = this.party.map(_ownerID => this.tobespawnedArray.find(_s => _s.owner === _ownerID));
-        log(playerStats);
         for (let i = 0; i < playerStats.length; i++) {
             const player = playerStats[i];
             if (player) {
                 const welfare = await getUserWelfare(player.owner);
-                log(welfare);
+                debug(`\t${player.base.class}`, welfare);
                 if (welfare !== null) {
+                    log(`\t${player.HP} => ${player.base.AHP * clamp(welfare, 0, 1)}`)
                     player.HP = player.base.AHP * clamp(welfare, 0, 1);
-                    log(clamp(welfare, 0, 1));
-                    debug("welfare reset to", player.HP)
+                    if (welfare <= 0) {
+                        this.author.send({
+                            embeds: [
+                                new MessageEmbed({
+                                    title: "Alert!",
+                                    description: `One of your teammates, ${player.base.class}, has 0 welfare and cannot attend the battle.`,
+                                    footer: {
+                                        text: `id: ${player.owner}`
+                                    }
+                                })
+                            ]
+                        })
+                    }
                 }
             }
         }
@@ -299,6 +312,7 @@ export class Battle {
 
             //#region PLAYER CONTROL
             if (realStat.botType === BotType.naught && realStat.owner) {
+                log(`Player: ${realStat.base.class} (${realStat.index})`)
                 // fetch the Discord.User 
                 const user: User | null = 
                     this.userCache.get(realStat.owner)||
@@ -380,62 +394,10 @@ export class Battle {
             //#endregion
 
             //#region AI
-            if (realStat.botType === BotType.enemy) {
-                const virtualStat = getNewObject(realStat);
-
-                // target selection
-                // option 1: select the closest target
-                const intendedTargets: Team[] = ["block"];
-                if (virtualStat.team) {
-                    intendedTargets.push(virtualStat.team);
-                }
-                const selectedTarget = this.findEntity_closest(virtualStat, intendedTargets);
-                // option 2: select the weakest target
-
-                // if found a target
-                if (selectedTarget !== null) {
-                    // 1. select weapon
-                    const weaponSelected: Weapon = virtualStat.base.weapons[0];
-
-                    // 2. move to preferred location
-                    const path: Array<Coordinate> = this.startPathFinding(realStat, selectedTarget);
-                    const moveActionArray: Array<MoveAction> = this.getMoveActionListFromCoordArray(realStat, path);
-                    const fullActions: Array<Action> = [];
-
-                    let i = 0;
-                    // while the enemy has not moved or has enough sprint to make additional moves
-                    // Using (rstat.sprint - i) because rstat is by reference and modification is only legal in execution.
-                    while (i < moveActionArray.length && (virtualStat.moved === false || virtualStat.sprint > 0)) {
-                        const moveAction = moveActionArray[i];
-                        const moveMagnitude = Math.abs(moveAction.magnitude);
-                        if (moveMagnitude > 0) {
-                            moveAction.sprint = Number(virtualStat.moved);
-                            const valid = this.executeVirtualMovement(moveAction, virtualStat);
-                            if (valid) {
-                                virtualStat.moved = true;
-                                if (moveAction.magnitude !== undefined) {
-                                    fullActions.push(moveAction);
-                                }
-                            }
-                            else {
-                                const error = this.validateMovement(virtualStat, moveAction);
-                                log(`Failed to move. Reason: ${error?.reason} (${error?.value})`);
-                            }
-                        }
-                        i++;
-                    }
-
-                    // 3. attack with selected weapon
-                    if (checkWithinDistance(weaponSelected, getDistance(virtualStat, selectedTarget))) {
-                        const attackAction = getAttackAction(virtualStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length+1);
-                        const valid = this.executeVirtualAttack(attackAction, virtualStat);
-                        if (valid) {
-                            fullActions.push(getAttackAction(realStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length+1));
-                        }
-                    }
-
-                    this.roundActionsArray.push(...fullActions);
-                }
+            if (realStat.botType !== BotType.naught) {
+                log(`AI: ${realStat.base.class} (${realStat.index})`)
+                const ai_f = new AI(realStat, realStat.botType, this);
+                ai_f.activate();
             }
             //#endregion
         }
@@ -461,7 +423,7 @@ export class Battle {
         }
 
         // find the latest action's priority
-        const latestAction = getLargestInArray(this.roundActionsArray, _a => _a.round);
+        const latestAction = arrayGetLargestInArray(this.roundActionsArray, _a => _a.round);
         if (latestAction) {
             const latestRound = latestAction.round;
 
@@ -508,9 +470,6 @@ export class Battle {
             }
         }
 
-        // check death: after player round
-        this.checkDeath(allStats);
-
         //#region REPORT ACTIONS
         log("Reporting...")
         const allPromise: Promise<unknown>[] = [];
@@ -519,7 +478,7 @@ export class Battle {
         const players = allStats.filter(s => s.botType === BotType.naught);
         players.forEach(async stat => {
             const allRounds: Round[] = Array.from(this.roundSavedCanvasMap.keys());
-            const greatestRoundNumber: Round | undefined = getLargestInArray(allRounds, _ => _);
+            const greatestRoundNumber: Round | undefined = arrayGetLargestInArray(allRounds, _ => _);
             if (greatestRoundNumber) {
                 const commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
                 allPromise.push(commandRoomReport);
@@ -537,6 +496,9 @@ export class Battle {
         log("Reporting phase finished.")
         // allPromise.forEach(console.log);
         //#endregion
+
+        // check death: after player round
+        this.checkDeath(allStats);
 
         return this.FinishRound();
     }
@@ -842,7 +804,7 @@ export class Battle {
                 errorField.value = possibleError;
             }
             else if (errorField) {
-                removeItemArray(m.embeds![0].fields!, errorField);
+                arrayRemoveItemArray(m.embeds![0].fields!, errorField);
             }
             else if (possibleError) {
                 m.embeds![0].fields?.push({
@@ -992,10 +954,10 @@ export class Battle {
             }
 
             const allIndex: number[] = Array.from(this.allIndex.keys()).sort((a, b) => a - b);
-            index = lookUp(0, getLastElement(allIndex));
+            index = lookUp(0, arrayGetLastElement(allIndex));
 
             if (index === null) {
-                index = getLastElement(allIndex) + 1;
+                index = arrayGetLastElement(allIndex) + 1;
             }
         }
         if (stat) {
@@ -1031,6 +993,7 @@ export class Battle {
         const statuses = _s.statusEffects; debug(`\t(${_s.index}) statuses`, statuses.map(_se => _se.type))
 
         for (let i = 0; i < statuses.length; i++) {
+            log(`Loop ${i}`);
             const status = statuses[i];
             // make sure status is affecting the right entity and entity is still alive
             if (status.affected.index === _s.index && status.affected.HP > 0) {
@@ -1080,7 +1043,7 @@ export class Battle {
         const weaponEffect: WeaponEffect = new WeaponEffect(_aA, _cR, this);
         const activationString = weaponEffect.activate();
 
-        // reduce shielding
+        // reduce shield token
         if (_cR.fate !== "Miss" && target.shield > 0) {
             target.shield--;
         }
@@ -1137,7 +1100,7 @@ export class Battle {
                 }
 
                 // search for "Labouring" status
-                const labourStatus = getLargestInArray(this.getStatus(target, "labouring"), _s => _s.value);
+                const labourStatus = arrayGetLargestInArray(this.getStatus(target, "labouring"), _s => _s.value);
                 if (labourStatus) {
                     labourStatus.value += CR_damage;
                 }
@@ -1198,27 +1161,19 @@ export class Battle {
         u_damage = clamp(u_damage, 0, 1000);
 
         // apply protections
-        damage = clamp(u_damage * (1 - (prot * target.shield / 3)), 0, 999);
+        damage = clamp(u_damage * (1 - (prot * target.shield / 3)), 0, 100);
 
         // reduce damage by shielding
-        const shieldingStatus = getLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"),
-            (_item) => {
-                return _item.value;
-            }
-        );
-        if (shieldingStatus && shieldingStatus.value > 0) {
+        let shieldingStatus = arrayGetLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"), _item => _item.value);
+        while (damage > 0 && shieldingStatus && shieldingStatus.value > 0) {
             const shieldValue = shieldingStatus.value;
-
+            log(`reduced ${shieldValue} damage!`);
             shieldingStatus.value -= damage;
-            if (shieldingStatus.value <= 0) {
-                this.removeStatus(shieldingStatus);
-            }
-
             damage -= shieldValue;
-
             if (damage < 0) {
                 damage = 0;
             }
+            shieldingStatus = arrayGetLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"), _item => _item.value);
         }
 
         return {
@@ -1477,7 +1432,7 @@ export class Battle {
         const axis = _mA.axis;
 
         const possibleSeats = this.getAvailableSpacesAhead(_mA);
-        const finalCoord = getLastElement(possibleSeats);
+        const finalCoord = arrayGetLastElement(possibleSeats);
 
         const newMagnitude = (finalCoord ? getDistance(finalCoord, _mA.affected) : 0) * Math.sign(_mA.magnitude);
         const direction = getDirection(axis, newMagnitude);
@@ -2379,64 +2334,103 @@ export class Battle {
     }
 
     // Path-finding
-    startPathFinding(start: Coordinate, end: Coordinate, limit = Number.POSITIVE_INFINITY): Coordinate[] {
+    startPathFinding(_startCoord: Coordinate, _destinationCoord: Coordinate, _method: PathfindMethod, _limit = Number.POSITIVE_INFINITY): Array<Coordinate> {
         // initialize
-        const AINodeMap = new Map<string, AINode>();
-        const nodePriorQueue = new MinHeap<AINode>(n => n?.totalC || null);
+        const AINodeMap = new Map<string, AINode>(); // string == CoordString
+        const AINodePriorQueue: Array<AINode> = []; // sorted smallest to largest in total cost
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
-                const coordString = getCoordString({ x: x, y: y });
-                if (!this.CSMap.has(coordString) || start.x === x && start.y === y) {
-                    const node = getNewNode(x, y, end, Number.POSITIVE_INFINITY);
+                const coord = { x: x, y: y };
+                const coordString = getCoordString(coord);
+                const coordVacant: boolean = !this.CSMap.has(coordString);
+                const coordIsStart: boolean = findEqualCoordinate(coord, _startCoord);
+
+                if (coordVacant || coordIsStart) {
+                    const node = getNewNode(x, y, _destinationCoord, Number.POSITIVE_INFINITY);
                     AINodeMap.set(coordString, node);
-                    nodePriorQueue.insert(node);
+                    AINodePriorQueue.push(node);
                 }
             }
-        }
-        const startAINode = AINodeMap.get(getCoordString(start));
-        if (startAINode) {
-            startAINode.disC = 0;
-            startAINode.totalC = startAINode.desC;
         }
 
-        // 
-        const results = [];
-        let AINode = nodePriorQueue.remove();
-        const ax = [1, -1, 0, 0];
-        const ay = [0, 0, 1, -1];
-        while (AINode && (AINode.x !== end.x || AINode.y !== end.y)) {
-            // log(`spreading @ ${AINode.x} and @ ${AINode.y}`)
+        // initiate the beginning node, ie. spread from there
+        const startAINode = AINodeMap.get(getCoordString(_startCoord));
+        if (startAINode) {
+            startAINode.distanceTravelled = 0;
+            startAINode.totalCost = startAINode.distanceToDestination;
+        }
+        else {
+            console.error(`\tACHTUNG! Starting node invalid. Coord: ${getCoordString(_startCoord)}`);
+        }
+
+        AINodePriorQueue.sort((_1, _2) => ( _1.totalCost - _2.totalCost ));
+
+        // get the smallest totalCost node
+        const getNextAINode = () => {
+            let next: AINode | null = null; 
+            switch (_method) {
+                case 'lowest':
+                    next = AINodePriorQueue.shift() || null;
+                    break;
+                case 'highest':
+                    next = arrayGetLargestInArray(AINodePriorQueue, _n => {
+                        return _n.totalCost === Number.POSITIVE_INFINITY ?
+                            -1 :
+                            _n.totalCost;
+                    }) || null;
+                    arrayRemoveItemArray(AINodePriorQueue, next);
+                    break;
+            }
+            return next;
+        }
+        const results: AINode[] = [];
+        let AINode: AINode | null = getNextAINode();
+        while (AINode && (AINode.x !== _destinationCoord.x || AINode.y !== _destinationCoord.y)) {
+            // == Update surrounding nodes
+            // look at surrounding nodes
             for (let i = 0; i < 4; i++) {
-                const coordString = getCoordString({ x: AINode.x + ax[i], y: AINode.y + ay[i] });
-                if (AINodeMap.has(coordString)) {
-                    const node = AINodeMap.get(coordString)!;
-                    if (AINode.disC + 1 <= limit && node.totalC > AINode.disC + 1 + node.desC) {
-                        node.disC = AINode.disC + 1;
-                        node.totalC = node.desC + node.disC;
-                        node.lastNode = AINode;
-                        AINode.nextNode = node;
-                    }
+                const numDir = i as NumericDirection;
+                const magAxis = directionToMagnitudeAxis(numDir);
+
+                const nodeDirectedCoord = { x: AINode.x, y: AINode.y }; nodeDirectedCoord[magAxis.axis] += magAxis.magnitude;
+                const nodeDirectedCoordString = getCoordString(nodeDirectedCoord);
+
+                // if directed node is unexplored
+                if (AINodeMap.has(nodeDirectedCoordString) && !results.includes(AINodeMap.get(nodeDirectedCoordString)!) && AINode.distanceTravelled < _limit) {
+                    // update unexplored node
+                    const unexploredNode = AINodeMap.get(nodeDirectedCoordString)!;
+                    unexploredNode.distanceTravelled = AINode.distanceTravelled + 1;
+                    unexploredNode.totalCost = unexploredNode.distanceToDestination + unexploredNode.distanceTravelled;
+                    unexploredNode.lastNode = AINode;
+                    AINode.nextNode = unexploredNode;
                 }
             }
-            if (AINode.disC <= limit) results.push(AINode);
-            AINode = nodePriorQueue.remove();
+
+            // == Push current node to path
+            // only push to result when node is within limit
+            if (AINode.distanceTravelled <= _limit) {
+                results.push(AINode);
+            }
+
+            // updates
+            AINodePriorQueue.sort((_1, _2) => (_1.totalCost - _2.totalCost));
+            AINode = getNextAINode();
         }
 
         // deal with the result
         const fullPath: Coordinate[] = [];
         if (!AINode) {
-            AINode = results.reduce((lvN, n) => {
-                return n.desC < lvN.desC?
-                    n :
-                    lvN;
-            }, results[0]);
-            // log(AINode);
+            // if node is null, find the closest node to destination
+            AINode = results.reduce((lvN, n) =>
+                n.distanceToDestination < lvN.distanceToDestination?
+                    n:
+                    lvN,
+            results[0]);
         }
-
         while (AINode) {
             const coord = { x: AINode.x, y: AINode.y };
             fullPath.unshift(coord);
-            AINode = AINode.lastNode;
+            AINode = AINode.lastNode || null;
         }
 
         return fullPath;
@@ -2474,14 +2468,32 @@ export class Battle {
 
         return moveActions;
     }
+    normaliseMoveActions(_mAArray: MoveAction[], _vS: Stat) {
+        let i = 0;
+        const fullActions = [];
+        // while the enemy has not moved or has enough sprint to make additional moves
+        // Using (rstat.sprint - i) because rstat is by reference and modification is only legal in execution.
+        while (i < _mAArray.length && (_vS.moved === false || _vS.sprint > 0)) {
+            const moveAction = _mAArray[i];
+            const moveMagnitude = Math.abs(moveAction.magnitude);
+            if (moveMagnitude > 0) {
+                moveAction.sprint = Number(_vS.moved);
+                const valid = this.executeVirtualMovement(moveAction, _vS);
+                if (valid) {
+                    _vS.moved = true;
+                    fullActions.push(moveAction);
+                }
+            }
+            i++;
+        }
+        return fullActions;
+    }
 
     // status function
     removeStatus(_status: StatusEffect) {
+        debug("\tRemoving status", `${_status.type} ${_status.value} (x${_status.duration})`);
         const owner = _status.affected;
-        const index = owner.statusEffects.indexOf(_status);
-        if (index !== -1) {
-            owner.statusEffects.splice(index);
-        }
+        arrayRemoveItemArray(owner.statusEffects, _status);
     }
     removeBuffStatus(_s: Stat, _value: number, _buffType: Buff) {
         // check if current buff is equal to value
@@ -2494,7 +2506,7 @@ export class Battle {
 
                 // find other buffs that give the same type of buff
                 if (otherSameTypeBuffs.length > 0) {
-                    const largestBuff = getLargestInArray(otherSameTypeBuffs, _se => _se.value);
+                    const largestBuff = arrayGetLargestInArray(otherSameTypeBuffs, _se => _se.value);
                     _s.buffs[_buffType] = largestBuff!.value;
                 }
             }

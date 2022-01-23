@@ -77,17 +77,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.removeItemArray = exports.getLargestInArray = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.flatten = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.getLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = void 0;
+exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
+exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var classData_json_1 = __importDefault(require("../data/classData.json"));
 var enemiesData_json_1 = __importDefault(require("../data/enemiesData.json"));
-var dungeonData_json_1 = __importDefault(require("../data/dungeonData.json"));
+var areasData_json_1 = __importDefault(require("../data/areasData.json"));
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
-var Dungeon_1 = require("./Dungeon");
 function clamp(value, min, max) {
     return Math.max(Math.min(value, max), min);
 }
@@ -167,7 +166,7 @@ function average() {
         var n = nums[i];
         total += n;
     }
-    return total / nums.length;
+    return total / (nums.length || 1);
 }
 exports.average = average;
 // get battle stats
@@ -247,20 +246,6 @@ function findEqualCoordinate(_c, __c) {
     return _c.x === __c.x && _c.y === __c.y;
 }
 exports.findEqualCoordinate = findEqualCoordinate;
-function flatten(array) {
-    var flat = [];
-    for (var i = 0; i < array.length; i++) {
-        var el = array[i];
-        if (Array.isArray(el)) {
-            flat = flat.concat(flatten(el));
-        }
-        else {
-            flat.push(el);
-        }
-    }
-    return flat;
-}
-exports.flatten = flatten;
 function getDistance(stat1, stat2) {
     var xDif = stat1.x - stat2.x;
     var yDif = stat1.y - stat2.y;
@@ -324,22 +309,6 @@ function getCoordsWithinRadius(radius, center, inclusive) {
     return result;
 }
 exports.getCoordsWithinRadius = getCoordsWithinRadius;
-function getLargestInArray(array, _getValue) {
-    return array.reduce(function (la, c) {
-        return _getValue(la) < _getValue(c) ?
-            c :
-            la;
-    }, array[0]);
-}
-exports.getLargestInArray = getLargestInArray;
-function removeItemArray(_array, _item) {
-    var index = _array.indexOf(_item);
-    if (index !== undefined) {
-        _array.splice(index);
-    }
-    return index !== undefined;
-}
-exports.removeItemArray = removeItemArray;
 function getBuffStatusEffect(_buff) {
     return _buff + "Up";
 }
@@ -516,6 +485,9 @@ function directionToEmoji(_direction) {
 exports.directionToEmoji = directionToEmoji;
 function directionToMagnitudeAxis(_direction) {
     var magnitude, axis;
+    if (typeof _direction === 'number') {
+        _direction = numericDirectionToDirection(_direction);
+    }
     switch (_direction) {
         // move vertically
         case "up":
@@ -581,16 +553,35 @@ exports.getAttackAction = getAttackAction;
 // }
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
-        var data, dungeon, channel;
+        var Ike, mes, channel;
+        var _this = this;
         return __generator(this, function (_a) {
-            data = getNewObject(dungeonData_json_1.default.farmstead);
-            dungeon = Dungeon_1.Dungeon.Generate(data);
-            channel = __1.BotClient.channels.fetch("926372977539424296")
-                .then(function (_c) {
-                dungeon.print(_c);
-            })
-                .catch(function (_e) { return console.log; });
-            return [2 /*return*/];
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, __1.BotClient.users.fetch("262871357455466496")];
+                case 1:
+                    Ike = _a.sent();
+                    return [4 /*yield*/, __1.BotClient.channels.fetch("926372977539424296")];
+                case 2: return [4 /*yield*/, (_a.sent()).send("Stuff")];
+                case 3:
+                    mes = _a.sent();
+                    channel = __1.BotClient.channels.fetch("926372977539424296")
+                        .then(function (_c) { return __awaiter(_this, void 0, void 0, function () {
+                        var battle;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0: return [4 /*yield*/, Battle_1.Battle.Generate(areasData_json_1.default.farmstead_empty, Ike, mes, ["262871357455466496"], __1.BotClient, false)];
+                                case 1:
+                                    battle = _a.sent();
+                                    battle.StartBattle({
+                                        ambush: 'enemy'
+                                    });
+                                    return [2 /*return*/];
+                            }
+                        });
+                    }); })
+                        .catch(function (_e) { return console.log; });
+                    return [2 /*return*/];
+            }
         });
     });
 }
@@ -856,27 +847,28 @@ function getNewObject(origin, _mod) {
     return Object.assign(__assign({}, origin), mod);
 }
 exports.getNewObject = getNewObject;
-// export function getDeepCopyObject<Type extends Object>(obj: Type) {
-//     const result: Type = Object.assign({}, obj);
-//     if (typeof obj === 'object') {
-//         for (const [key, value] of Object.entries(obj)) {
-//             if (typeof value === 'object' && !Array.isArray(value) && value) {
-//                 const maximumCallExceeded = Object.assign({ ...getDeepCopyObject(value) });
-//                 result[key] = maximumCallExceeded;
-//             }
-//             else {
-//                 result[key] = value;
-//             }
-//         }
-//     }
-//     return result;
-// }
-function getLastElement(array) {
+function arrayGetLastElement(array) {
     if (array.length < 1)
         return array[0];
     return array[array.length - 1];
 }
-exports.getLastElement = getLastElement;
+exports.arrayGetLastElement = arrayGetLastElement;
+function arrayGetLargestInArray(array, _getValue) {
+    return array.reduce(function (la, c) {
+        return _getValue(la) < _getValue(c) ?
+            c :
+            la;
+    }, array[0]);
+}
+exports.arrayGetLargestInArray = arrayGetLargestInArray;
+function arrayRemoveItemArray(_array, _item) {
+    var index = _array.indexOf(_item);
+    if (index !== undefined) {
+        _array.splice(index, 1);
+    }
+    return index !== undefined;
+}
+exports.arrayRemoveItemArray = arrayRemoveItemArray;
 function getWeaponUses(weapon, owner) {
     return owner.weaponUses[getWeaponIndex(weapon, owner)];
 }
@@ -1000,7 +992,7 @@ function getStat(bss, _owner) {
                 "player" :
                 "enemy" :
             ss.team,
-        botType: ss.botType || (_owner ? typedef_1.BotType.naught : typedef_1.BotType.enemy),
+        botType: ss.botType || (_owner ? typedef_1.BotType.naught : typedef_1.BotType.approach_attack),
         accolades: getEmptyAccolade(),
         buffs: getEmptyBuff(),
         debuffs: getEmptyBuff(),
@@ -1107,9 +1099,9 @@ function getNewNode(_x, _y, _destination, _distanceTravelled) {
         y: _y,
         lastNode: null,
         nextNode: null,
-        disC: _distanceTravelled,
-        desC: desC,
-        totalC: totalC,
+        distanceTravelled: _distanceTravelled,
+        distanceToDestination: desC,
+        totalCost: totalC,
     };
     return object;
 }
@@ -1259,3 +1251,28 @@ function sendInvitation(_user_id, _from, channel) {
     });
 }
 exports.sendInvitation = sendInvitation;
+function breadthFirstSearch(_startingRoom, _extender, _pushToQueueCondition, _pushToResultCondition) {
+    var result = [];
+    var queue = [_startingRoom];
+    var exploredRooms = [];
+    // branch out and seek
+    var currentRoom = queue.shift();
+    while (currentRoom) {
+        var extension = _extender(currentRoom);
+        for (var i = 0; i < extension.length; i++) {
+            var r = extension[i];
+            if (r && !exploredRooms.includes(r)) {
+                exploredRooms.push(r);
+                if (_pushToQueueCondition(queue, currentRoom)) {
+                    queue.push(r);
+                }
+            }
+        }
+        if (_pushToResultCondition(currentRoom)) {
+            result.push(currentRoom);
+        }
+        currentRoom = queue.shift();
+    }
+    return result;
+}
+exports.breadthFirstSearch = breadthFirstSearch;

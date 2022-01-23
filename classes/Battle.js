@@ -83,11 +83,11 @@ var Database_1 = require("./Database");
 var enemiesData_json_1 = __importDefault(require("../data/enemiesData.json"));
 var universalWeaponsData_json_1 = __importDefault(require("../data/universalWeaponsData.json"));
 var fs_1 = __importDefault(require("fs"));
-var MinHeap_1 = require("./MinHeap");
 var typedef_1 = require("../typedef");
 var hGraphTheory_1 = require("./hGraphTheory");
 var WeaponEffect_1 = require("./WeaponEffect");
 var BattleManager_1 = require("./BattleManager");
+var AI_1 = require("./AI");
 var Battle = /** @class */ (function () {
     function Battle(_mapData, _author, _message, _client, _pvp, _party) {
         var _this = this;
@@ -152,6 +152,7 @@ var Battle = /** @class */ (function () {
                         for (i_1 = 0; i_1 < Object.keys(universalWeaponsData_json_1.default).length; i_1++) {
                             universalWeaponName = Object.keys(universalWeaponsData_json_1.default)[i_1];
                             uniWeapon = (0, Utility_1.getNewObject)(universalWeaponsData_json_1.default[universalWeaponName]);
+                            (0, Utility_1.log)("Pushing universal weapon " + universalWeaponName + " into the arsenal of " + (blankStat.base.class + " (" + blankStat.index + ")"));
                             blankStat.base.weapons.push(uniWeapon);
                         }
                         _h.label = 3;
@@ -214,8 +215,9 @@ var Battle = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        // check player welfare
+                        (0, Utility_1.log)("Checking welfare...");
                         playerStats = this.party.map(function (_ownerID) { return _this.tobespawnedArray.find(function (_s) { return _s.owner === _ownerID; }); });
-                        (0, Utility_1.log)(playerStats);
                         i = 0;
                         _b.label = 1;
                     case 1:
@@ -225,11 +227,23 @@ var Battle = /** @class */ (function () {
                         return [4 /*yield*/, (0, Database_1.getUserWelfare)(player.owner)];
                     case 2:
                         welfare = _b.sent();
-                        (0, Utility_1.log)(welfare);
+                        (0, Utility_1.debug)("\t" + player.base.class, welfare);
                         if (welfare !== null) {
+                            (0, Utility_1.log)("\t" + player.HP + " => " + player.base.AHP * (0, Utility_1.clamp)(welfare, 0, 1));
                             player.HP = player.base.AHP * (0, Utility_1.clamp)(welfare, 0, 1);
-                            (0, Utility_1.log)((0, Utility_1.clamp)(welfare, 0, 1));
-                            (0, Utility_1.debug)("welfare reset to", player.HP);
+                            if (welfare <= 0) {
+                                this.author.send({
+                                    embeds: [
+                                        new discord_js_1.MessageEmbed({
+                                            title: "Alert!",
+                                            description: "One of your teammates, " + player.base.class + ", has 0 welfare and cannot attend the battle.",
+                                            footer: {
+                                                text: "id: " + player.owner
+                                            }
+                                        })
+                                    ]
+                                });
+                            }
                         }
                         _b.label = 3;
                     case 3:
@@ -359,10 +373,10 @@ var Battle = /** @class */ (function () {
                         reportPromises = [];
                         (0, Utility_1.log)("Playing phase!");
                         _loop_2 = function (realStat) {
-                            var user, _k, virtualStat_1, channelAlreadyExist, createdChannel_1, _l, existingPermissions_everyone_1, existingPermissions_author, newChannel, noExistingPermission, extraPermissions, missingPermissions, overWrites, _m, _o, readingPlayerPromise, virtualStat, intendedTargets, selectedTarget, weaponSelected, path, moveActionArray, fullActions, i, moveAction, moveMagnitude, valid, error, attackAction, valid;
-                            var _p, _q, _t;
-                            return __generator(this, function (_u) {
-                                switch (_u.label) {
+                            var user, _k, virtualStat_1, channelAlreadyExist, createdChannel_1, _l, existingPermissions_everyone_1, existingPermissions_author, newChannel, noExistingPermission, extraPermissions, missingPermissions, overWrites, _m, _o, readingPlayerPromise, ai_f;
+                            var _p, _q;
+                            return __generator(this, function (_t) {
+                                switch (_t.label) {
                                     case 0:
                                         // if the entity is dead or is just an inanimate block, skip turn
                                         if (realStat.HP <= 0 || realStat.team === "block")
@@ -374,6 +388,7 @@ var Battle = /** @class */ (function () {
                                         // reset associatedStrings
                                         realStat.actionsAssociatedStrings = {};
                                         if (!(realStat.botType === typedef_1.BotType.naught && realStat.owner)) return [3 /*break*/, 6];
+                                        (0, Utility_1.log)("Player: " + realStat.base.class + " (" + realStat.index + ")");
                                         _k = this_1.userCache.get(realStat.owner);
                                         if (_k) return [3 /*break*/, 2];
                                         return [4 /*yield*/, this_1.client.users.fetch(realStat.owner)
@@ -386,8 +401,8 @@ var Battle = /** @class */ (function () {
                                                 return null;
                                             })];
                                     case 1:
-                                        _k = (_u.sent());
-                                        _u.label = 2;
+                                        _k = (_t.sent());
+                                        _t.label = 2;
                                     case 2:
                                         user = _k;
                                         if (user === null)
@@ -402,8 +417,8 @@ var Battle = /** @class */ (function () {
                                         if (_l) return [3 /*break*/, 4];
                                         return [4 /*yield*/, this_1.guild.channels.create("" + virtualStat_1.owner, { type: 'GUILD_TEXT' })];
                                     case 3:
-                                        _l = (_u.sent());
-                                        _u.label = 4;
+                                        _l = (_t.sent());
+                                        _t.label = 4;
                                     case 4:
                                         createdChannel_1 = _l;
                                         if (!createdChannel_1.parent || createdChannel_1.parent.name !== commandCategory.name) {
@@ -441,7 +456,7 @@ var Battle = /** @class */ (function () {
                                     case 5:
                                         // send time, player embed, and input manual
                                         _o.apply(_m, [(_p.files = [
-                                                (_q.attachment = _u.sent(), _q.name = "map.png", _q)
+                                                (_q.attachment = _t.sent(), _q.name = "map.png", _q)
                                             ],
                                                 _p.embeds = [
                                                     new discord_js_1.MessageEmbed()
@@ -452,56 +467,14 @@ var Battle = /** @class */ (function () {
                                             createdChannel_1.send({ embeds: [new discord_js_1.MessageEmbed().setTitle("Your turn has ended.")] });
                                         });
                                         reportPromises.push(readingPlayerPromise);
-                                        _u.label = 6;
+                                        _t.label = 6;
                                     case 6:
                                         //#endregion
                                         //#region AI
-                                        if (realStat.botType === typedef_1.BotType.enemy) {
-                                            virtualStat = (0, Utility_1.getNewObject)(realStat);
-                                            intendedTargets = ["block"];
-                                            if (virtualStat.team) {
-                                                intendedTargets.push(virtualStat.team);
-                                            }
-                                            selectedTarget = this_1.findEntity_closest(virtualStat, intendedTargets);
-                                            // option 2: select the weakest target
-                                            // if found a target
-                                            if (selectedTarget !== null) {
-                                                weaponSelected = virtualStat.base.weapons[0];
-                                                path = this_1.startPathFinding(realStat, selectedTarget);
-                                                moveActionArray = this_1.getMoveActionListFromCoordArray(realStat, path);
-                                                fullActions = [];
-                                                i = 0;
-                                                // while the enemy has not moved or has enough sprint to make additional moves
-                                                // Using (rstat.sprint - i) because rstat is by reference and modification is only legal in execution.
-                                                while (i < moveActionArray.length && (virtualStat.moved === false || virtualStat.sprint > 0)) {
-                                                    moveAction = moveActionArray[i];
-                                                    moveMagnitude = Math.abs(moveAction.magnitude);
-                                                    if (moveMagnitude > 0) {
-                                                        moveAction.sprint = Number(virtualStat.moved);
-                                                        valid = this_1.executeVirtualMovement(moveAction, virtualStat);
-                                                        if (valid) {
-                                                            virtualStat.moved = true;
-                                                            if (moveAction.magnitude !== undefined) {
-                                                                fullActions.push(moveAction);
-                                                            }
-                                                        }
-                                                        else {
-                                                            error = this_1.validateMovement(virtualStat, moveAction);
-                                                            (0, Utility_1.log)("Failed to move. Reason: " + (error === null || error === void 0 ? void 0 : error.reason) + " (" + (error === null || error === void 0 ? void 0 : error.value) + ")");
-                                                        }
-                                                    }
-                                                    i++;
-                                                }
-                                                // 3. attack with selected weapon
-                                                if ((0, Utility_1.checkWithinDistance)(weaponSelected, (0, Utility_1.getDistance)(virtualStat, selectedTarget))) {
-                                                    attackAction = (0, Utility_1.getAttackAction)(virtualStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length + 1);
-                                                    valid = this_1.executeVirtualAttack(attackAction, virtualStat);
-                                                    if (valid) {
-                                                        fullActions.push((0, Utility_1.getAttackAction)(realStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length + 1));
-                                                    }
-                                                }
-                                                (_t = this_1.roundActionsArray).push.apply(_t, __spreadArray([], __read(fullActions), false));
-                                            }
+                                        if (realStat.botType !== typedef_1.BotType.naught) {
+                                            (0, Utility_1.log)("AI: " + realStat.base.class + " (" + realStat.index + ")");
+                                            ai_f = new AI_1.AI(realStat, realStat.botType, this_1);
+                                            ai_f.activate();
                                         }
                                         return [2 /*return*/];
                                 }
@@ -552,7 +525,7 @@ var Battle = /** @class */ (function () {
                             else
                                 priorityActionMap.set(act.round, [act]);
                         }
-                        latestAction = (0, Utility_1.getLargestInArray)(this.roundActionsArray, function (_a) { return _a.round; });
+                        latestAction = (0, Utility_1.arrayGetLargestInArray)(this.roundActionsArray, function (_a) { return _a.round; });
                         if (!latestAction) return [3 /*break*/, 19];
                         latestRound = latestAction.round;
                         i = 0;
@@ -603,8 +576,6 @@ var Battle = /** @class */ (function () {
                         }
                         _j.label = 19;
                     case 19:
-                        // check death: after player round
-                        this.checkDeath(allStats);
                         //#region REPORT ACTIONS
                         (0, Utility_1.log)("Reporting...");
                         allPromise = [];
@@ -613,7 +584,7 @@ var Battle = /** @class */ (function () {
                             var allRounds, greatestRoundNumber, commandRoomReport;
                             return __generator(this, function (_b) {
                                 allRounds = Array.from(this.roundSavedCanvasMap.keys());
-                                greatestRoundNumber = (0, Utility_1.getLargestInArray)(allRounds, function (_) { return _; });
+                                greatestRoundNumber = (0, Utility_1.arrayGetLargestInArray)(allRounds, function (_) { return _; });
                                 if (greatestRoundNumber) {
                                     commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
                                     allPromise.push(commandRoomReport);
@@ -634,6 +605,8 @@ var Battle = /** @class */ (function () {
                         (0, Utility_1.log)("Reporting phase finished.");
                         // allPromise.forEach(console.log);
                         //#endregion
+                        // check death: after player round
+                        this.checkDeath(allStats);
                         return [2 /*return*/, this.FinishRound()];
                 }
             });
@@ -947,7 +920,7 @@ var Battle = /** @class */ (function () {
                                             errorField.value = possibleError;
                                         }
                                         else if (errorField) {
-                                            (0, Utility_1.removeItemArray)(m.embeds[0].fields, errorField);
+                                            (0, Utility_1.arrayRemoveItemArray)(m.embeds[0].fields, errorField);
                                         }
                                         else if (possibleError) {
                                             (_c = m.embeds[0].fields) === null || _c === void 0 ? void 0 : _c.push({
@@ -1109,9 +1082,9 @@ var Battle = /** @class */ (function () {
                     middle;
             };
             var allIndex = Array.from(this.allIndex.keys()).sort(function (a, b) { return a - b; });
-            index = lookUp_1(0, (0, Utility_1.getLastElement)(allIndex));
+            index = lookUp_1(0, (0, Utility_1.arrayGetLastElement)(allIndex));
             if (index === null) {
-                index = (0, Utility_1.getLastElement)(allIndex) + 1;
+                index = (0, Utility_1.arrayGetLastElement)(allIndex) + 1;
             }
         }
         if (stat) {
@@ -1145,6 +1118,7 @@ var Battle = /** @class */ (function () {
         var statuses = _s.statusEffects;
         (0, Utility_1.debug)("\t(" + _s.index + ") statuses", statuses.map(function (_se) { return _se.type; }));
         for (var i = 0; i < statuses.length; i++) {
+            (0, Utility_1.log)("Loop " + i);
             var status_1 = statuses[i];
             // make sure status is affecting the right entity and entity is still alive
             if (status_1.affected.index === _s.index && status_1.affected.HP > 0) {
@@ -1187,7 +1161,7 @@ var Battle = /** @class */ (function () {
         // weapon effects
         var weaponEffect = new WeaponEffect_1.WeaponEffect(_aA, _cR, this);
         var activationString = weaponEffect.activate();
-        // reduce shielding
+        // reduce shield token
         if (_cR.fate !== "Miss" && target.shield > 0) {
             target.shield--;
         }
@@ -1229,7 +1203,7 @@ var Battle = /** @class */ (function () {
                     returnString += "\n" + this.heal(attacker, CR_damage * LS);
                 }
                 // search for "Labouring" status
-                var labourStatus = (0, Utility_1.getLargestInArray)(this.getStatus(target, "labouring"), function (_s) { return _s.value; });
+                var labourStatus = (0, Utility_1.arrayGetLargestInArray)(this.getStatus(target, "labouring"), function (_s) { return _s.value; });
                 if (labourStatus) {
                     labourStatus.value += CR_damage;
                 }
@@ -1281,21 +1255,18 @@ var Battle = /** @class */ (function () {
         }
         u_damage = (0, Utility_1.clamp)(u_damage, 0, 1000);
         // apply protections
-        damage = (0, Utility_1.clamp)(u_damage * (1 - (prot * target.shield / 3)), 0, 999);
+        damage = (0, Utility_1.clamp)(u_damage * (1 - (prot * target.shield / 3)), 0, 100);
         // reduce damage by shielding
-        var shieldingStatus = (0, Utility_1.getLargestInArray)(target.statusEffects.filter(function (_status) { return _status.type === "protected"; }), function (_item) {
-            return _item.value;
-        });
-        if (shieldingStatus && shieldingStatus.value > 0) {
+        var shieldingStatus = (0, Utility_1.arrayGetLargestInArray)(target.statusEffects.filter(function (_status) { return _status.type === "protected"; }), function (_item) { return _item.value; });
+        while (damage > 0 && shieldingStatus && shieldingStatus.value > 0) {
             var shieldValue = shieldingStatus.value;
+            (0, Utility_1.log)("reduced " + shieldValue + " damage!");
             shieldingStatus.value -= damage;
-            if (shieldingStatus.value <= 0) {
-                this.removeStatus(shieldingStatus);
-            }
             damage -= shieldValue;
             if (damage < 0) {
                 damage = 0;
             }
+            shieldingStatus = (0, Utility_1.arrayGetLargestInArray)(target.statusEffects.filter(function (_status) { return _status.type === "protected"; }), function (_item) { return _item.value; });
         }
         return {
             damage: damage,
@@ -1526,7 +1497,7 @@ var Battle = /** @class */ (function () {
         var stat = _mA.affected;
         var axis = _mA.axis;
         var possibleSeats = this.getAvailableSpacesAhead(_mA);
-        var finalCoord = (0, Utility_1.getLastElement)(possibleSeats);
+        var finalCoord = (0, Utility_1.arrayGetLastElement)(possibleSeats);
         var newMagnitude = (finalCoord ? (0, Utility_1.getDistance)(finalCoord, _mA.affected) : 0) * Math.sign(_mA.magnitude);
         var direction = (0, Utility_1.getDirection)(axis, newMagnitude);
         this.CSMap.delete((0, Utility_1.getCoordString)(stat));
@@ -2447,63 +2418,96 @@ var Battle = /** @class */ (function () {
         return deathCount;
     };
     // Path-finding
-    Battle.prototype.startPathFinding = function (start, end, limit) {
-        if (limit === void 0) { limit = Number.POSITIVE_INFINITY; }
+    Battle.prototype.startPathFinding = function (_startCoord, _destinationCoord, _method, _limit) {
+        if (_limit === void 0) { _limit = Number.POSITIVE_INFINITY; }
         // initialize
-        var AINodeMap = new Map();
-        var nodePriorQueue = new MinHeap_1.MinHeap(function (n) { return (n === null || n === void 0 ? void 0 : n.totalC) || null; });
+        var AINodeMap = new Map(); // string == CoordString
+        var AINodePriorQueue = []; // sorted smallest to largest in total cost
         for (var x = 0; x < this.width; x++) {
             for (var y = 0; y < this.height; y++) {
-                var coordString = (0, Utility_1.getCoordString)({ x: x, y: y });
-                if (!this.CSMap.has(coordString) || start.x === x && start.y === y) {
-                    var node = (0, Utility_1.getNewNode)(x, y, end, Number.POSITIVE_INFINITY);
+                var coord = { x: x, y: y };
+                var coordString = (0, Utility_1.getCoordString)(coord);
+                var coordVacant = !this.CSMap.has(coordString);
+                var coordIsStart = (0, Utility_1.findEqualCoordinate)(coord, _startCoord);
+                if (coordVacant || coordIsStart) {
+                    var node = (0, Utility_1.getNewNode)(x, y, _destinationCoord, Number.POSITIVE_INFINITY);
                     AINodeMap.set(coordString, node);
-                    nodePriorQueue.insert(node);
+                    AINodePriorQueue.push(node);
                 }
             }
         }
-        var startAINode = AINodeMap.get((0, Utility_1.getCoordString)(start));
+        // initiate the beginning node, ie. spread from there
+        var startAINode = AINodeMap.get((0, Utility_1.getCoordString)(_startCoord));
         if (startAINode) {
-            startAINode.disC = 0;
-            startAINode.totalC = startAINode.desC;
+            startAINode.distanceTravelled = 0;
+            startAINode.totalCost = startAINode.distanceToDestination;
         }
-        // 
+        else {
+            console.error("\tACHTUNG! Starting node invalid. Coord: " + (0, Utility_1.getCoordString)(_startCoord));
+        }
+        AINodePriorQueue.sort(function (_1, _2) { return (_1.totalCost - _2.totalCost); });
+        // get the smallest totalCost node
+        var getNextAINode = function () {
+            var next = null;
+            switch (_method) {
+                case 'lowest':
+                    next = AINodePriorQueue.shift() || null;
+                    break;
+                case 'highest':
+                    next = (0, Utility_1.arrayGetLargestInArray)(AINodePriorQueue, function (_n) {
+                        return _n.totalCost === Number.POSITIVE_INFINITY ?
+                            -1 :
+                            _n.totalCost;
+                    }) || null;
+                    (0, Utility_1.arrayRemoveItemArray)(AINodePriorQueue, next);
+                    break;
+            }
+            return next;
+        };
         var results = [];
-        var AINode = nodePriorQueue.remove();
-        var ax = [1, -1, 0, 0];
-        var ay = [0, 0, 1, -1];
-        while (AINode && (AINode.x !== end.x || AINode.y !== end.y)) {
-            // log(`spreading @ ${AINode.x} and @ ${AINode.y}`)
+        var AINode = getNextAINode();
+        while (AINode && (AINode.x !== _destinationCoord.x || AINode.y !== _destinationCoord.y)) {
+            // == Update surrounding nodes
+            // look at surrounding nodes
             for (var i = 0; i < 4; i++) {
-                var coordString = (0, Utility_1.getCoordString)({ x: AINode.x + ax[i], y: AINode.y + ay[i] });
-                if (AINodeMap.has(coordString)) {
-                    var node = AINodeMap.get(coordString);
-                    if (AINode.disC + 1 <= limit && node.totalC > AINode.disC + 1 + node.desC) {
-                        node.disC = AINode.disC + 1;
-                        node.totalC = node.desC + node.disC;
-                        node.lastNode = AINode;
-                        AINode.nextNode = node;
-                    }
+                var numDir = i;
+                var magAxis = (0, Utility_1.directionToMagnitudeAxis)(numDir);
+                var nodeDirectedCoord = { x: AINode.x, y: AINode.y };
+                nodeDirectedCoord[magAxis.axis] += magAxis.magnitude;
+                var nodeDirectedCoordString = (0, Utility_1.getCoordString)(nodeDirectedCoord);
+                // if directed node is unexplored
+                if (AINodeMap.has(nodeDirectedCoordString) && !results.includes(AINodeMap.get(nodeDirectedCoordString)) && AINode.distanceTravelled < _limit) {
+                    // update unexplored node
+                    var unexploredNode = AINodeMap.get(nodeDirectedCoordString);
+                    unexploredNode.distanceTravelled = AINode.distanceTravelled + 1;
+                    unexploredNode.totalCost = unexploredNode.distanceToDestination + unexploredNode.distanceTravelled;
+                    unexploredNode.lastNode = AINode;
+                    AINode.nextNode = unexploredNode;
                 }
             }
-            if (AINode.disC <= limit)
+            // == Push current node to path
+            // only push to result when node is within limit
+            if (AINode.distanceTravelled <= _limit) {
                 results.push(AINode);
-            AINode = nodePriorQueue.remove();
+            }
+            // updates
+            AINodePriorQueue.sort(function (_1, _2) { return (_1.totalCost - _2.totalCost); });
+            AINode = getNextAINode();
         }
         // deal with the result
         var fullPath = [];
         if (!AINode) {
+            // if node is null, find the closest node to destination
             AINode = results.reduce(function (lvN, n) {
-                return n.desC < lvN.desC ?
+                return n.distanceToDestination < lvN.distanceToDestination ?
                     n :
                     lvN;
             }, results[0]);
-            // log(AINode);
         }
         while (AINode) {
             var coord = { x: AINode.x, y: AINode.y };
             fullPath.unshift(coord);
-            AINode = AINode.lastNode;
+            AINode = AINode.lastNode || null;
         }
         return fullPath;
     };
@@ -2535,13 +2539,31 @@ var Battle = /** @class */ (function () {
         }
         return moveActions;
     };
+    Battle.prototype.normaliseMoveActions = function (_mAArray, _vS) {
+        var i = 0;
+        var fullActions = [];
+        // while the enemy has not moved or has enough sprint to make additional moves
+        // Using (rstat.sprint - i) because rstat is by reference and modification is only legal in execution.
+        while (i < _mAArray.length && (_vS.moved === false || _vS.sprint > 0)) {
+            var moveAction = _mAArray[i];
+            var moveMagnitude = Math.abs(moveAction.magnitude);
+            if (moveMagnitude > 0) {
+                moveAction.sprint = Number(_vS.moved);
+                var valid = this.executeVirtualMovement(moveAction, _vS);
+                if (valid) {
+                    _vS.moved = true;
+                    fullActions.push(moveAction);
+                }
+            }
+            i++;
+        }
+        return fullActions;
+    };
     // status function
     Battle.prototype.removeStatus = function (_status) {
+        (0, Utility_1.debug)("\tRemoving status", _status.type + " " + _status.value + " (x" + _status.duration + ")");
         var owner = _status.affected;
-        var index = owner.statusEffects.indexOf(_status);
-        if (index !== -1) {
-            owner.statusEffects.splice(index);
-        }
+        (0, Utility_1.arrayRemoveItemArray)(owner.statusEffects, _status);
     };
     Battle.prototype.removeBuffStatus = function (_s, _value, _buffType) {
         // check if current buff is equal to value
@@ -2553,7 +2575,7 @@ var Battle = /** @class */ (function () {
                 _s.buffs[_buffType] = 0;
                 // find other buffs that give the same type of buff
                 if (otherSameTypeBuffs.length > 0) {
-                    var largestBuff = (0, Utility_1.getLargestInArray)(otherSameTypeBuffs, function (_se) { return _se.value; });
+                    var largestBuff = (0, Utility_1.arrayGetLargestInArray)(otherSameTypeBuffs, function (_se) { return _se.value; });
                     _s.buffs[_buffType] = largestBuff.value;
                 }
             }

@@ -239,7 +239,7 @@ var Dungeon = /** @class */ (function () {
         if (battleRoomsSpawned < battleRoomsCount) {
             var difference = battleRoomsCount - battleRoomsSpawned;
             var startingRoom = dungeon.getRoom(_dungeonData.start);
-            var deadEndRooms = dungeon.breathFirstSearch(startingRoom, function (_q, _c) { return true; }, function (_c) {
+            var deadEndRooms = (0, Utility_1.breadthFirstSearch)(startingRoom, function (_) { return _.directions; }, function (_q, _c) { return true; }, function (_c) {
                 return !(0, Utility_1.findEqualCoordinate)(_c.coordinate, startingCoord) &&
                     _c.directions.filter(function (_d) { return _d === null; }).length === 3;
             });
@@ -303,29 +303,6 @@ var Dungeon = /** @class */ (function () {
                 }
             });
         });
-    };
-    Dungeon.prototype.breathFirstSearch = function (_startingRoom, _pushToQueueCondition, _pushToResultCondition) {
-        var queue = [_startingRoom];
-        var result = [];
-        var exploredRooms = [];
-        // branch out and seek the longest dead end
-        var currentRoom = queue.shift();
-        while (currentRoom) {
-            for (var i = 0; i < currentRoom.directions.length; i++) {
-                var r = currentRoom.directions[i];
-                if (r && !exploredRooms.includes(r)) {
-                    exploredRooms.push(r);
-                    if (_pushToQueueCondition(queue, currentRoom)) {
-                        queue.push(r);
-                    }
-                }
-            }
-            if (_pushToResultCondition(currentRoom)) {
-                result.push(currentRoom);
-            }
-            currentRoom = queue.shift();
-        }
-        return result;
     };
     Dungeon.prototype.validateMovement = function (_direction) {
         var direction = Number.isInteger(_direction) ?
@@ -494,7 +471,7 @@ var Dungeon = /** @class */ (function () {
                                 // execute action
                                 switch (itemSelected) {
                                     case "torch":
-                                        var discoveredRooms = _this.breathFirstSearch(_this.getRoom(_this.leaderCoordinate), function (_q, _c) {
+                                        var discoveredRooms = (0, Utility_1.breadthFirstSearch)(_this.getRoom(_this.leaderCoordinate), function (_) { return _.directions; }, function (_q, _c) {
                                             return (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) <= 1;
                                         }, function (_c) { return true; });
                                         discoveredRooms.forEach(function (_r) { return _r.isDiscovered = true; });

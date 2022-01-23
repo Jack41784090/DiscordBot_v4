@@ -160,7 +160,7 @@
 				"Name": "Hunt",
 				"Acc": 105,
 				"Damage": [8,13],
-				"Range": [1.5,3],
+				"Range": [1.3,3],
 				"Readiness": 10,
 				"sword": 1,
 				"shield": 0,

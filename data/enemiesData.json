@@ -12,8 +12,8 @@
                 "Name": "Bite",
                 "Acc": 95,
                 "Damage": [
-                    5,
-                    6
+                    10,
+                    12
                 ],
                 "Range": [
                     1,
@@ -50,7 +50,7 @@
             {
                 "Name": "Arrow Shot",
                 "Acc": 85,
-                "Damage": [3, 5],
+                "Damage": [7, 8],
                 "Range": [2, 3],
                 "Readiness": 15,
                 "sword": 1,
@@ -70,6 +70,39 @@
         ],
         "autoWeapons": [],
         "botType": 1
+    },
+    "Bardar": {
+        "class": "Bardar",
+        "AHP": 15,
+        "Dodge": 0,
+        "Prot": 0,
+        "Spd": 5,
+        "maxMove": 1,
+        "iconURL": "images/Venus1.png",
+        "weapons": [
+            {
+                "Name": "Embolden",
+                "Acc": 85,
+                "Damage": [0,0],
+                "Range": [0,0,1.5],
+                "Readiness": 15,
+                "sword": 0,
+                "shield": 0,
+                "sprint": 0,
+                "lifesteal": 0,
+                "Crit": 0,
+                "Spd": 0,
+                "targetting": {
+                    "target": 0,
+                    "AOE": "selfCircle"
+                },
+                "CD": 0,
+                "UPT": 255,
+                "desc": null
+            }
+        ],
+        "autoWeapons": [],
+        "botType": 2
     },
     "Diana's Wolf": {
         "class": "Diana's Wolf",

@@ -1,6 +1,6 @@
 import { Action, AttackAction, Stat, StatusEffectFunction, StatusEffectType } from "../typedef";
 import { Battle } from "./Battle";
-import { addHPBar, clamp, getLargestInArray, log, roundToDecimalPlace } from "./Utility";
+import { addHPBar, clamp, arrayGetLargestInArray, log, roundToDecimalPlace } from "./Utility";
 
 const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     [

@@ -26,7 +26,7 @@ export async function getAnyData(collection: string, doc: string, failureCB?: (d
     }
 
     return snapShot.exists?
-        snapShot.data():
+        getNewObject(getDefaultUserData(), snapShot.data()):
         null;
 }
 export async function saveUserData(_userData: UserData) {
@@ -34,7 +34,8 @@ export async function saveUserData(_userData: UserData) {
     const snapshotData = await document.get();
 
     if (snapshotData.exists) {
-        document.update(_userData);
+        const defaultUserData = getDefaultUserData();
+        document.update(getNewObject(defaultUserData, _userData));
     }
 }
 
@@ -67,7 +68,10 @@ export async function createNewUser(author: User): Promise<UserData> {
     const data = await getAnyData('Users', author.id, (dr, ss) => {
         dr.create(defaultData);
     });
-    return data ? data as UserData : defaultData;
+
+    return data?
+        data as UserData:
+        defaultData;
 }
 export async function setUserWelfare(_user: User | OwnerID, _welfare: number): Promise<boolean> {
     const id = (_user as User).client ?
@@ -104,17 +108,22 @@ export async function getUserWelfare(_user: User | OwnerID): Promise<number | nu
         null;
 }
 
-export function getDefaultUserData(author: User) {
-    const _classes: Class[] = ["Hercules"];
+export function getDefaultUserData(_user?: User) {
+    const { username, id } = _user || {
+        username: "",
+        id: "",
+    };
+    const classes: Class[] = ["Hercules"];
     return {
-        classes: _classes,
+        classes: classes,
         money: 0,
-        name: author.username,
-        party: [author.id],
+        name: username,
+        party: [id],
         settings: getDefaultSettings(),
         status: "idle" as UserStatus,
         equippedClass: "Hercules" as Class,
         welfare: 1,
+        inventory: [],
     };
 }
 

@@ -1,4 +1,4 @@
-import { debug, log } from "./Utility";
+import { debug, log } from "../classes/Utility";
 
 export class MinHeap<Type> {
     private heap: Type[];

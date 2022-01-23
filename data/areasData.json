@@ -46,13 +46,23 @@
                 },
                 {
                     "spawns": "enemy",
-                    "x": 0,
+                    "x": 1,
                     "y": 1
                 },
                 {
                     "spawns": "enemy",
-                    "x": 1,
-                    "y": 1
+                    "x": 2,
+                    "y": 2
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 3,
+                    "y": 3
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 4,
+                    "y": 4
                 }
             ],
             "width": 5,
@@ -60,7 +70,7 @@
             "groundURL": "images/map.png"
         },
         "enemiesInfo": {
-            "Barbar": {
+            "Bardar": {
                 "min": 1,
                 "max": 1
             }
