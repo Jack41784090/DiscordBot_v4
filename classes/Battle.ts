@@ -1,17 +1,19 @@
 import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageCollector, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis } from "./Utility";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalize } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { getFileImage, getIcon, getUserData, getUserWelfare, setUserWelfare } from "./Database";
+import { getFileImage, getIcon, getUserData, getUserWelfare, saveUserData, setUserWelfare } from "./Database";
 import enemiesData from "../data/enemiesData.json";
 import globalWeaponsData from "../data/universalWeaponsData.json";
 
 import fs from 'fs';
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MenuOption, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, WeaponName, UniversalWeaponName, NumericDirection, PathFindMethod as PathfindMethod } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, WeaponName, UniversalWeaponName, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialQualityInfo } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
 import { BattleManager } from "./BattleManager";
 import { AI } from "./AI";
+import { BotClient } from "..";
+import { Item } from "./Item";
 
 export class Battle {
     static readonly MOVE_READINESS = 10;
@@ -28,8 +30,9 @@ export class Battle {
     mapData: MapData;
     width: number;
     height: number;
-    CSMap: Map<string, Stat>;
     pixelsPerTile: number;
+    CSMap: Map<string, Stat>;
+    LootMap: Map<string, Array<Loot>>;
 
     // Round Actions Information (Resets every Round)
     roundActionsArray: Array<Action>;
@@ -44,6 +47,7 @@ export class Battle {
 
     // user cache
     userCache: Map<OwnerID, User>;
+    userDataCache: Map<OwnerID, UserData>;
 
     // gamemode
     pvp: boolean;
@@ -55,11 +59,13 @@ export class Battle {
         this.client = _client;
         this.guild = _message.guild as Guild;
         this.party = _party;
+        this.userDataCache = new Map<OwnerID, UserData>();
 
         this.mapData = _mapData;
         this.width = _mapData.map.width;
         this.height = _mapData.map.height;
         this.CSMap = getMapFromCS(_mapData.map.coordStat);
+        this.LootMap = new Map<string, Array<Loot>>();
 
         this.pixelsPerTile = 50;
 
@@ -95,8 +101,9 @@ export class Battle {
     static async Generate(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
         const battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
 
-        // add players to spawning list
+        // initiate users
         for (let i = 0; i < _party.length; i++) {
+            // add to spawn queue
             const ownerID = _party[i];
             const userData: UserData = await getUserData(ownerID);
             const blankStat = getStat(getBaseClassStat(userData.equippedClass), ownerID);
@@ -105,7 +112,14 @@ export class Battle {
             }
             battle.tobespawnedArray.push(blankStat);
 
-            // universal weapon
+            // initiate cache
+            const user: User | null = await BotClient.users.fetch(ownerID).catch(() => null);
+            battle.userDataCache.set(ownerID, userData);
+            if (user) {
+                battle.userCache.set(ownerID, user);
+            }
+
+            // add universal weapons
             for (let i = 0; i < Object.keys(globalWeaponsData).length; i++) {
                 const universalWeaponName: UniversalWeaponName = Object.keys(globalWeaponsData)[i] as UniversalWeaponName;
                 const uniWeapon: Weapon = getNewObject(globalWeaponsData[universalWeaponName] as Weapon);
@@ -114,7 +128,7 @@ export class Battle {
             }
         }
 
-        // add enemies to the spawning list
+        // add enemies to the spawning list, only valid if battle is not pvp
         if (!_pvp) {
             for (const [key, value] of Object.entries(_mapData.enemiesInfo)) {
                 const Eclass = key as EnemyClass;
@@ -123,9 +137,31 @@ export class Battle {
                 const spawnCount = random(value.min, value.max);
 
                 for (let i = 0; i < spawnCount; i++) {
+                    const enemyEntity: Stat = getStat(enemyBase);
+                    
+                    // randomly spawn in loot
+                    enemyEntity.base.lootInfo.forEach(_LInfo => {
+                        // roll for spawn item
+                        const roll = Math.random();
+                        if (roll < _LInfo.chance) {
+                            // initialise if haven't yet
+                            if (enemyEntity.drops === undefined) {
+                                enemyEntity.drops = {
+                                    items: [],
+                                    money: 0,
+                                    droppedBy: enemyEntity
+                                }
+                            }
+
+                            // spawn in item
+                            const weight = random(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
+                            enemyEntity.drops.items.push(new Item(_LInfo.materials, weight));
+                        }
+                    });
+
+                    battle.tobespawnedArray.push(enemyEntity);
                     battle.totalEnemyCount++;
                     battle.enemyCount++;
-                    battle.tobespawnedArray.push(getStat(enemyBase));
                 }
             }
         }
@@ -513,9 +549,10 @@ export class Battle {
             // await Database.updateOrAddUser(author, { status: 'idle' });
             const allStats = this.allStats();
             for (let i = 0; i < this.party.length; i++) {
-                const id = this.party[i];
-                const stat = allStats[i];
+                const id: OwnerID = this.party[i];
+                const stat: Stat = allStats[i];
                 await setUserWelfare(id, clamp(stat.HP / stat.base.AHP, 0, 1));
+                await saveUserData(this.userDataCache.get(id)!);
             }
 
             // == ACCOLADES ==
@@ -616,7 +653,7 @@ export class Battle {
     async sendReportToCommand(roomID: string, round: Round): Promise<boolean> {
         const chosenCanvas = this.roundSavedCanvasMap.get(round);
         if (chosenCanvas) {
-            const menuOptions: MenuOption[] = Array.from(this.roundSavedCanvasMap.keys()).map(rn => {
+            const menuOptions: MessageSelectOptionData[] = Array.from(this.roundSavedCanvasMap.keys()).map(rn => {
                 return {
                     label: `Round ${rn}`,
                     value: `${rn}`,
@@ -762,6 +799,7 @@ export class Battle {
             },
         ];
         const returnMessageInteractionMenus = async () => {
+            // all available attack options
             const selectMenuOptions: MessageSelectOptionData[] =
                 this.getAllPossibleAttacksInfo(_vS, domain).map(_attackInfo => {
                     const weapon = _attackInfo.weapon;
@@ -776,6 +814,19 @@ export class Battle {
                         value: `${_attackInfo.attacker.index} ${getWeaponIndex(weapon, _attackInfo.attacker)} ${target.index}`,
                     }
                 });
+
+            // pick up loot option
+            const coordString: string = getCoordString(_vS);
+            this.LootMap.get(coordString)?.forEach(_L => {
+                selectMenuOptions.push({
+                    emoji: '💰',
+                    label: "Loot",
+                    description: `${_L.droppedBy.base.class}`,
+                    value: `loot ${coordString}`
+                });
+            });
+
+            // end turn option
             selectMenuOptions.push({
                 emoji: EMOJI_TICK,
                 label: "End Turn",
@@ -879,6 +930,43 @@ export class Battle {
                 else if (code === "end") {
                     this.roundActionsArray.push(...executingActions);
                     resolve(void 0);
+                }
+                else if (code.split(" ")?.[0] === "loot") {
+                    const lootCoordString: string = code.split(" ")?.[1];
+                    const allLoot: Array<Loot> | null = this.LootMap.get(lootCoordString) || null;
+                    if (allLoot && allLoot.length > 0) {
+                        this.LootMap.delete(lootCoordString);
+                        const lootEmbed = new MessageEmbed({
+                            title: "You got..."
+                        });
+                        let lootString = '';
+
+                        // for each lootbox on the tile
+                        for (let i = 0; i < allLoot.length; i++) {
+                            const loot: Loot = allLoot[i];
+                            const userData: UserData | null = this.userDataCache.get(_rS.owner) || null;
+                            debug("userData is", userData);
+
+                            // for each item in the lootbox
+                            for (let i = 0; i < loot.items.length; i++) {
+                                const item: Item = loot.items[i];
+                                userData?.inventory.push(item);
+                                const mostOccupiedMaterial: MaterialQualityInfo = item.getMostOccupiedMaterialInfo()!;
+                                const mostExpensiveMaterial: MaterialQualityInfo = item.getMostExpensiveMaterialInfo()!;
+                                lootString +=
+                                    `${loot.droppedBy.base.class} Essence $${roundToDecimalPlace(item.getWorth())}
+                                    \t${formalize(mostOccupiedMaterial.name)} (${roundToDecimalPlace(mostOccupiedMaterial.occupation * 100)}%) $${roundToDecimalPlace(item.getMaterialInfoPrice(mostOccupiedMaterial))}
+                                    \t${formalize(mostExpensiveMaterial.name)} (${roundToDecimalPlace(mostExpensiveMaterial.occupation * 100)}%) $${roundToDecimalPlace(item.getMaterialInfoPrice(mostExpensiveMaterial))}`;
+                            }
+                        }
+                        lootEmbed.setDescription(lootString);
+                        
+                        // send acquired items
+                        _ownerTextChannel.send({
+                            embeds: [lootEmbed]
+                        });
+                    }
+                    listenToQueue();
                 }
 
                 return valid;
@@ -1435,7 +1523,6 @@ export class Battle {
         const finalCoord = arrayGetLastElement(possibleSeats);
 
         const newMagnitude = (finalCoord ? getDistance(finalCoord, _mA.affected) : 0) * Math.sign(_mA.magnitude);
-        const direction = getDirection(axis, newMagnitude);
 
         this.CSMap.delete(getCoordString(stat))
         stat[axis] += newMagnitude;
@@ -2320,7 +2407,18 @@ export class Battle {
             this.totalEnemyCount--;
             this.enemyCount--;
         }
+
+        // remove index
         this.allIndex.delete(s.index!);
+
+        // manage drop
+        const coordString: string = getCoordString(s);
+        if (s.drops) {
+            const lootBox: Array<Loot> =
+                this.LootMap.get(coordString)||
+                this.LootMap.set(coordString, []).get(coordString)!;
+            lootBox.push(s.drops);
+        }
     }
     checkDeath(allStats = this.allStats(true)) {
         let deathCount = 0;

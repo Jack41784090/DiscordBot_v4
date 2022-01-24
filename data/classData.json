@@ -71,7 +71,8 @@
 				"desc": "All damage taken by Hercules is saved as the 'Labour' value, giving extra effects to specific abilities."
 			}
 		],
-		"botType": 0
+		"botType": 0,
+		"lootInfo": []
 	},
 	"Mars": {
 		"class": "Mars",
@@ -145,7 +146,8 @@
 				"desc": "All damage dealt by Mars is stored as Fury. When an enemy's health is below 0 after an attack, stores an extra 15 Fury. When Fury is above 66, Mars becomes ENRAGED "
 			}
 		],
-		"botType": 0
+		"botType": 0,
+		"lootInfo": []
 	},
 	"Diana": {
 		"class": "Diana",
@@ -198,7 +200,8 @@
 			}
 		],
 		"autoWeapons": [],
-		"botType": 0
+		"botType": 0,
+		"lootInfo": []
 	},
 	"Jupiter": {
 		"class": "Jupiter",
@@ -303,7 +306,8 @@
 			}
 		],
 		"autoWeapons": [],
-		"botType": 0
+		"botType": 0,
+		"lootInfo": []
 	},
 	"Victoria": {
 		"class": "Victoria",
@@ -356,6 +360,7 @@
 			}
 		],
 		"autoWeapons": [],
-		"botType": 0
+		"botType": 0,
+		"lootInfo": []
 	}
 }

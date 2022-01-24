@@ -1,7 +1,9 @@
 import { User, TextChannel, Guild, Message, Client, MessageSelectOptionData, MessageActionRow, MessageEmbed, MessageOptions } from "discord.js";
 import { saveUserData } from "../classes/Database";
-import { formalize, getSelectMenuActionRow, setUpInteractionCollect } from "../classes/Utility";
-import { UserData, CommandModule, DungeonItemInfoChart, EMOJI_CROSS, DungeonItemType, DungeonItem, EMOJI_WHITEB } from "../typedef";
+import { formalize, getNewObject, getSelectMenuActionRow, setUpInteractionCollect } from "../classes/Utility";
+import { UserData, CommandModule, EMOJI_CROSS, ItemType, EMOJI_WHITEB, Material } from "../typedef";
+import dungeonItemData from "../data/itemData.json";
+import { Item } from "../classes/Item";
 
 module.exports = {
     commands: ['shop'],
@@ -17,16 +19,19 @@ module.exports = {
             }, 30 * 1000);
         }
         const returnMessage = (): MessageOptions => {
-            const selectMenuOptions: MessageSelectOptionData[] = Array.from(DungeonItemInfoChart.keys()).map((_itemName) => {
-                const itemName = _itemName as DungeonItemType;
-                const itemInInv: DungeonItem | undefined = authorUserData.inventory.find(_i => _i.type === itemName);
-                return {
-                    emoji: DungeonItemInfoChart.get(itemName)?.emoji || EMOJI_WHITEB,
-                    label: `${formalize(itemName)} x${itemInInv?.uses || 0}`,
-                    description: `Buy $${DungeonItemInfoChart.get(itemName)?.prize}`,
-                    value: itemName,
+            const selectMenuOptions: MessageSelectOptionData[] = [];
+            for (const itemType of Object.keys(dungeonItemData)) {
+                const itemName = itemType as ItemType;
+                const itemsInInv: Array<Item> = authorUserData.inventory.filter(_i => _i.type === itemName);
+                if (dungeonItemData[itemName]?.price > 0) {
+                    selectMenuOptions.push({
+                        emoji: dungeonItemData[itemName]?.emoji || EMOJI_WHITEB,
+                        label: `${formalize(itemName)} x${itemsInInv.length}`,
+                        description: `Buy $${dungeonItemData[itemName]?.price}`,
+                        value: itemName,
+                    });
                 }
-            })
+            }
             selectMenuOptions.push({
                 emoji: EMOJI_CROSS,
                 label: "Leave Shop",
@@ -50,25 +55,37 @@ module.exports = {
                     try {
                         clearTimeout(timeout);
                         timeout = getTimeout();
-                        const itemBought = _itr.values[0] as DungeonItemType;
-                        const cost = DungeonItemInfoChart.get(itemBought)?.prize;
+
+                        const itemBought: ItemType = _itr.values[0] as ItemType;
+                        const cost: number | null = dungeonItemData[itemBought]?.price || null;
                         if (_itr.values[0] === 'end') {
                             saveUserData(authorUserData);
                             shopMessage.delete()
                                 .catch(_err => console.error);
                         }
-                        else if (cost !== undefined && authorUserData.money - cost >= 0) {
-                            const itemInInv: DungeonItem | undefined = authorUserData.inventory.find(_i => _i.type === itemBought);
+                        else if (cost !== null && authorUserData.money - cost >= 0) {
+                            const qualifications = getNewObject(dungeonItemData[itemBought].qualification);
+                            const requiredMaterials: Array<keyof typeof qualifications> =
+                                Object.keys(qualifications) as Array<keyof typeof qualifications>;
+                            const vendorItem: Item = new Item(
+                                requiredMaterials.map(_mName => {
+                                    const minimumMaterialOccupation= qualifications[_mName];
+                                    return {
+                                        name: _mName,
+                                        gradeDeviation: {
+                                            'min': 0,
+                                            'max': 1,
+                                        },
+                                        occupationDeviation: {
+                                            'min': minimumMaterialOccupation,
+                                            'max': minimumMaterialOccupation * 1.1,
+                                        }
+                                    };
+                                }),
+                                5
+                            );
                             authorUserData.money -= cost;
-                            if (itemInInv) {
-                                itemInInv.uses++;
-                            }
-                            else {
-                                authorUserData.inventory.push({
-                                    type: itemBought,
-                                    uses: 1
-                                });
-                            }
+                            authorUserData.inventory.push(vendorItem);
                             await _itr.update(returnMessage())
                         }
                         listen();

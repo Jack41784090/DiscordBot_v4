@@ -1,5 +1,6 @@
-import { Client, Guild, GuildMember, Message, TextChannel, User } from "discord.js";
+import { Client, Guild, Message, TextChannel, User } from "discord.js";
 import { Battle } from "./classes/Battle";
+import { Item } from "./classes/Item";
 import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
 
@@ -9,6 +10,8 @@ export type StringCoordinate = string;
 export type OwnerID = string;
 
 export const COMMAND_CALL = ";"
+
+// EMOJIS
 export const EMOJI_TICK = '✅';
 export const EMOJI_CROSS = '❎';
 export const EMOJI_STAR = '🌠';
@@ -19,76 +22,93 @@ export const EMOJI_SHIELD = '🛡️';
 export const EMOJI_SWORD = '🗡️';
 export const EMOJI_SPRINT = '👢'
 
+// DUNGEON
 export type RoomDirections = [Room | null, Room | null, Room | null, Room | null];
+export interface DungeonData {
+    name: string,
 
+    maxLength: number,
+    minLength: number,
+    maxRoom: number,
+    minRoom: number,
+    maxBattle: number,
+    minBattle: number,
+    width: number,
+    height: number,
+
+    encounterMaps: MapName[],
+    eliteMaps: MapName[],
+
+    start: Coordinate,
+}
+export type DungeonBlockCode =
+    "00" |
+    "03" |
+    "06" |
+    "09" |
+    "30" |
+    "33" |
+    "36" |
+    "39" |
+    "60" |
+    "63" |
+    "66" |
+    "69" |
+    "90" |
+    "93" |
+    "96" |
+    "99"
+export type DungeonDisplayMode =
+    "pc" |
+    "mobile"
+export interface DungeonTreasure {
+}
+
+// RANDOM STRINGS
 export const preludeQuotes = ["Life slips away...", "You've breathed your last...", "Misfortune comes...", "You release your grip...", "You yearn for rest...", "The cold embrace..."];
 export const deathQuotes = ["Survival is a tenuous proposition in this sprawling tomb.", "More blood soaks the soil, feeding the evil therein.", "Another life wasted in the pursuit of glory and gold.", "This is no place for the weak, or the foolhardy.", "More dust, more ashes, more disappointment.", "Driven into the mud and bit the dust.", "Another pawn falls, in the grand scheme of things."];
 
+// BATTLES
 export type Location=
     "farmstead"
-
-export type ActionType = 'Attack' | 'Move'
-export type Direction = 'up' | 'down' | 'left' | 'right'
-export enum NumericDirection {
-    up,
-    right,
-    down,
-    left,
+export interface Spawner extends Coordinate {
+    spawns: Team,
+}
+export type CoordStat<Type> = { [x: string]: { [y: string]: Type } }
+export interface Map {
+    coordStat: CoordStat<SimplePlayerStat>,
+    spawners: Array<Spawner>,
+    width: number,
+    height: number,
+    groundURL: string,
+}
+export type MapName =
+    "pvp_5x5" |
+    "farmstead_walkers1" |
+    "farmstead_walkers2" |
+    "farmstead_walkers3" |
+    "farmstead_horde1"
+export interface MapData {
+    map: Map,
+    enemiesInfo: { [key in EnemyClass]: {
+        min: number,
+        max: number,
+    } },
 }
 
-export interface RGBA {
-    r: number,
-    g: number,
-    b: number,
-    alpha: number,
+// STATISTICAL
+export const StatMaximus = {
+    AHP: 100,
+    Dodge: 50,
+    Prot: 1,
+    Spd: 10,
 }
-
-export interface Action {
-    round: Round,
-    priority: Priority,
-    from: Stat,
-    affected: Stat,
-    readiness: number,
-    type: ActionType
-    executed: boolean,
-
-    sword: number,
-    shield: number,
-    sprint: number,
-}
-export interface AttackAction extends Action {
-    weapon: Weapon,
-    coordinate: Coordinate,
-}
-export interface MoveAction extends Action {
-    axis: 'x' | 'y',
-    magnitude: number,
-}
-
-export interface TargetingError {
-    reason: string,
-    value: number | null,
-}
-export interface MovingError {
-    reason: string,
-    value: number | null,
-}
-
-export interface MenuOption {
-    label: string,
-    value: string,
-}
-
-export interface Coordinate {
-    x: number,
-    y: number,
-}
-export type Vector2 = Coordinate;
-export type Vector3 = Coordinate & { z: number };
-export interface SimpleStat extends Coordinate {
-    class: Class
-    team: Team
-    botType: BotType
+export type StatPrimus =
+    "AHP" | "Dodge" | "Prot" | "Spd"
+export interface SimplePlayerStat extends Coordinate {
+    class: Class,
+    team: Team,
+    botType: BotType,
 }
 export interface BaseStat {
     class: Class | EnemyClass,
@@ -101,15 +121,8 @@ export interface BaseStat {
     autoWeapons: Array<Weapon>,
     iconURL: string,
     botType: BotType,
+    lootInfo: Array<LootInfo>,
 }
-export const StatMaximus = {
-    AHP: 100,
-    Dodge: 30,
-    Prot: 0.5,
-    Spd: 10,
-}
-export type StatPrimus =
-    "AHP" | "Dodge" | "Prot" | "Spd"
 export interface Stat extends Coordinate {
     base: BaseStat,
 
@@ -138,105 +151,116 @@ export interface Stat extends Coordinate {
     debuffs: Buffs,
     botType: BotType,
 
-    pvp: boolean
+    pvp: boolean,
+
+    drops?: Loot,
 }
 export interface VirtualStat extends Stat {
     virtual: true,
 }
 
-export interface Spawner extends Coordinate {
-    spawns: Team,
+// ACTIONS
+export type ActionType = 'Attack' | 'Move'
+export type Direction = 'up' | 'down' | 'left' | 'right'
+export enum NumericDirection {
+    up,
+    right,
+    down,
+    left,
 }
-export type CoordStat<Type> = { [x: string]: { [y: string]: Type } }
+export interface Action {
+    round: Round,
+    priority: Priority,
+    from: Stat,
+    affected: Stat,
+    readiness: number,
+    type: ActionType
+    executed: boolean,
 
-export interface Map {
-    coordStat: CoordStat<SimpleStat>,
-    spawners: Array<Spawner>,
-    width: number,
-    height: number,
-    groundURL: string,
+    sword: number,
+    shield: number,
+    sprint: number,
 }
-export type MapName =
-    "pvp_5x5"|
-    "farmstead_walkers1"|
-    "farmstead_walkers2"|
-    "farmstead_walkers3"|
-    "farmstead_horde1"
+export interface AttackAction extends Action {
+    weapon: Weapon,
+    coordinate: Coordinate,
+}
+export interface MoveAction extends Action {
+    axis: 'x' | 'y',
+    magnitude: number,
+}
 
-export interface MapData {
-    map: Map,
-    enemiesInfo: { [key in EnemyClass]: {
-        min: number,
-        max: number,
-    } },
+// CANVAS
+export interface RGBA {
+    r: number,
+    g: number,
+    b: number,
+    alpha: number,
 }
-export interface DungeonData {
-    name: string,
 
-    maxLength: number,
-    minLength: number,
-    maxRoom: number,
-    minRoom: number,
-    maxBattle: number,
-    minBattle: number,
-    width: number,
-    height: number,
+// ERRORS
+export interface TargetingError {
+    reason: string,
+    value: number | null,
+}
+export interface MovingError {
+    reason: string,
+    value: number | null,
+}
 
-    encounterMaps: MapName[],
-    eliteMaps: MapName[],
+// X Y
+export interface Coordinate {
+    x: number,
+    y: number,
+}
+export type Vector2 = Coordinate;
+export type Vector3 = Coordinate & { z: number };
 
-    start: Coordinate,
+// ITEMS
+export type ItemType =
+    'torch'|
+    'scout'
+export enum MaterialGrade {
+    poor,
+    common,
+    good,
+    rare,
+    legendary,
 }
-export type DungeonBlockCode =
-    "00"|
-    "03"|
-    "06"|
-    "09"|
-    "30"|
-    "33"|
-    "36"|
-    "39"|
-    "60"|
-    "63"|
-    "66"|
-    "69"|
-    "90"|
-    "93"|
-    "96"|
-    "99"
-export type DungeonDisplayMode =
-    "pc"|
-    "mobile"
-export interface Treasure {
-    
+export type Material =
+    'flesh'|
+    'cometarite'|
+    'steel'|
+    'coal'|
+    'wood'|
+    'boulder'|
+    'marble'|
+    'granite'
+export interface MaterialSpawnQualityInfo {
+    name: Material,
+    occupationDeviation: QualityDeviation,
+    gradeDeviation: QualityDeviation,
 }
-export type DungeonItemType =
-    "torch"|
-    "scout"
-export interface DungeonItem {
-    uses: number,
-    type: DungeonItemType,
+export interface MaterialQualityInfo {
+    name: Material,
+    occupation: number,
+    grade: MaterialGrade,
 }
-export interface DungeonItemInfo {
-    emoji: string,
-    prize: number,
+export interface Loot {
+    money: number,
+    items: Array<Item>,
+    droppedBy: Stat,
 }
-export const DungeonItemInfoChart = new Map<DungeonItemType, DungeonItemInfo>([
-    [
-        "torch",
-        {
-            emoji: '🔦',
-            prize: 20,
-        }
-    ],
-    [
-        "scout",
-        {
-            emoji: '👾',
-            prize: 20,
-        }
-    ]
-])
+export interface LootInfo {
+    chance: number,
+    materials: Array<MaterialSpawnQualityInfo>,
+    weightDeviation: QualityDeviation,
+}
+export interface QualityDeviation {
+    min: number,
+    max: number,
+}
+
 export interface StartBattleOptions {
     ambush: Team | null,
 }
@@ -253,7 +277,7 @@ export interface UserData {
     settings: Settings,
     status: UserStatus,
     welfare: number,
-    inventory: DungeonItem[],
+    inventory: Array<Item>,
 }
 export type UserStatus = "idle" | "busy"; 
 

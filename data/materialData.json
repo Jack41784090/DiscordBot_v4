@@ -1,0 +1,26 @@
+{
+    "flesh": {
+        "ppu": 0.05
+    },
+    "cometarite": {
+        "ppu": 20
+    },
+    "steel": {
+        "ppu": 10
+    },
+    "coal": {
+        "ppu": 5
+    },
+    "wood": {
+        "ppu": 5
+    },
+    "boulder": {
+        "ppu": 1.5
+    },
+    "marble": {
+        "ppu": 8
+    },
+    "granite": {
+        "ppu": 1
+    }
+}

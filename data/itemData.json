@@ -1,0 +1,22 @@
+{
+    "torch": {
+        "type": "torch",
+        "emoji": "🔦",
+        "price": 20,
+        "qualification": {
+            "coal": 0.65,
+            "wood": 0.2
+        },
+        "qualificationWeight": 5
+    },
+    "scout": {
+        "type": "scout",
+        "emoji": "👾",
+        "price": 20,
+        "qualification": {
+            "cometarite": 0.05,
+            "wood": 0.2
+        },
+        "qualificationWeight": 1
+    }
+}

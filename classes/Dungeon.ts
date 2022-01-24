@@ -1,12 +1,13 @@
 import { ButtonInteraction, EmbedField, EmbedFieldData, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectOptionData, SelectMenuInteraction, TextChannel, User } from "discord.js";
 import { BotClient } from "..";
-import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, DungeonItem, DungeonItemType, Team, DungeonDisplayMode, DungeonBlockCode, OwnerID } from "../typedef";
+import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, ItemType, Team, DungeonDisplayMode, DungeonBlockCode, OwnerID } from "../typedef";
 import { Battle } from "./Battle";
 import { Room } from "./Room";
 import { addHPBar, breadthFirstSearch, debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalize, getButtonsActionRow, getDistance, getNewObject, getRandomInArray, getSelectMenuActionRow, log, numericDirectionToDirection, random, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
 
 import areasData from "../data/areasData.json";
 import { getUserData, getUserWelfare } from "./Database";
+import { Item } from "./Item";
 
 export class Dungeon {
     static readonly BRANCHOUT_CHANCE = 0.1;
@@ -53,13 +54,7 @@ export class Dungeon {
 
     displayMode: DungeonDisplayMode = "pc";
 
-    inventory: DungeonItem[] = [{
-        type: 'torch',
-        uses: 1,
-    }, {
-        type: 'scout',
-        uses: 1,
-    }];
+    inventory: Item[] = [];
     callMessage: Message | null = null;
 
     leaderCoordinate: Coordinate;
@@ -395,18 +390,18 @@ export class Dungeon {
                     customId: "switch"
                 }
             ];
-            const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
-                return {
-                    label: `${formalize(_dItem.type)} x${_dItem.uses}`,
-                    value: _dItem.type,
-                }
-            });
+            // const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
+            //     return {
+            //         label: `${formalize(_dItem.type)} x${_dItem.uses}`,
+            //         value: _dItem.type,
+            //     }
+            // });
             const messagePayload: MessageOptions = {
                 components: [getButtonsActionRow(buttonOptions)],
             }
-            if (selectMenuOptions.length > 0) {
-                messagePayload.components!.push(getSelectMenuActionRow(selectMenuOptions));
-            }
+            // if (selectMenuOptions.length > 0) {
+            //     messagePayload.components!.push(getSelectMenuActionRow(selectMenuOptions));
+            // }
 
             return this.getImageEmbedMessageOptions(messagePayload);
         }
@@ -434,58 +429,58 @@ export class Dungeon {
             }, 1);
         }
         const handleItem = (_itr: SelectMenuInteraction) => {
-            const itemSelected: DungeonItemType = _itr.values[0] as DungeonItemType;
+            const itemSelected: ItemType = _itr.values[0] as ItemType;
 
             // find item used
-            let itemIndex: number | null = null;
-            const invItem = this.inventory.find((_it, _i) => {
-                const valid = _it.type === itemSelected && _it.uses > 0;
-                if (valid) {
-                    itemIndex = _i;
-                }
-                return valid;
-            });
+            // let itemIndex: number | null = null;
+            // const invItem = this.inventory.find((_it, _i) => {
+            //     const valid = _it.type === itemSelected && _it.uses > 0;
+            //     if (valid) {
+            //         itemIndex = _i;
+            //     }
+            //     return valid;
+            // });
 
-            if (invItem && itemIndex !== null) {
-                // consume item
-                invItem.uses--;
-                if (invItem.uses <= 0) {
-                    this.inventory.splice(itemIndex, 1);
-                }
+            // if (invItem && itemIndex !== null) {
+            //     // consume item
+            //     invItem.uses--;
+            //     if (invItem.uses <= 0) {
+            //         this.inventory.splice(itemIndex, 1);
+            //     }
 
-                // execute action
-                switch (itemSelected) {
-                    case "torch":
-                        const discoveredRooms = breadthFirstSearch(
-                            this.getRoom(this.leaderCoordinate)!,
-                            _ => _.directions,
-                            (_q, _c) => {
-                                return getDistance(_c.coordinate, this.leaderCoordinate) <= 1;
-                            },
-                            (_c) => true
-                        );
-                        discoveredRooms.forEach(_r => _r.isDiscovered = true);
-                        break;
+            //     // execute action
+            //     switch (itemSelected) {
+            //         case "torch":
+            //             const discoveredRooms = breadthFirstSearch(
+            //                 this.getRoom(this.leaderCoordinate)!,
+            //                 _ => _.directions,
+            //                 (_q, _c) => {
+            //                     return getDistance(_c.coordinate, this.leaderCoordinate) <= 1;
+            //                 },
+            //                 (_c) => true
+            //             );
+            //             discoveredRooms.forEach(_r => _r.isDiscovered = true);
+            //             break;
 
-                    case "scout":
-                        const battleRooms = this.rooms.filter(_r => _r.isBattleRoom);
-                        const closestBattle = battleRooms.reduce((_closest: Room | null, _c: Room) => {
-                            if (_c.isDiscovered) {
-                                return _closest
-                            }
-                            else {
-                                return _closest === null||
-                                    getDistance(_closest.coordinate, this.leaderCoordinate) > getDistance(_c.coordinate, this.leaderCoordinate)?
-                                        _c:
-                                        _closest;
-                            }
-                        }, null);
-                        if (closestBattle) {
-                            closestBattle.isDiscovered = true;
-                        }
-                        break;
-                }
-            }
+            //         case "scout":
+            //             const battleRooms = this.rooms.filter(_r => _r.isBattleRoom);
+            //             const closestBattle = battleRooms.reduce((_closest: Room | null, _c: Room) => {
+            //                 if (_c.isDiscovered) {
+            //                     return _closest
+            //                 }
+            //                 else {
+            //                     return _closest === null||
+            //                         getDistance(_closest.coordinate, this.leaderCoordinate) > getDistance(_c.coordinate, this.leaderCoordinate)?
+            //                             _c:
+            //                             _closest;
+            //                 }
+            //             }, null);
+            //             if (closestBattle) {
+            //                 closestBattle.isDiscovered = true;
+            //             }
+            //             break;
+            //     }
+            // }
 
             listenToQueue();
         }

@@ -65,6 +65,7 @@ var canvas_1 = require("canvas");
 var Utility_1 = require("./Utility");
 var __1 = require("..");
 var fs_1 = __importDefault(require("fs"));
+var Item_1 = require("./Item");
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
 });
@@ -83,7 +84,7 @@ function getAnyData(collection, doc, failureCB) {
                         failureCB(docRef, snapShot);
                     }
                     return [2 /*return*/, snapShot.exists ?
-                            (0, Utility_1.getNewObject)(getDefaultUserData(), snapShot.data()) :
+                            snapShot.data() :
                             null];
             }
         });
@@ -92,7 +93,7 @@ function getAnyData(collection, doc, failureCB) {
 exports.getAnyData = getAnyData;
 function saveUserData(_userData) {
     return __awaiter(this, void 0, void 0, function () {
-        var document, snapshotData, defaultUserData;
+        var document, snapshotData, defaultUserData, mod;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -100,9 +101,13 @@ function saveUserData(_userData) {
                     return [4 /*yield*/, document.get()];
                 case 1:
                     snapshotData = _a.sent();
+                    (0, Utility_1.log)(_userData);
                     if (snapshotData.exists) {
                         defaultUserData = getDefaultUserData();
-                        document.update((0, Utility_1.getNewObject)(defaultUserData, _userData));
+                        mod = (0, Utility_1.getNewObject)(_userData, {
+                            inventory: (_userData === null || _userData === void 0 ? void 0 : _userData.inventory.map(function (_i) { return _i.returnObject(); })) || []
+                        });
+                        document.update((0, Utility_1.getNewObject)(defaultUserData, mod));
                     }
                     return [2 /*return*/];
             }
@@ -131,33 +136,34 @@ function getMapFromLocal(mapName) {
 exports.getMapFromLocal = getMapFromLocal;
 function getUserData(id_author) {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, user, id, _b, data, _c;
-        var _d;
-        return __generator(this, function (_e) {
-            switch (_e.label) {
+        var _a, user, id, _b, fetched, defaultData, data;
+        var _c;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
                     if (!(typeof id_author !== 'string')) return [3 /*break*/, 1];
                     _b = { user: id_author, id: id_author.id };
                     return [3 /*break*/, 3];
                 case 1:
-                    _d = {};
+                    _c = {};
                     return [4 /*yield*/, __1.BotClient.users.fetch(id_author)];
                 case 2:
-                    _b = (_d.user = _e.sent(), _d.id = id_author, _d);
-                    _e.label = 3;
+                    _b = (_c.user = _d.sent(), _c.id = id_author, _c);
+                    _d.label = 3;
                 case 3:
                     _a = _b, user = _a.user, id = _a.id;
                     return [4 /*yield*/, getAnyData('Users', id)];
                 case 4:
-                    data = _e.sent();
-                    if (!data) return [3 /*break*/, 5];
-                    _c = data;
-                    return [3 /*break*/, 7];
-                case 5: return [4 /*yield*/, createNewUser(user)];
-                case 6:
-                    _c = _e.sent();
-                    _e.label = 7;
-                case 7: return [2 /*return*/, _c];
+                    fetched = _d.sent();
+                    defaultData = getDefaultUserData(user);
+                    data = (0, Utility_1.getNewObject)(defaultData, fetched);
+                    data.inventory = data.inventory.map(function (_i) { return new Item_1.Item(_i.materialInfo, _i.weight); });
+                    if (!(fetched === null)) return [3 /*break*/, 6];
+                    return [4 /*yield*/, createNewUser(user)];
+                case 5:
+                    _d.sent();
+                    _d.label = 6;
+                case 6: return [2 /*return*/, data];
             }
         });
     });

@@ -52,13 +52,7 @@ var Dungeon = /** @class */ (function () {
     /** Be sure to follow it up with initialise users */
     function Dungeon(_data) {
         this.displayMode = "pc";
-        this.inventory = [{
-                type: 'torch',
-                uses: 1,
-            }, {
-                type: 'scout',
-                uses: 1,
-            }];
+        this.inventory = [];
         this.callMessage = null;
         this.leaderUser = null;
         this.leaderUserData = null;
@@ -395,18 +389,18 @@ var Dungeon = /** @class */ (function () {
                                     customId: "switch"
                                 }
                             ];
-                            var selectMenuOptions = _this.inventory.map(function (_dItem) {
-                                return {
-                                    label: (0, Utility_1.formalize)(_dItem.type) + " x" + _dItem.uses,
-                                    value: _dItem.type,
-                                };
-                            });
+                            // const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
+                            //     return {
+                            //         label: `${formalize(_dItem.type)} x${_dItem.uses}`,
+                            //         value: _dItem.type,
+                            //     }
+                            // });
                             var messagePayload = {
                                 components: [(0, Utility_1.getButtonsActionRow)(buttonOptions)],
                             };
-                            if (selectMenuOptions.length > 0) {
-                                messagePayload.components.push((0, Utility_1.getSelectMenuActionRow)(selectMenuOptions));
-                            }
+                            // if (selectMenuOptions.length > 0) {
+                            //     messagePayload.components!.push(getSelectMenuActionRow(selectMenuOptions));
+                            // }
                             return _this.getImageEmbedMessageOptions(messagePayload);
                         };
                         listenToQueue = function () { return __awaiter(_this, void 0, void 0, function () {
@@ -454,47 +448,52 @@ var Dungeon = /** @class */ (function () {
                         handleItem = function (_itr) {
                             var itemSelected = _itr.values[0];
                             // find item used
-                            var itemIndex = null;
-                            var invItem = _this.inventory.find(function (_it, _i) {
-                                var valid = _it.type === itemSelected && _it.uses > 0;
-                                if (valid) {
-                                    itemIndex = _i;
-                                }
-                                return valid;
-                            });
-                            if (invItem && itemIndex !== null) {
-                                // consume item
-                                invItem.uses--;
-                                if (invItem.uses <= 0) {
-                                    _this.inventory.splice(itemIndex, 1);
-                                }
-                                // execute action
-                                switch (itemSelected) {
-                                    case "torch":
-                                        var discoveredRooms = (0, Utility_1.breadthFirstSearch)(_this.getRoom(_this.leaderCoordinate), function (_) { return _.directions; }, function (_q, _c) {
-                                            return (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) <= 1;
-                                        }, function (_c) { return true; });
-                                        discoveredRooms.forEach(function (_r) { return _r.isDiscovered = true; });
-                                        break;
-                                    case "scout":
-                                        var battleRooms = _this.rooms.filter(function (_r) { return _r.isBattleRoom; });
-                                        var closestBattle = battleRooms.reduce(function (_closest, _c) {
-                                            if (_c.isDiscovered) {
-                                                return _closest;
-                                            }
-                                            else {
-                                                return _closest === null ||
-                                                    (0, Utility_1.getDistance)(_closest.coordinate, _this.leaderCoordinate) > (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) ?
-                                                    _c :
-                                                    _closest;
-                                            }
-                                        }, null);
-                                        if (closestBattle) {
-                                            closestBattle.isDiscovered = true;
-                                        }
-                                        break;
-                                }
-                            }
+                            // let itemIndex: number | null = null;
+                            // const invItem = this.inventory.find((_it, _i) => {
+                            //     const valid = _it.type === itemSelected && _it.uses > 0;
+                            //     if (valid) {
+                            //         itemIndex = _i;
+                            //     }
+                            //     return valid;
+                            // });
+                            // if (invItem && itemIndex !== null) {
+                            //     // consume item
+                            //     invItem.uses--;
+                            //     if (invItem.uses <= 0) {
+                            //         this.inventory.splice(itemIndex, 1);
+                            //     }
+                            //     // execute action
+                            //     switch (itemSelected) {
+                            //         case "torch":
+                            //             const discoveredRooms = breadthFirstSearch(
+                            //                 this.getRoom(this.leaderCoordinate)!,
+                            //                 _ => _.directions,
+                            //                 (_q, _c) => {
+                            //                     return getDistance(_c.coordinate, this.leaderCoordinate) <= 1;
+                            //                 },
+                            //                 (_c) => true
+                            //             );
+                            //             discoveredRooms.forEach(_r => _r.isDiscovered = true);
+                            //             break;
+                            //         case "scout":
+                            //             const battleRooms = this.rooms.filter(_r => _r.isBattleRoom);
+                            //             const closestBattle = battleRooms.reduce((_closest: Room | null, _c: Room) => {
+                            //                 if (_c.isDiscovered) {
+                            //                     return _closest
+                            //                 }
+                            //                 else {
+                            //                     return _closest === null||
+                            //                         getDistance(_closest.coordinate, this.leaderCoordinate) > getDistance(_c.coordinate, this.leaderCoordinate)?
+                            //                             _c:
+                            //                             _closest;
+                            //                 }
+                            //             }, null);
+                            //             if (closestBattle) {
+                            //                 closestBattle.isDiscovered = true;
+                            //             }
+                            //             break;
+                            //     }
+                            // }
                             listenToQueue();
                         };
                         handleMovement = function (_itr) { return __awaiter(_this, void 0, void 0, function () {

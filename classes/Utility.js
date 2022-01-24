@@ -87,6 +87,8 @@ var areasData_json_1 = __importDefault(require("../data/areasData.json"));
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
+var Item_1 = require("./Item");
+// import { Dungeon } from "./Dungeon";
 function clamp(value, min, max) {
     return Math.max(Math.min(value, max), min);
 }
@@ -535,53 +537,53 @@ function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
     return attackAction;
 }
 exports.getAttackAction = getAttackAction;
-// export function getDashAction(stat: Stat, _target: Coordinate, priority: number, sprint: number): DashAction {
-//     const movetype: ActionType = "Dash";
-//     const magnitude: number = getDistance(stat, _target);
-//     return {
-//         executed: false,
-//         type: movetype,
-//         from: stat,
-//         affected: stat,
-//         readiness: Battle.MOVE_READINESS * Math.abs(magnitude),
-//         sword: 0,
-//         shield: 0,
-//         sprint: sprint,
-//         priority: priority,
-//         target: _target,
-//     };
-// }
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
-        var Ike, mes, channel;
-        var _this = this;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, __1.BotClient.users.fetch("262871357455466496")];
-                case 1:
-                    Ike = _a.sent();
-                    return [4 /*yield*/, __1.BotClient.channels.fetch("926372977539424296")];
-                case 2: return [4 /*yield*/, (_a.sent()).send("Stuff")];
-                case 3:
-                    mes = _a.sent();
-                    channel = __1.BotClient.channels.fetch("926372977539424296")
-                        .then(function (_c) { return __awaiter(_this, void 0, void 0, function () {
-                        var battle;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0: return [4 /*yield*/, Battle_1.Battle.Generate(areasData_json_1.default.farmstead_empty, Ike, mes, ["262871357455466496"], __1.BotClient, false)];
-                                case 1:
-                                    battle = _a.sent();
-                                    battle.StartBattle({
-                                        ambush: 'enemy'
-                                    });
-                                    return [2 /*return*/];
+        var _a, _b, _d, key, value, Eclass, mod, enemyBase, spawnCount, _loop_1, i;
+        var e_1, _f;
+        return __generator(this, function (_g) {
+            try {
+                for (_a = __values(Object.entries(areasData_json_1.default.farmstead_empty.enemiesInfo)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                    _d = __read(_b.value, 2), key = _d[0], value = _d[1];
+                    Eclass = key;
+                    mod = { name: "" + Eclass };
+                    enemyBase = getNewObject(enemiesData_json_1.default[Eclass], mod);
+                    spawnCount = random(value.min, value.max);
+                    _loop_1 = function (i) {
+                        var enemyEntity = getStat(enemyBase);
+                        // randomly spawn in loot
+                        enemyEntity.base.lootInfo.forEach(function (_LInfo) {
+                            // roll for spawn item
+                            var roll = Math.random();
+                            if (roll < _LInfo.chance) {
+                                // initialise if haven't yet
+                                if (enemyEntity.drops === undefined) {
+                                    enemyEntity.drops = {
+                                        items: [],
+                                        money: 0,
+                                        droppedBy: enemyEntity
+                                    };
+                                }
+                                // spawn in item
+                                var weight = random(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
+                                var item = new Item_1.Item(_LInfo.materials, weight);
+                                item.print();
                             }
                         });
-                    }); })
-                        .catch(function (_e) { return console.log; });
-                    return [2 /*return*/];
+                    };
+                    for (i = 0; i < spawnCount; i++) {
+                        _loop_1(i);
+                    }
+                }
             }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (_b && !_b.done && (_f = _a.return)) _f.call(_a);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            return [2 /*return*/];
         });
     });
 }
@@ -642,8 +644,8 @@ function clearChannel(channel, afterMessage) {
                     };
                     return [4 /*yield*/, channel.messages.fetch(options)
                             .then(function (messages) {
-                            var e_1, _a;
-                            var _loop_1 = function (id, m) {
+                            var e_2, _a;
+                            var _loop_2 = function (id, m) {
                                 m.delete().catch(function () {
                                     if (m.deletable)
                                         m.delete().catch();
@@ -652,15 +654,15 @@ function clearChannel(channel, afterMessage) {
                             try {
                                 for (var messages_1 = __values(messages), messages_1_1 = messages_1.next(); !messages_1_1.done; messages_1_1 = messages_1.next()) {
                                     var _b = __read(messages_1_1.value, 2), id = _b[0], m = _b[1];
-                                    _loop_1(id, m);
+                                    _loop_2(id, m);
                                 }
                             }
-                            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                            catch (e_2_1) { e_2 = { error: e_2_1 }; }
                             finally {
                                 try {
                                     if (messages_1_1 && !messages_1_1.done && (_a = messages_1.return)) _a.call(messages_1);
                                 }
-                                finally { if (e_1) throw e_1.error; }
+                                finally { if (e_2) throw e_2.error; }
                             }
                         })];
                 case 1:
@@ -883,32 +885,32 @@ function printCSMap(map) {
 }
 exports.printCSMap = printCSMap;
 function getMapFromCS(coordStat) {
-    var e_2, _a, e_3, _b;
+    var e_3, _a, e_4, _b;
     var mapReturn = new Map();
     try {
         for (var _d = __values(Object.values(coordStat)), _f = _d.next(); !_f.done; _f = _d.next()) {
             var yStat = _f.value;
             try {
-                for (var _g = (e_3 = void 0, __values(Object.values(yStat))), _j = _g.next(); !_j.done; _j = _g.next()) {
+                for (var _g = (e_4 = void 0, __values(Object.values(yStat))), _j = _g.next(); !_j.done; _j = _g.next()) {
                     var stat = _j.value;
                     mapReturn.set(getCoordString(stat), getStat(stat));
                 }
             }
-            catch (e_3_1) { e_3 = { error: e_3_1 }; }
+            catch (e_4_1) { e_4 = { error: e_4_1 }; }
             finally {
                 try {
                     if (_j && !_j.done && (_b = _g.return)) _b.call(_g);
                 }
-                finally { if (e_3) throw e_3.error; }
+                finally { if (e_4) throw e_4.error; }
             }
         }
     }
-    catch (e_2_1) { e_2 = { error: e_2_1 }; }
+    catch (e_3_1) { e_3 = { error: e_3_1 }; }
     finally {
         try {
             if (_f && !_f.done && (_a = _d.return)) _a.call(_d);
         }
-        finally { if (e_2) throw e_2.error; }
+        finally { if (e_3) throw e_3.error; }
     }
     return mapReturn;
 }
@@ -967,7 +969,6 @@ function getEmptyBuff() {
 exports.getEmptyBuff = getEmptyBuff;
 function getStat(bss, _owner) {
     if (_owner === void 0) { _owner = ''; }
-    var classBSS = bss.class;
     var base = 'team' in bss ?
         getNewObject(classData_json_1.default[bss.class], bss) :
         bss;
@@ -992,7 +993,9 @@ function getStat(bss, _owner) {
                 "player" :
                 "enemy" :
             ss.team,
-        botType: ss.botType || (_owner ? typedef_1.BotType.naught : typedef_1.BotType.approach_attack),
+        botType: ss.botType || (_owner ?
+            typedef_1.BotType.naught :
+            typedef_1.BotType.approach_attack),
         accolades: getEmptyAccolade(),
         buffs: getEmptyBuff(),
         debuffs: getEmptyBuff(),

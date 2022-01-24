@@ -1,7 +1,7 @@
 {
     "Barbar": {
         "class": "Barbar",
-        "AHP": 30,
+        "AHP": 1,
         "Dodge": 0,
         "Prot": 0.5,
         "Spd": 5,
@@ -36,7 +36,84 @@
             }
         ],
         "autoWeapons": [],
-        "botType": 1
+        "botType": 1,
+        "lootInfo": [
+            {
+                "chance": 1,
+                "materials": [
+                    {
+                        "name": "flesh",
+                        "occupationDeviation": {
+                            "min": 0.89,
+                            "max": 0.987
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 0
+                        }
+                    },
+                    {
+                        "name": "flesh",
+                        "occupationDeviation": {
+                            "min": 0.09,
+                            "max": 0.1
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 1
+                        }
+                    },
+                    {
+                        "name": "cometarite",
+                        "occupationDeviation": {
+                            "min": 0.013,
+                            "max": 0.05
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 2
+                        }
+                    },
+                    {
+                        "name": "steel",
+                        "occupationDeviation": {
+                            "min": 0.0005,
+                            "max": 0.0009
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 1
+                        }
+                    },
+                    {
+                        "name": "boulder",
+                        "occupationDeviation": {
+                            "min": 0.0009,
+                            "max": 0.0012
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 1
+                        }
+                    },
+                    {
+                        "name": "marble",
+                        "occupationDeviation": {
+                            "min": 0.0005,
+                            "max": 0.0009
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 1
+                        }
+                    }
+                ],
+                "weightDeviation": {
+                    "min": 10,
+                    "max": 18
+                }
+            }
+        ]
     },
     "Barcher": {
         "class": "Barcher",
@@ -69,7 +146,13 @@
             }
         ],
         "autoWeapons": [],
-        "botType": 1
+        "botType": 1,
+        "lootInfo": [
+            {
+                "chance": 0,
+                "itemType": "mineral"
+            }
+        ]
     },
     "Bardar": {
         "class": "Bardar",
@@ -102,7 +185,13 @@
             }
         ],
         "autoWeapons": [],
-        "botType": 2
+        "botType": 2,
+        "lootInfo": [
+            {
+                "chance": 0,
+                "itemType": "mineral"
+            }
+        ]
     },
     "Diana's Wolf": {
         "class": "Diana's Wolf",
@@ -135,6 +224,7 @@
             }
         ],
         "autoWeapons": [],
-        "botType": 1
+        "botType": 1,
+        "lootInfo": []
     }
 }

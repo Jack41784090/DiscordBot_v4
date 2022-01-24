@@ -1,4 +1,4 @@
-import { Coordinate, MapData, NumericDirection, OwnerID, RoomDirections, StartBattleOptions, Team, Treasure } from "../typedef";
+import { Coordinate, MapData, NumericDirection, OwnerID, RoomDirections, StartBattleOptions, Team, DungeonTreasure } from "../typedef";
 import { Battle } from "./Battle";
 import { BattleManager } from "./BattleManager";
 import { Dungeon } from "./Dungeon";
@@ -6,7 +6,7 @@ import { findEqualCoordinate } from "./Utility";
 
 export class Room {
     battle: Battle | null = null;
-    treasure: Treasure | null = null;
+    treasure: DungeonTreasure | null = null;
     isBattleRoom: boolean;
     isDiscovered: boolean;
 

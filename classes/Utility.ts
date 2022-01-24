@@ -2,14 +2,15 @@ import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions, MessageSelectOptionData } from "discord.js";
 import { Type } from "typescript";
 import classData from "../data/classData.json"
-import enemyData from "../data/enemiesData.json"
+import enemiesData from "../data/enemiesData.json"
 import dungeonData from "../data/dungeonData.json"
 import areasData from "../data/areasData.json";
 
 import { BotClient } from "..";
-import { Class, SimpleStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData } from "../typedef";
+import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo } from "../typedef";
 import { Battle } from "./Battle";
-import { Dungeon } from "./Dungeon";
+import { Item } from "./Item";
+// import { Dungeon } from "./Dungeon";
 
 export function clamp(value: number, min: number, max: number) {
     return Math.max(Math.min(value, max), min);
@@ -313,97 +314,6 @@ export function getDirection(axis: 'x' | 'y', moveMagnitude: number) {
     return direction;
 }
 
-// export async function DrawTest() {
-//     const size = 50;
-//     const canvas = returnGridCanvas(9, 9, size);
-//     const ctx = canvas.getContext('2d');
-//     const stat: Stat = {
-//         base: {
-//             name: 'test',
-//             class: Class.Hercules,
-//             AHP: 0,
-//             Dodge: 0,
-//             Prot: 0,
-//             Spd: 0,
-//             botType: 0,
-//             weapons: [],
-//             iconURL: 'https://cdn.discordapp.com/attachments/832702942883872800/877772107298267136/image0.jpg',
-//         },
-//         index: 0,
-
-//         weaponUses: [],
-
-//         HP: 10,
-//         readiness: 50,
-//         x: 0,
-//         y: 0,
-
-//         owner: '49182350',
-//         username: 'w',
-
-//         team: Team.player,
-//         accolades: {
-//             kill: 0,
-//             damageDealt: 0,
-//             healingDone: 0,
-//             absorbed: 0,
-//             damageTaken: 0,
-//             dodged: 0,
-//             critNo: 0,
-//             clashNo: 0,
-//             rollAverage: 0,
-//             rollNo: 0,
-//         },
-//         buffs: {
-//             AHP: 0,
-//             Damage: 0,
-//             Acc: 0,
-//             Dodge: 0,
-//             Crit: 0,
-//             Prot: 0,
-//             Spd: 0,
-//             lifesteal: 0,
-//         },
-//         debuffs: {
-//             AHP: 0,
-//             Damage: 0,
-//             Acc: 0,
-//             Dodge: 0,
-//             Crit: 0,
-//             Prot: 0,
-//             Spd: 0,
-//             lifesteal: 0,
-//         },
-//         botType: BotType.naught,
-//     };
-//     const X = stat.x;
-//     const Y = stat.y;
-
-//     log("Getting file...")
-//     const icon = await getFileBufferImage("./maps/battle-262871357455466496.txt");
-    
-//     if (icon) {
-//         log("Drawing file...");
-//         ctx.drawImage(icon, 0, 0, canvas.width, canvas.height);
-//     }
-//     log("Drawing lines...");
-//     ctx.beginPath();
-//     ctx.strokeStyle = "black";
-//     ctx.moveTo(0, 0);
-//     ctx.lineTo(125, 125);
-//     ctx.stroke();
-
-
-//     log("Sending file...")
-//     const channel = await BotClient.channels.fetch("882231564715560991").then(c => c as TextChannel);
-//     const embed = new MessageEmbed()
-//         .setImage("attachment://image.png");
-//     const message = await channel.send({ embeds: [embed], files: [{ attachment: canvas.toBuffer(), name: "image.png" }] });
-//     log("Complete!")
-
-//     console.log(message.embeds[0].image);
-// }
-
 export function getMoveAction(_stat: Stat, _direction: Direction, _round: number, moveMagnitude: number): MoveAction;
 export function getMoveAction(_stat: Stat, magnitude: number, _round: number, axis: "x" | "y"): MoveAction;
 export function getMoveAction(_stat: Stat, args2: string | number, _round: number, args4: number | "x" | "y"): MoveAction {
@@ -551,38 +461,39 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
     return attackAction;
 }
 
-// export function getDashAction(stat: Stat, _target: Coordinate, priority: number, sprint: number): DashAction {
-//     const movetype: ActionType = "Dash";
-//     const magnitude: number = getDistance(stat, _target);
-//     return {
-//         executed: false,
-
-//         type: movetype,
-//         from: stat,
-//         affected: stat,
-//         readiness: Battle.MOVE_READINESS * Math.abs(magnitude),
-
-//         sword: 0,
-//         shield: 0,
-//         sprint: sprint,
-
-//         priority: priority,
-
-//         target: _target,
-//     };
-// }
-
 export async function Test() {
-    const Ike = await BotClient.users.fetch("262871357455466496");
-    const mes = await (await BotClient.channels.fetch("926372977539424296") as TextChannel).send("Stuff");
-    const channel = BotClient.channels.fetch("926372977539424296")
-        .then(async _c => {
-            const battle = await Battle.Generate(areasData.farmstead_empty as MapData, Ike, mes, ["262871357455466496"], BotClient, false);
-            battle.StartBattle({
-                ambush: 'enemy'
+    for (const [key, value] of Object.entries(areasData.farmstead_empty.enemiesInfo)) {
+        const Eclass = key as EnemyClass;
+        const mod = { name: `${Eclass}` };
+        const enemyBase: BaseStat = getNewObject(enemiesData[Eclass], mod) as BaseStat;
+        const spawnCount = random(value.min, value.max);
+
+        for (let i = 0; i < spawnCount; i++) {
+            const enemyEntity: Stat = getStat(enemyBase);
+
+            // randomly spawn in loot
+            enemyEntity.base.lootInfo.forEach(_LInfo => {
+                // roll for spawn item
+                const roll = Math.random();
+                if (roll < _LInfo.chance) {
+                    // initialise if haven't yet
+                    if (enemyEntity.drops === undefined) {
+                        enemyEntity.drops = {
+                            items: [],
+                            money: 0,
+                            droppedBy: enemyEntity
+                        }
+                    }
+
+                    // spawn in item
+                    const weight = random(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
+                    const item: Item = new Item(_LInfo.materials, weight);
+                    item.print();
+                }
             });
-        })
-        .catch(_e => console.log);
+        }
+    }
+
 }
 
 export function findReferenceAngle(_angle: number): number {
@@ -844,7 +755,7 @@ export function printCSMap(map: Map<string, Stat>) {
     log(`===================================`)
 }
 
-export function getMapFromCS(coordStat: CoordStat<SimpleStat>): Map<StringCoordinate, Stat> {
+export function getMapFromCS(coordStat: CoordStat<SimplePlayerStat>): Map<StringCoordinate, Stat> {
     const mapReturn: Map<StringCoordinate, Stat> = new Map<StringCoordinate, Stat>();
     for (const yStat of Object.values(coordStat)) {
         for (const stat of Object.values(yStat)) {
@@ -889,7 +800,7 @@ export function getBaseClassStat(className: Class) {
     return classData[className] as BaseStat;
 }
 export function getBaseEnemyStat(enemyClassName: EnemyClass) {
-    return enemyData[enemyClassName] as BaseStat;
+    return enemiesData[enemyClassName] as BaseStat;
 }
 
 export function getEmptyBuff(): Buffs {
@@ -906,13 +817,12 @@ export function getEmptyBuff(): Buffs {
 }
 
 export function getStat(bs: BaseStat, _owner?: string): Stat;
-export function getStat(ss: SimpleStat, _owner?: string): Stat;
-export function getStat(bss: SimpleStat | BaseStat, _owner: string = ''): Stat {
-    const classBSS: (Class | EnemyClass) = bss.class;
+export function getStat(ss: SimplePlayerStat, _owner?: string): Stat;
+export function getStat(bss: SimplePlayerStat | BaseStat, _owner: string = ''): Stat {
     const base: BaseStat = 'team' in bss ?
         getNewObject(classData[bss.class], bss) as BaseStat:
         bss as BaseStat;
-    const ss = bss as SimpleStat;
+    const ss = bss as SimplePlayerStat;
 
     const endStat: Stat = {
         base: base,
@@ -940,7 +850,10 @@ export function getStat(bss: SimpleStat | BaseStat, _owner: string = ''): Stat {
                 "player":
                 "enemy":
             ss.team,
-        botType: ss.botType || (_owner ? BotType.naught : BotType.approach_attack),
+        botType: ss.botType || (_owner?
+                BotType.naught:
+                BotType.approach_attack
+        ),
         accolades: getEmptyAccolade(),
         buffs: getEmptyBuff(),
         debuffs: getEmptyBuff(),

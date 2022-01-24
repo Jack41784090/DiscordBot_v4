@@ -10,6 +10,7 @@ import { Battle } from "./Battle";
 import { BotClient } from "..";
 
 import fs from 'fs';
+import { Item } from "./Item";
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount as ServiceAccount),
@@ -26,16 +27,20 @@ export async function getAnyData(collection: string, doc: string, failureCB?: (d
     }
 
     return snapShot.exists?
-        getNewObject(getDefaultUserData(), snapShot.data()):
+        snapShot.data()!:
         null;
 }
 export async function saveUserData(_userData: UserData) {
     const document = database.collection("Users").doc(_userData.party[0]);
     const snapshotData = await document.get();
+    log(_userData);
 
     if (snapshotData.exists) {
         const defaultUserData = getDefaultUserData();
-        document.update(getNewObject(defaultUserData, _userData));
+        const mod = getNewObject(_userData, {
+            inventory: _userData?.inventory.map(_i => _i.returnObject()) || []
+        });
+        document.update(getNewObject(defaultUserData, mod));
     }
 }
 
@@ -57,10 +62,16 @@ export async function getUserData(id_author: string | User): Promise<UserData> {
         { user: id_author, id: id_author.id }:
         { user: await BotClient.users.fetch(id_author), id: id_author };
 
-    const data = await getAnyData('Users', id);
-    return data?
-        data as UserData:
+    const fetched: FirebaseFirestore.DocumentData | null = await getAnyData('Users', id);
+    const defaultData: UserData = getDefaultUserData(user);
+    const data: UserData = getNewObject(defaultData, fetched) as UserData;
+    data.inventory = data.inventory.map(_i => new Item(_i.materialInfo, _i.weight));
+
+    if (fetched === null) {
         await createNewUser(user);
+    }
+
+    return data;
 }
 
 export async function createNewUser(author: User): Promise<UserData> {

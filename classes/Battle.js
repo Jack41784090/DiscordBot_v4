@@ -88,6 +88,8 @@ var hGraphTheory_1 = require("./hGraphTheory");
 var WeaponEffect_1 = require("./WeaponEffect");
 var BattleManager_1 = require("./BattleManager");
 var AI_1 = require("./AI");
+var __1 = require("..");
+var Item_1 = require("./Item");
 var Battle = /** @class */ (function () {
     function Battle(_mapData, _author, _message, _client, _pvp, _party) {
         var _this = this;
@@ -97,10 +99,12 @@ var Battle = /** @class */ (function () {
         this.client = _client;
         this.guild = _message.guild;
         this.party = _party;
+        this.userDataCache = new Map();
         this.mapData = _mapData;
         this.width = _mapData.map.width;
         this.height = _mapData.map.height;
         this.CSMap = (0, Utility_1.getMapFromCS)(_mapData.map.coordStat);
+        this.LootMap = new Map();
         this.pixelsPerTile = 50;
         this.userCache = new Map();
         this.pvp = _pvp;
@@ -129,7 +133,7 @@ var Battle = /** @class */ (function () {
     Battle.Generate = function (_mapData, _author, _message, _party, _client, _pvp) {
         if (_pvp === void 0) { _pvp = false; }
         return __awaiter(this, void 0, void 0, function () {
-            var battle, i, ownerID, userData, blankStat, i_1, universalWeaponName, uniWeapon, _b, _c, _d, key, value, Eclass, mod, enemyBase, spawnCount, i;
+            var battle, i, ownerID, userData, blankStat, user, i_1, universalWeaponName, uniWeapon, _b, _c, _d, key, value, Eclass, mod, enemyBase, spawnCount, _loop_1, i;
             var e_1, _g;
             return __generator(this, function (_h) {
                 switch (_h.label) {
@@ -138,7 +142,7 @@ var Battle = /** @class */ (function () {
                         i = 0;
                         _h.label = 1;
                     case 1:
-                        if (!(i < _party.length)) return [3 /*break*/, 4];
+                        if (!(i < _party.length)) return [3 /*break*/, 5];
                         ownerID = _party[i];
                         return [4 /*yield*/, (0, Database_1.getUserData)(ownerID)];
                     case 2:
@@ -148,19 +152,26 @@ var Battle = /** @class */ (function () {
                             blankStat.pvp = true;
                         }
                         battle.tobespawnedArray.push(blankStat);
-                        // universal weapon
+                        return [4 /*yield*/, __1.BotClient.users.fetch(ownerID).catch(function () { return null; })];
+                    case 3:
+                        user = _h.sent();
+                        battle.userDataCache.set(ownerID, userData);
+                        if (user) {
+                            battle.userCache.set(ownerID, user);
+                        }
+                        // add universal weapons
                         for (i_1 = 0; i_1 < Object.keys(universalWeaponsData_json_1.default).length; i_1++) {
                             universalWeaponName = Object.keys(universalWeaponsData_json_1.default)[i_1];
                             uniWeapon = (0, Utility_1.getNewObject)(universalWeaponsData_json_1.default[universalWeaponName]);
                             (0, Utility_1.log)("Pushing universal weapon " + universalWeaponName + " into the arsenal of " + (blankStat.base.class + " (" + blankStat.index + ")"));
                             blankStat.base.weapons.push(uniWeapon);
                         }
-                        _h.label = 3;
-                    case 3:
+                        _h.label = 4;
+                    case 4:
                         i++;
                         return [3 /*break*/, 1];
-                    case 4:
-                        // add enemies to the spawning list
+                    case 5:
+                        // add enemies to the spawning list, only valid if battle is not pvp
                         if (!_pvp) {
                             try {
                                 for (_b = __values(Object.entries(_mapData.enemiesInfo)), _c = _b.next(); !_c.done; _c = _b.next()) {
@@ -169,10 +180,32 @@ var Battle = /** @class */ (function () {
                                     mod = { name: "" + Eclass };
                                     enemyBase = (0, Utility_1.getNewObject)(enemiesData_json_1.default[Eclass], mod);
                                     spawnCount = (0, Utility_1.random)(value.min, value.max);
-                                    for (i = 0; i < spawnCount; i++) {
+                                    _loop_1 = function (i) {
+                                        var enemyEntity = (0, Utility_1.getStat)(enemyBase);
+                                        // randomly spawn in loot
+                                        enemyEntity.base.lootInfo.forEach(function (_LInfo) {
+                                            // roll for spawn item
+                                            var roll = Math.random();
+                                            if (roll < _LInfo.chance) {
+                                                // initialise if haven't yet
+                                                if (enemyEntity.drops === undefined) {
+                                                    enemyEntity.drops = {
+                                                        items: [],
+                                                        money: 0,
+                                                        droppedBy: enemyEntity
+                                                    };
+                                                }
+                                                // spawn in item
+                                                var weight = (0, Utility_1.random)(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
+                                                enemyEntity.drops.items.push(new Item_1.Item(_LInfo.materials, weight));
+                                            }
+                                        });
+                                        battle.tobespawnedArray.push(enemyEntity);
                                         battle.totalEnemyCount++;
                                         battle.enemyCount++;
-                                        battle.tobespawnedArray.push((0, Utility_1.getStat)(enemyBase));
+                                    };
+                                    for (i = 0; i < spawnCount; i++) {
+                                        _loop_1(i);
                                     }
                                 }
                             }
@@ -272,7 +305,7 @@ var Battle = /** @class */ (function () {
     Battle.prototype.StartRound = function () {
         var _b, _c, _d;
         return __awaiter(this, void 0, void 0, function () {
-            var i, spawning, allStats, _loop_1, i, existingCategory, commandCategory, _g, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_2, this_1, allStats_1, allStats_1_1, realStat, e_2_1, priorityActionMap, i, act, actionListThisRound, latestAction, latestRound, i, roundExpectedActions, canvas, ctx, roundCanvas, executedActions, actualCanvas, _loop_3, i, allPromise, players;
+            var i, spawning, allStats, _loop_2, i, existingCategory, commandCategory, _g, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_3, this_1, allStats_1, allStats_1_1, realStat, e_2_1, priorityActionMap, i, act, actionListThisRound, latestAction, latestRound, i, roundExpectedActions, canvas, ctx, roundCanvas, executedActions, actualCanvas, _loop_4, i, allPromise, players;
             var e_2, _h;
             var _this = this;
             return __generator(this, function (_j) {
@@ -299,7 +332,7 @@ var Battle = /** @class */ (function () {
                         //#endregion
                         //#region INCREASE ALL READINESS & TOKENS
                         (0, Utility_1.log)("Readiness ticking...");
-                        _loop_1 = function (i) {
+                        _loop_2 = function (i) {
                             var s = allStats[i];
                             if (s.team === 'block')
                                 return "continue";
@@ -336,7 +369,7 @@ var Battle = /** @class */ (function () {
                             }
                         };
                         for (i = 0; i < allStats.length; i++) {
-                            _loop_1(i);
+                            _loop_2(i);
                         }
                         existingCategory = this.guild.channels.cache.find(function (gC) { return gC.name === 'CommandRooms' + _this.guild.id && gC.type === 'GUILD_CATEGORY'; });
                         _g = existingCategory;
@@ -372,7 +405,7 @@ var Battle = /** @class */ (function () {
                         (0, Utility_1.log)("||=> Success.");
                         reportPromises = [];
                         (0, Utility_1.log)("Playing phase!");
-                        _loop_2 = function (realStat) {
+                        _loop_3 = function (realStat) {
                             var user, _k, virtualStat_1, channelAlreadyExist, createdChannel_1, _l, existingPermissions_everyone_1, existingPermissions_author, newChannel, noExistingPermission, extraPermissions, missingPermissions, overWrites, _m, _o, readingPlayerPromise, ai_f;
                             var _p, _q;
                             return __generator(this, function (_t) {
@@ -489,7 +522,7 @@ var Battle = /** @class */ (function () {
                     case 6:
                         if (!!allStats_1_1.done) return [3 /*break*/, 9];
                         realStat = allStats_1_1.value;
-                        return [5 /*yield**/, _loop_2(realStat)];
+                        return [5 /*yield**/, _loop_3(realStat)];
                     case 7:
                         _j.sent();
                         _j.label = 8;
@@ -560,7 +593,7 @@ var Battle = /** @class */ (function () {
                         i++;
                         return [3 /*break*/, 14];
                     case 18:
-                        _loop_3 = function (i) {
+                        _loop_4 = function (i) {
                             var s = allStats[i];
                             (0, Utility_1.HandleTokens)(s, function (p, t) {
                                 if (p > 3) {
@@ -572,7 +605,7 @@ var Battle = /** @class */ (function () {
                         //#endregion
                         // limit token count
                         for (i = 0; i < allStats.length; i++) {
-                            _loop_3(i);
+                            _loop_4(i);
                         }
                         _j.label = 19;
                     case 19:
@@ -622,22 +655,25 @@ var Battle = /** @class */ (function () {
                         (0, Utility_1.log)("Finishing Round...");
                         PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
                         PVP = this.playerCount === 1;
-                        if (!((this.pvp && PVP) || (!this.pvp && PVE))) return [3 /*break*/, 5];
+                        if (!((this.pvp && PVP) || (!this.pvp && PVE))) return [3 /*break*/, 6];
                         allStats = this.allStats();
                         i = 0;
                         _c.label = 1;
                     case 1:
-                        if (!(i < this.party.length)) return [3 /*break*/, 4];
+                        if (!(i < this.party.length)) return [3 /*break*/, 5];
                         id = this.party[i];
                         stat = allStats[i];
                         return [4 /*yield*/, (0, Database_1.setUserWelfare)(id, (0, Utility_1.clamp)(stat.HP / stat.base.AHP, 0, 1))];
                     case 2:
                         _c.sent();
-                        _c.label = 3;
+                        return [4 /*yield*/, (0, Database_1.saveUserData)(this.userDataCache.get(id))];
                     case 3:
+                        _c.sent();
+                        _c.label = 4;
+                    case 4:
                         i++;
                         return [3 /*break*/, 1];
-                    case 4:
+                    case 5:
                         endEmbedFields_1 = [];
                         this.callbackOnParty(function (stat) {
                             var statAcco = stat.accolades;
@@ -657,7 +693,7 @@ var Battle = /** @class */ (function () {
                                 })]
                         });
                         return [2 /*return*/, this.totalEnemyCount === 0];
-                    case 5: return [2 /*return*/, this.StartRound()];
+                    case 6: return [2 /*return*/, this.StartRound()];
                 }
             });
         });
@@ -878,10 +914,10 @@ var Battle = /** @class */ (function () {
                             },
                         ];
                         returnMessageInteractionMenus = function () { return __awaiter(_this, void 0, void 0, function () {
-                            var selectMenuOptions, messagePayload, selectMenuActionRow, selectMenu, m, errorField;
-                            var _b, _c;
-                            return __generator(this, function (_d) {
-                                switch (_d.label) {
+                            var selectMenuOptions, coordString, messagePayload, selectMenuActionRow, selectMenu, m, errorField;
+                            var _b, _c, _d;
+                            return __generator(this, function (_g) {
+                                switch (_g.label) {
                                     case 0:
                                         selectMenuOptions = this.getAllPossibleAttacksInfo(_vS, domain).map(function (_attackInfo) {
                                             var weapon = _attackInfo.weapon;
@@ -896,6 +932,16 @@ var Battle = /** @class */ (function () {
                                                 value: _attackInfo.attacker.index + " " + (0, Utility_1.getWeaponIndex)(weapon, _attackInfo.attacker) + " " + target.index,
                                             };
                                         });
+                                        coordString = (0, Utility_1.getCoordString)(_vS);
+                                        (_b = this.LootMap.get(coordString)) === null || _b === void 0 ? void 0 : _b.forEach(function (_L) {
+                                            selectMenuOptions.push({
+                                                emoji: '💰',
+                                                label: "Loot",
+                                                description: "" + _L.droppedBy.base.class,
+                                                value: "loot " + coordString
+                                            });
+                                        });
+                                        // end turn option
                                         selectMenuOptions.push({
                                             emoji: typedef_1.EMOJI_TICK,
                                             label: "End Turn",
@@ -913,9 +959,9 @@ var Battle = /** @class */ (function () {
                                         }
                                         return [4 /*yield*/, this.getFullPlayerEmbedMessageOptions(_vS)];
                                     case 1:
-                                        m = _d.sent();
+                                        m = _g.sent();
                                         m.components = messagePayload.components;
-                                        errorField = (_b = m.embeds[0].fields) === null || _b === void 0 ? void 0 : _b.find(function (_f) { return _f.name === "ERROR:"; });
+                                        errorField = (_c = m.embeds[0].fields) === null || _c === void 0 ? void 0 : _c.find(function (_f) { return _f.name === "ERROR:"; });
                                         if (errorField && possibleError) {
                                             errorField.value = possibleError;
                                         }
@@ -923,7 +969,7 @@ var Battle = /** @class */ (function () {
                                             (0, Utility_1.arrayRemoveItemArray)(m.embeds[0].fields, errorField);
                                         }
                                         else if (possibleError) {
-                                            (_c = m.embeds[0].fields) === null || _c === void 0 ? void 0 : _c.push({
+                                            (_d = m.embeds[0].fields) === null || _d === void 0 ? void 0 : _d.push({
                                                 name: "ERROR:",
                                                 value: possibleError,
                                                 inline: false,
@@ -984,6 +1030,7 @@ var Battle = /** @class */ (function () {
                                 };
                                 var handleSelectMenu = function (_sMItr) {
                                     var _b;
+                                    var _c, _d;
                                     var round = executingActions.length + 1;
                                     // [attacker index] [weapon index] [target index]
                                     var code = _sMItr.values[0];
@@ -1016,6 +1063,38 @@ var Battle = /** @class */ (function () {
                                     else if (code === "end") {
                                         (_b = _this.roundActionsArray).push.apply(_b, __spreadArray([], __read(executingActions), false));
                                         resolve(void 0);
+                                    }
+                                    else if (((_c = code.split(" ")) === null || _c === void 0 ? void 0 : _c[0]) === "loot") {
+                                        var lootCoordString = (_d = code.split(" ")) === null || _d === void 0 ? void 0 : _d[1];
+                                        var allLoot = _this.LootMap.get(lootCoordString) || null;
+                                        if (allLoot && allLoot.length > 0) {
+                                            _this.LootMap.delete(lootCoordString);
+                                            var lootEmbed = new discord_js_1.MessageEmbed({
+                                                title: "You got..."
+                                            });
+                                            var lootString = '';
+                                            // for each lootbox on the tile
+                                            for (var i = 0; i < allLoot.length; i++) {
+                                                var loot = allLoot[i];
+                                                var userData = _this.userDataCache.get(_rS.owner) || null;
+                                                (0, Utility_1.debug)("userData is", userData);
+                                                // for each item in the lootbox
+                                                for (var i_3 = 0; i_3 < loot.items.length; i_3++) {
+                                                    var item = loot.items[i_3];
+                                                    userData === null || userData === void 0 ? void 0 : userData.inventory.push(item);
+                                                    var mostOccupiedMaterial = item.getMostOccupiedMaterialInfo();
+                                                    var mostExpensiveMaterial = item.getMostExpensiveMaterialInfo();
+                                                    lootString +=
+                                                        loot.droppedBy.base.class + " Essence $" + (0, Utility_1.roundToDecimalPlace)(item.getWorth()) + "\n                                    \t" + (0, Utility_1.formalize)(mostOccupiedMaterial.name) + " (" + (0, Utility_1.roundToDecimalPlace)(mostOccupiedMaterial.occupation * 100) + "%) $" + (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(mostOccupiedMaterial)) + "\n                                    \t" + (0, Utility_1.formalize)(mostExpensiveMaterial.name) + " (" + (0, Utility_1.roundToDecimalPlace)(mostExpensiveMaterial.occupation * 100) + "%) $" + (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(mostExpensiveMaterial));
+                                                }
+                                            }
+                                            lootEmbed.setDescription(lootString);
+                                            // send acquired items
+                                            _ownerTextChannel.send({
+                                                embeds: [lootEmbed]
+                                            });
+                                        }
+                                        listenToQueue();
                                     }
                                     return valid;
                                 };
@@ -1290,7 +1369,7 @@ var Battle = /** @class */ (function () {
             this.tobespawnedArray = this.tobespawnedArray.concat(unit);
         }
         var failedToSpawn = [];
-        var _loop_4 = function () {
+        var _loop_5 = function () {
             var stat = this_2.tobespawnedArray.shift();
             // 1. look for spawner
             var possibleCoords = this_2.mapData.map.spawners
@@ -1309,7 +1388,7 @@ var Battle = /** @class */ (function () {
         };
         var this_2 = this;
         while (this.tobespawnedArray[0]) {
-            _loop_4();
+            _loop_5();
         }
         for (var i = 0; i < failedToSpawn.length; i++) {
             this.tobespawnedArray.push(failedToSpawn[i]);
@@ -1499,7 +1578,6 @@ var Battle = /** @class */ (function () {
         var possibleSeats = this.getAvailableSpacesAhead(_mA);
         var finalCoord = (0, Utility_1.arrayGetLastElement)(possibleSeats);
         var newMagnitude = (finalCoord ? (0, Utility_1.getDistance)(finalCoord, _mA.affected) : 0) * Math.sign(_mA.magnitude);
-        var direction = (0, Utility_1.getDirection)(axis, newMagnitude);
         this.CSMap.delete((0, Utility_1.getCoordString)(stat));
         stat[axis] += newMagnitude;
         this.CSMap = this.CSMap.set((0, Utility_1.getCoordString)(stat), stat);
@@ -1674,7 +1752,7 @@ var Battle = /** @class */ (function () {
     /** Draws actions arrows based on provided actions */
     Battle.prototype.getActionArrowsCanvas = function (_actions) {
         return __awaiter(this, void 0, void 0, function () {
-            var actions, canvas, ctx, style, drawAttackAction, drawMoveAction, appendGraph, virtualCoordsMap, graph, _loop_5, i, _b, _c, _d, key, value, solidColumns, columns, columnWidth, o, widthStart, widthEnd, edgeIndex, edge, connectingAction, isXtransition, isYtransition;
+            var actions, canvas, ctx, style, drawAttackAction, drawMoveAction, appendGraph, virtualCoordsMap, graph, _loop_6, i, _b, _c, _d, key, value, solidColumns, columns, columnWidth, o, widthStart, widthEnd, edgeIndex, edge, connectingAction, isXtransition, isYtransition;
             var e_3, _g;
             var _this = this;
             return __generator(this, function (_h) {
@@ -1804,7 +1882,7 @@ var Battle = /** @class */ (function () {
                         };
                         virtualCoordsMap = new Map();
                         graph = new hGraphTheory_1.hGraph(true);
-                        _loop_5 = function (i) {
+                        _loop_6 = function (i) {
                             var action, attackerIndex, victimIndex, victim_beforeCoords, attacker_beforeCoords;
                             return __generator(this, function (_j) {
                                 switch (_j.label) {
@@ -1821,7 +1899,7 @@ var Battle = /** @class */ (function () {
                                         victim_beforeCoords = virtualCoordsMap.get(victimIndex);
                                         attacker_beforeCoords = virtualCoordsMap.get(attackerIndex);
                                         return [4 /*yield*/, (0, Utility_1.dealWithAction)(action, function (aA) { return __awaiter(_this, void 0, void 0, function () {
-                                                var weapon, epicenterCoord, affecteds, i_3, af, singleTarget, _b, _c, coord;
+                                                var weapon, epicenterCoord, affecteds, i_4, af, singleTarget, _b, _c, coord;
                                                 var e_4, _d;
                                                 return __generator(this, function (_g) {
                                                     weapon = aA.weapon;
@@ -1838,10 +1916,10 @@ var Battle = /** @class */ (function () {
                                                                 victim_beforeCoords;
                                                             affecteds = this.findEntities_radius((0, Utility_1.getNewObject)(epicenterCoord, { index: victimIndex }), // assign victim
                                                             weapon.Range[2], weapon.targetting.AOE === "circle");
-                                                            for (i_3 = 0; i_3 < affecteds.length; i_3++) {
-                                                                af = affecteds[i_3];
+                                                            for (i_4 = 0; i_4 < affecteds.length; i_4++) {
+                                                                af = affecteds[i_4];
                                                                 singleTarget = (0, Utility_1.getNewObject)(aA, { from: epicenterCoord, affected: af });
-                                                                appendGraph(singleTarget, epicenterCoord, af, i_3 + 1);
+                                                                appendGraph(singleTarget, epicenterCoord, af, i_4 + 1);
                                                             }
                                                             if (weapon.targetting.AOE === "circle") {
                                                                 // show AOE throw trajectory
@@ -1894,7 +1972,7 @@ var Battle = /** @class */ (function () {
                         _h.label = 1;
                     case 1:
                         if (!(i < actions.length)) return [3 /*break*/, 4];
-                        return [5 /*yield**/, _loop_5(i)];
+                        return [5 /*yield**/, _loop_6(i)];
                     case 2:
                         _h.sent();
                         _h.label = 3;
@@ -2391,7 +2469,15 @@ var Battle = /** @class */ (function () {
             this.totalEnemyCount--;
             this.enemyCount--;
         }
+        // remove index
         this.allIndex.delete(s.index);
+        // manage drop
+        var coordString = (0, Utility_1.getCoordString)(s);
+        if (s.drops) {
+            var lootBox = this.LootMap.get(coordString) ||
+                this.LootMap.set(coordString, []).get(coordString);
+            lootBox.push(s.drops);
+        }
     };
     Battle.prototype.checkDeath = function (allStats) {
         var e_5, _b;
