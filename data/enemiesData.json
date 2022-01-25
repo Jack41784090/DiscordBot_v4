@@ -1,4 +1,17 @@
 {
+    "Dummy": {
+        "class": "Barbar",
+        "AHP": 1000,
+        "Dodge": 0,
+        "Prot": 1,
+        "Spd": 0,
+        "maxMove": 0,
+        "iconURL": "images/Barbar.png",
+        "weapons": [],
+        "autoWeapons": [],
+        "botType": 0,
+        "lootInfo": []
+    },
     "Barbar": {
         "class": "Barbar",
         "AHP": 1,
@@ -39,13 +52,123 @@
         "botType": 1,
         "lootInfo": [
             {
+                "itemName": "Barbar Essence",
                 "chance": 1,
                 "materials": [
                     {
                         "name": "flesh",
                         "occupationDeviation": {
-                            "min": 0.89,
-                            "max": 0.987
+                            "min": 0.79,
+                            "max": 0.887
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 0
+                        }
+                    },
+                    {
+                        "name": "flesh",
+                        "occupationDeviation": {
+                            "min": 0.09,
+                            "max": 0.1
+                        },
+                        "gradeDeviation": {
+                            "min": 1,
+                            "max": 1
+                        }
+                    },
+                    {
+                        "name": "cometarite",
+                        "occupationDeviation": {
+                            "min": 0.013,
+                            "max": 0.05
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 0
+                        }
+                    },
+                    {
+                        "name": "cometarite",
+                        "occupationDeviation": {
+                            "min": 0,
+                            "max": 0.005
+                        },
+                        "gradeDeviation": {
+                            "min": 1,
+                            "max": 1
+                        }
+                    },
+                    {
+                        "name": "steel",
+                        "occupationDeviation": {
+                            "min": 0.0005,
+                            "max": 0.001
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 1
+                        }
+                    },
+                    {
+                        "name": "boulder",
+                        "occupationDeviation": {
+                            "min": 0.1,
+                            "max": 0.12
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 1
+                        }
+                    },
+                    {
+                        "name": "marble",
+                        "occupationDeviation": {
+                            "min": 0,
+                            "max": 0.008
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 1
+                        }
+                    }
+                ],
+                "weightDeviation": {
+                    "min": 15,
+                    "max": 18
+                }
+            },
+            {
+                "itemName": "Comet's Shard",
+                "chance": 0.1,
+                "materials": [
+                    {
+                        "name": "cometarite",
+                        "occupationDeviation": {
+                            "min": 0.2,
+                            "max": 0.5
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 1
+                        }
+                    },
+                    {
+                        "name": "cometarite",
+                        "occupationDeviation": {
+                            "min": 0.02,
+                            "max": 0.05
+                        },
+                        "gradeDeviation": {
+                            "min": 2,
+                            "max": 2
+                        }
+                    },
+                    {
+                        "name": "flesh",
+                        "occupationDeviation": {
+                            "min": 0.5,
+                            "max": 0.8
                         },
                         "gradeDeviation": {
                             "min": 0,
@@ -64,21 +187,10 @@
                         }
                     },
                     {
-                        "name": "cometarite",
-                        "occupationDeviation": {
-                            "min": 0.013,
-                            "max": 0.05
-                        },
-                        "gradeDeviation": {
-                            "min": 0,
-                            "max": 2
-                        }
-                    },
-                    {
                         "name": "steel",
                         "occupationDeviation": {
                             "min": 0.0005,
-                            "max": 0.0009
+                            "max": 0.001
                         },
                         "gradeDeviation": {
                             "min": 0,
@@ -88,8 +200,8 @@
                     {
                         "name": "boulder",
                         "occupationDeviation": {
-                            "min": 0.0009,
-                            "max": 0.0012
+                            "min": 0.1,
+                            "max": 0.12
                         },
                         "gradeDeviation": {
                             "min": 0,
@@ -99,8 +211,8 @@
                     {
                         "name": "marble",
                         "occupationDeviation": {
-                            "min": 0.0005,
-                            "max": 0.0009
+                            "min": 0,
+                            "max": 0.008
                         },
                         "gradeDeviation": {
                             "min": 0,
@@ -109,8 +221,8 @@
                     }
                 ],
                 "weightDeviation": {
-                    "min": 10,
-                    "max": 18
+                    "min": 0.9,
+                    "max": 1.1
                 }
             }
         ]

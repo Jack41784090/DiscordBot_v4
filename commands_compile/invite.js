@@ -39,7 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Database_1 = require("../classes/Database");
 var Utility_1 = require("../classes/Utility");
 module.exports = {
-    commands: ['inv', 'ivn', 'invite', 'inivte', 'ivnite'],
+    commands: ['invite'],
     expectedArgs: '[@mention_a_user]',
     minArgs: 0,
     maxArgs: 1,

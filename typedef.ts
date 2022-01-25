@@ -225,7 +225,8 @@ export enum MaterialGrade {
     common,
     good,
     rare,
-    legendary,
+    very_rare,
+    mythical,
 }
 export type Material =
     'flesh'|
@@ -252,6 +253,7 @@ export interface Loot {
     droppedBy: Stat,
 }
 export interface LootInfo {
+    itemName: string,
     chance: number,
     materials: Array<MaterialSpawnQualityInfo>,
     weightDeviation: QualityDeviation,

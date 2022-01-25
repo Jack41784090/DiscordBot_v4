@@ -7,26 +7,49 @@ exports.Item = void 0;
 var materialData_json_1 = __importDefault(require("../data/materialData.json"));
 var Utility_1 = require("./Utility");
 var Item = /** @class */ (function () {
-    function Item(_elements, _weight) {
+    function Item(_elements, _maxWeight, _name) {
         this.type = 'torch';
         var newElements = [];
-        for (var i = 0; i < _elements.length; i++) {
+        this.weight = 0;
+        var _loop_1 = function (i) {
             var element = _elements[i];
+            var name_1 = element.name;
+            var grade, occupation = void 0;
             // is deviation
             if ('gradeDeviation' in element) {
-                var qualityInfo = {
-                    name: element.name,
-                    grade: (0, Utility_1.random)(element.gradeDeviation.min, element.gradeDeviation.max),
-                    occupation: (0, Utility_1.random)(element.occupationDeviation.min, element.occupationDeviation.max),
-                };
-                newElements.push(qualityInfo);
+                var gradeDeviation = element.gradeDeviation, occupationDeviation = element.occupationDeviation;
+                grade = (0, Utility_1.random)(gradeDeviation.min, gradeDeviation.max);
+                occupation = (0, Utility_1.random)(occupationDeviation.min + 0.000001, occupationDeviation.max + 0.000001);
             }
+            // standard info
             else {
-                newElements.push(element);
+                grade = element.grade;
+                occupation = element.occupation;
             }
+            this_1.weight += _maxWeight * occupation;
+            if (this_1.weight > _maxWeight) {
+                var diff = this_1.weight - _maxWeight;
+                this_1.weight = _maxWeight;
+                occupation -= diff;
+            }
+            var existing = newElements.find(function (_mI) { return _mI.grade === grade && _mI.name === name_1; });
+            if (existing) {
+                existing.occupation += occupation;
+            }
+            else if (occupation > 0) {
+                newElements.push({
+                    name: name_1,
+                    grade: grade,
+                    occupation: occupation,
+                });
+            }
+        };
+        var this_1 = this;
+        for (var i = 0; i < _elements.length; i++) {
+            _loop_1(i);
         }
+        this.name = _name;
         this.materialInfo = newElements;
-        this.weight = _weight;
     }
     Item.prototype.print = function () {
         var realWeight = 0;
@@ -61,6 +84,7 @@ var Item = /** @class */ (function () {
     };
     Item.prototype.returnObject = function () {
         return {
+            name: this.name,
             type: this.type,
             materialInfo: this.materialInfo,
             weight: this.weight,

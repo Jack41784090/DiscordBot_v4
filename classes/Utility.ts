@@ -7,9 +7,10 @@ import dungeonData from "../data/dungeonData.json"
 import areasData from "../data/areasData.json";
 
 import { BotClient } from "..";
-import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo } from "../typedef";
+import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialQualityInfo, MaterialGrade, UserData } from "../typedef";
 import { Battle } from "./Battle";
 import { Item } from "./Item";
+import { getUserData, saveUserData } from "./Database";
 // import { Dungeon } from "./Dungeon";
 
 export function clamp(value: number, min: number, max: number) {
@@ -462,6 +463,7 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
 }
 
 export async function Test() {
+    const userData: UserData = await getUserData("262871357455466496");
     for (const [key, value] of Object.entries(areasData.farmstead_empty.enemiesInfo)) {
         const Eclass = key as EnemyClass;
         const mod = { name: `${Eclass}` };
@@ -486,14 +488,15 @@ export async function Test() {
                     }
 
                     // spawn in item
-                    const weight = random(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
-                    const item: Item = new Item(_LInfo.materials, weight);
-                    item.print();
+                    const weight = random(_LInfo.weightDeviation.min + 0.00001, _LInfo.weightDeviation.max + 0.00001);
+                    const item: Item = new Item(_LInfo.materials, weight, _LInfo.itemName);
+                    userData.inventory.push(item);
                 }
             });
         }
     }
 
+    saveUserData(userData);
 }
 
 export function findReferenceAngle(_angle: number): number {
@@ -797,10 +800,10 @@ export function getWeaponIndex(weapon: Weapon, stat: Stat) {
 }
 
 export function getBaseClassStat(className: Class) {
-    return classData[className] as BaseStat;
+    return getNewObject(classData[className]) as BaseStat;
 }
 export function getBaseEnemyStat(enemyClassName: EnemyClass) {
-    return enemiesData[enemyClassName] as BaseStat;
+    return getNewObject(enemiesData[enemyClassName]) as BaseStat;
 }
 
 export function getEmptyBuff(): Buffs {
@@ -1129,4 +1132,21 @@ export function breadthFirstSearch<Type>(
     }
 
     return result;
+}
+
+export function getGradeTag(_mI: MaterialQualityInfo) {
+    switch (_mI.grade) {
+        case MaterialGrade.poor:
+            return 'Poor'
+        case MaterialGrade.common:
+            return '𝗖𝗼𝗺𝗺𝗼𝗻';
+        case MaterialGrade.good:
+            return '𝑮𝒐𝒐𝒅';
+        case MaterialGrade.rare:
+            return 'ℜ𝔞𝔯𝔢';
+        case MaterialGrade.very_rare:
+            return '𝖁𝖊𝖗𝖞 𝕽𝖆𝖗𝖊'
+        case MaterialGrade.mythical:
+            return '𝑴 𝒀 𝑻 𝑯 𝑰 𝑪 𝑨 𝑳'
+    }
 }

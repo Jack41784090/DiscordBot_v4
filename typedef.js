@@ -35,7 +35,8 @@ var MaterialGrade;
     MaterialGrade[MaterialGrade["common"] = 1] = "common";
     MaterialGrade[MaterialGrade["good"] = 2] = "good";
     MaterialGrade[MaterialGrade["rare"] = 3] = "rare";
-    MaterialGrade[MaterialGrade["legendary"] = 4] = "legendary";
+    MaterialGrade[MaterialGrade["very_rare"] = 4] = "very_rare";
+    MaterialGrade[MaterialGrade["mythical"] = 5] = "mythical";
 })(MaterialGrade = exports.MaterialGrade || (exports.MaterialGrade = {}));
 exports.AllTeams = [
     'block',

@@ -4,7 +4,7 @@ import { getButtonsActionRow, sendInvitation } from "../classes/Utility";
 import { CommandModule, UserData } from "../typedef";
 
 module.exports = {
-    commands: ['inv', 'ivn', 'invite', 'inivte', 'ivnite'],
+    commands: ['invite'],
     expectedArgs: '[@mention_a_user]',
     minArgs: 0,
     maxArgs: 1,

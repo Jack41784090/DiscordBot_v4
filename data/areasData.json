@@ -51,18 +51,8 @@
                 },
                 {
                     "spawns": "enemy",
-                    "x": 2,
-                    "y": 2
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 3,
-                    "y": 3
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 4,
-                    "y": 4
+                    "x": 0,
+                    "y": 1
                 }
             ],
             "width": 5,

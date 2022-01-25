@@ -1,5 +1,5 @@
 import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageCollector, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalize } from "./Utility";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalize, getGradeTag } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIcon, getUserData, getUserWelfare, saveUserData, setUserWelfare } from "./Database";
 import enemiesData from "../data/enemiesData.json";
@@ -121,7 +121,7 @@ export class Battle {
 
             // add universal weapons
             for (let i = 0; i < Object.keys(globalWeaponsData).length; i++) {
-                const universalWeaponName: UniversalWeaponName = Object.keys(globalWeaponsData)[i] as UniversalWeaponName;
+                const universalWeaponName: keyof typeof globalWeaponsData = Object.keys(globalWeaponsData)[i] as keyof typeof globalWeaponsData;
                 const uniWeapon: Weapon = getNewObject(globalWeaponsData[universalWeaponName] as Weapon);
                 log("Pushing universal weapon " + universalWeaponName + " into the arsenal of " + `${blankStat.base.class} (${blankStat.index})`)
                 blankStat.base.weapons.push(uniWeapon);
@@ -155,7 +155,7 @@ export class Battle {
 
                             // spawn in item
                             const weight = random(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
-                            enemyEntity.drops.items.push(new Item(_LInfo.materials, weight));
+                            enemyEntity.drops.items.push(new Item(_LInfo.materials, weight, _LInfo.itemName));
                         }
                     });
 
@@ -945,18 +945,31 @@ export class Battle {
                         for (let i = 0; i < allLoot.length; i++) {
                             const loot: Loot = allLoot[i];
                             const userData: UserData | null = this.userDataCache.get(_rS.owner) || null;
-                            debug("userData is", userData);
 
                             // for each item in the lootbox
                             for (let i = 0; i < loot.items.length; i++) {
                                 const item: Item = loot.items[i];
                                 userData?.inventory.push(item);
-                                const mostOccupiedMaterial: MaterialQualityInfo = item.getMostOccupiedMaterialInfo()!;
-                                const mostExpensiveMaterial: MaterialQualityInfo = item.getMostExpensiveMaterialInfo()!;
+
+                                const totalWorth: number = roundToDecimalPlace(item.getWorth());
+                                const totalWeight: number = roundToDecimalPlace(item.weight);
+
+                                const MoM: MaterialQualityInfo = item.getMostOccupiedMaterialInfo()!;
+                                const MoM_name = formalize(MoM.name);
+                                const MoM_tag = getGradeTag(MoM);
+                                const MoM_price = roundToDecimalPlace(item.getMaterialInfoPrice(MoM), 2);
+                                const MoM_weight = roundToDecimalPlace(totalWeight * MoM.occupation, 2);
+
+                                const MeM: MaterialQualityInfo = item.getMostExpensiveMaterialInfo()!;
+                                const MeM_name = formalize(MeM.name);
+                                const MeM_tag = getGradeTag(MeM);
+                                const MeM_price = roundToDecimalPlace(item.getMaterialInfoPrice(MeM), 2);
+                                const MeM_weight = roundToDecimalPlace(totalWeight * MeM.occupation, 2);
+
                                 lootString +=
-                                    `${loot.droppedBy.base.class} Essence $${roundToDecimalPlace(item.getWorth())}
-                                    \t${formalize(mostOccupiedMaterial.name)} (${roundToDecimalPlace(mostOccupiedMaterial.occupation * 100)}%) $${roundToDecimalPlace(item.getMaterialInfoPrice(mostOccupiedMaterial))}
-                                    \t${formalize(mostExpensiveMaterial.name)} (${roundToDecimalPlace(mostExpensiveMaterial.occupation * 100)}%) $${roundToDecimalPlace(item.getMaterialInfoPrice(mostExpensiveMaterial))}`;
+                                    `__**${item.name}**__ $${totalWorth} (${totalWeight}μ)
+                                    \t${MoM_name} (${MoM_tag}) $${MoM_price} (${MoM_weight}μ)
+                                    \t${MeM_name} (${MeM_tag}) $${MeM_price} (${MeM_weight}μ)\n`;
                             }
                         }
                         lootEmbed.setDescription(lootString);
@@ -1575,9 +1588,6 @@ export class Battle {
             let iconCanvas: Canvas = stat.owner?
                 await getIcon(stat):
                 (iconCache.get(baseClass) || await getIcon(stat));
-            // let iconCanvas: Canvas = await getIcon(stat);
-            const iconSize = iconCanvas.width;
-            const iconCtx = iconCanvas.getContext("2d");
             if (!stat.owner && iconCache.get(baseClass) === undefined) {
                 iconCache.set(baseClass, iconCanvas);
             }
@@ -2397,6 +2407,16 @@ export class Battle {
         return movingError;
     }
 
+    dropDrops(_s: Stat) {
+        const coordString: string = getCoordString(_s);
+        if (_s.drops) {
+            const lootBox: Array<Loot> =
+                this.LootMap.get(coordString) ||
+                this.LootMap.set(coordString, []).get(coordString)!;
+            lootBox.push(_s.drops);
+        }
+    }
+
     // dealing with death
     handleDeath(s: Stat) {
         if (s.botType === BotType.naught) {
@@ -2412,13 +2432,7 @@ export class Battle {
         this.allIndex.delete(s.index!);
 
         // manage drop
-        const coordString: string = getCoordString(s);
-        if (s.drops) {
-            const lootBox: Array<Loot> =
-                this.LootMap.get(coordString)||
-                this.LootMap.set(coordString, []).get(coordString)!;
-            lootBox.push(s.drops);
-        }
+        this.dropDrops(s);
     }
     checkDeath(allStats = this.allStats(true)) {
         let deathCount = 0;

@@ -33,7 +33,6 @@ export async function getAnyData(collection: string, doc: string, failureCB?: (d
 export async function saveUserData(_userData: UserData) {
     const document = database.collection("Users").doc(_userData.party[0]);
     const snapshotData = await document.get();
-    log(_userData);
 
     if (snapshotData.exists) {
         const defaultUserData = getDefaultUserData();
@@ -65,7 +64,9 @@ export async function getUserData(id_author: string | User): Promise<UserData> {
     const fetched: FirebaseFirestore.DocumentData | null = await getAnyData('Users', id);
     const defaultData: UserData = getDefaultUserData(user);
     const data: UserData = getNewObject(defaultData, fetched) as UserData;
-    data.inventory = data.inventory.map(_i => new Item(_i.materialInfo, _i.weight));
+    data.inventory = data.inventory.map(_i => {
+        return new Item(_i.materialInfo, _i.weight, _i.name)
+    });
 
     if (fetched === null) {
         await createNewUser(user);

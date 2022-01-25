@@ -197,7 +197,7 @@ var Battle = /** @class */ (function () {
                                                 }
                                                 // spawn in item
                                                 var weight = (0, Utility_1.random)(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
-                                                enemyEntity.drops.items.push(new Item_1.Item(_LInfo.materials, weight));
+                                                enemyEntity.drops.items.push(new Item_1.Item(_LInfo.materials, weight, _LInfo.itemName));
                                             }
                                         });
                                         battle.tobespawnedArray.push(enemyEntity);
@@ -1077,15 +1077,24 @@ var Battle = /** @class */ (function () {
                                             for (var i = 0; i < allLoot.length; i++) {
                                                 var loot = allLoot[i];
                                                 var userData = _this.userDataCache.get(_rS.owner) || null;
-                                                (0, Utility_1.debug)("userData is", userData);
                                                 // for each item in the lootbox
                                                 for (var i_3 = 0; i_3 < loot.items.length; i_3++) {
                                                     var item = loot.items[i_3];
                                                     userData === null || userData === void 0 ? void 0 : userData.inventory.push(item);
-                                                    var mostOccupiedMaterial = item.getMostOccupiedMaterialInfo();
-                                                    var mostExpensiveMaterial = item.getMostExpensiveMaterialInfo();
+                                                    var totalWorth = (0, Utility_1.roundToDecimalPlace)(item.getWorth());
+                                                    var totalWeight = (0, Utility_1.roundToDecimalPlace)(item.weight);
+                                                    var MoM = item.getMostOccupiedMaterialInfo();
+                                                    var MoM_name = (0, Utility_1.formalize)(MoM.name);
+                                                    var MoM_tag = (0, Utility_1.getGradeTag)(MoM);
+                                                    var MoM_price = (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(MoM), 2);
+                                                    var MoM_weight = (0, Utility_1.roundToDecimalPlace)(totalWeight * MoM.occupation, 2);
+                                                    var MeM = item.getMostExpensiveMaterialInfo();
+                                                    var MeM_name = (0, Utility_1.formalize)(MeM.name);
+                                                    var MeM_tag = (0, Utility_1.getGradeTag)(MeM);
+                                                    var MeM_price = (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(MeM), 2);
+                                                    var MeM_weight = (0, Utility_1.roundToDecimalPlace)(totalWeight * MeM.occupation, 2);
                                                     lootString +=
-                                                        loot.droppedBy.base.class + " Essence $" + (0, Utility_1.roundToDecimalPlace)(item.getWorth()) + "\n                                    \t" + (0, Utility_1.formalize)(mostOccupiedMaterial.name) + " (" + (0, Utility_1.roundToDecimalPlace)(mostOccupiedMaterial.occupation * 100) + "%) $" + (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(mostOccupiedMaterial)) + "\n                                    \t" + (0, Utility_1.formalize)(mostExpensiveMaterial.name) + " (" + (0, Utility_1.roundToDecimalPlace)(mostExpensiveMaterial.occupation * 100) + "%) $" + (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(mostExpensiveMaterial));
+                                                        "__**" + item.name + "**__ $" + totalWorth + " (" + totalWeight + "\u03BC)\n                                    \t" + MoM_name + " (" + MoM_tag + ") $" + MoM_price + " (" + MoM_weight + "\u03BC)\n                                    \t" + MeM_name + " (" + MeM_tag + ") $" + MeM_price + " (" + MeM_weight + "\u03BC)\n";
                                                 }
                                             }
                                             lootEmbed.setDescription(lootString);
@@ -1607,7 +1616,7 @@ var Battle = /** @class */ (function () {
     /** Draws the base map and character icons. Does not contain health arcs or indexi */
     Battle.prototype.getNewCanvasMap = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var allStats, groundImage, canvas, ctx, iconCache, i, stat, X, Y, baseClass, iconCanvas, _b, _c, iconSize, iconCtx, imageCanvasCoord;
+            var allStats, groundImage, canvas, ctx, iconCache, i, stat, X, Y, baseClass, iconCanvas, _b, _c, imageCanvasCoord;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -1643,8 +1652,6 @@ var Battle = /** @class */ (function () {
                         _d.label = 7;
                     case 7:
                         iconCanvas = _b;
-                        iconSize = iconCanvas.width;
-                        iconCtx = iconCanvas.getContext("2d");
                         if (!stat.owner && iconCache.get(baseClass) === undefined) {
                             iconCache.set(baseClass, iconCanvas);
                         }
@@ -2458,6 +2465,14 @@ var Battle = /** @class */ (function () {
         }
         return movingError;
     };
+    Battle.prototype.dropDrops = function (_s) {
+        var coordString = (0, Utility_1.getCoordString)(_s);
+        if (_s.drops) {
+            var lootBox = this.LootMap.get(coordString) ||
+                this.LootMap.set(coordString, []).get(coordString);
+            lootBox.push(_s.drops);
+        }
+    };
     // dealing with death
     Battle.prototype.handleDeath = function (s) {
         if (s.botType === typedef_1.BotType.naught) {
@@ -2472,12 +2487,7 @@ var Battle = /** @class */ (function () {
         // remove index
         this.allIndex.delete(s.index);
         // manage drop
-        var coordString = (0, Utility_1.getCoordString)(s);
-        if (s.drops) {
-            var lootBox = this.LootMap.get(coordString) ||
-                this.LootMap.set(coordString, []).get(coordString);
-            lootBox.push(s.drops);
-        }
+        this.dropDrops(s);
     };
     Battle.prototype.checkDeath = function (allStats) {
         var e_5, _b;

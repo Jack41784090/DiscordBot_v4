@@ -1,32 +1,55 @@
-import { ItemType, Material, MaterialQualityInfo, MaterialSpawnQualityInfo } from "../typedef";
+import { ItemType, Material, MaterialGrade, MaterialQualityInfo, MaterialSpawnQualityInfo } from "../typedef";
 import materialData from "../data/materialData.json";
 import itemData from "../data/itemData.json";
 import { arrayGetLargestInArray, random } from "./Utility";
 
 export class Item {
+    name: string;
     type: ItemType = 'torch';
     materialInfo: Array<MaterialQualityInfo>;
     weight: number;
-    constructor(_elements: Array<MaterialQualityInfo | MaterialSpawnQualityInfo>, _weight: number) {
+    constructor(_elements: Array<MaterialQualityInfo | MaterialSpawnQualityInfo>, _maxWeight: number, _name: string) {
         const newElements: Array<MaterialQualityInfo> = [];
+
+        this.weight = 0;        
         for (let i = 0; i < _elements.length; i++) {
             const element = _elements[i];
+            const name = element.name;
+            let grade: MaterialGrade, occupation;
             // is deviation
             if ('gradeDeviation' in element) {
-                const qualityInfo: MaterialQualityInfo = {
-                    name: element.name,
-                    grade: random(element.gradeDeviation.min, element.gradeDeviation.max),
-                    occupation: random(element.occupationDeviation.min, element.occupationDeviation.max),
-                }
-                newElements.push(qualityInfo);
+                const { gradeDeviation, occupationDeviation } = element;
+                grade = random(gradeDeviation.min, gradeDeviation.max);
+                occupation = random(occupationDeviation.min + 0.000001, occupationDeviation.max + 0.000001);
             }
+            // standard info
             else {
-                newElements.push(element);
+                grade = element.grade;
+                occupation = element.occupation;
+            }
+
+            this.weight += _maxWeight * occupation;
+            if (this.weight > _maxWeight) {
+                const diff = this.weight - _maxWeight;
+                this.weight = _maxWeight;
+                occupation -= diff;
+            }
+
+            const existing = newElements.find(_mI => _mI.grade === grade && _mI.name === name);
+            if (existing) {
+                existing.occupation += occupation;
+            }
+            else if (occupation > 0) {
+                newElements.push({
+                    name: name,
+                    grade: grade,
+                    occupation: occupation,
+                });
             }
         }
 
+        this.name = _name;
         this.materialInfo = newElements;
-        this.weight = _weight;
     }
 
     print(): void {
@@ -68,6 +91,7 @@ export class Item {
 
     returnObject() {
         return {
+            name: this.name,
             type: this.type,
             materialInfo: this.materialInfo,
             weight: this.weight,

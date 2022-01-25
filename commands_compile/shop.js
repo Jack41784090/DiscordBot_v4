@@ -155,7 +155,7 @@ module.exports = {
                                                     'max': minimumMaterialOccupation * 1.1,
                                                 }
                                             };
-                                        }), 5);
+                                        }), 5, itemBought);
                                         authorUserData.money -= cost;
                                         authorUserData.inventory.push(vendorItem);
                                         return [4 /*yield*/, _itr.update(returnMessage())];

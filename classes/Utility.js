@@ -78,7 +78,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
+exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var classData_json_1 = __importDefault(require("../data/classData.json"));
@@ -88,6 +88,7 @@ var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
 var Item_1 = require("./Item");
+var Database_1 = require("./Database");
 // import { Dungeon } from "./Dungeon";
 function clamp(value, min, max) {
     return Math.max(Math.min(value, max), min);
@@ -539,51 +540,57 @@ function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
 exports.getAttackAction = getAttackAction;
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, _b, _d, key, value, Eclass, mod, enemyBase, spawnCount, _loop_1, i;
+        var userData, _a, _b, _d, key, value, Eclass, mod, enemyBase, spawnCount, _loop_1, i;
         var e_1, _f;
         return __generator(this, function (_g) {
-            try {
-                for (_a = __values(Object.entries(areasData_json_1.default.farmstead_empty.enemiesInfo)), _b = _a.next(); !_b.done; _b = _a.next()) {
-                    _d = __read(_b.value, 2), key = _d[0], value = _d[1];
-                    Eclass = key;
-                    mod = { name: "" + Eclass };
-                    enemyBase = getNewObject(enemiesData_json_1.default[Eclass], mod);
-                    spawnCount = random(value.min, value.max);
-                    _loop_1 = function (i) {
-                        var enemyEntity = getStat(enemyBase);
-                        // randomly spawn in loot
-                        enemyEntity.base.lootInfo.forEach(function (_LInfo) {
-                            // roll for spawn item
-                            var roll = Math.random();
-                            if (roll < _LInfo.chance) {
-                                // initialise if haven't yet
-                                if (enemyEntity.drops === undefined) {
-                                    enemyEntity.drops = {
-                                        items: [],
-                                        money: 0,
-                                        droppedBy: enemyEntity
-                                    };
-                                }
-                                // spawn in item
-                                var weight = random(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
-                                var item = new Item_1.Item(_LInfo.materials, weight);
-                                item.print();
+            switch (_g.label) {
+                case 0: return [4 /*yield*/, (0, Database_1.getUserData)("262871357455466496")];
+                case 1:
+                    userData = _g.sent();
+                    try {
+                        for (_a = __values(Object.entries(areasData_json_1.default.farmstead_empty.enemiesInfo)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                            _d = __read(_b.value, 2), key = _d[0], value = _d[1];
+                            Eclass = key;
+                            mod = { name: "" + Eclass };
+                            enemyBase = getNewObject(enemiesData_json_1.default[Eclass], mod);
+                            spawnCount = random(value.min, value.max);
+                            _loop_1 = function (i) {
+                                var enemyEntity = getStat(enemyBase);
+                                // randomly spawn in loot
+                                enemyEntity.base.lootInfo.forEach(function (_LInfo) {
+                                    // roll for spawn item
+                                    var roll = Math.random();
+                                    if (roll < _LInfo.chance) {
+                                        // initialise if haven't yet
+                                        if (enemyEntity.drops === undefined) {
+                                            enemyEntity.drops = {
+                                                items: [],
+                                                money: 0,
+                                                droppedBy: enemyEntity
+                                            };
+                                        }
+                                        // spawn in item
+                                        var weight = random(_LInfo.weightDeviation.min + 0.00001, _LInfo.weightDeviation.max + 0.00001);
+                                        var item = new Item_1.Item(_LInfo.materials, weight, _LInfo.itemName);
+                                        userData.inventory.push(item);
+                                    }
+                                });
+                            };
+                            for (i = 0; i < spawnCount; i++) {
+                                _loop_1(i);
                             }
-                        });
-                    };
-                    for (i = 0; i < spawnCount; i++) {
-                        _loop_1(i);
+                        }
                     }
-                }
+                    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                    finally {
+                        try {
+                            if (_b && !_b.done && (_f = _a.return)) _f.call(_a);
+                        }
+                        finally { if (e_1) throw e_1.error; }
+                    }
+                    (0, Database_1.saveUserData)(userData);
+                    return [2 /*return*/];
             }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (_b && !_b.done && (_f = _a.return)) _f.call(_a);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-            return [2 /*return*/];
         });
     });
 }
@@ -947,11 +954,11 @@ function getWeaponIndex(weapon, stat) {
 }
 exports.getWeaponIndex = getWeaponIndex;
 function getBaseClassStat(className) {
-    return classData_json_1.default[className];
+    return getNewObject(classData_json_1.default[className]);
 }
 exports.getBaseClassStat = getBaseClassStat;
 function getBaseEnemyStat(enemyClassName) {
-    return enemiesData_json_1.default[enemyClassName];
+    return getNewObject(enemiesData_json_1.default[enemyClassName]);
 }
 exports.getBaseEnemyStat = getBaseEnemyStat;
 function getEmptyBuff() {
@@ -1279,3 +1286,20 @@ function breadthFirstSearch(_startingRoom, _extender, _pushToQueueCondition, _pu
     return result;
 }
 exports.breadthFirstSearch = breadthFirstSearch;
+function getGradeTag(_mI) {
+    switch (_mI.grade) {
+        case typedef_1.MaterialGrade.poor:
+            return 'Poor';
+        case typedef_1.MaterialGrade.common:
+            return '𝗖𝗼𝗺𝗺𝗼𝗻';
+        case typedef_1.MaterialGrade.good:
+            return '𝑮𝒐𝒐𝒅';
+        case typedef_1.MaterialGrade.rare:
+            return 'ℜ𝔞𝔯𝔢';
+        case typedef_1.MaterialGrade.very_rare:
+            return '𝖁𝖊𝖗𝖞 𝕽𝖆𝖗𝖊';
+        case typedef_1.MaterialGrade.mythical:
+            return '𝑴 𝒀 𝑻 𝑯 𝑰 𝑪 𝑨 𝑳';
+    }
+}
+exports.getGradeTag = getGradeTag;

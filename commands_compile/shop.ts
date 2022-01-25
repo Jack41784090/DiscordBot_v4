@@ -82,7 +82,8 @@ module.exports = {
                                         }
                                     };
                                 }),
-                                5
+                                5,
+                                itemBought
                             );
                             authorUserData.money -= cost;
                             authorUserData.inventory.push(vendorItem);
