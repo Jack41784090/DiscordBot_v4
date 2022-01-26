@@ -1,5 +1,5 @@
 import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageCollector, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalize, getGradeTag } from "./Utility";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIcon, getUserData, getUserWelfare, saveUserData, setUserWelfare } from "./Database";
 import enemiesData from "../data/enemiesData.json";
@@ -955,13 +955,13 @@ export class Battle {
                                 const totalWeight: number = roundToDecimalPlace(item.weight);
 
                                 const MoM: MaterialQualityInfo = item.getMostOccupiedMaterialInfo()!;
-                                const MoM_name = formalize(MoM.name);
+                                const MoM_name = formalise(MoM.materialName);
                                 const MoM_tag = getGradeTag(MoM);
                                 const MoM_price = roundToDecimalPlace(item.getMaterialInfoPrice(MoM), 2);
                                 const MoM_weight = roundToDecimalPlace(totalWeight * MoM.occupation, 2);
 
                                 const MeM: MaterialQualityInfo = item.getMostExpensiveMaterialInfo()!;
-                                const MeM_name = formalize(MeM.name);
+                                const MeM_name = formalise(MeM.materialName);
                                 const MeM_tag = getGradeTag(MeM);
                                 const MeM_price = roundToDecimalPlace(item.getMaterialInfoPrice(MeM), 2);
                                 const MeM_weight = roundToDecimalPlace(totalWeight * MeM.occupation, 2);

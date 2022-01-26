@@ -10,10 +10,12 @@ var Item = /** @class */ (function () {
     function Item(_elements, _maxWeight, _name) {
         this.type = 'torch';
         var newElements = [];
+        this.maxWeight = _maxWeight;
         this.weight = 0;
+        var highestOccupyingMaterial = null;
         var _loop_1 = function (i) {
             var element = _elements[i];
-            var name_1 = element.name;
+            var name_1 = element.materialName;
             var grade, occupation = void 0;
             // is deviation
             if ('gradeDeviation' in element) {
@@ -26,22 +28,29 @@ var Item = /** @class */ (function () {
                 grade = element.grade;
                 occupation = element.occupation;
             }
+            // clamp weight
             this_1.weight += _maxWeight * occupation;
             if (this_1.weight > _maxWeight) {
                 var diff = this_1.weight - _maxWeight;
                 this_1.weight = _maxWeight;
                 occupation -= diff;
             }
-            var existing = newElements.find(function (_mI) { return _mI.grade === grade && _mI.name === name_1; });
-            if (existing) {
+            // group same materials / add new material
+            var existing = newElements.find(function (_mI) { return _mI.grade === grade && _mI.materialName === name_1; }) || {
+                materialName: name_1,
+                grade: grade,
+                occupation: 0,
+                new: true,
+            };
+            if (occupation > 0) {
                 existing.occupation += occupation;
+                if (existing.new === true) {
+                    newElements.push(existing);
+                    existing.new = false;
+                }
             }
-            else if (occupation > 0) {
-                newElements.push({
-                    name: name_1,
-                    grade: grade,
-                    occupation: occupation,
-                });
+            if (highestOccupyingMaterial === null || highestOccupyingMaterial.occupation < existing.occupation) {
+                highestOccupyingMaterial = existing;
             }
         };
         var this_1 = this;
@@ -50,20 +59,25 @@ var Item = /** @class */ (function () {
         }
         this.name = _name;
         this.materialInfo = newElements;
+        var _type = (0, Utility_1.getItemType)(this) || 'flesh';
+        this.type = _type;
     }
     Item.prototype.print = function () {
         var realWeight = 0;
         for (var i = 0; i < this.materialInfo.length; i++) {
             var mi = this.materialInfo[i];
             var price = this.getMaterialInfoPrice(mi);
-            console.log(mi.name + ": " + mi.occupation * 100 + "% (" + mi.grade + ") ($" + price + ")");
+            console.log(mi.materialName + ": " + mi.occupation * 100 + "% (" + mi.grade + ") ($" + price + ")");
             realWeight += this.weight * mi.occupation;
         }
         console.log("Total price: $" + this.getWorth());
         console.log("Total weight: " + this.weight + " (real: " + realWeight + ")");
     };
+    Item.prototype.getDisplayName = function () {
+        return this.name + " " + (0, Utility_1.formalise)(this.type);
+    };
     Item.prototype.getMaterialInfoPrice = function (_mI) {
-        var occupation = _mI.occupation, grade = _mI.grade, name = _mI.name;
+        var occupation = _mI.occupation, grade = _mI.grade, name = _mI.materialName;
         return this.weight * occupation * materialData_json_1.default[name].ppu * (grade * 0.5 + 1);
     };
     Item.prototype.getMostExpensiveMaterialInfo = function () {
@@ -88,6 +102,7 @@ var Item = /** @class */ (function () {
             type: this.type,
             materialInfo: this.materialInfo,
             weight: this.weight,
+            maxWeight: this.maxWeight,
         };
     };
     return Item;

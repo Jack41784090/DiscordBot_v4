@@ -3,6 +3,7 @@ import { Battle } from "./classes/Battle";
 import { Item } from "./classes/Item";
 import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
+import { areasData, classData, dungeonData, enemiesData, itemData } from "./jsons";
 
 export type Round = number;
 export type Priority = number;
@@ -69,8 +70,7 @@ export const preludeQuotes = ["Life slips away...", "You've breathed your last..
 export const deathQuotes = ["Survival is a tenuous proposition in this sprawling tomb.", "More blood soaks the soil, feeding the evil therein.", "Another life wasted in the pursuit of glory and gold.", "This is no place for the weak, or the foolhardy.", "More dust, more ashes, more disappointment.", "Driven into the mud and bit the dust.", "Another pawn falls, in the grand scheme of things."];
 
 // BATTLES
-export type Location=
-    "farmstead"
+export type Location= keyof typeof dungeonData;
 export interface Spawner extends Coordinate {
     spawns: Team,
 }
@@ -82,12 +82,7 @@ export interface Map {
     height: number,
     groundURL: string,
 }
-export type MapName =
-    "pvp_5x5" |
-    "farmstead_walkers1" |
-    "farmstead_walkers2" |
-    "farmstead_walkers3" |
-    "farmstead_horde1"
+export type MapName = keyof typeof areasData;
 export interface MapData {
     map: Map,
     enemiesInfo: { [key in EnemyClass]: {
@@ -103,8 +98,7 @@ export const StatMaximus = {
     Prot: 1,
     Spd: 10,
 }
-export type StatPrimus =
-    "AHP" | "Dodge" | "Prot" | "Spd"
+export type StatPrimus = keyof typeof StatMaximus;
 export interface SimplePlayerStat extends Coordinate {
     class: Class,
     team: Team,
@@ -217,9 +211,7 @@ export type Vector2 = Coordinate;
 export type Vector3 = Coordinate & { z: number };
 
 // ITEMS
-export type ItemType =
-    'torch'|
-    'scout'
+export type ItemType = keyof typeof itemData
 export enum MaterialGrade {
     poor,
     common,
@@ -238,14 +230,15 @@ export type Material =
     'marble'|
     'granite'
 export interface MaterialSpawnQualityInfo {
-    name: Material,
+    materialName: Material,
     occupationDeviation: QualityDeviation,
     gradeDeviation: QualityDeviation,
 }
 export interface MaterialQualityInfo {
-    name: Material,
+    materialName: Material,
     occupation: number,
     grade: MaterialGrade,
+    new: boolean,
 }
 export interface Loot {
     money: number,
@@ -364,18 +357,8 @@ export interface PossibleAttackInfo {
 }
 
 // classes
-export type Class =
-    "Hercules"|
-    "Mars"|
-    "Diana"|
-    "Jupiter"
-;
-export type EnemyClass =
-    "Barbar"|
-    "Barcher"|
-    "Bardar"|
-    "Diana's Wolf"
-;
+export type Class = keyof typeof classData;
+export type EnemyClass = keyof typeof enemiesData;
 export type GetBuffOption = 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff';
 export interface Buffs {
     AHP: number,
@@ -387,7 +370,7 @@ export interface Buffs {
     Spd: number,
     lifesteal: number,
 }
-export type Buff = "AHP" | "Damage" | "Acc" | "Dodge" | "Crit" | "Prot" | "Spd" | "lifesteal";
+export type Buff = keyof Buffs;
 export interface Accolade {
     kill: number,
     damageDealt: number,

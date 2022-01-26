@@ -96,7 +96,7 @@ module.exports = {
                         .catch(function (_err) { return console.log; });
                     return [3 /*break*/, 7];
                 case 3:
-                    className = (0, Utility_1.formalize)(args[0]);
+                    className = (0, Utility_1.formalise)(args[0]);
                     classChosen_1 = (0, Utility_1.getNewObject)(classData_json_1.default[className]);
                     embed_2 = (0, Utility_1.getStatsEmbed)(className);
                     return [4 /*yield*/, (0, Database_1.getFileImage)('images/frame.png')];

@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.universalWeaponsData = exports.materialData = exports.enemiesData = exports.dungeonData = exports.classData = exports.areasData = exports.itemData = void 0;
+var itemData_json_1 = __importDefault(require("./data/itemData.json"));
+exports.itemData = itemData_json_1.default;
+var areasData_json_1 = __importDefault(require("./data/areasData.json"));
+exports.areasData = areasData_json_1.default;
+var classData_json_1 = __importDefault(require("./data/classData.json"));
+exports.classData = classData_json_1.default;
+var dungeonData_json_1 = __importDefault(require("./data/dungeonData.json"));
+exports.dungeonData = dungeonData_json_1.default;
+var enemiesData_json_1 = __importDefault(require("./data/enemiesData.json"));
+exports.enemiesData = enemiesData_json_1.default;
+var materialData_json_1 = __importDefault(require("./data/materialData.json"));
+exports.materialData = materialData_json_1.default;
+var universalWeaponsData_json_1 = __importDefault(require("./data/universalWeaponsData.json"));
+exports.universalWeaponsData = universalWeaponsData_json_1.default;

@@ -1,21 +1,27 @@
 import { ItemType, Material, MaterialGrade, MaterialQualityInfo, MaterialSpawnQualityInfo } from "../typedef";
 import materialData from "../data/materialData.json";
 import itemData from "../data/itemData.json";
-import { arrayGetLargestInArray, random } from "./Utility";
+import { arrayGetLargestInArray, formalise, getItemType, random } from "./Utility";
 
 export class Item {
     name: string;
     type: ItemType = 'torch';
     materialInfo: Array<MaterialQualityInfo>;
     weight: number;
+    maxWeight: number;
+
     constructor(_elements: Array<MaterialQualityInfo | MaterialSpawnQualityInfo>, _maxWeight: number, _name: string) {
         const newElements: Array<MaterialQualityInfo> = [];
 
-        this.weight = 0;        
+        this.maxWeight = _maxWeight;
+        this.weight = 0;
+
+        let highestOccupyingMaterial: MaterialQualityInfo | null = null;
         for (let i = 0; i < _elements.length; i++) {
             const element = _elements[i];
-            const name = element.name;
+            const name = element.materialName;
             let grade: MaterialGrade, occupation;
+
             // is deviation
             if ('gradeDeviation' in element) {
                 const { gradeDeviation, occupationDeviation } = element;
@@ -28,6 +34,7 @@ export class Item {
                 occupation = element.occupation;
             }
 
+            // clamp weight
             this.weight += _maxWeight * occupation;
             if (this.weight > _maxWeight) {
                 const diff = this.weight - _maxWeight;
@@ -35,21 +42,31 @@ export class Item {
                 occupation -= diff;
             }
 
-            const existing = newElements.find(_mI => _mI.grade === grade && _mI.name === name);
-            if (existing) {
+            // group same materials / add new material
+            const existing: MaterialQualityInfo =
+            newElements.find(_mI => _mI.grade === grade && _mI.materialName === name)|| {
+                materialName: name,
+                grade: grade,
+                occupation: 0,
+                new: true,
+            };
+            if (occupation > 0) {
                 existing.occupation += occupation;
+                if (existing.new === true) {
+                    newElements.push(existing);
+                    existing.new = false;
+                }
             }
-            else if (occupation > 0) {
-                newElements.push({
-                    name: name,
-                    grade: grade,
-                    occupation: occupation,
-                });
+
+            if (highestOccupyingMaterial === null || highestOccupyingMaterial!.occupation < existing.occupation) {
+                highestOccupyingMaterial = existing;
             }
         }
 
         this.name = _name;
         this.materialInfo = newElements;
+        const _type: ItemType = getItemType(this) || 'flesh';
+        this.type = _type
     }
 
     print(): void {
@@ -58,7 +75,7 @@ export class Item {
             const mi = this.materialInfo[i];
             const price = this.getMaterialInfoPrice(mi);
             console.log(
-                `${mi.name}: ${mi.occupation * 100}% (${mi.grade}) ($${price})`
+                `${mi.materialName}: ${mi.occupation * 100}% (${mi.grade}) ($${price})`
             );
             realWeight += this.weight * mi.occupation;
         }
@@ -66,8 +83,12 @@ export class Item {
         console.log(`Total weight: ${this.weight} (real: ${realWeight})`); 
     }
 
+    getDisplayName(): string {
+        return `${this.name} ${formalise(this.type)}`;
+    }
+
     getMaterialInfoPrice(_mI: MaterialQualityInfo): number {
-        const { occupation, grade, name } = _mI;
+        const { occupation, grade, materialName: name } = _mI;
         return this.weight * occupation * materialData[name as Material].ppu * (grade * 0.5 + 1);
     }
 
@@ -95,6 +116,7 @@ export class Item {
             type: this.type,
             materialInfo: this.materialInfo,
             weight: this.weight,
+            maxWeight: this.maxWeight,
         };
     }
 }

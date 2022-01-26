@@ -60,7 +60,7 @@
             "groundURL": "images/map.png"
         },
         "enemiesInfo": {
-            "Barbar": {
+            "Crystal Zombie": {
                 "min": 2,
                 "max": 2
             }
@@ -106,7 +106,7 @@
             "groundURL": "images/map.png"
         },
         "enemiesInfo": {
-            "Barbar": {
+            "Crystal Zombie": {
                 "min": 3,
                 "max": 5
             },
@@ -156,7 +156,7 @@
             "groundURL": "images/map.png"
         },
         "enemiesInfo": {
-            "Barbar": {
+            "Crystal Zombie": {
                 "min": 1,
                 "max": 2
             },
@@ -206,7 +206,7 @@
             "groundURL": "images/map.png"
         },
         "enemiesInfo": {
-            "Barbar": {
+            "Crystal Zombie": {
                 "min": 6,
                 "max": 8
             },
@@ -271,7 +271,7 @@
             "groundURL": "images/map.png"
         },
         "enemiesInfo": {
-            "Barbar": {
+            "Crystal Zombie": {
                 "min": 10,
                 "max": 12
             },

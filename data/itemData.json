@@ -1,5 +1,6 @@
 {
     "torch": {
+        "name": "Torch",
         "type": "torch",
         "emoji": "🔦",
         "price": 20,
@@ -10,6 +11,7 @@
         "qualificationWeight": 5
     },
     "scout": {
+        "name": "Scout",
         "type": "scout",
         "emoji": "👾",
         "price": 20,
@@ -18,5 +20,25 @@
             "wood": 0.2
         },
         "qualificationWeight": 1
+    },
+    "flesh": {
+        "name": "Flesh",
+        "type": "flesh",
+        "emoji": "🥩",
+        "price": -1,
+        "qualification": {
+            "flesh": 0.8
+        },
+        "qualificationWeight": 0
+    },
+    "cometarite": {
+        "name": "Cometarite Ore",
+        "type": "cometarite",
+        "emoji": "🔷",
+        "price": -1,
+        "qualification": {
+            "cometarite": 0.8
+        },
+        "qualificationWeight": 0
     }
 }

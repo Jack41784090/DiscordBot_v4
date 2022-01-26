@@ -73,22 +73,17 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalize = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
+exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
+exports.getItemType = exports.getMaterialInfoString = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
-var classData_json_1 = __importDefault(require("../data/classData.json"));
-var enemiesData_json_1 = __importDefault(require("../data/enemiesData.json"));
-var areasData_json_1 = __importDefault(require("../data/areasData.json"));
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
 var Item_1 = require("./Item");
 var Database_1 = require("./Database");
+var jsons_1 = require("../jsons");
 // import { Dungeon } from "./Dungeon";
 function clamp(value, min, max) {
     return Math.max(Math.min(value, max), min);
@@ -112,8 +107,8 @@ function stringifyRGBA(rgba) {
 exports.stringifyRGBA = stringifyRGBA;
 function log() {
     var any = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-        any[_i] = arguments[_i];
+    for (var _a = 0; _a < arguments.length; _a++) {
+        any[_a] = arguments[_a];
     }
     any.forEach(function (any) { return console.log(any); });
 }
@@ -135,10 +130,10 @@ function capitalize(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 exports.capitalize = capitalize;
-function formalize(string) {
+function formalise(string) {
     return capitalize(string.toLowerCase());
 }
-exports.formalize = formalize;
+exports.formalise = formalise;
 // number manipulation
 function random(num1, num2) {
     /**
@@ -161,8 +156,8 @@ function getRandomInArray(array) {
 exports.getRandomInArray = getRandomInArray;
 function average() {
     var nums = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-        nums[_i] = arguments[_i];
+    for (var _a = 0; _a < arguments.length; _a++) {
+        nums[_a] = arguments[_a];
     }
     var total = 0;
     for (var i = 0; i < nums.length; i++) {
@@ -548,11 +543,11 @@ function Test() {
                 case 1:
                     userData = _g.sent();
                     try {
-                        for (_a = __values(Object.entries(areasData_json_1.default.farmstead_empty.enemiesInfo)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                        for (_a = __values(Object.entries(jsons_1.areasData.farmstead_empty.enemiesInfo)), _b = _a.next(); !_b.done; _b = _a.next()) {
                             _d = __read(_b.value, 2), key = _d[0], value = _d[1];
                             Eclass = key;
                             mod = { name: "" + Eclass };
-                            enemyBase = getNewObject(enemiesData_json_1.default[Eclass], mod);
+                            enemyBase = getNewObject(jsons_1.enemiesData[Eclass], mod);
                             spawnCount = random(value.min, value.max);
                             _loop_1 = function (i) {
                                 var enemyEntity = getStat(enemyBase);
@@ -652,7 +647,7 @@ function clearChannel(channel, afterMessage) {
                     return [4 /*yield*/, channel.messages.fetch(options)
                             .then(function (messages) {
                             var e_2, _a;
-                            var _loop_2 = function (id, m) {
+                            var _loop_2 = function (m) {
                                 m.delete().catch(function () {
                                     if (m.deletable)
                                         m.delete().catch();
@@ -660,8 +655,8 @@ function clearChannel(channel, afterMessage) {
                             };
                             try {
                                 for (var messages_1 = __values(messages), messages_1_1 = messages_1.next(); !messages_1_1.done; messages_1_1 = messages_1.next()) {
-                                    var _b = __read(messages_1_1.value, 2), id = _b[0], m = _b[1];
-                                    _loop_2(id, m);
+                                    var _b = __read(messages_1_1.value, 2), m = _b[1];
+                                    _loop_2(m);
                                 }
                             }
                             catch (e_2_1) { e_2 = { error: e_2_1 }; }
@@ -792,7 +787,7 @@ function getWeaponEmbed(_weapon) {
 exports.getWeaponEmbed = getWeaponEmbed;
 function getStatsEmbed(_class) {
     var embed = new discord_js_1.MessageEmbed();
-    var classChosen = getNewObject(classData_json_1.default[_class]);
+    var classChosen = getNewObject(jsons_1.classData[_class]);
     for (var i = 0; i < Object.keys(typedef_1.StatMaximus).length; i++) {
         var statName = Object.keys(typedef_1.StatMaximus)[i];
         var maxBar = 50;
@@ -954,11 +949,11 @@ function getWeaponIndex(weapon, stat) {
 }
 exports.getWeaponIndex = getWeaponIndex;
 function getBaseClassStat(className) {
-    return getNewObject(classData_json_1.default[className]);
+    return getNewObject(jsons_1.classData[className]);
 }
 exports.getBaseClassStat = getBaseClassStat;
 function getBaseEnemyStat(enemyClassName) {
-    return getNewObject(enemiesData_json_1.default[enemyClassName]);
+    return getNewObject(jsons_1.enemiesData[enemyClassName]);
 }
 exports.getBaseEnemyStat = getBaseEnemyStat;
 function getEmptyBuff() {
@@ -977,7 +972,7 @@ exports.getEmptyBuff = getEmptyBuff;
 function getStat(bss, _owner) {
     if (_owner === void 0) { _owner = ''; }
     var base = 'team' in bss ?
-        getNewObject(classData_json_1.default[bss.class], bss) :
+        getNewObject(jsons_1.classData[bss.class], bss) :
         bss;
     var ss = bss;
     var endStat = {
@@ -1172,7 +1167,7 @@ function sendInvitation(_user_id, _from, channel) {
                     if (!_from.avatar) return [3 /*break*/, 1];
                     _a = _from;
                     return [3 /*break*/, 3];
-                case 1: return [4 /*yield*/, __1.BotClient.users.fetch(_from).then(function (u) { return u; }).catch(function (e) { return undefined; })];
+                case 1: return [4 /*yield*/, __1.BotClient.users.fetch(_from).then(function (u) { return u; }).catch(function () { return undefined; })];
                 case 2:
                     _a = _d.sent();
                     _d.label = 3;
@@ -1181,7 +1176,7 @@ function sendInvitation(_user_id, _from, channel) {
                     if (!_user_id.avatar) return [3 /*break*/, 4];
                     _b = _user_id;
                     return [3 /*break*/, 6];
-                case 4: return [4 /*yield*/, __1.BotClient.users.fetch(_user_id).then(function (u) { return u; }).catch(function (e) { return undefined; })];
+                case 4: return [4 /*yield*/, __1.BotClient.users.fetch(_user_id).then(function (u) { return u; }).catch(function () { return undefined; })];
                 case 5:
                     _b = _d.sent();
                     _d.label = 6;
@@ -1303,3 +1298,60 @@ function getGradeTag(_mI) {
     }
 }
 exports.getGradeTag = getGradeTag;
+function getMaterialInfoString(_i, _mI) {
+    var gradeTag = getGradeTag(_mI);
+    var foramlisedName = formalise(_mI.materialName);
+    var materialPrice = roundToDecimalPlace(_i.getMaterialInfoPrice(_mI), 2);
+    var materialWeight = roundToDecimalPlace(_mI.occupation * _i.weight, 2);
+    return foramlisedName + " (" + gradeTag + ") $" + materialPrice + " (" + materialWeight + "\u03BC)";
+}
+exports.getMaterialInfoString = getMaterialInfoString;
+function getItemType(_i) {
+    var e_5, _a, e_6, _b;
+    var weight = _i.weight;
+    try {
+        for (var _d = __values(Object.entries(jsons_1.itemData)), _f = _d.next(); !_f.done; _f = _d.next()) {
+            var _g = __read(_f.value, 2), _itemName = _g[0], _data = _g[1];
+            var itemName = _itemName;
+            var data = _data;
+            var qualification = data.qualification;
+            if (data.qualificationWeight <= weight) {
+                var passed = 0;
+                var qualificationEntries = Object.entries(qualification);
+                var _loop_3 = function (_material, _requiredOccupation) {
+                    var material = _material;
+                    var mI = _i.materialInfo.find(function (_mI) { return _mI.materialName === material; }) ||
+                        null;
+                    if (mI && mI.occupation >= _requiredOccupation) {
+                        passed++;
+                    }
+                };
+                try {
+                    for (var qualificationEntries_1 = (e_6 = void 0, __values(qualificationEntries)), qualificationEntries_1_1 = qualificationEntries_1.next(); !qualificationEntries_1_1.done; qualificationEntries_1_1 = qualificationEntries_1.next()) {
+                        var _j = __read(qualificationEntries_1_1.value, 2), _material = _j[0], _requiredOccupation = _j[1];
+                        _loop_3(_material, _requiredOccupation);
+                    }
+                }
+                catch (e_6_1) { e_6 = { error: e_6_1 }; }
+                finally {
+                    try {
+                        if (qualificationEntries_1_1 && !qualificationEntries_1_1.done && (_b = qualificationEntries_1.return)) _b.call(qualificationEntries_1);
+                    }
+                    finally { if (e_6) throw e_6.error; }
+                }
+                if (passed === qualificationEntries.length) {
+                    return itemName;
+                }
+            }
+        }
+    }
+    catch (e_5_1) { e_5 = { error: e_5_1 }; }
+    finally {
+        try {
+            if (_f && !_f.done && (_a = _d.return)) _a.call(_d);
+        }
+        finally { if (e_5) throw e_5.error; }
+    }
+    return null;
+}
+exports.getItemType = getItemType;

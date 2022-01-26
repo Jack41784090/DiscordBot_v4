@@ -44,23 +44,21 @@ module.exports = {
     minArgs: 0,
     maxArgs: 0,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var embed;
+        var embed, i, _i, _i2;
         return __generator(this, function (_a) {
             embed = new discord_js_1.MessageEmbed()
                 .setTitle("Inventory");
             authorUserData.inventory.forEach(function (_i) {
-                _i.materialInfo.sort(function (_1, _2) {
-                    return _2.occupation - _1.occupation;
-                });
-                var fieldValue = _i.materialInfo.map(function (_mI) {
-                    var gradeTag = (0, Utility_1.getGradeTag)(_mI);
-                    var foramlisedName = (0, Utility_1.formalize)(_mI.name);
-                    var materialPrice = (0, Utility_1.roundToDecimalPlace)(_i.getMaterialInfoPrice(_mI), 2);
-                    var materialWeight = (0, Utility_1.roundToDecimalPlace)(_mI.occupation * _i.weight, 2);
-                    return foramlisedName + " (" + gradeTag + ") $" + materialPrice + " (" + materialWeight + "\u03BC)";
-                }).join("\n");
-                embed.addField("__" + _i.name + "__ $" + (0, Utility_1.roundToDecimalPlace)(_i.getWorth(), 2) + " (" + (0, Utility_1.roundToDecimalPlace)(_i.weight) + "\u03BC)", fieldValue);
             });
+            for (i = 0; i < authorUserData.inventory.length; i += 2) {
+                _i = authorUserData.inventory[i];
+                _i2 = authorUserData.inventory[i + 1];
+                embed.addField(_i ?
+                    "__" + _i.getDisplayName() + "__ $" + (0, Utility_1.roundToDecimalPlace)(_i.getWorth(), 2) + " (" + (0, Utility_1.roundToDecimalPlace)(_i.weight) + "\u03BC)" :
+                    "‏", _i2 ?
+                    "**__" + _i2.getDisplayName() + "__ $" + (0, Utility_1.roundToDecimalPlace)(_i2.getWorth(), 2) + " (" + (0, Utility_1.roundToDecimalPlace)(_i2.weight) + "\u03BC)**" :
+                    "‏");
+            }
             channel.send({
                 embeds: [embed]
             });

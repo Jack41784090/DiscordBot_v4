@@ -104,14 +104,17 @@ function importCommands() {
         var e_1, _a;
         var commandsPath = path.join(__dirname, dir);
         var files = fs.readdirSync(commandsPath);
-        var _loop_1 = function (file) {
-            var isDirectory = (fs.lstatSync(path.join(__dirname, dir, file))).isDirectory();
+        var _loop_1 = function (fileName) {
+            var isDirectory = (fs.lstatSync(path.join(__dirname, dir, fileName))).isDirectory();
+            var isJSFile = (function () {
+                return fileName.search(/\.js$/gm) !== -1;
+            })();
             if (isDirectory) {
-                readCommands(path.join(dir, file));
+                readCommands(path.join(dir, fileName));
             }
-            else {
-                console.log("Requiring " + path.join(__dirname, dir, file));
-                var option_1 = require(path.join(__dirname, dir, file));
+            else if (isJSFile) {
+                console.log("Requiring " + path.join(__dirname, dir, fileName));
+                var option_1 = require(path.join(__dirname, dir, fileName));
                 option_1.commands.forEach(function (alias) {
                     commandReferral[alias] = option_1;
                 });
@@ -119,8 +122,8 @@ function importCommands() {
         };
         try {
             for (var files_1 = __values(files), files_1_1 = files_1.next(); !files_1_1.done; files_1_1 = files_1.next()) {
-                var file = files_1_1.value;
-                _loop_1(file);
+                var fileName = files_1_1.value;
+                _loop_1(fileName);
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }

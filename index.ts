@@ -23,14 +23,17 @@ function importCommands() {
         const commandsPath = path.join(__dirname, dir);
         const files = fs.readdirSync(commandsPath);
 
-        for (const file of files) {
-            const isDirectory = (fs.lstatSync(path.join(__dirname, dir, file))).isDirectory();
+        for (const fileName of files) {
+            const isDirectory = (fs.lstatSync(path.join(__dirname, dir, fileName))).isDirectory();
+            const isJSFile = (() => {
+                return fileName.search(/\.js$/gm) !== -1;
+            })();
             if (isDirectory) {
-                readCommands(path.join(dir, file));
+                readCommands(path.join(dir, fileName));
             }
-            else {
-                console.log("Requiring " + path.join(__dirname, dir, file));
-                const option = require(path.join(__dirname, dir, file));
+            else if (isJSFile) {
+                console.log("Requiring " + path.join(__dirname, dir, fileName));
+                const option = require(path.join(__dirname, dir, fileName));
                 option.commands.forEach((alias: string) => {
                     commandReferral[alias] = option;
                 });

@@ -1,16 +1,12 @@
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions, MessageSelectOptionData } from "discord.js";
-import { Type } from "typescript";
-import classData from "../data/classData.json"
-import enemiesData from "../data/enemiesData.json"
-import dungeonData from "../data/dungeonData.json"
-import areasData from "../data/areasData.json";
 
 import { BotClient } from "..";
-import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialQualityInfo, MaterialGrade, UserData } from "../typedef";
+import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialQualityInfo, MaterialGrade, UserData, Material } from "../typedef";
 import { Battle } from "./Battle";
 import { Item } from "./Item";
 import { getUserData, saveUserData } from "./Database";
+import { areasData, enemiesData, classData, itemData } from "../jsons";
 // import { Dungeon } from "./Dungeon";
 
 export function clamp(value: number, min: number, max: number) {
@@ -56,7 +52,7 @@ export function extractCommands(string: string) : Array<string> {
 export function capitalize(string: string): string {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
-export function formalize(string: string): string {
+export function formalise(string: string): string {
     return capitalize(string.toLowerCase());
 }
 
@@ -548,7 +544,7 @@ export async function clearChannel(channel: TextChannel, afterMessage: Message) 
     };
     await channel.messages.fetch(options)
         .then((messages) => {
-            for (const [id, m] of messages) m.delete().catch(() => {
+            for (const [, m] of messages) m.delete().catch(() => {
                 if (m.deletable) m.delete().catch();
             });
         });
@@ -1028,11 +1024,11 @@ export async function sendInvitation(_user: User, _from: User, _?: TextChannel):
 export async function sendInvitation(_user_id: User | string, _from: User | string, channel?: TextChannel): Promise<boolean | null> {
     const inviterUser: User | undefined = (_from as User).avatar ?
         _from as User :
-        await BotClient.users.fetch(_from as string).then(u => u).catch(e => undefined);
+        await BotClient.users.fetch(_from as string).then(u => u).catch(() => undefined);
 
     const user: User | undefined = (_user_id as User).avatar?
         _user_id as User :
-        await BotClient.users.fetch(_user_id as string).then(u => u).catch(e => undefined);
+        await BotClient.users.fetch(_user_id as string).then(u => u).catch(() => undefined);
 
     return new Promise<boolean | null>((resolve) => {
         if (user && inviterUser) {
@@ -1149,4 +1145,40 @@ export function getGradeTag(_mI: MaterialQualityInfo) {
         case MaterialGrade.mythical:
             return '𝑴 𝒀 𝑻 𝑯 𝑰 𝑪 𝑨 𝑳'
     }
+}
+
+export function getMaterialInfoString(_i: Item, _mI: MaterialQualityInfo) {
+    const gradeTag = getGradeTag(_mI);
+    const foramlisedName = formalise(_mI.materialName);
+    const materialPrice = roundToDecimalPlace(_i.getMaterialInfoPrice(_mI), 2);
+    const materialWeight = roundToDecimalPlace(_mI.occupation * _i.weight, 2);
+
+    return `${foramlisedName} (${gradeTag}) $${materialPrice} (${materialWeight}μ)`;
+}
+
+export function getItemType(_i: Item): ItemType | null {
+    const { weight } = _i;
+    for (const [_itemName, _data] of Object.entries(itemData)) {
+        const itemName = _itemName as keyof typeof itemData;
+        const data = _data;
+
+        const qualification = data.qualification;
+        if (data.qualificationWeight <= weight) {
+            let passed: number = 0;
+            const qualificationEntries = Object.entries(qualification);
+            for (const [_material, _requiredOccupation] of qualificationEntries) {
+                const material: Material = _material as Material;
+                const mI: MaterialQualityInfo | null =
+                    _i.materialInfo.find(_mI => _mI.materialName === material)||
+                    null;
+                if (mI && mI.occupation >= _requiredOccupation) {
+                    passed++;
+                }
+            }
+            if (passed === qualificationEntries.length) {
+                return itemName;
+            }
+        }
+    }
+    return null;
 }

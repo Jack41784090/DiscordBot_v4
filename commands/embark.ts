@@ -1,5 +1,5 @@
 import { Client, Guild, Message, MessageEmbed, TextChannel, User } from "discord.js";
-import { formalize, getNewObject } from "../classes/Utility";
+import { formalise, getNewObject } from "../classes/Utility";
 import { CommandModule, Location, EMOJI_TICK, UserData, DungeonData } from "../typedef";
 import dungeonData from "../data/dungeonData.json";
 import { Dungeon } from "../classes/Dungeon";
@@ -21,7 +21,7 @@ module.exports = {
             });
 
             for (const locationName of Object.keys(dungeonData)) {
-                const formalName = formalize(locationName);
+                const formalName = formalise(locationName);
                 locationsEmbed.description += `**${formalName}**\n`;
             }
             channel.send({ embeds: [locationsEmbed] });

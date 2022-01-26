@@ -54,7 +54,7 @@ module.exports = {
                 message.reply("Have more than just yourself in the team!");
             }
             else {
-                mapData = (0, Utility_1.getNewObject)(areasData_json_1.default.farmstead, {});
+                mapData = (0, Utility_1.getNewObject)(areasData_json_1.default.pvp_5x5, {});
                 Battle_1.Battle.Start(mapData, author, message, authorUserData.party, client, true);
             }
             return [2 /*return*/];

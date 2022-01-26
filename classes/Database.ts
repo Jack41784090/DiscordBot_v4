@@ -65,7 +65,7 @@ export async function getUserData(id_author: string | User): Promise<UserData> {
     const defaultData: UserData = getDefaultUserData(user);
     const data: UserData = getNewObject(defaultData, fetched) as UserData;
     data.inventory = data.inventory.map(_i => {
-        return new Item(_i.materialInfo, _i.weight, _i.name)
+        return new Item(_i.materialInfo, _i.maxWeight, _i.name)
     });
 
     if (fetched === null) {

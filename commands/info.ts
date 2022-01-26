@@ -1,7 +1,7 @@
 import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageSelectOptionData, MessageSelectMenu } from "discord.js";
 import { UserData, CommandModule, Class, EMOJI_CROSS, StatMaximus, StatPrimus, WeaponTarget, EMOJI_SHIELD, EMOJI_SWORD, Weapon, EMOJI_STAR } from "../typedef";
 import classData from "../data/classData.json";
-import { addHPBar, formalize, getNewObject, getSelectMenuActionRow, getStatsEmbed, getWeaponEmbed, setUpInteractionCollect, startDrawing } from "../classes/Utility";
+import { addHPBar, formalise, getNewObject, getSelectMenuActionRow, getStatsEmbed, getWeaponEmbed, setUpInteractionCollect, startDrawing } from "../classes/Utility";
 import { getFileImage } from "../classes/Database";
 import { Image } from "canvas";
 
@@ -44,7 +44,7 @@ module.exports = {
                 .catch(_err => console.log);
         }
         else {
-            const className = formalize(args[0]) as Class;
+            const className = formalise(args[0]) as Class;
             const classChosen = getNewObject(classData[className]);
             const embed = getStatsEmbed(className);
 

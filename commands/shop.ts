@@ -1,6 +1,6 @@
 import { User, TextChannel, Guild, Message, Client, MessageSelectOptionData, MessageActionRow, MessageEmbed, MessageOptions } from "discord.js";
 import { saveUserData } from "../classes/Database";
-import { formalize, getNewObject, getSelectMenuActionRow, setUpInteractionCollect } from "../classes/Utility";
+import { formalise, getNewObject, getSelectMenuActionRow, setUpInteractionCollect } from "../classes/Utility";
 import { UserData, CommandModule, EMOJI_CROSS, ItemType, EMOJI_WHITEB, Material } from "../typedef";
 import dungeonItemData from "../data/itemData.json";
 import { Item } from "../classes/Item";
@@ -26,7 +26,7 @@ module.exports = {
                 if (dungeonItemData[itemName]?.price > 0) {
                     selectMenuOptions.push({
                         emoji: dungeonItemData[itemName]?.emoji || EMOJI_WHITEB,
-                        label: `${formalize(itemName)} x${itemsInInv.length}`,
+                        label: `${formalise(itemName)} x${itemsInInv.length}`,
                         description: `Buy $${dungeonItemData[itemName]?.price}`,
                         value: itemName,
                     });
@@ -71,7 +71,7 @@ module.exports = {
                                 requiredMaterials.map(_mName => {
                                     const minimumMaterialOccupation= qualifications[_mName];
                                     return {
-                                        name: _mName,
+                                        materialName: _mName,
                                         gradeDeviation: {
                                             'min': 0,
                                             'max': 1,

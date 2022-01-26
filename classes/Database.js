@@ -106,7 +106,6 @@ function saveUserData(_userData) {
                         mod = (0, Utility_1.getNewObject)(_userData, {
                             inventory: (_userData === null || _userData === void 0 ? void 0 : _userData.inventory.map(function (_i) { return _i.returnObject(); })) || []
                         });
-                        (0, Utility_1.log)(mod);
                         document.update((0, Utility_1.getNewObject)(defaultUserData, mod));
                     }
                     return [2 /*return*/];
@@ -158,7 +157,7 @@ function getUserData(id_author) {
                     defaultData = getDefaultUserData(user);
                     data = (0, Utility_1.getNewObject)(defaultData, fetched);
                     data.inventory = data.inventory.map(function (_i) {
-                        return new Item_1.Item(_i.materialInfo, _i.weight, _i.name);
+                        return new Item_1.Item(_i.materialInfo, _i.maxWeight, _i.name);
                     });
                     if (!(fetched === null)) return [3 /*break*/, 6];
                     return [4 /*yield*/, createNewUser(user)];
