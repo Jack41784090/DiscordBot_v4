@@ -4,6 +4,8 @@ import { Item } from "../classes/Item";
 import { arrayRemoveItemArray, formalise, getGradeTag, getSelectMenuActionRow, log, roundToDecimalPlace, setUpInteractionCollect } from "../classes/Utility";
 import { itemData } from "../jsons";
 import { UserData, CommandModule, EMOJI_WHITEB, EMOJI_CROSS, coinURL, EMOJI_MONEYBAG } from "../typedef";
+import { InteractionEventManager } from "../classes/InteractionEventManager";
+import { InteractionEvent } from "../classes/InteractionEvent";
 
 module.exports = {
     commands: ['inventory'],
@@ -75,6 +77,8 @@ module.exports = {
             }
         }
         const listen = () => {
+            const interactionEvent: InteractionEvent = new InteractionEvent(author, invMessage, 'inventory');
+            InteractionEventManager.getInstance().registerInteraction(author, interactionEvent);
             setUpInteractionCollect(invMessage, async _itr => {
                 if (_itr.isSelectMenu()) {
                     try {

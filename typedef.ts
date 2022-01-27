@@ -424,3 +424,7 @@ export interface AINode extends Coordinate {
 }
 
 export type PathFindMethod = "lowest" | "highest";
+
+export type InteractionEventType =
+    'inventory'|
+    'shop'

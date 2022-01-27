@@ -41,6 +41,8 @@ var Database_1 = require("../classes/Database");
 var Utility_1 = require("../classes/Utility");
 var jsons_1 = require("../jsons");
 var typedef_1 = require("../typedef");
+var InteractionEventManager_1 = require("../classes/InteractionEventManager");
+var InteractionEvent_1 = require("../classes/InteractionEvent");
 module.exports = {
     commands: ['inventory'],
     expectedArgs: '',
@@ -91,7 +93,13 @@ module.exports = {
                                 label: "Sell",
                                 description: "Sell this item for precisely: $" + _i.getWorth(),
                                 value: "sell",
-                            }
+                            },
+                            {
+                                emoji: '🔥',
+                                label: "Endothermia",
+                                description: "Apply heat to the object and cause a reaction.",
+                                value: "endothermia",
+                            },
                         ];
                         var actionRow = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions, "manage");
                         _i.materialInfo.sort(function (_1, _2) { return _2.occupation - _1.occupation; });
@@ -107,6 +115,8 @@ module.exports = {
                         };
                     };
                     listen = function () {
+                        var interactionEvent = new InteractionEvent_1.InteractionEvent(author, invMessage, 'inventory');
+                        InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author, interactionEvent);
                         (0, Utility_1.setUpInteractionCollect)(invMessage, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
                             var _a, index, action, _b, _err_1;
                             return __generator(this, function (_c) {
