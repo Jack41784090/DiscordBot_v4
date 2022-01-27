@@ -1,7 +1,7 @@
 import { ItemType, Material, MaterialGrade, MaterialQualityInfo, MaterialSpawnQualityInfo } from "../typedef";
 import materialData from "../data/materialData.json";
 import itemData from "../data/itemData.json";
-import { arrayGetLargestInArray, formalise, getItemType, random } from "./Utility";
+import { arrayGetLargestInArray, formalise, getGradeTag, getItemType, log, random, roundToDecimalPlace } from "./Utility";
 
 export class Item {
     name: string;
@@ -16,6 +16,7 @@ export class Item {
         this.maxWeight = _maxWeight;
         this.weight = 0;
 
+        // log(`Creating new item... ${_name}`)
         let highestOccupyingMaterial: MaterialQualityInfo | null = null;
         for (let i = 0; i < _elements.length; i++) {
             const element = _elements[i];
@@ -41,6 +42,7 @@ export class Item {
                 this.weight = _maxWeight;
                 occupation -= diff;
             }
+            // log(`\tweight: ${this.weight}`);
 
             // group same materials / add new material
             const existing: MaterialQualityInfo =
@@ -87,6 +89,12 @@ export class Item {
         return `${this.name} ${formalise(this.type)}`;
     }
 
+    getWeight(round = false): number {
+        return round?
+            roundToDecimalPlace(this.weight, 2):
+            this.weight;
+    }
+
     getMaterialInfoPrice(_mI: MaterialQualityInfo): number {
         const { occupation, grade, materialName: name } = _mI;
         return this.weight * occupation * materialData[name as Material].ppu * (grade * 0.5 + 1);
@@ -100,14 +108,25 @@ export class Item {
         return arrayGetLargestInArray(this.materialInfo, _mI => _mI.occupation) || null;
     }
 
-    getWorth(): number {
+    getMaterialInfoString(_mI: MaterialQualityInfo) {
+        const gradeTag = getGradeTag(_mI);
+        const foramlisedName = formalise(_mI.materialName);
+        const materialPrice = roundToDecimalPlace(this.getMaterialInfoPrice(_mI));
+        const materialWeight = roundToDecimalPlace(_mI.occupation * this.weight);
+
+        return `${foramlisedName} (${gradeTag}) $${materialPrice} (${materialWeight}μ)`;
+    }
+
+    getWorth(round = false): number {
         let totalPrice = 0;
         for (let i = 0; i < this.materialInfo.length; i++) {
             const materialInfo = this.materialInfo[i];
             const price = this.getMaterialInfoPrice(materialInfo);
             totalPrice += price;
         }
-        return totalPrice;
+        return round?
+            roundToDecimalPlace(totalPrice, 2):
+            totalPrice;
     }
 
     returnObject() {

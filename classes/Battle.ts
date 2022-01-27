@@ -6,7 +6,7 @@ import enemiesData from "../data/enemiesData.json";
 import globalWeaponsData from "../data/universalWeaponsData.json";
 
 import fs from 'fs';
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, WeaponName, UniversalWeaponName, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialQualityInfo } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, WeaponName, UniversalWeaponName, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialQualityInfo, EMOJI_MONEYBAG } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
@@ -819,7 +819,7 @@ export class Battle {
             const coordString: string = getCoordString(_vS);
             this.LootMap.get(coordString)?.forEach(_L => {
                 selectMenuOptions.push({
-                    emoji: '💰',
+                    emoji: EMOJI_MONEYBAG,
                     label: "Loot",
                     description: `${_L.droppedBy.base.class}`,
                     value: `loot ${coordString}`

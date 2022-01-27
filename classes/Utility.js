@@ -75,7 +75,7 @@ var __read = (this && this.__read) || function (o, n) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.getItemType = exports.getMaterialInfoString = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
+exports.getItemType = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var __1 = require("..");
@@ -131,7 +131,7 @@ function capitalize(string) {
 }
 exports.capitalize = capitalize;
 function formalise(string) {
-    return capitalize(string.toLowerCase());
+    return string.split(" ").map(function (_ss) { return capitalize(_ss.toLowerCase()); }).join(" ");
 }
 exports.formalise = formalise;
 // number manipulation
@@ -315,11 +315,25 @@ function newWeapon(origin, modifier) {
     return Object.assign(__assign({}, origin), modifier);
 }
 exports.newWeapon = newWeapon;
-function roundToDecimalPlace(number, decimalPlace) {
-    if (decimalPlace === void 0) { decimalPlace = 1; }
-    decimalPlace = Math.round(decimalPlace);
+function roundToDecimalPlace(_number, _decimalPlace) {
+    var decimalPlace = _decimalPlace === undefined ?
+        1 :
+        Math.round(_decimalPlace);
     var decimal = Math.pow(10, decimalPlace);
-    return Math.round((number + Number.EPSILON) * decimal) / decimal;
+    if (_decimalPlace === undefined) {
+        var value = void 0;
+        for (var i = 0; i < 10; i++) {
+            var newDecimal = Math.pow(10, decimalPlace + i);
+            value = Math.round((_number + Number.EPSILON) * newDecimal) / newDecimal;
+            if (value !== 0) {
+                break;
+            }
+        }
+        return value;
+    }
+    else {
+        return Math.round((_number + Number.EPSILON) * decimal) / decimal;
+    }
 }
 exports.roundToDecimalPlace = roundToDecimalPlace;
 function addHPBar(maxValue, nowValue, options) {
@@ -614,10 +628,10 @@ function setUpInteractionCollect(msg, cb, collectCount) {
     return interCollectr;
 }
 exports.setUpInteractionCollect = setUpInteractionCollect;
-function getSelectMenuActionRow(options) {
+function getSelectMenuActionRow(options, customID) {
     var menu = new discord_js_1.MessageSelectMenu({
         options: options,
-        customId: "custom",
+        customId: customID || "null",
     });
     var messageActionRow = new discord_js_1.MessageActionRow({ components: [menu] });
     return messageActionRow;
@@ -1298,14 +1312,6 @@ function getGradeTag(_mI) {
     }
 }
 exports.getGradeTag = getGradeTag;
-function getMaterialInfoString(_i, _mI) {
-    var gradeTag = getGradeTag(_mI);
-    var foramlisedName = formalise(_mI.materialName);
-    var materialPrice = roundToDecimalPlace(_i.getMaterialInfoPrice(_mI), 2);
-    var materialWeight = roundToDecimalPlace(_mI.occupation * _i.weight, 2);
-    return foramlisedName + " (" + gradeTag + ") $" + materialPrice + " (" + materialWeight + "\u03BC)";
-}
-exports.getMaterialInfoString = getMaterialInfoString;
 function getItemType(_i) {
     var e_5, _a, e_6, _b;
     var weight = _i.weight;

@@ -37,32 +37,135 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var discord_js_1 = require("discord.js");
+var Database_1 = require("../classes/Database");
 var Utility_1 = require("../classes/Utility");
+var jsons_1 = require("../jsons");
+var typedef_1 = require("../typedef");
 module.exports = {
     commands: ['inventory'],
     expectedArgs: '',
     minArgs: 0,
     maxArgs: 0,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var embed, i, _i, _i2;
+        var getTimeout, returnSelectItemsMessage, returnItemsActionMessage, listen, itemSelected, timeout, invMessage;
         return __generator(this, function (_a) {
-            embed = new discord_js_1.MessageEmbed()
-                .setTitle("Inventory");
-            authorUserData.inventory.forEach(function (_i) {
-            });
-            for (i = 0; i < authorUserData.inventory.length; i += 2) {
-                _i = authorUserData.inventory[i];
-                _i2 = authorUserData.inventory[i + 1];
-                embed.addField(_i ?
-                    "__" + _i.getDisplayName() + "__ $" + (0, Utility_1.roundToDecimalPlace)(_i.getWorth(), 2) + " (" + (0, Utility_1.roundToDecimalPlace)(_i.weight) + "\u03BC)" :
-                    "‏", _i2 ?
-                    "**__" + _i2.getDisplayName() + "__ $" + (0, Utility_1.roundToDecimalPlace)(_i2.getWorth(), 2) + " (" + (0, Utility_1.roundToDecimalPlace)(_i2.weight) + "\u03BC)**" :
-                    "‏");
+            switch (_a.label) {
+                case 0:
+                    getTimeout = function () {
+                        return setTimeout(function () {
+                            (0, Database_1.saveUserData)(authorUserData);
+                            invMessage.delete()
+                                .catch(function (_err) { return console.error; });
+                        }, 120 * 1000);
+                    };
+                    returnSelectItemsMessage = function () {
+                        var selectMenuOptions = authorUserData.inventory.map(function (_item, _i) {
+                            var _a;
+                            return {
+                                emoji: ((_a = jsons_1.itemData[_item.type]) === null || _a === void 0 ? void 0 : _a.emoji) || typedef_1.EMOJI_WHITEB,
+                                label: _item.getDisplayName() + " (" + _item.getWeight(true) + ")",
+                                description: "$" + _item.getWorth(true),
+                                value: "" + _i,
+                            };
+                        }).splice(0, 24);
+                        selectMenuOptions.push({
+                            emoji: typedef_1.EMOJI_CROSS,
+                            label: "Close",
+                            value: "end",
+                        });
+                        var selectMenuActionRow = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions, "select");
+                        return {
+                            embeds: [
+                                new discord_js_1.MessageEmbed()
+                                    .setThumbnail('https://i.imgur.com/40Unw4T.png')
+                                    .setTitle('Inventory')
+                                    .setFooter("" + authorUserData.money, typedef_1.coinURL)
+                            ],
+                            components: [selectMenuActionRow]
+                        };
+                    };
+                    returnItemsActionMessage = function (_i) {
+                        var selectMenuOptions = [
+                            {
+                                emoji: typedef_1.EMOJI_MONEYBAG,
+                                label: "Sell",
+                                description: "Sell this item for precisely: $" + _i.getWorth(),
+                                value: "sell",
+                            }
+                        ];
+                        var actionRow = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions, "manage");
+                        _i.materialInfo.sort(function (_1, _2) { return _2.occupation - _1.occupation; });
+                        return {
+                            embeds: [
+                                new discord_js_1.MessageEmbed()
+                                    .setDescription(_i.materialInfo.map(function (_mI) { return _i.getMaterialInfoString(_mI); }).join("\n"))
+                                    .setThumbnail('https://i.imgur.com/SCT19EA.png')
+                                    .setTitle(_i.getDisplayName())
+                                    .setFooter("" + authorUserData.money, typedef_1.coinURL)
+                            ],
+                            components: [actionRow],
+                        };
+                    };
+                    listen = function () {
+                        (0, Utility_1.setUpInteractionCollect)(invMessage, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
+                            var _a, index, action, _b, _err_1;
+                            return __generator(this, function (_c) {
+                                switch (_c.label) {
+                                    case 0:
+                                        if (!_itr.isSelectMenu()) return [3 /*break*/, 10];
+                                        _c.label = 1;
+                                    case 1:
+                                        _c.trys.push([1, 9, , 10]);
+                                        clearTimeout(timeout);
+                                        timeout = getTimeout();
+                                        _a = _itr.customId;
+                                        switch (_a) {
+                                            case "select": return [3 /*break*/, 2];
+                                            case "manage": return [3 /*break*/, 4];
+                                        }
+                                        return [3 /*break*/, 8];
+                                    case 2:
+                                        index = parseInt(_itr.values[0]);
+                                        itemSelected = authorUserData.inventory[index];
+                                        return [4 /*yield*/, _itr.update(returnItemsActionMessage(itemSelected))];
+                                    case 3:
+                                        _c.sent();
+                                        return [3 /*break*/, 8];
+                                    case 4:
+                                        action = _itr.values[0];
+                                        _b = action;
+                                        switch (_b) {
+                                            case "sell": return [3 /*break*/, 5];
+                                        }
+                                        return [3 /*break*/, 7];
+                                    case 5:
+                                        authorUserData.money += itemSelected.getWorth();
+                                        (0, Utility_1.arrayRemoveItemArray)(authorUserData.inventory, itemSelected);
+                                        return [4 /*yield*/, _itr.update(returnSelectItemsMessage())];
+                                    case 6:
+                                        _c.sent();
+                                        return [3 /*break*/, 7];
+                                    case 7: return [3 /*break*/, 8];
+                                    case 8:
+                                        listen();
+                                        return [3 /*break*/, 10];
+                                    case 9:
+                                        _err_1 = _c.sent();
+                                        console.error(_err_1);
+                                        listen();
+                                        return [3 /*break*/, 10];
+                                    case 10: return [2 /*return*/];
+                                }
+                            });
+                        }); }, 1);
+                    };
+                    timeout = getTimeout();
+                    return [4 /*yield*/, message.reply(returnSelectItemsMessage())];
+                case 1:
+                    invMessage = _a.sent();
+                    listen();
+                    return [2 /*return*/];
             }
-            channel.send({
-                embeds: [embed]
-            });
-            return [2 /*return*/];
         });
     }); }
 };

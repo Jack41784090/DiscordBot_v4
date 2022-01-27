@@ -53,7 +53,7 @@ export function capitalize(string: string): string {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 export function formalise(string: string): string {
-    return capitalize(string.toLowerCase());
+    return string.split(" ").map(_ss => capitalize(_ss.toLowerCase())).join(" ");
 }
 
 // number manipulation
@@ -231,10 +231,26 @@ export function newWeapon(origin: Weapon, modifier: {
     return Object.assign({ ...origin }, modifier);
 }
 
-export function roundToDecimalPlace(number: number, decimalPlace: number = 1) {
-    decimalPlace = Math.round(decimalPlace);
+export function roundToDecimalPlace(_number: number, _decimalPlace?: number) {
+    const decimalPlace = _decimalPlace === undefined?
+        1:
+        Math.round(_decimalPlace);
     const decimal = Math.pow(10, decimalPlace);
-    return Math.round((number + Number.EPSILON) * decimal) / decimal;
+
+    if (_decimalPlace === undefined) {
+        let value: number;
+        for (let i = 0; i < 10; i++) {
+            const newDecimal = Math.pow(10, decimalPlace + i);
+            value = Math.round((_number + Number.EPSILON) * newDecimal) / newDecimal;
+            if (value !== 0) {
+                break;
+            }
+        }
+        return value!;
+    }
+    else {
+        return Math.round((_number + Number.EPSILON) * decimal) / decimal;
+    }
 }
 
 export function addHPBar(maxValue: number, nowValue: number, options: { bar?: string, line?: string } = { bar: '█', line: '|' }) {
@@ -518,10 +534,10 @@ export function setUpInteractionCollect(msg: Message, cb: (itr: Interaction) => 
     return interCollectr;
 }
 
-export function getSelectMenuActionRow(options: MessageSelectOptionData[]) {
+export function getSelectMenuActionRow(options: MessageSelectOptionData[], customID?: string) {
     const menu = new MessageSelectMenu({
         options: options,
-        customId: "custom",
+        customId: customID || "null",
     });
     const messageActionRow = new MessageActionRow({ components: [menu] });
     return messageActionRow;
@@ -1145,15 +1161,6 @@ export function getGradeTag(_mI: MaterialQualityInfo) {
         case MaterialGrade.mythical:
             return '𝑴 𝒀 𝑻 𝑯 𝑰 𝑪 𝑨 𝑳'
     }
-}
-
-export function getMaterialInfoString(_i: Item, _mI: MaterialQualityInfo) {
-    const gradeTag = getGradeTag(_mI);
-    const foramlisedName = formalise(_mI.materialName);
-    const materialPrice = roundToDecimalPlace(_i.getMaterialInfoPrice(_mI), 2);
-    const materialWeight = roundToDecimalPlace(_mI.occupation * _i.weight, 2);
-
-    return `${foramlisedName} (${gradeTag}) $${materialPrice} (${materialWeight}μ)`;
 }
 
 export function getItemType(_i: Item): ItemType | null {

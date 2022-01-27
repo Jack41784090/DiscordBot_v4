@@ -71,7 +71,7 @@ module.exports = {
                             (0, Database_1.saveUserData)(authorUserData);
                             shopMessage.delete()
                                 .catch(function (_err) { return console.error; });
-                        }, 30 * 1000);
+                        }, 120 * 1000);
                     };
                     returnMessage = function () {
                         var e_1, _a;

@@ -935,7 +935,7 @@ var Battle = /** @class */ (function () {
                                         coordString = (0, Utility_1.getCoordString)(_vS);
                                         (_b = this.LootMap.get(coordString)) === null || _b === void 0 ? void 0 : _b.forEach(function (_L) {
                                             selectMenuOptions.push({
-                                                emoji: '💰',
+                                                emoji: typedef_1.EMOJI_MONEYBAG,
                                                 label: "Loot",
                                                 description: "" + _L.droppedBy.base.class,
                                                 value: "loot " + coordString

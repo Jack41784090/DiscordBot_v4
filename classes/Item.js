@@ -12,6 +12,7 @@ var Item = /** @class */ (function () {
         var newElements = [];
         this.maxWeight = _maxWeight;
         this.weight = 0;
+        // log(`Creating new item... ${_name}`)
         var highestOccupyingMaterial = null;
         var _loop_1 = function (i) {
             var element = _elements[i];
@@ -35,6 +36,7 @@ var Item = /** @class */ (function () {
                 this_1.weight = _maxWeight;
                 occupation -= diff;
             }
+            // log(`\tweight: ${this.weight}`);
             // group same materials / add new material
             var existing = newElements.find(function (_mI) { return _mI.grade === grade && _mI.materialName === name_1; }) || {
                 materialName: name_1,
@@ -76,6 +78,12 @@ var Item = /** @class */ (function () {
     Item.prototype.getDisplayName = function () {
         return this.name + " " + (0, Utility_1.formalise)(this.type);
     };
+    Item.prototype.getWeight = function (round) {
+        if (round === void 0) { round = false; }
+        return round ?
+            (0, Utility_1.roundToDecimalPlace)(this.weight, 2) :
+            this.weight;
+    };
     Item.prototype.getMaterialInfoPrice = function (_mI) {
         var occupation = _mI.occupation, grade = _mI.grade, name = _mI.materialName;
         return this.weight * occupation * materialData_json_1.default[name].ppu * (grade * 0.5 + 1);
@@ -87,14 +95,24 @@ var Item = /** @class */ (function () {
     Item.prototype.getMostOccupiedMaterialInfo = function () {
         return (0, Utility_1.arrayGetLargestInArray)(this.materialInfo, function (_mI) { return _mI.occupation; }) || null;
     };
-    Item.prototype.getWorth = function () {
+    Item.prototype.getMaterialInfoString = function (_mI) {
+        var gradeTag = (0, Utility_1.getGradeTag)(_mI);
+        var foramlisedName = (0, Utility_1.formalise)(_mI.materialName);
+        var materialPrice = (0, Utility_1.roundToDecimalPlace)(this.getMaterialInfoPrice(_mI));
+        var materialWeight = (0, Utility_1.roundToDecimalPlace)(_mI.occupation * this.weight);
+        return foramlisedName + " (" + gradeTag + ") $" + materialPrice + " (" + materialWeight + "\u03BC)";
+    };
+    Item.prototype.getWorth = function (round) {
+        if (round === void 0) { round = false; }
         var totalPrice = 0;
         for (var i = 0; i < this.materialInfo.length; i++) {
             var materialInfo = this.materialInfo[i];
             var price = this.getMaterialInfoPrice(materialInfo);
             totalPrice += price;
         }
-        return totalPrice;
+        return round ?
+            (0, Utility_1.roundToDecimalPlace)(totalPrice, 2) :
+            totalPrice;
     };
     Item.prototype.returnObject = function () {
         return {

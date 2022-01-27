@@ -16,7 +16,7 @@ module.exports = {
                 saveUserData(authorUserData);
                 shopMessage.delete()
                     .catch(_err => console.error);
-            }, 30 * 1000);
+            }, 120 * 1000);
         }
         const returnMessage = (): MessageOptions => {
             const selectMenuOptions: MessageSelectOptionData[] = [];
