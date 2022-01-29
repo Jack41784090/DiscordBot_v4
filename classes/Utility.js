@@ -81,6 +81,8 @@ var discord_js_1 = require("discord.js");
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
+var Item_1 = require("./Item");
+var Database_1 = require("./Database");
 var jsons_1 = require("../jsons");
 // import { Dungeon } from "./Dungeon";
 function clamp(value, min, max) {
@@ -556,8 +558,20 @@ function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
 exports.getAttackAction = getAttackAction;
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
+        var userData, weight, pureitem, junkifiedItem;
         return __generator(this, function (_a) {
-            return [2 /*return*/];
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, (0, Database_1.getUserData)("262871357455466496")];
+                case 1:
+                    userData = _a.sent();
+                    weight = uniformRandom(jsons_1.itemData.pure_cobalt.qualification.weightDeviation.min + 0.00001, jsons_1.itemData.pure_cobalt.qualification.weightDeviation.max + 0.00001);
+                    pureitem = new Item_1.Item(jsons_1.itemData.pure_cobalt.qualification.materials, weight, "[Pure]");
+                    userData.inventory.push(pureitem);
+                    junkifiedItem = (new Item_1.Item(getNewObject(pureitem).materialInfo, pureitem.maxWeight, pureitem.name)).junkify(0.1);
+                    userData.inventory.push(junkifiedItem);
+                    (0, Database_1.saveUserData)(userData);
+                    return [2 /*return*/];
+            }
         });
     });
 }

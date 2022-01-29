@@ -185,6 +185,7 @@ module.exports = {
                                 case 3:
                                     roll_chip = (0, Utility_1.uniformRandom)(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
                                     itemSelected.chip(roll_chip, 0.2);
+                                    itemSelected.cleanUp();
                                     return [4 /*yield*/, _itr.update(returnItemsActionMessage(itemSelected))];
                                 case 4:
                                     _b.sent();
@@ -192,6 +193,7 @@ module.exports = {
                                 case 5:
                                     roll_extract = (0, Utility_1.uniformRandom)(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
                                     extracted = itemSelected.extract(roll_extract, 0.2);
+                                    itemSelected.cleanUp();
                                     authorUserData.inventory.push(extracted);
                                     return [4 /*yield*/, _itr.update(returnItemsActionMessage(extracted))];
                                 case 6:

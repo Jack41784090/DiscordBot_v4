@@ -1,11 +1,11 @@
 import { Message, User } from "discord.js";
 import { InteractionEventType } from "../typedef";
-import { debug } from "./Utility";
 
 export class InteractionEvent {
     user: User;
     interactedMessage: Message;
     interactionEventType: InteractionEventType;
+    active: boolean = true;
 
     constructor(_user: User, _message: Message, _eventType: InteractionEventType) {
         this.user = _user;
@@ -14,6 +14,7 @@ export class InteractionEvent {
     }
 
     stop() {
+        this.active = false;
         this.interactedMessage.delete()
             .catch(_err => null);
     }

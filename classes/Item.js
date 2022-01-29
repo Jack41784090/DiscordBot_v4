@@ -94,6 +94,14 @@ var Item = /** @class */ (function () {
         console.log("Total price: $" + this.getWorth());
         console.log("Total weight: " + this.weight + " (real: " + realWeight + ")");
     };
+    Item.prototype.cleanUp = function () {
+        // remove emptied materials from array
+        this.materialInfo = this.materialInfo.filter(function (_mI) { return _mI.occupation > 0; });
+        // normalise weight
+        this.normaliseWeight();
+        // update item type
+        this.type = (0, Utility_1.getItemType)(this) || 'amalgamation';
+    };
     Item.prototype.chip = function (_pos, _removePercentage) {
         // log("chip in action... @" + `pos: ${_pos},` + ` weight: ${this.weight}`);
         var range = [
@@ -128,12 +136,6 @@ var Item = /** @class */ (function () {
                 // log(`\tBurning off ${burningPercentage * 100}% (${this.maxWeight * burningPercentage}${MEW}) from ${burnRange0} to ${burnRange1}\n\t\t${this.weight}${MEW}`)
             }
         }
-        // remove emptied materials from array
-        this.materialInfo = this.materialInfo.filter(function (_mI) { return _mI.occupation > 0; });
-        // normalise weight
-        this.normaliseWeight();
-        // update item type
-        this.type = (0, Utility_1.getItemType)(this) || 'amalgamation';
     };
     Item.prototype.extract = function (_pos, _extractPercentage) {
         var extractRange = [
@@ -170,13 +172,14 @@ var Item = /** @class */ (function () {
                 extractedWeight = this.maxWeight * occupationRemove;
             }
         }
-        // remove emptied materials from array
-        this.materialInfo = this.materialInfo.filter(function (_mI) { return _mI.occupation > 0; });
-        // normalise weight
-        this.normaliseWeight();
-        // update item type
-        this.type = (0, Utility_1.getItemType)(this) || 'amalgamation';
         return new Item(extractedMaterials, extractedWeight, "Extracted");
+    };
+    Item.prototype.junkify = function (_percentage) {
+        var percentage = (0, Utility_1.clamp)(_percentage, 0, 1);
+        this.chip((0, Utility_1.uniformRandom)(0, 1), percentage);
+        this.fillJunk(this.maxWeight);
+        this.cleanUp();
+        return this;
     };
     Item.prototype.fillJunk = function (_untilWeight) {
         var _loop_2 = function () {

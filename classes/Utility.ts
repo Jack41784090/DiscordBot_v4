@@ -2,7 +2,7 @@ import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions, MessageSelectOptionData } from "discord.js";
 
 import { BotClient } from "..";
-import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialQualityInfo, MaterialGrade, UserData, Material } from "../typedef";
+import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialQualityInfo, MaterialGrade, UserData, Material, MaterialSpawnQualityInfo } from "../typedef";
 import { Battle } from "./Battle";
 import { Item } from "./Item";
 import { getUserData, saveUserData } from "./Database";
@@ -490,40 +490,19 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
 }
 
 export async function Test() {
-    // const userData: UserData = await getUserData("262871357455466496");
-    // for (const [key, value] of Object.entries(areasData.farmstead_empty.enemiesInfo)) {
-    //     const Eclass = key as EnemyClass;
-    //     const mod = { name: `${Eclass}` };
-    //     const enemyBase: BaseStat = getNewObject(enemiesData[Eclass], mod) as BaseStat;
-    //     const spawnCount = uniformRandom(value.min, value.max);
+    const userData: UserData = await getUserData("262871357455466496");
+    // spawn in item
+    const weight = uniformRandom(
+        itemData.pure_cobalt.qualification.weightDeviation.min + 0.00001,
+        itemData.pure_cobalt.qualification.weightDeviation.max + 0.00001
+    );
+    const pureitem: Item = new Item(itemData.pure_cobalt.qualification.materials as Array<MaterialSpawnQualityInfo>, weight, "[Pure]");
+    userData.inventory.push(pureitem);
 
-    //     for (let i = 0; i < spawnCount; i++) {
-    //         const enemyEntity: Stat = getStat(enemyBase);
+    const junkifiedItem: Item = (new Item(getNewObject(pureitem).materialInfo, pureitem.maxWeight, pureitem.name)).junkify(0.1);
+    userData.inventory.push(junkifiedItem);
 
-    //         // randomly spawn in loot
-    //         enemyEntity.base.lootInfo.forEach(_LInfo => {
-    //             // roll for spawn item
-    //             const roll = Math.random();
-    //             if (roll < _LInfo.chance) {
-    //                 // initialise if haven't yet
-    //                 if (enemyEntity.drops === undefined) {
-    //                     enemyEntity.drops = {
-    //                         items: [],
-    //                         money: 0,
-    //                         droppedBy: enemyEntity
-    //                     }
-    //                 }
-
-    //                 // spawn in item
-    //                 const weight = uniformRandom(_LInfo.weightDeviation.min + 0.00001, _LInfo.weightDeviation.max + 0.00001);
-    //                 const item: Item = new Item(_LInfo.materials, weight, _LInfo.itemName);
-    //                 userData.inventory.push(item);
-    //             }
-    //         });
-    //     }
-    // }
-
-    // saveUserData(userData);
+    saveUserData(userData);
 }
 
 export function findReferenceAngle(_angle: number): number {

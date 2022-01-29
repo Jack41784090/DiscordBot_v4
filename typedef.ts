@@ -425,4 +425,5 @@ export type PathFindMethod = "lowest" | "highest";
 
 export type InteractionEventType =
     'inventory'|
-    'shop'
+    'shop'|
+    'info'

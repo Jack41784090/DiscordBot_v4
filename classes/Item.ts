@@ -116,6 +116,17 @@ export class Item {
         console.log(`Total weight: ${this.weight} (real: ${realWeight})`); 
     }
 
+    cleanUp(): void {
+        // remove emptied materials from array
+        this.materialInfo = this.materialInfo.filter(_mI => _mI.occupation > 0);
+
+        // normalise weight
+        this.normaliseWeight();
+
+        // update item type
+        this.type = getItemType(this) || 'amalgamation';
+    }
+
     chip(_pos: number, _removePercentage: number): void {
         // log("chip in action... @" + `pos: ${_pos},` + ` weight: ${this.weight}`);
         const range: [number, number] = [
@@ -154,15 +165,6 @@ export class Item {
                 // log(`\tBurning off ${burningPercentage * 100}% (${this.maxWeight * burningPercentage}${MEW}) from ${burnRange0} to ${burnRange1}\n\t\t${this.weight}${MEW}`)
             }
         }
-
-        // remove emptied materials from array
-        this.materialInfo = this.materialInfo.filter(_mI => _mI.occupation > 0);
-
-        // normalise weight
-        this.normaliseWeight();
-
-        // update item type
-        this.type = getItemType(this) || 'amalgamation';
     }
 
     extract(_pos: number, _extractPercentage: number): Item {
@@ -205,18 +207,19 @@ export class Item {
             }
         }
 
-        // remove emptied materials from array
-        this.materialInfo = this.materialInfo.filter(_mI => _mI.occupation > 0);
-
-        // normalise weight
-        this.normaliseWeight();
-
-        // update item type
-        this.type = getItemType(this) || 'amalgamation';
-
         return new Item(extractedMaterials, extractedWeight, "Extracted");
     }
 
+    junkify(_percentage: number): Item {
+        const percentage = clamp(_percentage, 0, 1);
+        
+        this.chip(uniformRandom(0, 1), percentage);
+        this.fillJunk(this.maxWeight);
+
+        this.cleanUp();
+
+        return this;
+    }
     fillJunk(_untilWeight: number) {
         while (this.weight < _untilWeight) {
             const randomMaterial: Material = arrayGetRandom(Object.keys(materialData) as (keyof typeof materialData)[]);

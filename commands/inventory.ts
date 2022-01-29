@@ -121,11 +121,13 @@ module.exports = {
                     case "chip":
                         const roll_chip = uniformRandom(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
                         itemSelected.chip(roll_chip, 0.2);
+                        itemSelected.cleanUp();
                         await _itr.update(returnItemsActionMessage(itemSelected));
                         break;
                     case "extract":
                         const roll_extract = uniformRandom(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
                         const extracted: Item = itemSelected.extract(roll_extract, 0.2);
+                        itemSelected.cleanUp();
                         authorUserData.inventory.push(extracted);
                         await _itr.update(returnItemsActionMessage(extracted));
                         break;

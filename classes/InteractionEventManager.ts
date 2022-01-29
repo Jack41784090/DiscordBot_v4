@@ -5,6 +5,7 @@ import { InteractionEvent } from "./InteractionEvent";
 interface InteractionSplit {
     'inventory': InteractionEvent | null;
     'shop': InteractionEvent | null;
+    'info': InteractionEvent | null;
 }
 
 export class InteractionEventManager {
@@ -29,6 +30,7 @@ export class InteractionEventManager {
             this.user_interaction_map.set(_user.id, {
                 'inventory': null,
                 'shop': null,
+                'info': null,
             }).get(_user.id)!;
         const existing: InteractionEvent | null = split[_interactionEvent.interactionEventType];
         if (existing && existing.interactedMessage.id !== _interactionEvent.interactedMessage.id) {
