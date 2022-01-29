@@ -57,7 +57,7 @@ export function formalise(string: string): string {
 }
 
 // number manipulation
-export function random(num1: number, num2: number): number {
+export function uniformRandom(num1: number, num2: number): number {
     /**
      * num1 == 1, num2 == 3
      *  result == (1, 2) ==> 1
@@ -73,9 +73,6 @@ export function random(num1: number, num2: number): number {
         Math.floor(result):
         result;
 }
-export function getRandomInArray<Type>(array: Type[]) {
-    return array[random(0, array.length - 1)];
-}
 export function average(...nums: Array<number>) {
     let total = 0;
     for (let i = 0; i < nums.length; i++) {
@@ -83,6 +80,17 @@ export function average(...nums: Array<number>) {
         total += n;
     }
     return total / (nums.length || 1);
+}
+export function normalRandom(_mean: number, _standardDeviation: number): number {
+    // Box Muller Transform
+    let u, v;
+    while (!u || !v) {
+        u = Math.random();
+        v = Math.random();
+    }
+    const x_N0_1 = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+
+    return _mean + _standardDeviation * x_N0_1;
 }
 
 // get battle stats
@@ -239,7 +247,7 @@ export function roundToDecimalPlace(_number: number, _decimalPlace?: number) {
 
     if (_decimalPlace === undefined) {
         let value: number;
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 100; i++) {
             const newDecimal = Math.pow(10, decimalPlace + i);
             value = Math.round((_number + Number.EPSILON) * newDecimal) / newDecimal;
             if (value !== 0) {
@@ -253,24 +261,31 @@ export function roundToDecimalPlace(_number: number, _decimalPlace?: number) {
     }
 }
 
-export function addHPBar(maxValue: number, nowValue: number, options: { bar?: string, line?: string } = { bar: '█', line: '|' }) {
+export function addHPBar(_maxValue: number, _nowValue: number, maxBarProportion = Math.round(_maxValue)) {
+    const bar = '█';
+    const line = '|';
+
+    if (_maxValue < 0) _maxValue = 0;
+    if (_nowValue < 0) _nowValue = 0;
+    if (_nowValue > _maxValue) _nowValue = _maxValue;
+
+    const maxValue =
+        _maxValue * (maxBarProportion / _maxValue);
+    const nowValue =
+        _nowValue * (maxBarProportion / _maxValue);
+
+    const blockCount =
+        nowValue <= 0?
+            0:
+            Math.round(nowValue);
+    const lineCount = Math.round(maxValue) - blockCount;
+
     let result = '';
-    if (maxValue < 0) maxValue = 0;
-    if (nowValue < 0) nowValue = 0;
-    if (nowValue > maxValue) nowValue = maxValue;
-    let blockCount = Math.round(nowValue / 2);
-    let lineCount = Math.round(maxValue / 2) - blockCount;
-
-    if (nowValue <= 0) {
-        blockCount = 0;
-        lineCount = Math.round(maxValue / 2);
-    }
-
     for (let i = 0; i < blockCount; i++) {
-        result += options.bar;
+        result += bar;
     }
     for (let i = 0; i < lineCount; i++) {
-        result += options.line;
+        result += line;
     }
     return result;
 }
@@ -475,40 +490,40 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
 }
 
 export async function Test() {
-    const userData: UserData = await getUserData("262871357455466496");
-    for (const [key, value] of Object.entries(areasData.farmstead_empty.enemiesInfo)) {
-        const Eclass = key as EnemyClass;
-        const mod = { name: `${Eclass}` };
-        const enemyBase: BaseStat = getNewObject(enemiesData[Eclass], mod) as BaseStat;
-        const spawnCount = random(value.min, value.max);
+    // const userData: UserData = await getUserData("262871357455466496");
+    // for (const [key, value] of Object.entries(areasData.farmstead_empty.enemiesInfo)) {
+    //     const Eclass = key as EnemyClass;
+    //     const mod = { name: `${Eclass}` };
+    //     const enemyBase: BaseStat = getNewObject(enemiesData[Eclass], mod) as BaseStat;
+    //     const spawnCount = uniformRandom(value.min, value.max);
 
-        for (let i = 0; i < spawnCount; i++) {
-            const enemyEntity: Stat = getStat(enemyBase);
+    //     for (let i = 0; i < spawnCount; i++) {
+    //         const enemyEntity: Stat = getStat(enemyBase);
 
-            // randomly spawn in loot
-            enemyEntity.base.lootInfo.forEach(_LInfo => {
-                // roll for spawn item
-                const roll = Math.random();
-                if (roll < _LInfo.chance) {
-                    // initialise if haven't yet
-                    if (enemyEntity.drops === undefined) {
-                        enemyEntity.drops = {
-                            items: [],
-                            money: 0,
-                            droppedBy: enemyEntity
-                        }
-                    }
+    //         // randomly spawn in loot
+    //         enemyEntity.base.lootInfo.forEach(_LInfo => {
+    //             // roll for spawn item
+    //             const roll = Math.random();
+    //             if (roll < _LInfo.chance) {
+    //                 // initialise if haven't yet
+    //                 if (enemyEntity.drops === undefined) {
+    //                     enemyEntity.drops = {
+    //                         items: [],
+    //                         money: 0,
+    //                         droppedBy: enemyEntity
+    //                     }
+    //                 }
 
-                    // spawn in item
-                    const weight = random(_LInfo.weightDeviation.min + 0.00001, _LInfo.weightDeviation.max + 0.00001);
-                    const item: Item = new Item(_LInfo.materials, weight, _LInfo.itemName);
-                    userData.inventory.push(item);
-                }
-            });
-        }
-    }
+    //                 // spawn in item
+    //                 const weight = uniformRandom(_LInfo.weightDeviation.min + 0.00001, _LInfo.weightDeviation.max + 0.00001);
+    //                 const item: Item = new Item(_LInfo.materials, weight, _LInfo.itemName);
+    //                 userData.inventory.push(item);
+    //             }
+    //         });
+    //     }
+    // }
 
-    saveUserData(userData);
+    // saveUserData(userData);
 }
 
 export function findReferenceAngle(_angle: number): number {
@@ -756,6 +771,9 @@ export function arrayRemoveItemArray<Type>(_array: Type[], _item: Type) {
     }
     return index !== undefined;
 }
+export function arrayGetRandom<Type>(array: Type[]) {
+    return array[uniformRandom(0, array.length - 1)];
+}
 
 export function getWeaponUses(weapon: Weapon, owner: Stat) {
     return owner.weaponUses[getWeaponIndex(weapon, owner)];
@@ -893,7 +911,7 @@ export function getCoordString(coord: Coordinate): StringCoordinate {
 export function getRandomCode(length: number = 5) {
     const codeArray = [];
     for (let i = 0; i < length; i++) {
-        codeArray.push(`${random(0, 9)}`);
+        codeArray.push(`${uniformRandom(0, 9)}`);
     }
     return codeArray.join('');
 }
@@ -923,8 +941,8 @@ export function getDeathEmbed() {
     return new MessageEmbed()
         .setImage('https://i.ytimg.com/vi/Kr9rIx7MVvg/maxresdefault.jpg')
         .setThumbnail('https://i.imgur.com/iUgLdX2.png2')
-        .setTitle(`*"${deathQuotes[random(0, deathQuotes.length - 1)]}"*`)
-        .setAuthor(preludeQuotes[random(0, preludeQuotes.length - 1)])
+        .setTitle(`*"${deathQuotes[uniformRandom(0, deathQuotes.length - 1)]}"*`)
+        .setAuthor(preludeQuotes[uniformRandom(0, preludeQuotes.length - 1)])
         .setColor("#530000");
 }
 
@@ -1151,38 +1169,61 @@ export function getGradeTag(_mI: MaterialQualityInfo) {
         case MaterialGrade.poor:
             return 'Poor'
         case MaterialGrade.common:
-            return '𝗖𝗼𝗺𝗺𝗼𝗻';
+            return 'Common';
         case MaterialGrade.good:
             return '𝑮𝒐𝒐𝒅';
         case MaterialGrade.rare:
-            return 'ℜ𝔞𝔯𝔢';
+            return '𝐑𝐚𝐫𝐞';
         case MaterialGrade.very_rare:
-            return '𝖁𝖊𝖗𝖞 𝕽𝖆𝖗𝖊'
+            return '𝔙𝔢𝔯𝔶 ℜ𝔞𝔯𝔢'
+        case MaterialGrade.very_very_rare:
+            return '𝔙𝔢𝔯𝔶 𝔙𝔢𝔯𝔶 ℜ𝔞𝔯𝔢'
+        case MaterialGrade.unique:
+            return '𝔘𝔫𝔦𝔮𝔲𝔢'
+        case MaterialGrade.epic:
+            return '𝕰𝖕𝖎𝖈'
         case MaterialGrade.mythical:
-            return '𝑴 𝒀 𝑻 𝑯 𝑰 𝑪 𝑨 𝑳'
+            return '𝕸𝖞𝖙𝖍𝖎𝖈𝖆𝖑'
+        case MaterialGrade.legendary:
+            return '𝕃𝕖𝕘𝕖𝕟𝕕𝕒𝕣𝕪'
+        case MaterialGrade.god:
+            return '𝔾 𝕠 𝕕'
     }
 }
 
 export function getItemType(_i: Item): ItemType | null {
     const { weight } = _i;
     for (const [_itemName, _data] of Object.entries(itemData)) {
+        // debug("Qualifying for", _itemName);
         const itemName = _itemName as keyof typeof itemData;
         const data = _data;
 
         const qualification = data.qualification;
-        if (data.qualificationWeight <= weight) {
+
+        /** weight qualification */
+        const { min, max } = qualification.weightDeviation;
+        if (min <= weight && max >= weight) {
+
+            /** materials qualification */
             let passed: number = 0;
-            const qualificationEntries = Object.entries(qualification);
-            for (const [_material, _requiredOccupation] of qualificationEntries) {
-                const material: Material = _material as Material;
+            for (const _materialInfo of qualification.materials) {
+                const material: Material = _materialInfo.materialName as Material;
                 const mI: MaterialQualityInfo | null =
                     _i.materialInfo.find(_mI => _mI.materialName === material)||
                     null;
-                if (mI && mI.occupation >= _requiredOccupation) {
+                // debug("\t\tTesting for", {
+                //     name: mI?.materialName,
+                //     occupation: mI?.occupation,
+                // });
+                const { min, max } = _materialInfo.occupationDeviation;
+                if (mI && mI.occupation >= min && mI.occupation <= max) {
+                    // log("\t\tQualified!");
                     passed++;
                 }
             }
-            if (passed === qualificationEntries.length) {
+
+            if (passed === qualification.materials.length) {
+                // log("\tPassed!");
                 return itemName;
             }
         }

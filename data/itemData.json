@@ -5,10 +5,71 @@
         "emoji": "🔦",
         "price": 20,
         "qualification": {
-            "coal": 0.65,
-            "wood": 0.2
-        },
-        "qualificationWeight": 5
+            "materials": [
+                {
+                    "materialName": "coal",
+                    "occupationDeviation": {
+                        "min": 0.2,
+                        "max": 0.4
+                    },
+                    "gradeDeviation": {
+                        "min": 0,
+                        "max": 0
+                    }
+                },
+                {
+                    "materialName": "wood",
+                    "occupationDeviation": {
+                        "min": 0.6,
+                        "max": 0.8
+                    },
+                    "gradeDeviation": {
+                        "min": 0,
+                        "max": 0
+                    }
+                }
+            ],
+            "weightDeviation": {
+                "min": 5,
+                "max": 6
+            }
+        }
+    },
+    "shoddy_torch": {
+        "name": "Shoddy Torch",
+        "type": "shoddy_torch",
+        "emoji": "🔦",
+        "price": -1,
+        "qualification": {
+            "materials": [
+                {
+                    "materialName": "coal",
+                    "occupationDeviation": {
+                        "min": 0.15,
+                        "max": 0.5
+                    },
+                    "gradeDeviation": {
+                        "min": 0,
+                        "max": 0
+                    }
+                },
+                {
+                    "materialName": "wood",
+                    "occupationDeviation": {
+                        "min": 0.5,
+                        "max": 0.9
+                    },
+                    "gradeDeviation": {
+                        "min": 0,
+                        "max": 0
+                    }
+                }
+            ],
+            "weightDeviation": {
+                "min": 0,
+                "max": 10
+            }
+        }
     },
     "scout": {
         "name": "Scout",
@@ -16,10 +77,35 @@
         "emoji": "👾",
         "price": 20,
         "qualification": {
-            "cometarite": 0.05,
-            "wood": 0.2
-        },
-        "qualificationWeight": 1
+            "materials": [
+                {
+                    "materialName": "cobalt",
+                    "occupationDeviation": {
+                        "min": 0.05,
+                        "max": 0.07
+                    },
+                    "gradeDeviation": {
+                        "min": 0,
+                        "max": 1
+                    }
+                },
+                {
+                    "materialName": "steel",
+                    "occupationDeviation": {
+                        "min": 0.75,
+                        "max": 0.8
+                    },
+                    "gradeDeviation": {
+                        "min": 0,
+                        "max": 1
+                    }
+                }
+            ],
+            "weightDeviation": {
+                "min": 1,
+                "max": 1.5
+            }
+        }
     },
     "flesh": {
         "name": "Flesh",
@@ -27,17 +113,111 @@
         "emoji": "🥩",
         "price": -1,
         "qualification": {
-            "flesh": 0.8
-        },
-        "qualificationWeight": 0
+            "materials": [
+                {
+                    "materialName": "flesh",
+                    "occupationDeviation": {
+                        "min": 0.8,
+                        "max": 0.99
+                    },
+                    "gradeDeviation": {
+                        "min": 0,
+                        "max": 4
+                    }
+                }
+            ],
+            "weightDeviation": {
+                "min": 0,
+                "max": 100
+            }
+        }
     },
-    "cometarite": {
-        "name": "Cometarite Ore",
-        "type": "cometarite",
+    "pure_flesh": {
+        "name": "ᴘᴜʀᴇ Flesh",
+        "type": "pure_flesh",
+        "emoji": "🥩",
+        "price": -1,
+        "qualification": {
+            "materials": [
+                {
+                    "materialName": "flesh",
+                    "occupationDeviation": {
+                        "min": 0.99,
+                        "max": 1
+                    },
+                    "gradeDeviation": {
+                        "min": 0,
+                        "max": 4
+                    }
+                }
+            ],
+            "weightDeviation": {
+                "min": 0,
+                "max": 100
+            }
+        }
+    },
+    "cobalt": {
+        "name": "Cobalt",
+        "type": "cobalt",
         "emoji": "🔷",
         "price": -1,
         "qualification": {
-            "cometarite": 0.8
+            "materials": [
+                {
+                    "materialName": "cobalt",
+                    "occupationDeviation": {
+                        "min": 0.8,
+                        "max": 0.99
+                    },
+                    "gradeDeviation": {
+                        "min": 0,
+                        "max": 4
+                    }
+                }
+            ],
+            "weightDeviation": {
+                "min": 0,
+                "max": 100
+            }
+        }
+    },
+    "pure_cobalt": {
+        "name": "ᴘᴜʀᴇ Cobalt",
+        "type": "pure_cobalt",
+        "emoji": "🔷",
+        "price": -1,
+        "qualification": {
+            "materials": [
+                {
+                    "materialName": "cobalt",
+                    "occupationDeviation": {
+                        "min": 0.99,
+                        "max": 1
+                    },
+                    "gradeDeviation": {
+                        "min": 0,
+                        "max": 4
+                    }
+                }
+            ],
+            "weightDeviation": {
+                "min": 0,
+                "max": 100
+            }
+        }
+    },
+    "amalgamation": {
+        "name": "Pile",
+        "type": "amalgamation",
+        "emoji": "🧠",
+        "price": -1,
+        "qualification": {
+            "materials": [],
+            "weightDeviation": {
+                "min": 0,
+                "max": 100
+            }
         },
         "qualificationWeight": 0
     }

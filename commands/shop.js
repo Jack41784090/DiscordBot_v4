@@ -120,57 +120,47 @@ module.exports = {
                     };
                     listen = function () {
                         (0, Utility_1.setUpInteractionCollect)(shopMessage, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
-                            var itemBought, cost, qualifications_1, requiredMaterials, vendorItem, _err_1;
+                            var itemBought, cost, vendorItem, _err_1;
                             var _a;
                             return __generator(this, function (_b) {
                                 switch (_b.label) {
                                     case 0:
-                                        if (!_itr.isSelectMenu()) return [3 /*break*/, 6];
+                                        if (!_itr.isSelectMenu()) return [3 /*break*/, 8];
                                         _b.label = 1;
                                     case 1:
-                                        _b.trys.push([1, 5, , 6]);
+                                        _b.trys.push([1, 7, , 8]);
                                         clearTimeout(timeout);
                                         timeout = getTimeout();
                                         itemBought = _itr.values[0];
                                         cost = ((_a = itemData_json_1.default[itemBought]) === null || _a === void 0 ? void 0 : _a.price) || null;
-                                        if (!(_itr.values[0] === 'end')) return [3 /*break*/, 2];
-                                        (0, Database_1.saveUserData)(authorUserData);
+                                        if (!(_itr.values[0] === 'end')) return [3 /*break*/, 3];
+                                        return [4 /*yield*/, (0, Database_1.saveUserData)(authorUserData)];
+                                    case 2:
+                                        _b.sent();
                                         shopMessage.delete()
                                             .catch(function (_err) { return console.error; });
-                                        return [3 /*break*/, 4];
-                                    case 2:
-                                        if (!(cost !== null && authorUserData.money - cost >= 0)) return [3 /*break*/, 4];
-                                        qualifications_1 = (0, Utility_1.getNewObject)(itemData_json_1.default[itemBought].qualification);
-                                        requiredMaterials = Object.keys(qualifications_1);
-                                        vendorItem = new Item_1.Item(requiredMaterials.map(function (_mName) {
-                                            var minimumMaterialOccupation = qualifications_1[_mName];
-                                            return {
-                                                materialName: _mName,
-                                                gradeDeviation: {
-                                                    'min': 0,
-                                                    'max': 1,
-                                                },
-                                                occupationDeviation: {
-                                                    'min': minimumMaterialOccupation,
-                                                    'max': minimumMaterialOccupation * 1.1,
-                                                }
-                                            };
-                                        }), 5, itemBought);
+                                        return [3 /*break*/, 6];
+                                    case 3:
+                                        if (!(cost !== null && authorUserData.money - cost >= 0)) return [3 /*break*/, 6];
+                                        vendorItem = Item_1.Item.Generate(itemBought, "Vendor");
                                         authorUserData.money -= cost;
                                         authorUserData.inventory.push(vendorItem);
-                                        return [4 /*yield*/, _itr.update(returnMessage())];
-                                    case 3:
-                                        _b.sent();
-                                        _b.label = 4;
+                                        return [4 /*yield*/, (0, Database_1.saveUserData)(authorUserData)];
                                     case 4:
-                                        listen();
-                                        return [3 /*break*/, 6];
+                                        _b.sent();
+                                        return [4 /*yield*/, _itr.update(returnMessage())];
                                     case 5:
+                                        _b.sent();
+                                        _b.label = 6;
+                                    case 6:
+                                        listen();
+                                        return [3 /*break*/, 8];
+                                    case 7:
                                         _err_1 = _b.sent();
                                         console.error(_err_1);
                                         listen();
-                                        return [3 /*break*/, 6];
-                                    case 6: return [2 /*return*/];
+                                        return [3 /*break*/, 8];
+                                    case 8: return [2 /*return*/];
                                 }
                             });
                         }); }, 1);

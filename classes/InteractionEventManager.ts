@@ -31,7 +31,7 @@ export class InteractionEventManager {
                 'shop': null,
             }).get(_user.id)!;
         const existing: InteractionEvent | null = split[_interactionEvent.interactionEventType];
-        if (existing) {
+        if (existing && existing.interactedMessage.id !== _interactionEvent.interactedMessage.id) {
             existing.stop();
         }
         split[_interactionEvent.interactionEventType] = _interactionEvent;

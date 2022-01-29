@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WeaponTarget = exports.BotType = exports.AllTeams = exports.MaterialGrade = exports.NumericDirection = exports.StatMaximus = exports.coinURL = exports.deathQuotes = exports.preludeQuotes = exports.EMOJI_MONEYBAG = exports.EMOJI_SPRINT = exports.EMOJI_SWORD = exports.EMOJI_SHIELD = exports.EMOJI_BROWNB = exports.EMOJI_BLACKB = exports.EMOJI_WHITEB = exports.EMOJI_STAR = exports.EMOJI_CROSS = exports.EMOJI_TICK = exports.COMMAND_CALL = void 0;
+exports.WeaponTarget = exports.BotType = exports.AllTeams = exports.MaterialGrade = exports.NumericDirection = exports.StatMaximus = exports.coinURL = exports.deathQuotes = exports.preludeQuotes = exports.MEW = exports.EMOJI_MONEYBAG = exports.EMOJI_SPRINT = exports.EMOJI_SWORD = exports.EMOJI_SHIELD = exports.EMOJI_BROWNB = exports.EMOJI_BLACKB = exports.EMOJI_WHITEB = exports.EMOJI_STAR = exports.EMOJI_CROSS = exports.EMOJI_TICK = exports.COMMAND_CALL = void 0;
 exports.COMMAND_CALL = ";";
 // EMOJIS
 exports.EMOJI_TICK = '✅';
@@ -13,6 +13,7 @@ exports.EMOJI_SHIELD = '🛡️';
 exports.EMOJI_SWORD = '🗡️';
 exports.EMOJI_SPRINT = '👢';
 exports.EMOJI_MONEYBAG = '💰';
+exports.MEW = 'μ';
 // RANDOM STRINGS
 exports.preludeQuotes = ["Life slips away...", "You've breathed your last...", "Misfortune comes...", "You release your grip...", "You yearn for rest...", "The cold embrace..."];
 exports.deathQuotes = ["Survival is a tenuous proposition in this sprawling tomb.", "More blood soaks the soil, feeding the evil therein.", "Another life wasted in the pursuit of glory and gold.", "This is no place for the weak, or the foolhardy.", "More dust, more ashes, more disappointment.", "Driven into the mud and bit the dust.", "Another pawn falls, in the grand scheme of things."];
@@ -39,7 +40,12 @@ var MaterialGrade;
     MaterialGrade[MaterialGrade["good"] = 2] = "good";
     MaterialGrade[MaterialGrade["rare"] = 3] = "rare";
     MaterialGrade[MaterialGrade["very_rare"] = 4] = "very_rare";
-    MaterialGrade[MaterialGrade["mythical"] = 5] = "mythical";
+    MaterialGrade[MaterialGrade["very_very_rare"] = 5] = "very_very_rare";
+    MaterialGrade[MaterialGrade["unique"] = 6] = "unique";
+    MaterialGrade[MaterialGrade["epic"] = 7] = "epic";
+    MaterialGrade[MaterialGrade["mythical"] = 8] = "mythical";
+    MaterialGrade[MaterialGrade["legendary"] = 9] = "legendary";
+    MaterialGrade[MaterialGrade["god"] = 10] = "god";
 })(MaterialGrade = exports.MaterialGrade || (exports.MaterialGrade = {}));
 exports.AllTeams = [
     'block',

@@ -1,6 +1,6 @@
 import { Action, AIFunction, AllTeams, BotType, Coordinate, MoveAction, NumericDirection, Stat, Team, VirtualStat, Weapon, WeaponAOE, WeaponTarget } from "../typedef";
 import { Battle } from "./Battle";
-import { getNewObject, log, checkWithinDistance, getDistance, getAttackAction, breadthFirstSearch as breadthSearch, getCoordString, numericDirectionToDirection, directionToMagnitudeAxis, average, getRandomInArray, debug } from "./Utility";
+import { getNewObject, log, checkWithinDistance, getDistance, getAttackAction, breadthFirstSearch as breadthSearch, getCoordString, numericDirectionToDirection, directionToMagnitudeAxis, average, arrayGetRandom, debug } from "./Utility";
 
 const AIFunctions = new Map<BotType, AIFunction>([
     [
@@ -45,7 +45,7 @@ const AIFunctions = new Map<BotType, AIFunction>([
             log("Employing passive_supportive AI")
             const virtualStat = getNewObject(_rS);
             const allActions: Action[] = [];
-            const ability: Weapon = getRandomInArray(virtualStat.base.weapons.filter(_w => _w.targetting.target === WeaponTarget.ally));
+            const ability: Weapon = arrayGetRandom(virtualStat.base.weapons.filter(_w => _w.targetting.target === WeaponTarget.ally));
 
             // execute ally-targetting ability
             const AOE: WeaponAOE = ability.targetting.AOE;

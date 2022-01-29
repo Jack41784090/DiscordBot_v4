@@ -1,9 +1,9 @@
-import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageSelectMenuOptions, MessageOptions, MessageSelectOptionData, MessageActionRow } from "discord.js";
+import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageSelectMenuOptions, MessageOptions, MessageSelectOptionData, MessageActionRow, SelectMenuInteraction } from "discord.js";
 import { saveUserData } from "../classes/Database";
 import { Item } from "../classes/Item";
-import { arrayRemoveItemArray, formalise, getGradeTag, getSelectMenuActionRow, log, roundToDecimalPlace, setUpInteractionCollect } from "../classes/Utility";
+import { arrayRemoveItemArray, formalise, getGradeTag, getSelectMenuActionRow, log, uniformRandom, roundToDecimalPlace, setUpInteractionCollect } from "../classes/Utility";
 import { itemData } from "../jsons";
-import { UserData, CommandModule, EMOJI_WHITEB, EMOJI_CROSS, coinURL, EMOJI_MONEYBAG } from "../typedef";
+import { UserData, CommandModule, EMOJI_WHITEB, EMOJI_CROSS, coinURL, EMOJI_MONEYBAG, MEW, MaterialQualityInfo } from "../typedef";
 import { InteractionEventManager } from "../classes/InteractionEventManager";
 import { InteractionEvent } from "../classes/InteractionEvent";
 
@@ -55,10 +55,21 @@ module.exports = {
                     value: "sell",
                 },
                 {
-                    emoji: '🔥',
-                    label: "Endothermia",
-                    description: `Apply heat to the object and cause a reaction.`,
-                    value: "endothermia",
+                    emoji: '🪚',
+                    label: "Chip",
+                    description: `($10) Randomly chip off 20% weight (${roundToDecimalPlace(_i.weight * 0.2)}${MEW}).`,
+                    value: "chip",
+                },
+                {
+                    emoji: '💉',
+                    label: "Extract",
+                    description: `($50) Extract 20% weight into a new item (${roundToDecimalPlace(_i.weight * 0.2)}${MEW}).`,
+                    value: "extract",
+                },
+                {
+                    emoji: EMOJI_CROSS,
+                    label: "Close",
+                    value: "end",
                 },
             ];
             const actionRow: MessageActionRow = getSelectMenuActionRow(selectMenuOptions, "manage");
@@ -70,10 +81,63 @@ module.exports = {
                     new MessageEmbed()
                         .setDescription(_i.materialInfo.map(_mI => _i.getMaterialInfoString(_mI)).join("\n"))
                         .setThumbnail('https://i.imgur.com/SCT19EA.png')
-                        .setTitle(_i.getDisplayName())
+                        .setTitle(`${_i.getDisplayName()} ${roundToDecimalPlace(_i.getWeight())}${MEW}`)
                         .setFooter(`${authorUserData.money}`, coinURL)
                 ],
                 components: [actionRow],
+            }
+        }
+        const selectingItem = async (_itr: SelectMenuInteraction) => {
+            try {
+                const action: string = _itr.values[0];
+                switch (action) {
+                    case "end":
+                        await saveUserData(authorUserData);
+                        invMessage.delete()
+                            .catch(_err => console.error);
+                        break;
+
+                    default:
+                        const index: number = parseInt(_itr.values[0]);
+                        itemSelected = authorUserData.inventory[index];
+                        await _itr.update(returnItemsActionMessage(itemSelected));
+                        break;
+                }
+            }
+            catch (_err) {
+                console.error(_err);
+                listen();
+            }
+        }
+        const managingItem = async (_itr: SelectMenuInteraction) => {
+            try {
+                const action: string = _itr.values[0];
+                switch (action) {
+                    case "sell":
+                        authorUserData.money += itemSelected.getWorth();
+                        arrayRemoveItemArray(authorUserData.inventory, itemSelected);
+                        await _itr.update(returnSelectItemsMessage());
+                        break;
+                    case "chip":
+                        const roll_chip = uniformRandom(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
+                        itemSelected.chip(roll_chip, 0.2);
+                        await _itr.update(returnItemsActionMessage(itemSelected));
+                        break;
+                    case "extract":
+                        const roll_extract = uniformRandom(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
+                        const extracted: Item = itemSelected.extract(roll_extract, 0.2);
+                        authorUserData.inventory.push(extracted);
+                        await _itr.update(returnItemsActionMessage(extracted));
+                        break;
+                    case "end":
+                        await saveUserData(authorUserData);
+                        await _itr.update(returnSelectItemsMessage());
+                        break;
+                }
+            }
+            catch (_err) {
+                console.error(_err);
+                listen();
             }
         }
         const listen = () => {
@@ -81,35 +145,17 @@ module.exports = {
             InteractionEventManager.getInstance().registerInteraction(author, interactionEvent);
             setUpInteractionCollect(invMessage, async _itr => {
                 if (_itr.isSelectMenu()) {
-                    try {
-                        clearTimeout(timeout);
-                        timeout = getTimeout();
-                        switch (_itr.customId) {
-                            case "select":
-                                const index: number = parseInt(_itr.values[0]);
-                                itemSelected  = authorUserData.inventory[index];
-                                await _itr.update(returnItemsActionMessage(itemSelected));
-                                break;
-
-                            case "manage":
-                                const action: string = _itr.values[0];
-                                switch (action) {
-                                    case "sell":
-                                        authorUserData.money += itemSelected.getWorth();
-                                        arrayRemoveItemArray(authorUserData.inventory, itemSelected);
-                                        await _itr.update(returnSelectItemsMessage());
-                                        break;
-                                }
-                                break;
-                        }
-
-
-                        listen();
+                    clearTimeout(timeout);
+                    timeout = getTimeout();
+                    switch (_itr.customId) {
+                        case "select":
+                            await selectingItem(_itr);
+                            break;
+                        case "manage":
+                            await managingItem(_itr);
+                            break;
                     }
-                    catch (_err) {
-                        console.error(_err);
-                        listen();
-                    }
+                    listen();
                 }
             }, 1);
         }

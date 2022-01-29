@@ -139,7 +139,7 @@ var Dungeon = /** @class */ (function () {
                 if (battleRoomsSpawned < battleRoomsCount) {
                     battleEncounterChanceAccumulator++;
                     var encounterChance = battleEncounterChanceAccumulator / (roomsPerBattle * 8);
-                    var encounterRoll = (0, Utility_1.random)(Number.EPSILON, 1.0);
+                    var encounterRoll = (0, Utility_1.uniformRandom)(Number.EPSILON, 1.0);
                     if (encounterRoll < encounterChance) {
                         newRoom.isBattleRoom = true;
                         battleEncounterChanceAccumulator = 0;
@@ -147,7 +147,7 @@ var Dungeon = /** @class */ (function () {
                     }
                 }
                 // chance to branch out again
-                var roll = (0, Utility_1.random)(Number.EPSILON, 1.0);
+                var roll = (0, Utility_1.uniformRandom)(Number.EPSILON, 1.0);
                 if (roll < Dungeon.BRANCHOUT_CHANCE) {
                     branchOutCoord = coord;
                 }
@@ -179,7 +179,7 @@ var Dungeon = /** @class */ (function () {
             // log(`Taking root @ ${JSON.stringify(_c)}`);
             var availableDirections = getAvailableDirections(_c, _length);
             // debug("Available", availableDirections);
-            var randomDirection = (0, Utility_1.getRandomInArray)(availableDirections);
+            var randomDirection = (0, Utility_1.arrayGetRandom)(availableDirections);
             if (randomDirection !== undefined) {
                 // debug("\tChosen random direction", randomDirection);
                 return branchOut(_c, randomDirection, _length);
@@ -187,10 +187,10 @@ var Dungeon = /** @class */ (function () {
             // log("\tFailed to find a direction");
         };
         // generate the path lengths
-        var roomCount = (0, Utility_1.random)(_dungeonData.minRoom, _dungeonData.maxRoom);
+        var roomCount = (0, Utility_1.uniformRandom)(_dungeonData.minRoom, _dungeonData.maxRoom);
         var pathLengths = [];
         for (var i = 0; i < roomCount; i = i) {
-            var pathLength = (0, Utility_1.random)(_dungeonData.minLength, _dungeonData.maxLength);
+            var pathLength = (0, Utility_1.uniformRandom)(_dungeonData.minLength, _dungeonData.maxLength);
             i += pathLength;
             if (i > roomCount) {
                 pathLength -= (i - roomCount);
@@ -198,7 +198,7 @@ var Dungeon = /** @class */ (function () {
             pathLengths.push(pathLength);
         }
         // branch out paths
-        var battleRoomsCount = (0, Utility_1.random)(_dungeonData.minBattle, _dungeonData.maxBattle);
+        var battleRoomsCount = (0, Utility_1.uniformRandom)(_dungeonData.minBattle, _dungeonData.maxBattle);
         (0, Utility_1.debug)("battleRoomsCount", battleRoomsCount);
         var battleRoomsSpawned = 0;
         var roomsPerBattle = roomCount / battleRoomsCount;
@@ -216,7 +216,7 @@ var Dungeon = /** @class */ (function () {
                 var availableRooms = dungeon.rooms.filter(function (_r) { return (_r.directions.includes(null) &&
                     getAvailableDirections(_r.coordinate, length_1).length > 0); });
                 if (availableRooms.length > 0) {
-                    takeRoot((0, Utility_1.getRandomInArray)(availableRooms).coordinate, length_1);
+                    takeRoot((0, Utility_1.arrayGetRandom)(availableRooms).coordinate, length_1);
                 }
                 else {
                     (0, Utility_1.log)("Failure to include all lengths @ " + i + ".");
@@ -679,7 +679,7 @@ var Dungeon = /** @class */ (function () {
                                     case 0:
                                         room = this_2.rooms[i];
                                         if (!room.isBattleRoom) return [3 /*break*/, 2];
-                                        encounterName = (0, Utility_1.getRandomInArray)(this_2.data.encounterMaps);
+                                        encounterName = (0, Utility_1.arrayGetRandom)(this_2.data.encounterMaps);
                                         if (!(encounterName && areasData_json_1.default[encounterName])) return [3 /*break*/, 2];
                                         mapdata = (0, Utility_1.getNewObject)(areasData_json_1.default[encounterName]);
                                         return [4 /*yield*/, Battle_1.Battle.Generate(mapdata, this_2.leaderUser, _message, userData.party, __1.BotClient, false)

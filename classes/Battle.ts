@@ -1,5 +1,5 @@
 import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageCollector, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, random, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag } from "./Utility";
+import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIcon, getUserData, getUserWelfare, saveUserData, setUserWelfare } from "./Database";
 import enemiesData from "../data/enemiesData.json";
@@ -134,7 +134,7 @@ export class Battle {
                 const Eclass = key as EnemyClass;
                 const mod = { name: `${Eclass}` };
                 const enemyBase: BaseStat = getNewObject(enemiesData[Eclass], mod) as BaseStat;
-                const spawnCount = random(value.min, value.max);
+                const spawnCount = uniformRandom(value.min, value.max);
 
                 for (let i = 0; i < spawnCount; i++) {
                     const enemyEntity: Stat = getStat(enemyBase);
@@ -154,7 +154,7 @@ export class Battle {
                             }
 
                             // spawn in item
-                            const weight = random(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
+                            const weight = uniformRandom(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
                             enemyEntity.drops.items.push(new Item(_LInfo.materials, weight, _LInfo.itemName));
                         }
                     });
@@ -260,7 +260,7 @@ export class Battle {
 
             // randomly assign tokens
             for (let i = 0; i < 2; i++) {
-                const token = random(0, 2);
+                const token = uniformRandom(0, 2);
                 log(`\t${s.base.class} (${s.index}) got ${token}`)
                 switch (token) {
                     case 0:
@@ -284,7 +284,7 @@ export class Battle {
             // increment readiness
             if (s.readiness <= 50) {
                 const Spd = getSpd(s);
-                const read = random(Spd * 4, Spd * 4.25);
+                const read = uniformRandom(Spd * 4, Spd * 4.25);
 
                 s.readiness += read;
 
@@ -1243,18 +1243,18 @@ export class Battle {
         const prot = getProt(target);
 
         // roll
-        const hit = random(1, 100);
+        const hit = uniformRandom(1, 100);
 
         // see if it crits
         if (hit <= hitChance) {
             // crit
             if (hit <= hitChance * 0.1 + crit) {
-                u_damage = (random(average(minDamage, maxDamage), maxDamage)) * 2;
+                u_damage = (uniformRandom(average(minDamage, maxDamage), maxDamage)) * 2;
                 fate = "Crit";
             }
             // hit
             else {
-                u_damage = random(minDamage, maxDamage);
+                u_damage = uniformRandom(minDamage, maxDamage);
                 fate = "Hit";
             }
         }
@@ -1316,7 +1316,7 @@ export class Battle {
 
             // 3. Spawn on Coords
             if (availableCoords.length > 0) {
-                const c = availableCoords[random(0, availableCoords.length - 1)];
+                const c = availableCoords[uniformRandom(0, availableCoords.length - 1)];
                 this.Spawn(stat, c);
             }
             else {

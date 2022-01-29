@@ -14,10 +14,11 @@ var InteractionEventManager = /** @class */ (function () {
     InteractionEventManager.prototype.registerInteraction = function (_user, _interactionEvent) {
         var split = this.user_interaction_map.get(_user.id) ||
             this.user_interaction_map.set(_user.id, {
-                'inventory': null
+                'inventory': null,
+                'shop': null,
             }).get(_user.id);
         var existing = split[_interactionEvent.interactionEventType];
-        if (existing) {
+        if (existing && existing.interactedMessage.id !== _interactionEvent.interactedMessage.id) {
             existing.stop();
         }
         split[_interactionEvent.interactionEventType] = _interactionEvent;

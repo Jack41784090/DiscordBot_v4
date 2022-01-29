@@ -297,7 +297,7 @@ function getFileImage(path) {
 }
 exports.getFileImage = getFileImage;
 function getIcon(_stat) {
-    var threadID = (0, Utility_1.random)(0, 10000);
+    var threadID = (0, Utility_1.uniformRandom)(0, 10000);
     (0, Utility_1.log)("\t\t\tGetting icon for " + _stat.base.class + "(" + _stat.index + ") (" + threadID + ")");
     var iconURL = _stat.base.iconURL;
     var image = new canvas_1.Image();

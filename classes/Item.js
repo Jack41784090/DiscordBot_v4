@@ -1,10 +1,8 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Item = void 0;
-var materialData_json_1 = __importDefault(require("../data/materialData.json"));
+var jsons_1 = require("../jsons");
+var typedef_1 = require("../typedef");
 var Utility_1 = require("./Utility");
 var Item = /** @class */ (function () {
     function Item(_elements, _maxWeight, _name) {
@@ -12,8 +10,6 @@ var Item = /** @class */ (function () {
         var newElements = [];
         this.maxWeight = _maxWeight;
         this.weight = 0;
-        // log(`Creating new item... ${_name}`)
-        var highestOccupyingMaterial = null;
         var _loop_1 = function (i) {
             var element = _elements[i];
             var name_1 = element.materialName;
@@ -21,8 +17,13 @@ var Item = /** @class */ (function () {
             // is deviation
             if ('gradeDeviation' in element) {
                 var gradeDeviation = element.gradeDeviation, occupationDeviation = element.occupationDeviation;
-                grade = (0, Utility_1.random)(gradeDeviation.min, gradeDeviation.max);
-                occupation = (0, Utility_1.random)(occupationDeviation.min + 0.000001, occupationDeviation.max + 0.000001);
+                var meanGrade = (0, Utility_1.average)(gradeDeviation.min, gradeDeviation.max);
+                grade = (0, Utility_1.clamp)(Math.round((0, Utility_1.normalRandom)(meanGrade, (gradeDeviation.max - meanGrade) * 2)), gradeDeviation.min, gradeDeviation.max);
+                occupation = (0, Utility_1.uniformRandom)(occupationDeviation.min + 0.000001, occupationDeviation.max + 0.000001);
+                // debug("Grade: Deviating", gradeDeviation);
+                // debug("Grade", grade);
+                // debug("Occupation: Deviating", occupationDeviation);
+                // debug("Occupation", occupation);
             }
             // standard info
             else {
@@ -32,38 +33,56 @@ var Item = /** @class */ (function () {
             // clamp weight
             this_1.weight += _maxWeight * occupation;
             if (this_1.weight > _maxWeight) {
-                var diff = this_1.weight - _maxWeight;
+                var reducedWeight = this_1.weight - _maxWeight;
+                // log("Clamping weight...")
+                // debug("\tWeight", `${this.weight} => ${_maxWeight}`);
+                // debug("\tOccupation", `${occupation} => ${occupation - (reducedWeight / this.maxWeight)}`)
                 this_1.weight = _maxWeight;
-                occupation -= diff;
+                occupation -= (reducedWeight / this_1.maxWeight);
             }
-            // log(`\tweight: ${this.weight}`);
             // group same materials / add new material
-            var existing = newElements.find(function (_mI) { return _mI.grade === grade && _mI.materialName === name_1; }) || {
+            var newMaterial = newElements.find(function (_mI) { return _mI.grade === grade && _mI.materialName === name_1; }) || {
                 materialName: name_1,
                 grade: grade,
                 occupation: 0,
                 new: true,
             };
             if (occupation > 0) {
-                existing.occupation += occupation;
-                if (existing.new === true) {
-                    newElements.push(existing);
-                    existing.new = false;
+                newMaterial.occupation += occupation;
+                // debug("New material", newMaterial);
+                if (newMaterial.new === true) {
+                    newElements.push(newMaterial);
+                    newMaterial.new = false;
                 }
-            }
-            if (highestOccupyingMaterial === null || highestOccupyingMaterial.occupation < existing.occupation) {
-                highestOccupyingMaterial = existing;
             }
         };
         var this_1 = this;
+        // log(`Creating new item... "${_name}". Max weight: ${_maxWeight}`)
         for (var i = 0; i < _elements.length; i++) {
             _loop_1(i);
         }
         this.name = _name;
         this.materialInfo = newElements;
-        var _type = (0, Utility_1.getItemType)(this) || 'flesh';
+        var _type = (0, Utility_1.getItemType)(this) || 'amalgamation';
         this.type = _type;
+        this.normaliseWeight();
     }
+    Item.Generate = function (_name, _customName) {
+        // log(`Generating ${_name}`)
+        var qualifications = (0, Utility_1.getNewObject)(jsons_1.itemData[_name].qualification);
+        var requiredMaterials = qualifications.materials;
+        var _a = qualifications.weightDeviation, min = _a.min, max = _a.max;
+        var item = new Item(requiredMaterials.map(function (_m) {
+            return {
+                materialName: _m.materialName,
+                gradeDeviation: _m.gradeDeviation,
+                occupationDeviation: _m.occupationDeviation,
+            };
+        }), (0, Utility_1.uniformRandom)(min + 0.0000000001, max), _customName);
+        item.fillJunk(min);
+        // log(item);
+        return item;
+    };
     Item.prototype.print = function () {
         var realWeight = 0;
         for (var i = 0; i < this.materialInfo.length; i++) {
@@ -75,8 +94,117 @@ var Item = /** @class */ (function () {
         console.log("Total price: $" + this.getWorth());
         console.log("Total weight: " + this.weight + " (real: " + realWeight + ")");
     };
+    Item.prototype.chip = function (_pos, _removePercentage) {
+        // log("chip in action... @" + `pos: ${_pos},` + ` weight: ${this.weight}`);
+        var range = [
+            Math.max(0, _pos - (_pos * _removePercentage)),
+            Math.min((this.weight / this.maxWeight), _pos + (_pos * _removePercentage))
+        ];
+        // log("\trange: " + range);
+        // burning process
+        var matindex = 0;
+        var pos = 0;
+        while (pos <= range[1] && matindex < this.materialInfo.length) {
+            var burningMaterial = this.materialInfo[matindex];
+            var materialRange = [
+                pos,
+                pos + burningMaterial.occupation,
+            ];
+            pos += this.materialInfo[matindex].occupation;
+            matindex++;
+            // log(`\t@ ${burningMaterial.materialName}: ${materialRange}`);
+            //     range[0] [IIIIIIII] range[1]
+            // matr[0] [||||||||] matr[1]
+            var condition1 = (range[0] >= materialRange[0] && range[0] < materialRange[1]);
+            // range[0] [IIIIIIII] range[1]
+            //      matr[0] [||||||||] matr[1]
+            var condition2 = (range[1] >= materialRange[0] && range[0] < materialRange[1]);
+            if (condition1 || condition2) {
+                var burnRange0 = Math.max(materialRange[0], range[0]);
+                var burnRange1 = Math.min(materialRange[1], range[1]);
+                var burningPercentage = (0, Utility_1.clamp)(burnRange1 - burnRange0, 0, burningMaterial.occupation);
+                burningMaterial.occupation -= burningPercentage;
+                this.weight -= this.maxWeight * burningPercentage;
+                // log(`\tBurning off ${burningPercentage * 100}% (${this.maxWeight * burningPercentage}${MEW}) from ${burnRange0} to ${burnRange1}\n\t\t${this.weight}${MEW}`)
+            }
+        }
+        // remove emptied materials from array
+        this.materialInfo = this.materialInfo.filter(function (_mI) { return _mI.occupation > 0; });
+        // normalise weight
+        this.normaliseWeight();
+        // update item type
+        this.type = (0, Utility_1.getItemType)(this) || 'amalgamation';
+    };
+    Item.prototype.extract = function (_pos, _extractPercentage) {
+        var extractRange = [
+            Math.max(0, _pos - (_pos * _extractPercentage)),
+            Math.min((this.weight / this.maxWeight), _pos + (_pos * _extractPercentage))
+        ];
+        // extracting process
+        var extractedMaterials = [];
+        var extractedWeight = 0;
+        var matindex = 0;
+        var pos = 0;
+        while (pos <= extractRange[1] && matindex < this.materialInfo.length) {
+            var material = this.materialInfo[matindex];
+            var materialRange = [
+                pos,
+                pos + material.occupation,
+            ];
+            pos += this.materialInfo[matindex].occupation;
+            matindex++;
+            var condition1 = (extractRange[0] >= materialRange[0] && extractRange[0] < materialRange[1]);
+            var condition2 = (extractRange[1] >= materialRange[0] && extractRange[0] < materialRange[1]);
+            if (condition1 || condition2) {
+                var matExtract0 = Math.max(materialRange[0], extractRange[0]);
+                var matExtract1 = Math.min(materialRange[1], extractRange[1]);
+                var occupationRemove = (0, Utility_1.clamp)(matExtract1 - matExtract0, 0, material.occupation);
+                material.occupation -= occupationRemove;
+                this.weight -= this.maxWeight * occupationRemove;
+                extractedMaterials.push({
+                    materialName: material.materialName,
+                    occupation: occupationRemove,
+                    grade: material.grade,
+                    new: true,
+                });
+                extractedWeight = this.maxWeight * occupationRemove;
+            }
+        }
+        // remove emptied materials from array
+        this.materialInfo = this.materialInfo.filter(function (_mI) { return _mI.occupation > 0; });
+        // normalise weight
+        this.normaliseWeight();
+        // update item type
+        this.type = (0, Utility_1.getItemType)(this) || 'amalgamation';
+        return new Item(extractedMaterials, extractedWeight, "Extracted");
+    };
+    Item.prototype.fillJunk = function (_untilWeight) {
+        var _loop_2 = function () {
+            var randomMaterial = (0, Utility_1.arrayGetRandom)(Object.keys(jsons_1.materialData));
+            var randomGrade = (0, Utility_1.clamp)(Math.abs(Math.round((0, Utility_1.normalRandom)(0, 1))), 0, 10);
+            var randomOccupation = (0, Utility_1.uniformRandom)(0, 0.0005);
+            var newMaterialInfo = {
+                materialName: randomMaterial,
+                grade: randomGrade,
+                occupation: randomOccupation,
+            };
+            var existing = void 0;
+            if (existing = this_2.materialInfo.find(function (_mI) { return _mI.materialName === randomMaterial && _mI.grade === randomGrade; })) {
+                existing.occupation += randomOccupation;
+            }
+            else {
+                this_2.materialInfo.push(newMaterialInfo);
+            }
+            this_2.weight += this_2.maxWeight * randomOccupation;
+        };
+        var this_2 = this;
+        while (this.weight < _untilWeight) {
+            _loop_2();
+        }
+        this.normaliseWeight();
+    };
     Item.prototype.getDisplayName = function () {
-        return this.name + " " + (0, Utility_1.formalise)(this.type);
+        return this.name + " " + (0, Utility_1.formalise)(jsons_1.itemData[this.type].name);
     };
     Item.prototype.getWeight = function (round) {
         if (round === void 0) { round = false; }
@@ -86,7 +214,7 @@ var Item = /** @class */ (function () {
     };
     Item.prototype.getMaterialInfoPrice = function (_mI) {
         var occupation = _mI.occupation, grade = _mI.grade, name = _mI.materialName;
-        return this.weight * occupation * materialData_json_1.default[name].ppu * (grade * 0.5 + 1);
+        return this.maxWeight * occupation * jsons_1.materialData[name].ppu * (grade * 0.5 + 1);
     };
     Item.prototype.getMostExpensiveMaterialInfo = function () {
         var _this = this;
@@ -98,9 +226,9 @@ var Item = /** @class */ (function () {
     Item.prototype.getMaterialInfoString = function (_mI) {
         var gradeTag = (0, Utility_1.getGradeTag)(_mI);
         var foramlisedName = (0, Utility_1.formalise)(_mI.materialName);
-        var materialPrice = (0, Utility_1.roundToDecimalPlace)(this.getMaterialInfoPrice(_mI));
-        var materialWeight = (0, Utility_1.roundToDecimalPlace)(_mI.occupation * this.weight);
-        return foramlisedName + " (" + gradeTag + ") $" + materialPrice + " (" + materialWeight + "\u03BC)";
+        var materialPrice = this.getMaterialInfoPrice(_mI);
+        var materialWeight = _mI.occupation * this.maxWeight;
+        return foramlisedName + " (" + gradeTag + ") $" + (0, Utility_1.roundToDecimalPlace)(materialPrice) + "\n`" + (0, Utility_1.addHPBar)(this.weight, materialWeight, 20) + "` [" + (0, Utility_1.roundToDecimalPlace)(materialWeight) + typedef_1.MEW + "] (" + (0, Utility_1.roundToDecimalPlace)(materialWeight / this.weight * 100) + "%)";
     };
     Item.prototype.getWorth = function (round) {
         if (round === void 0) { round = false; }
@@ -122,6 +250,15 @@ var Item = /** @class */ (function () {
             weight: this.weight,
             maxWeight: this.maxWeight,
         };
+    };
+    Item.prototype.normaliseWeight = function () {
+        var _this = this;
+        this.materialInfo = this.materialInfo.map(function (_mI) {
+            return (0, Utility_1.getNewObject)(_mI, {
+                occupation: (_mI.occupation * _this.maxWeight) / _this.weight
+            });
+        });
+        this.maxWeight = this.weight;
     };
     return Item;
 }());

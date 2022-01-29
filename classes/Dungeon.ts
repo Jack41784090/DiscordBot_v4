@@ -3,7 +3,7 @@ import { BotClient } from "..";
 import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, ItemType, Team, DungeonDisplayMode, DungeonBlockCode, OwnerID } from "../typedef";
 import { Battle } from "./Battle";
 import { Room } from "./Room";
-import { addHPBar, breadthFirstSearch, debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalise, getButtonsActionRow, getDistance, getNewObject, getRandomInArray, getSelectMenuActionRow, log, numericDirectionToDirection, random, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
+import { addHPBar, breadthFirstSearch, debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalise, getButtonsActionRow, getDistance, getNewObject, arrayGetRandom, getSelectMenuActionRow, log, numericDirectionToDirection, uniformRandom, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
 
 import areasData from "../data/areasData.json";
 import { getUserData, getUserWelfare } from "./Database";
@@ -148,7 +148,7 @@ export class Dungeon {
                 if (battleRoomsSpawned < battleRoomsCount) {
                     battleEncounterChanceAccumulator++;
                     const encounterChance = battleEncounterChanceAccumulator / (roomsPerBattle * 8);
-                    const encounterRoll = random(Number.EPSILON, 1.0);
+                    const encounterRoll = uniformRandom(Number.EPSILON, 1.0);
                     if (encounterRoll < encounterChance) {
                         newRoom.isBattleRoom = true;
                         battleEncounterChanceAccumulator = 0;
@@ -157,7 +157,7 @@ export class Dungeon {
                 }
 
                 // chance to branch out again
-                const roll = random(Number.EPSILON, 1.0);
+                const roll = uniformRandom(Number.EPSILON, 1.0);
                 if (roll < Dungeon.BRANCHOUT_CHANCE) {
                     branchOutCoord = coord;
                 }
@@ -194,7 +194,7 @@ export class Dungeon {
             const availableDirections = getAvailableDirections(_c, _length);
             // debug("Available", availableDirections);
 
-            const randomDirection: NumericDirection = getRandomInArray(availableDirections);
+            const randomDirection: NumericDirection = arrayGetRandom(availableDirections);
             if (randomDirection !== undefined) {
                 // debug("\tChosen random direction", randomDirection);
                 return branchOut(_c, randomDirection, _length);
@@ -203,10 +203,10 @@ export class Dungeon {
         }
 
         // generate the path lengths
-        const roomCount = random(_dungeonData.minRoom, _dungeonData.maxRoom);
+        const roomCount = uniformRandom(_dungeonData.minRoom, _dungeonData.maxRoom);
         const pathLengths = [];
         for (let i = 0; i < roomCount; i = i) {
-            let pathLength = random(_dungeonData.minLength, _dungeonData.maxLength);
+            let pathLength = uniformRandom(_dungeonData.minLength, _dungeonData.maxLength);
             i += pathLength;
 
             if (i > roomCount) {
@@ -217,7 +217,7 @@ export class Dungeon {
         }
 
         // branch out paths
-        const battleRoomsCount = random(_dungeonData.minBattle, _dungeonData.maxBattle); debug("battleRoomsCount", battleRoomsCount);
+        const battleRoomsCount = uniformRandom(_dungeonData.minBattle, _dungeonData.maxBattle); debug("battleRoomsCount", battleRoomsCount);
         let battleRoomsSpawned = 0;
         const roomsPerBattle = roomCount / battleRoomsCount;
         let battleEncounterChanceAccumulator = 0;
@@ -240,7 +240,7 @@ export class Dungeon {
                     getAvailableDirections(_r.coordinate, length).length > 0
                 ));
                 if (availableRooms.length > 0) {
-                    takeRoot(getRandomInArray(availableRooms).coordinate, length);
+                    takeRoot(arrayGetRandom(availableRooms).coordinate, length);
                 }
                 else {
                     log(`Failure to include all lengths @ ${i}.`)
@@ -654,7 +654,7 @@ export class Dungeon {
         for (let i = 0; i < this.rooms.length; i++) {
             const room = this.rooms[i];
             if (room.isBattleRoom) {
-                const encounterName: MapName = getRandomInArray(this.data.encounterMaps);
+                const encounterName: MapName = arrayGetRandom(this.data.encounterMaps);
                 if (encounterName && areasData[encounterName]) {
                     const mapdata: MapData = getNewObject(areasData[encounterName]) as MapData;
                     await Battle.Generate(mapdata, this.leaderUser, _message, userData.party, BotClient, false)

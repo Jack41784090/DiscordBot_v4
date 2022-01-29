@@ -5,7 +5,7 @@ import * as admin from 'firebase-admin'
 import * as serviceAccount from '../serviceAccount.json'
 import { Canvas, Image } from "canvas";
 import { ServiceAccount } from "firebase-admin";
-import { drawCircle, getCSFromMap, getNewObject, log, random, startDrawing, stringifyRGBA } from "./Utility";
+import { drawCircle, getCSFromMap, getNewObject, log, uniformRandom, startDrawing, stringifyRGBA } from "./Utility";
 import { Battle } from "./Battle";
 import { BotClient } from "..";
 
@@ -170,7 +170,7 @@ export function getFileImage(path: string): Promise<Image> {
 }
 export function getIcon(_stat: Stat): Promise<Canvas>
 {
-    const threadID = random(0, 10000);
+    const threadID = uniformRandom(0, 10000);
     log(`\t\t\tGetting icon for ${_stat.base.class}(${_stat.index}) (${threadID})`)
 
     const iconURL = _stat.base.iconURL;

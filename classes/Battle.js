@@ -179,7 +179,7 @@ var Battle = /** @class */ (function () {
                                     Eclass = key;
                                     mod = { name: "" + Eclass };
                                     enemyBase = (0, Utility_1.getNewObject)(enemiesData_json_1.default[Eclass], mod);
-                                    spawnCount = (0, Utility_1.random)(value.min, value.max);
+                                    spawnCount = (0, Utility_1.uniformRandom)(value.min, value.max);
                                     _loop_1 = function (i) {
                                         var enemyEntity = (0, Utility_1.getStat)(enemyBase);
                                         // randomly spawn in loot
@@ -196,7 +196,7 @@ var Battle = /** @class */ (function () {
                                                     };
                                                 }
                                                 // spawn in item
-                                                var weight = (0, Utility_1.random)(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
+                                                var weight = (0, Utility_1.uniformRandom)(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
                                                 enemyEntity.drops.items.push(new Item_1.Item(_LInfo.materials, weight, _LInfo.itemName));
                                             }
                                         });
@@ -338,7 +338,7 @@ var Battle = /** @class */ (function () {
                                 return "continue";
                             // randomly assign tokens
                             for (var i_2 = 0; i_2 < 2; i_2++) {
-                                var token = (0, Utility_1.random)(0, 2);
+                                var token = (0, Utility_1.uniformRandom)(0, 2);
                                 (0, Utility_1.log)("\t" + s.base.class + " (" + s.index + ") got " + token);
                                 switch (token) {
                                     case 0:
@@ -360,7 +360,7 @@ var Battle = /** @class */ (function () {
                             // increment readiness
                             if (s.readiness <= 50) {
                                 var Spd = (0, Utility_1.getSpd)(s);
-                                var read = (0, Utility_1.random)(Spd * 4, Spd * 4.25);
+                                var read = (0, Utility_1.uniformRandom)(Spd * 4, Spd * 4.25);
                                 s.readiness += read;
                                 // limit readiness to 50
                                 if (s.readiness > 50) {
@@ -1327,17 +1327,17 @@ var Battle = /** @class */ (function () {
         var maxDamage = (0, Utility_1.getDamage)(attacker, weapon)[1];
         var prot = (0, Utility_1.getProt)(target);
         // roll
-        var hit = (0, Utility_1.random)(1, 100);
+        var hit = (0, Utility_1.uniformRandom)(1, 100);
         // see if it crits
         if (hit <= hitChance) {
             // crit
             if (hit <= hitChance * 0.1 + crit) {
-                u_damage = ((0, Utility_1.random)((0, Utility_1.average)(minDamage, maxDamage), maxDamage)) * 2;
+                u_damage = ((0, Utility_1.uniformRandom)((0, Utility_1.average)(minDamage, maxDamage), maxDamage)) * 2;
                 fate = "Crit";
             }
             // hit
             else {
-                u_damage = (0, Utility_1.random)(minDamage, maxDamage);
+                u_damage = (0, Utility_1.uniformRandom)(minDamage, maxDamage);
                 fate = "Hit";
             }
         }
@@ -1388,7 +1388,7 @@ var Battle = /** @class */ (function () {
             var availableCoords = possibleCoords.filter(function (c) { return !_this.CSMap.has((0, Utility_1.getCoordString)(c)); });
             // 3. Spawn on Coords
             if (availableCoords.length > 0) {
-                var c = availableCoords[(0, Utility_1.random)(0, availableCoords.length - 1)];
+                var c = availableCoords[(0, Utility_1.uniformRandom)(0, availableCoords.length - 1)];
                 this_2.Spawn(stat, c);
             }
             else {

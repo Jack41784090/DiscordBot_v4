@@ -49,7 +49,7 @@ module.exports = {
     minArgs: 0,
     maxArgs: 0,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var getTimeout, returnSelectItemsMessage, returnItemsActionMessage, listen, itemSelected, timeout, invMessage;
+        var getTimeout, returnSelectItemsMessage, returnItemsActionMessage, selectingItem, managingItem, listen, itemSelected, timeout, invMessage;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -95,10 +95,21 @@ module.exports = {
                                 value: "sell",
                             },
                             {
-                                emoji: '🔥',
-                                label: "Endothermia",
-                                description: "Apply heat to the object and cause a reaction.",
-                                value: "endothermia",
+                                emoji: '🪚',
+                                label: "Chip",
+                                description: "($10) Randomly chip off 20% weight (" + (0, Utility_1.roundToDecimalPlace)(_i.weight * 0.2) + typedef_1.MEW + ").",
+                                value: "chip",
+                            },
+                            {
+                                emoji: '💉',
+                                label: "Extract",
+                                description: "($50) Extract 20% weight into a new item (" + (0, Utility_1.roundToDecimalPlace)(_i.weight * 0.2) + typedef_1.MEW + ").",
+                                value: "extract",
+                            },
+                            {
+                                emoji: typedef_1.EMOJI_CROSS,
+                                label: "Close",
+                                value: "end",
                             },
                         ];
                         var actionRow = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions, "manage");
@@ -108,63 +119,130 @@ module.exports = {
                                 new discord_js_1.MessageEmbed()
                                     .setDescription(_i.materialInfo.map(function (_mI) { return _i.getMaterialInfoString(_mI); }).join("\n"))
                                     .setThumbnail('https://i.imgur.com/SCT19EA.png')
-                                    .setTitle(_i.getDisplayName())
+                                    .setTitle(_i.getDisplayName() + " " + (0, Utility_1.roundToDecimalPlace)(_i.getWeight()) + typedef_1.MEW)
                                     .setFooter("" + authorUserData.money, typedef_1.coinURL)
                             ],
                             components: [actionRow],
                         };
                     };
+                    selectingItem = function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
+                        var action, _a, index, _err_1;
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
+                                case 0:
+                                    _b.trys.push([0, 6, , 7]);
+                                    action = _itr.values[0];
+                                    _a = action;
+                                    switch (_a) {
+                                        case "end": return [3 /*break*/, 1];
+                                    }
+                                    return [3 /*break*/, 3];
+                                case 1: return [4 /*yield*/, (0, Database_1.saveUserData)(authorUserData)];
+                                case 2:
+                                    _b.sent();
+                                    invMessage.delete()
+                                        .catch(function (_err) { return console.error; });
+                                    return [3 /*break*/, 5];
+                                case 3:
+                                    index = parseInt(_itr.values[0]);
+                                    itemSelected = authorUserData.inventory[index];
+                                    return [4 /*yield*/, _itr.update(returnItemsActionMessage(itemSelected))];
+                                case 4:
+                                    _b.sent();
+                                    return [3 /*break*/, 5];
+                                case 5: return [3 /*break*/, 7];
+                                case 6:
+                                    _err_1 = _b.sent();
+                                    console.error(_err_1);
+                                    listen();
+                                    return [3 /*break*/, 7];
+                                case 7: return [2 /*return*/];
+                            }
+                        });
+                    }); };
+                    managingItem = function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
+                        var action, _a, roll_chip, roll_extract, extracted, _err_2;
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
+                                case 0:
+                                    _b.trys.push([0, 11, , 12]);
+                                    action = _itr.values[0];
+                                    _a = action;
+                                    switch (_a) {
+                                        case "sell": return [3 /*break*/, 1];
+                                        case "chip": return [3 /*break*/, 3];
+                                        case "extract": return [3 /*break*/, 5];
+                                        case "end": return [3 /*break*/, 7];
+                                    }
+                                    return [3 /*break*/, 10];
+                                case 1:
+                                    authorUserData.money += itemSelected.getWorth();
+                                    (0, Utility_1.arrayRemoveItemArray)(authorUserData.inventory, itemSelected);
+                                    return [4 /*yield*/, _itr.update(returnSelectItemsMessage())];
+                                case 2:
+                                    _b.sent();
+                                    return [3 /*break*/, 10];
+                                case 3:
+                                    roll_chip = (0, Utility_1.uniformRandom)(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
+                                    itemSelected.chip(roll_chip, 0.2);
+                                    return [4 /*yield*/, _itr.update(returnItemsActionMessage(itemSelected))];
+                                case 4:
+                                    _b.sent();
+                                    return [3 /*break*/, 10];
+                                case 5:
+                                    roll_extract = (0, Utility_1.uniformRandom)(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
+                                    extracted = itemSelected.extract(roll_extract, 0.2);
+                                    authorUserData.inventory.push(extracted);
+                                    return [4 /*yield*/, _itr.update(returnItemsActionMessage(extracted))];
+                                case 6:
+                                    _b.sent();
+                                    return [3 /*break*/, 10];
+                                case 7: return [4 /*yield*/, (0, Database_1.saveUserData)(authorUserData)];
+                                case 8:
+                                    _b.sent();
+                                    return [4 /*yield*/, _itr.update(returnSelectItemsMessage())];
+                                case 9:
+                                    _b.sent();
+                                    return [3 /*break*/, 10];
+                                case 10: return [3 /*break*/, 12];
+                                case 11:
+                                    _err_2 = _b.sent();
+                                    console.error(_err_2);
+                                    listen();
+                                    return [3 /*break*/, 12];
+                                case 12: return [2 /*return*/];
+                            }
+                        });
+                    }); };
                     listen = function () {
                         var interactionEvent = new InteractionEvent_1.InteractionEvent(author, invMessage, 'inventory');
                         InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author, interactionEvent);
                         (0, Utility_1.setUpInteractionCollect)(invMessage, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
-                            var _a, index, action, _b, _err_1;
-                            return __generator(this, function (_c) {
-                                switch (_c.label) {
+                            var _a;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
                                     case 0:
-                                        if (!_itr.isSelectMenu()) return [3 /*break*/, 10];
-                                        _c.label = 1;
-                                    case 1:
-                                        _c.trys.push([1, 9, , 10]);
+                                        if (!_itr.isSelectMenu()) return [3 /*break*/, 6];
                                         clearTimeout(timeout);
                                         timeout = getTimeout();
                                         _a = _itr.customId;
                                         switch (_a) {
-                                            case "select": return [3 /*break*/, 2];
-                                            case "manage": return [3 /*break*/, 4];
+                                            case "select": return [3 /*break*/, 1];
+                                            case "manage": return [3 /*break*/, 3];
                                         }
-                                        return [3 /*break*/, 8];
+                                        return [3 /*break*/, 5];
+                                    case 1: return [4 /*yield*/, selectingItem(_itr)];
                                     case 2:
-                                        index = parseInt(_itr.values[0]);
-                                        itemSelected = authorUserData.inventory[index];
-                                        return [4 /*yield*/, _itr.update(returnItemsActionMessage(itemSelected))];
-                                    case 3:
-                                        _c.sent();
-                                        return [3 /*break*/, 8];
+                                        _b.sent();
+                                        return [3 /*break*/, 5];
+                                    case 3: return [4 /*yield*/, managingItem(_itr)];
                                     case 4:
-                                        action = _itr.values[0];
-                                        _b = action;
-                                        switch (_b) {
-                                            case "sell": return [3 /*break*/, 5];
-                                        }
-                                        return [3 /*break*/, 7];
+                                        _b.sent();
+                                        return [3 /*break*/, 5];
                                     case 5:
-                                        authorUserData.money += itemSelected.getWorth();
-                                        (0, Utility_1.arrayRemoveItemArray)(authorUserData.inventory, itemSelected);
-                                        return [4 /*yield*/, _itr.update(returnSelectItemsMessage())];
-                                    case 6:
-                                        _c.sent();
-                                        return [3 /*break*/, 7];
-                                    case 7: return [3 /*break*/, 8];
-                                    case 8:
                                         listen();
-                                        return [3 /*break*/, 10];
-                                    case 9:
-                                        _err_1 = _c.sent();
-                                        console.error(_err_1);
-                                        listen();
-                                        return [3 /*break*/, 10];
-                                    case 10: return [2 /*return*/];
+                                        _b.label = 6;
+                                    case 6: return [2 /*return*/];
                                 }
                             });
                         }); }, 1);

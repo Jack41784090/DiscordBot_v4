@@ -74,15 +74,13 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.average = exports.getRandomInArray = exports.random = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.getItemType = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
+exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
+exports.getItemType = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
-var Item_1 = require("./Item");
-var Database_1 = require("./Database");
 var jsons_1 = require("../jsons");
 // import { Dungeon } from "./Dungeon";
 function clamp(value, min, max) {
@@ -135,7 +133,7 @@ function formalise(string) {
 }
 exports.formalise = formalise;
 // number manipulation
-function random(num1, num2) {
+function uniformRandom(num1, num2) {
     /**
      * num1 == 1, num2 == 3
      *  result == (1, 2) ==> 1
@@ -149,11 +147,7 @@ function random(num1, num2) {
         Math.floor(result) :
         result;
 }
-exports.random = random;
-function getRandomInArray(array) {
-    return array[random(0, array.length - 1)];
-}
-exports.getRandomInArray = getRandomInArray;
+exports.uniformRandom = uniformRandom;
 function average() {
     var nums = [];
     for (var _a = 0; _a < arguments.length; _a++) {
@@ -167,6 +161,17 @@ function average() {
     return total / (nums.length || 1);
 }
 exports.average = average;
+function normalRandom(_mean, _standardDeviation) {
+    // Box Muller Transform
+    var u, v;
+    while (!u || !v) {
+        u = Math.random();
+        v = Math.random();
+    }
+    var x_N0_1 = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    return _mean + _standardDeviation * x_N0_1;
+}
+exports.normalRandom = normalRandom;
 // get battle stats
 function getAHP(entity, options) {
     if (options === void 0) { options = 'WithBoth'; }
@@ -322,7 +327,7 @@ function roundToDecimalPlace(_number, _decimalPlace) {
     var decimal = Math.pow(10, decimalPlace);
     if (_decimalPlace === undefined) {
         var value = void 0;
-        for (var i = 0; i < 10; i++) {
+        for (var i = 0; i < 100; i++) {
             var newDecimal = Math.pow(10, decimalPlace + i);
             value = Math.round((_number + Number.EPSILON) * newDecimal) / newDecimal;
             if (value !== 0) {
@@ -336,26 +341,28 @@ function roundToDecimalPlace(_number, _decimalPlace) {
     }
 }
 exports.roundToDecimalPlace = roundToDecimalPlace;
-function addHPBar(maxValue, nowValue, options) {
-    if (options === void 0) { options = { bar: '█', line: '|' }; }
+function addHPBar(_maxValue, _nowValue, maxBarProportion) {
+    if (maxBarProportion === void 0) { maxBarProportion = Math.round(_maxValue); }
+    var bar = '█';
+    var line = '|';
+    if (_maxValue < 0)
+        _maxValue = 0;
+    if (_nowValue < 0)
+        _nowValue = 0;
+    if (_nowValue > _maxValue)
+        _nowValue = _maxValue;
+    var maxValue = _maxValue * (maxBarProportion / _maxValue);
+    var nowValue = _nowValue * (maxBarProportion / _maxValue);
+    var blockCount = nowValue <= 0 ?
+        0 :
+        Math.round(nowValue);
+    var lineCount = Math.round(maxValue) - blockCount;
     var result = '';
-    if (maxValue < 0)
-        maxValue = 0;
-    if (nowValue < 0)
-        nowValue = 0;
-    if (nowValue > maxValue)
-        nowValue = maxValue;
-    var blockCount = Math.round(nowValue / 2);
-    var lineCount = Math.round(maxValue / 2) - blockCount;
-    if (nowValue <= 0) {
-        blockCount = 0;
-        lineCount = Math.round(maxValue / 2);
-    }
     for (var i = 0; i < blockCount; i++) {
-        result += options.bar;
+        result += bar;
     }
     for (var i = 0; i < lineCount; i++) {
-        result += options.line;
+        result += line;
     }
     return result;
 }
@@ -549,57 +556,8 @@ function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
 exports.getAttackAction = getAttackAction;
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
-        var userData, _a, _b, _d, key, value, Eclass, mod, enemyBase, spawnCount, _loop_1, i;
-        var e_1, _f;
-        return __generator(this, function (_g) {
-            switch (_g.label) {
-                case 0: return [4 /*yield*/, (0, Database_1.getUserData)("262871357455466496")];
-                case 1:
-                    userData = _g.sent();
-                    try {
-                        for (_a = __values(Object.entries(jsons_1.areasData.farmstead_empty.enemiesInfo)), _b = _a.next(); !_b.done; _b = _a.next()) {
-                            _d = __read(_b.value, 2), key = _d[0], value = _d[1];
-                            Eclass = key;
-                            mod = { name: "" + Eclass };
-                            enemyBase = getNewObject(jsons_1.enemiesData[Eclass], mod);
-                            spawnCount = random(value.min, value.max);
-                            _loop_1 = function (i) {
-                                var enemyEntity = getStat(enemyBase);
-                                // randomly spawn in loot
-                                enemyEntity.base.lootInfo.forEach(function (_LInfo) {
-                                    // roll for spawn item
-                                    var roll = Math.random();
-                                    if (roll < _LInfo.chance) {
-                                        // initialise if haven't yet
-                                        if (enemyEntity.drops === undefined) {
-                                            enemyEntity.drops = {
-                                                items: [],
-                                                money: 0,
-                                                droppedBy: enemyEntity
-                                            };
-                                        }
-                                        // spawn in item
-                                        var weight = random(_LInfo.weightDeviation.min + 0.00001, _LInfo.weightDeviation.max + 0.00001);
-                                        var item = new Item_1.Item(_LInfo.materials, weight, _LInfo.itemName);
-                                        userData.inventory.push(item);
-                                    }
-                                });
-                            };
-                            for (i = 0; i < spawnCount; i++) {
-                                _loop_1(i);
-                            }
-                        }
-                    }
-                    catch (e_1_1) { e_1 = { error: e_1_1 }; }
-                    finally {
-                        try {
-                            if (_b && !_b.done && (_f = _a.return)) _f.call(_a);
-                        }
-                        finally { if (e_1) throw e_1.error; }
-                    }
-                    (0, Database_1.saveUserData)(userData);
-                    return [2 /*return*/];
-            }
+        return __generator(this, function (_a) {
+            return [2 /*return*/];
         });
     });
 }
@@ -660,8 +618,8 @@ function clearChannel(channel, afterMessage) {
                     };
                     return [4 /*yield*/, channel.messages.fetch(options)
                             .then(function (messages) {
-                            var e_2, _a;
-                            var _loop_2 = function (m) {
+                            var e_1, _a;
+                            var _loop_1 = function (m) {
                                 m.delete().catch(function () {
                                     if (m.deletable)
                                         m.delete().catch();
@@ -670,15 +628,15 @@ function clearChannel(channel, afterMessage) {
                             try {
                                 for (var messages_1 = __values(messages), messages_1_1 = messages_1.next(); !messages_1_1.done; messages_1_1 = messages_1.next()) {
                                     var _b = __read(messages_1_1.value, 2), m = _b[1];
-                                    _loop_2(m);
+                                    _loop_1(m);
                                 }
                             }
-                            catch (e_2_1) { e_2 = { error: e_2_1 }; }
+                            catch (e_1_1) { e_1 = { error: e_1_1 }; }
                             finally {
                                 try {
                                     if (messages_1_1 && !messages_1_1.done && (_a = messages_1.return)) _a.call(messages_1);
                                 }
-                                finally { if (e_2) throw e_2.error; }
+                                finally { if (e_1) throw e_1.error; }
                             }
                         })];
                 case 1:
@@ -887,6 +845,10 @@ function arrayRemoveItemArray(_array, _item) {
     return index !== undefined;
 }
 exports.arrayRemoveItemArray = arrayRemoveItemArray;
+function arrayGetRandom(array) {
+    return array[uniformRandom(0, array.length - 1)];
+}
+exports.arrayGetRandom = arrayGetRandom;
 function getWeaponUses(weapon, owner) {
     return owner.weaponUses[getWeaponIndex(weapon, owner)];
 }
@@ -901,32 +863,32 @@ function printCSMap(map) {
 }
 exports.printCSMap = printCSMap;
 function getMapFromCS(coordStat) {
-    var e_3, _a, e_4, _b;
+    var e_2, _a, e_3, _b;
     var mapReturn = new Map();
     try {
         for (var _d = __values(Object.values(coordStat)), _f = _d.next(); !_f.done; _f = _d.next()) {
             var yStat = _f.value;
             try {
-                for (var _g = (e_4 = void 0, __values(Object.values(yStat))), _j = _g.next(); !_j.done; _j = _g.next()) {
+                for (var _g = (e_3 = void 0, __values(Object.values(yStat))), _j = _g.next(); !_j.done; _j = _g.next()) {
                     var stat = _j.value;
                     mapReturn.set(getCoordString(stat), getStat(stat));
                 }
             }
-            catch (e_4_1) { e_4 = { error: e_4_1 }; }
+            catch (e_3_1) { e_3 = { error: e_3_1 }; }
             finally {
                 try {
                     if (_j && !_j.done && (_b = _g.return)) _b.call(_g);
                 }
-                finally { if (e_4) throw e_4.error; }
+                finally { if (e_3) throw e_3.error; }
             }
         }
     }
-    catch (e_3_1) { e_3 = { error: e_3_1 }; }
+    catch (e_2_1) { e_2 = { error: e_2_1 }; }
     finally {
         try {
             if (_f && !_f.done && (_a = _d.return)) _a.call(_d);
         }
-        finally { if (e_3) throw e_3.error; }
+        finally { if (e_2) throw e_2.error; }
     }
     return mapReturn;
 }
@@ -1033,7 +995,7 @@ function getRandomCode(length) {
     if (length === void 0) { length = 5; }
     var codeArray = [];
     for (var i = 0; i < length; i++) {
-        codeArray.push("" + random(0, 9));
+        codeArray.push("" + uniformRandom(0, 9));
     }
     return codeArray.join('');
 }
@@ -1075,8 +1037,8 @@ function getDeathEmbed() {
     return new discord_js_1.MessageEmbed()
         .setImage('https://i.ytimg.com/vi/Kr9rIx7MVvg/maxresdefault.jpg')
         .setThumbnail('https://i.imgur.com/iUgLdX2.png2')
-        .setTitle("*\"" + typedef_1.deathQuotes[random(0, typedef_1.deathQuotes.length - 1)] + "\"*")
-        .setAuthor(typedef_1.preludeQuotes[random(0, typedef_1.preludeQuotes.length - 1)])
+        .setTitle("*\"" + typedef_1.deathQuotes[uniformRandom(0, typedef_1.deathQuotes.length - 1)] + "\"*")
+        .setAuthor(typedef_1.preludeQuotes[uniformRandom(0, typedef_1.preludeQuotes.length - 1)])
         .setColor("#530000");
 }
 exports.getDeathEmbed = getDeathEmbed;
@@ -1300,63 +1262,83 @@ function getGradeTag(_mI) {
         case typedef_1.MaterialGrade.poor:
             return 'Poor';
         case typedef_1.MaterialGrade.common:
-            return '𝗖𝗼𝗺𝗺𝗼𝗻';
+            return 'Common';
         case typedef_1.MaterialGrade.good:
             return '𝑮𝒐𝒐𝒅';
         case typedef_1.MaterialGrade.rare:
-            return 'ℜ𝔞𝔯𝔢';
+            return '𝐑𝐚𝐫𝐞';
         case typedef_1.MaterialGrade.very_rare:
-            return '𝖁𝖊𝖗𝖞 𝕽𝖆𝖗𝖊';
+            return '𝔙𝔢𝔯𝔶 ℜ𝔞𝔯𝔢';
+        case typedef_1.MaterialGrade.very_very_rare:
+            return '𝔙𝔢𝔯𝔶 𝔙𝔢𝔯𝔶 ℜ𝔞𝔯𝔢';
+        case typedef_1.MaterialGrade.unique:
+            return '𝔘𝔫𝔦𝔮𝔲𝔢';
+        case typedef_1.MaterialGrade.epic:
+            return '𝕰𝖕𝖎𝖈';
         case typedef_1.MaterialGrade.mythical:
-            return '𝑴 𝒀 𝑻 𝑯 𝑰 𝑪 𝑨 𝑳';
+            return '𝕸𝖞𝖙𝖍𝖎𝖈𝖆𝖑';
+        case typedef_1.MaterialGrade.legendary:
+            return '𝕃𝕖𝕘𝕖𝕟𝕕𝕒𝕣𝕪';
+        case typedef_1.MaterialGrade.god:
+            return '𝔾 𝕠 𝕕';
     }
 }
 exports.getGradeTag = getGradeTag;
 function getItemType(_i) {
-    var e_5, _a, e_6, _b;
+    var e_4, _a, e_5, _b;
     var weight = _i.weight;
     try {
         for (var _d = __values(Object.entries(jsons_1.itemData)), _f = _d.next(); !_f.done; _f = _d.next()) {
             var _g = __read(_f.value, 2), _itemName = _g[0], _data = _g[1];
+            // debug("Qualifying for", _itemName);
             var itemName = _itemName;
             var data = _data;
             var qualification = data.qualification;
-            if (data.qualificationWeight <= weight) {
+            /** weight qualification */
+            var _j = qualification.weightDeviation, min = _j.min, max = _j.max;
+            if (min <= weight && max >= weight) {
+                /** materials qualification */
                 var passed = 0;
-                var qualificationEntries = Object.entries(qualification);
-                var _loop_3 = function (_material, _requiredOccupation) {
-                    var material = _material;
+                var _loop_2 = function (_materialInfo) {
+                    var material = _materialInfo.materialName;
                     var mI = _i.materialInfo.find(function (_mI) { return _mI.materialName === material; }) ||
                         null;
-                    if (mI && mI.occupation >= _requiredOccupation) {
+                    // debug("\t\tTesting for", {
+                    //     name: mI?.materialName,
+                    //     occupation: mI?.occupation,
+                    // });
+                    var _o = _materialInfo.occupationDeviation, min_1 = _o.min, max_1 = _o.max;
+                    if (mI && mI.occupation >= min_1 && mI.occupation <= max_1) {
+                        // log("\t\tQualified!");
                         passed++;
                     }
                 };
                 try {
-                    for (var qualificationEntries_1 = (e_6 = void 0, __values(qualificationEntries)), qualificationEntries_1_1 = qualificationEntries_1.next(); !qualificationEntries_1_1.done; qualificationEntries_1_1 = qualificationEntries_1.next()) {
-                        var _j = __read(qualificationEntries_1_1.value, 2), _material = _j[0], _requiredOccupation = _j[1];
-                        _loop_3(_material, _requiredOccupation);
+                    for (var _k = (e_5 = void 0, __values(qualification.materials)), _l = _k.next(); !_l.done; _l = _k.next()) {
+                        var _materialInfo = _l.value;
+                        _loop_2(_materialInfo);
                     }
                 }
-                catch (e_6_1) { e_6 = { error: e_6_1 }; }
+                catch (e_5_1) { e_5 = { error: e_5_1 }; }
                 finally {
                     try {
-                        if (qualificationEntries_1_1 && !qualificationEntries_1_1.done && (_b = qualificationEntries_1.return)) _b.call(qualificationEntries_1);
+                        if (_l && !_l.done && (_b = _k.return)) _b.call(_k);
                     }
-                    finally { if (e_6) throw e_6.error; }
+                    finally { if (e_5) throw e_5.error; }
                 }
-                if (passed === qualificationEntries.length) {
+                if (passed === qualification.materials.length) {
+                    // log("\tPassed!");
                     return itemName;
                 }
             }
         }
     }
-    catch (e_5_1) { e_5 = { error: e_5_1 }; }
+    catch (e_4_1) { e_4 = { error: e_4_1 }; }
     finally {
         try {
             if (_f && !_f.done && (_a = _d.return)) _a.call(_d);
         }
-        finally { if (e_5) throw e_5.error; }
+        finally { if (e_4) throw e_4.error; }
     }
     return null;
 }

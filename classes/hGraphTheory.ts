@@ -1,5 +1,5 @@
 import { Coordinate } from "../typedef";
-import { debug, random } from "./Utility";
+import { debug, uniformRandom } from "./Utility";
 
 export class hNode<dataType> {
     data?: dataType;
@@ -8,7 +8,7 @@ export class hNode<dataType> {
     constructor(_pos: Coordinate, _data?: dataType) {
         this.data = _data;
         
-        this.id = `${random(0.0, 100000.5)}`;
+        this.id = `${uniformRandom(0.0, 100000.5)}`;
         // debug("Created node with id", `${this.id} @ (${_pos.x}, ${_pos.y})`);
 
         this.position = {

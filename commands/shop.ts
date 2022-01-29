@@ -4,6 +4,7 @@ import { formalise, getNewObject, getSelectMenuActionRow, setUpInteractionCollec
 import { UserData, CommandModule, EMOJI_CROSS, ItemType, EMOJI_WHITEB, Material } from "../typedef";
 import dungeonItemData from "../data/itemData.json";
 import { Item } from "../classes/Item";
+import { itemData } from "../jsons";
 
 module.exports = {
     commands: ['shop'],
@@ -59,34 +60,15 @@ module.exports = {
                         const itemBought: ItemType = _itr.values[0] as ItemType;
                         const cost: number | null = dungeonItemData[itemBought]?.price || null;
                         if (_itr.values[0] === 'end') {
-                            saveUserData(authorUserData);
+                            await saveUserData(authorUserData);
                             shopMessage.delete()
                                 .catch(_err => console.error);
                         }
                         else if (cost !== null && authorUserData.money - cost >= 0) {
-                            const qualifications = getNewObject(dungeonItemData[itemBought].qualification);
-                            const requiredMaterials: Array<keyof typeof qualifications> =
-                                Object.keys(qualifications) as Array<keyof typeof qualifications>;
-                            const vendorItem: Item = new Item(
-                                requiredMaterials.map(_mName => {
-                                    const minimumMaterialOccupation= qualifications[_mName];
-                                    return {
-                                        materialName: _mName,
-                                        gradeDeviation: {
-                                            'min': 0,
-                                            'max': 1,
-                                        },
-                                        occupationDeviation: {
-                                            'min': minimumMaterialOccupation,
-                                            'max': minimumMaterialOccupation * 1.1,
-                                        }
-                                    };
-                                }),
-                                5,
-                                itemBought
-                            );
+                            const vendorItem: Item = Item.Generate(itemBought, "Vendor");
                             authorUserData.money -= cost;
                             authorUserData.inventory.push(vendorItem);
+                            await saveUserData(authorUserData);
                             await _itr.update(returnMessage())
                         }
                         listen();

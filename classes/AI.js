@@ -68,7 +68,7 @@ var AIFunctions = new Map([
             (0, Utility_1.log)("Employing passive_supportive AI");
             var virtualStat = (0, Utility_1.getNewObject)(_rS);
             var allActions = [];
-            var ability = (0, Utility_1.getRandomInArray)(virtualStat.base.weapons.filter(function (_w) { return _w.targetting.target === typedef_1.WeaponTarget.ally; }));
+            var ability = (0, Utility_1.arrayGetRandom)(virtualStat.base.weapons.filter(function (_w) { return _w.targetting.target === typedef_1.WeaponTarget.ally; }));
             // execute ally-targetting ability
             var AOE = ability.targetting.AOE;
             switch (AOE) {

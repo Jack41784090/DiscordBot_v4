@@ -3,7 +3,7 @@ import { Battle } from "./classes/Battle";
 import { Item } from "./classes/Item";
 import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
-import { areasData, classData, dungeonData, enemiesData, itemData } from "./jsons";
+import { areasData, classData, dungeonData, enemiesData, itemData, materialData } from "./jsons";
 
 export type Round = number;
 export type Priority = number;
@@ -23,6 +23,7 @@ export const EMOJI_SHIELD = '🛡️';
 export const EMOJI_SWORD = '🗡️';
 export const EMOJI_SPRINT = '👢'
 export const EMOJI_MONEYBAG = '💰';
+export const MEW = 'μ';
 
 // DUNGEON
 export type RoomDirections = [Room | null, Room | null, Room | null, Room | null];
@@ -222,17 +223,14 @@ export enum MaterialGrade {
     good,
     rare,
     very_rare,
+    very_very_rare,
+    unique,
+    epic,
     mythical,
+    legendary,
+    god
 }
-export type Material =
-    'flesh'|
-    'cometarite'|
-    'steel'|
-    'coal'|
-    'wood'|
-    'boulder'|
-    'marble'|
-    'granite'
+export type Material = keyof typeof materialData;
 export interface MaterialSpawnQualityInfo {
     materialName: Material,
     occupationDeviation: QualityDeviation,
@@ -242,7 +240,7 @@ export interface MaterialQualityInfo {
     materialName: Material,
     occupation: number,
     grade: MaterialGrade,
-    new: boolean,
+    new?: boolean,
 }
 export interface Loot {
     money: number,

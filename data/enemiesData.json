@@ -52,7 +52,7 @@
         "botType": 1,
         "lootInfo": [
             {
-                "itemName": "Crystal Zombie",
+                "itemName": "[Crystal Zombie]",
                 "chance": 1,
                 "materials": [
                     {
@@ -78,7 +78,7 @@
                         }
                     },
                     {
-                        "materialName": "cometarite",
+                        "materialName": "cobalt",
                         "occupationDeviation": {
                             "min": 0.013,
                             "max": 0.05
@@ -122,7 +122,7 @@
                         }
                     },
                     {
-                        "materialName": "cometarite",
+                        "materialName": "cobalt",
                         "occupationDeviation": {
                             "min": 0.001,
                             "max": 0.005
@@ -133,7 +133,7 @@
                         }
                     },
                     {
-                        "materialName": "cometarite",
+                        "materialName": "cobalt",
                         "occupationDeviation": {
                             "min": 0.0001,
                             "max": 0.0005
@@ -150,11 +150,11 @@
                 }
             },
             {
-                "itemName": "Crystal Zombie's Comet",
+                "itemName": "[Crystal Zombie] Comet",
                 "chance": 0.1,
                 "materials": [
                     {
-                        "materialName": "cometarite",
+                        "materialName": "cobalt",
                         "occupationDeviation": {
                             "min": 0.2,
                             "max": 0.5
@@ -165,7 +165,7 @@
                         }
                     },
                     {
-                        "materialName": "cometarite",
+                        "materialName": "cobalt",
                         "occupationDeviation": {
                             "min": 0.02,
                             "max": 0.05

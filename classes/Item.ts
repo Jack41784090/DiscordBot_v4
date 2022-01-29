@@ -1,9 +1,31 @@
-import { ItemType, Material, MaterialGrade, MaterialQualityInfo, MaterialSpawnQualityInfo } from "../typedef";
-import materialData from "../data/materialData.json";
-import itemData from "../data/itemData.json";
-import { arrayGetLargestInArray, formalise, getGradeTag, getItemType, log, random, roundToDecimalPlace } from "./Utility";
+import { itemData, materialData } from "../jsons";
+import { ItemType, Loot, LootInfo, Material, MaterialGrade, MaterialQualityInfo, MaterialSpawnQualityInfo, MEW } from "../typedef";
+import { addHPBar, arrayGetLargestInArray, arrayRemoveItemArray, clamp, formalise, getGradeTag, getItemType, getNewObject, arrayGetRandom, log, uniformRandom, roundToDecimalPlace, normalRandom, average, debug } from "./Utility";
 
 export class Item {
+    static Generate(_name: ItemType, _customName: string): Item {
+        // log(`Generating ${_name}`)
+        const qualifications = getNewObject(itemData[_name].qualification);
+        const requiredMaterials = qualifications.materials;
+        const { min, max } = qualifications.weightDeviation;
+        const item = new Item(
+            requiredMaterials.map((_m) => {
+                return {
+                    materialName: _m.materialName as Material,
+                    gradeDeviation: _m.gradeDeviation,
+                    occupationDeviation: _m.occupationDeviation,
+                };
+            }),
+            uniformRandom(min + 0.0000000001, max),
+            _customName
+        );
+        item.fillJunk(min);
+
+        // log(item);
+
+        return item;
+    }
+
     name: string;
     type: ItemType = 'torch';
     materialInfo: Array<MaterialQualityInfo>;
@@ -16,8 +38,7 @@ export class Item {
         this.maxWeight = _maxWeight;
         this.weight = 0;
 
-        // log(`Creating new item... ${_name}`)
-        let highestOccupyingMaterial: MaterialQualityInfo | null = null;
+        // log(`Creating new item... "${_name}". Max weight: ${_maxWeight}`)
         for (let i = 0; i < _elements.length; i++) {
             const element = _elements[i];
             const name = element.materialName;
@@ -26,8 +47,13 @@ export class Item {
             // is deviation
             if ('gradeDeviation' in element) {
                 const { gradeDeviation, occupationDeviation } = element;
-                grade = random(gradeDeviation.min, gradeDeviation.max);
-                occupation = random(occupationDeviation.min + 0.000001, occupationDeviation.max + 0.000001);
+                const meanGrade = average(gradeDeviation.min, gradeDeviation.max);
+                grade = clamp(Math.round(normalRandom(meanGrade, (gradeDeviation.max - meanGrade) * 2)), gradeDeviation.min, gradeDeviation.max);
+                occupation = uniformRandom(occupationDeviation.min + 0.000001, occupationDeviation.max + 0.000001);
+                // debug("Grade: Deviating", gradeDeviation);
+                // debug("Grade", grade);
+                // debug("Occupation: Deviating", occupationDeviation);
+                // debug("Occupation", occupation);
             }
             // standard info
             else {
@@ -38,14 +64,18 @@ export class Item {
             // clamp weight
             this.weight += _maxWeight * occupation;
             if (this.weight > _maxWeight) {
-                const diff = this.weight - _maxWeight;
+                const reducedWeight = this.weight - _maxWeight;
+
+                // log("Clamping weight...")
+                // debug("\tWeight", `${this.weight} => ${_maxWeight}`);
+                // debug("\tOccupation", `${occupation} => ${occupation - (reducedWeight / this.maxWeight)}`)
+
                 this.weight = _maxWeight;
-                occupation -= diff;
+                occupation -= (reducedWeight / this.maxWeight);
             }
-            // log(`\tweight: ${this.weight}`);
 
             // group same materials / add new material
-            const existing: MaterialQualityInfo =
+            const newMaterial: MaterialQualityInfo =
             newElements.find(_mI => _mI.grade === grade && _mI.materialName === name)|| {
                 materialName: name,
                 grade: grade,
@@ -53,22 +83,23 @@ export class Item {
                 new: true,
             };
             if (occupation > 0) {
-                existing.occupation += occupation;
-                if (existing.new === true) {
-                    newElements.push(existing);
-                    existing.new = false;
+                newMaterial.occupation += occupation;
+                // debug("New material", newMaterial);
+                if (newMaterial.new === true) {
+                    newElements.push(newMaterial);
+                    newMaterial.new = false;
                 }
             }
 
-            if (highestOccupyingMaterial === null || highestOccupyingMaterial!.occupation < existing.occupation) {
-                highestOccupyingMaterial = existing;
-            }
+            // log(`\tweight: ${this.weight}`);
         }
 
         this.name = _name;
         this.materialInfo = newElements;
-        const _type: ItemType = getItemType(this) || 'flesh';
+        const _type: ItemType = getItemType(this) || 'amalgamation';
         this.type = _type
+
+        this.normaliseWeight();
     }
 
     print(): void {
@@ -85,8 +116,134 @@ export class Item {
         console.log(`Total weight: ${this.weight} (real: ${realWeight})`); 
     }
 
+    chip(_pos: number, _removePercentage: number): void {
+        // log("chip in action... @" + `pos: ${_pos},` + ` weight: ${this.weight}`);
+        const range: [number, number] = [
+            Math.max(0, _pos - (_pos * _removePercentage)),
+            Math.min((this.weight / this.maxWeight), _pos + (_pos * _removePercentage))
+        ];
+        // log("\trange: " + range);
+
+        // burning process
+        let matindex: number = 0;
+        let pos: number = 0;
+        while (pos <= range[1] && matindex < this.materialInfo.length) {
+            const burningMaterial: MaterialQualityInfo = this.materialInfo[matindex];
+            const materialRange: [number, number] = [
+                pos,
+                pos + burningMaterial.occupation,
+            ]
+            pos += this.materialInfo[matindex].occupation;
+            matindex++;
+
+            // log(`\t@ ${burningMaterial.materialName}: ${materialRange}`);
+
+            //     range[0] [IIIIIIII] range[1]
+            // matr[0] [||||||||] matr[1]
+            const condition1 = (range[0] >= materialRange[0] && range[0] < materialRange[1]);
+            // range[0] [IIIIIIII] range[1]
+            //      matr[0] [||||||||] matr[1]
+            const condition2 = (range[1] >= materialRange[0] && range[0] < materialRange[1]);
+            if (condition1 || condition2) {
+                const burnRange0 = Math.max(materialRange[0], range[0]);
+                const burnRange1 = Math.min(materialRange[1], range[1]);
+                const burningPercentage: number = clamp(burnRange1 - burnRange0, 0, burningMaterial.occupation);
+                
+                burningMaterial.occupation -= burningPercentage;
+                this.weight -= this.maxWeight * burningPercentage;
+                // log(`\tBurning off ${burningPercentage * 100}% (${this.maxWeight * burningPercentage}${MEW}) from ${burnRange0} to ${burnRange1}\n\t\t${this.weight}${MEW}`)
+            }
+        }
+
+        // remove emptied materials from array
+        this.materialInfo = this.materialInfo.filter(_mI => _mI.occupation > 0);
+
+        // normalise weight
+        this.normaliseWeight();
+
+        // update item type
+        this.type = getItemType(this) || 'amalgamation';
+    }
+
+    extract(_pos: number, _extractPercentage: number): Item {
+        const extractRange: [number, number] = [
+            Math.max(0, _pos - (_pos * _extractPercentage)),
+            Math.min((this.weight / this.maxWeight), _pos + (_pos * _extractPercentage))
+        ];
+
+        // extracting process
+        const extractedMaterials: Array<MaterialQualityInfo> = [];
+        let extractedWeight: number = 0;
+        let matindex: number = 0;
+        let pos: number = 0;
+        while (pos <= extractRange[1] && matindex < this.materialInfo.length) {
+            const material: MaterialQualityInfo = this.materialInfo[matindex];
+            const materialRange: [number, number] = [
+                pos,
+                pos + material.occupation,
+            ]
+            pos += this.materialInfo[matindex].occupation;
+            matindex++;
+
+            const condition1 = (extractRange[0] >= materialRange[0] && extractRange[0] < materialRange[1]);
+            const condition2 = (extractRange[1] >= materialRange[0] && extractRange[0] < materialRange[1]);
+            if (condition1 || condition2) {
+                const matExtract0 = Math.max(materialRange[0], extractRange[0]);
+                const matExtract1 = Math.min(materialRange[1], extractRange[1]);
+                const occupationRemove: number = clamp(matExtract1 - matExtract0, 0, material.occupation);
+
+                material.occupation -= occupationRemove;
+                this.weight -= this.maxWeight * occupationRemove;
+
+                extractedMaterials.push({
+                    materialName: material.materialName,
+                    occupation: occupationRemove,
+                    grade: material.grade,
+                    new: true,
+                });
+                extractedWeight = this.maxWeight * occupationRemove;
+            }
+        }
+
+        // remove emptied materials from array
+        this.materialInfo = this.materialInfo.filter(_mI => _mI.occupation > 0);
+
+        // normalise weight
+        this.normaliseWeight();
+
+        // update item type
+        this.type = getItemType(this) || 'amalgamation';
+
+        return new Item(extractedMaterials, extractedWeight, "Extracted");
+    }
+
+    fillJunk(_untilWeight: number) {
+        while (this.weight < _untilWeight) {
+            const randomMaterial: Material = arrayGetRandom(Object.keys(materialData) as (keyof typeof materialData)[]);
+            const randomGrade: MaterialGrade = clamp(Math.abs(Math.round(normalRandom(0, 1))), 0, 10);
+            const randomOccupation: number = uniformRandom(0, 0.0005);
+            const newMaterialInfo: MaterialQualityInfo = {
+                materialName: randomMaterial,
+                grade: randomGrade,
+                occupation: randomOccupation,
+            };
+
+            let existing
+            if (existing = this.materialInfo.find(_mI => _mI.materialName === randomMaterial && _mI.grade === randomGrade)) {
+                existing.occupation += randomOccupation;
+            }
+            else {
+                this.materialInfo.push(newMaterialInfo);
+            }
+
+            this.weight += this.maxWeight * randomOccupation;
+        }
+
+        this.normaliseWeight();
+    }
+
     getDisplayName(): string {
-        return `${this.name} ${formalise(this.type)}`;
+        return `${this.name} ${formalise(itemData[this.type].name)}`;
     }
 
     getWeight(round = false): number {
@@ -97,7 +254,7 @@ export class Item {
 
     getMaterialInfoPrice(_mI: MaterialQualityInfo): number {
         const { occupation, grade, materialName: name } = _mI;
-        return this.weight * occupation * materialData[name as Material].ppu * (grade * 0.5 + 1);
+        return this.maxWeight * occupation * materialData[name as Material].ppu * (grade * 0.5 + 1);
     }
 
     getMostExpensiveMaterialInfo(): MaterialQualityInfo | null {
@@ -111,10 +268,10 @@ export class Item {
     getMaterialInfoString(_mI: MaterialQualityInfo) {
         const gradeTag = getGradeTag(_mI);
         const foramlisedName = formalise(_mI.materialName);
-        const materialPrice = roundToDecimalPlace(this.getMaterialInfoPrice(_mI));
-        const materialWeight = roundToDecimalPlace(_mI.occupation * this.weight);
+        const materialPrice = this.getMaterialInfoPrice(_mI);
+        const materialWeight = _mI.occupation * this.maxWeight;
 
-        return `${foramlisedName} (${gradeTag}) $${materialPrice} (${materialWeight}μ)`;
+        return `${foramlisedName} (${gradeTag}) $${roundToDecimalPlace(materialPrice)}\n\`${addHPBar(this.weight, materialWeight, 20)}\` [${roundToDecimalPlace(materialWeight)}${MEW}] (${roundToDecimalPlace(materialWeight / this.weight * 100)}%)`;
     }
 
     getWorth(round = false): number {
@@ -137,5 +294,14 @@ export class Item {
             weight: this.weight,
             maxWeight: this.maxWeight,
         };
+    }
+
+    normaliseWeight() {
+        this.materialInfo = this.materialInfo.map(_mI => {
+            return getNewObject(_mI, {
+                occupation: (_mI.occupation * this.maxWeight) / this.weight
+            });
+        });
+        this.maxWeight = this.weight;
     }
 }
