@@ -82,7 +82,6 @@ var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
 var Item_1 = require("./Item");
-var Database_1 = require("./Database");
 var jsons_1 = require("../jsons");
 // import { Dungeon } from "./Dungeon";
 function clamp(value, min, max) {
@@ -558,20 +557,12 @@ function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
 exports.getAttackAction = getAttackAction;
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
-        var userData, weight, pureitem, junkifiedItem;
+        var i, element;
         return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, (0, Database_1.getUserData)("262871357455466496")];
-                case 1:
-                    userData = _a.sent();
-                    weight = uniformRandom(jsons_1.itemData.pure_cobalt.qualification.weightDeviation.min + 0.00001, jsons_1.itemData.pure_cobalt.qualification.weightDeviation.max + 0.00001);
-                    pureitem = new Item_1.Item(jsons_1.itemData.pure_cobalt.qualification.materials, weight, "[Pure]");
-                    userData.inventory.push(pureitem);
-                    junkifiedItem = (new Item_1.Item(getNewObject(pureitem).materialInfo, pureitem.maxWeight, pureitem.name)).junkify(0.1);
-                    userData.inventory.push(junkifiedItem);
-                    (0, Database_1.saveUserData)(userData);
-                    return [2 /*return*/];
+            for (i = 0; i < 1000; i++) {
+                element = Item_1.Item.Generate("pure_cobalt", "test");
             }
+            return [2 /*return*/];
         });
     });
 }
@@ -1300,6 +1291,7 @@ function getGradeTag(_mI) {
 exports.getGradeTag = getGradeTag;
 function getItemType(_i) {
     var e_4, _a, e_5, _b;
+    // log(`Get item type for: ${_i.name}`)
     var weight = _i.weight;
     try {
         for (var _d = __values(Object.entries(jsons_1.itemData)), _f = _d.next(); !_f.done; _f = _d.next()) {
@@ -1341,7 +1333,7 @@ function getItemType(_i) {
                     finally { if (e_5) throw e_5.error; }
                 }
                 if (passed === qualification.materials.length) {
-                    // log("\tPassed!");
+                    // log("\tPassed!\n===================");
                     return itemName;
                 }
             }

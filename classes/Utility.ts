@@ -490,19 +490,9 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
 }
 
 export async function Test() {
-    const userData: UserData = await getUserData("262871357455466496");
-    // spawn in item
-    const weight = uniformRandom(
-        itemData.pure_cobalt.qualification.weightDeviation.min + 0.00001,
-        itemData.pure_cobalt.qualification.weightDeviation.max + 0.00001
-    );
-    const pureitem: Item = new Item(itemData.pure_cobalt.qualification.materials as Array<MaterialSpawnQualityInfo>, weight, "[Pure]");
-    userData.inventory.push(pureitem);
-
-    const junkifiedItem: Item = (new Item(getNewObject(pureitem).materialInfo, pureitem.maxWeight, pureitem.name)).junkify(0.1);
-    userData.inventory.push(junkifiedItem);
-
-    saveUserData(userData);
+    for (let i = 0; i < 1000; i++) {
+        const element = Item.Generate("pure_cobalt", "test");
+    }
 }
 
 export function findReferenceAngle(_angle: number): number {
@@ -1171,6 +1161,7 @@ export function getGradeTag(_mI: MaterialQualityInfo) {
 }
 
 export function getItemType(_i: Item): ItemType | null {
+    // log(`Get item type for: ${_i.name}`)
     const { weight } = _i;
     for (const [_itemName, _data] of Object.entries(itemData)) {
         // debug("Qualifying for", _itemName);
@@ -1202,7 +1193,7 @@ export function getItemType(_i: Item): ItemType | null {
             }
 
             if (passed === qualification.materials.length) {
-                // log("\tPassed!");
+                // log("\tPassed!\n===================");
                 return itemName;
             }
         }

@@ -10,7 +10,6 @@ var Item = /** @class */ (function () {
         var newElements = [];
         this.maxWeight = _maxWeight;
         this.weight = 0;
-        (0, Utility_1.log)("Creating new item... \"" + _name + "\". Max weight: " + _maxWeight);
         var _loop_1 = function (i) {
             var element = _elements[i];
             var name_1 = element.materialName;
@@ -18,8 +17,9 @@ var Item = /** @class */ (function () {
             // is deviation
             if ('gradeDeviation' in element) {
                 var gradeDeviation = element.gradeDeviation, occupationDeviation = element.occupationDeviation;
-                var meanGrade = (0, Utility_1.average)(gradeDeviation.min, gradeDeviation.max);
-                grade = (0, Utility_1.clamp)(Math.round((0, Utility_1.normalRandom)(meanGrade, (gradeDeviation.max - meanGrade) * 2)), gradeDeviation.min, gradeDeviation.max);
+                var randomisedGrade = Math.abs(Math.round((0, Utility_1.normalRandom)(gradeDeviation.min, 1)));
+                (0, Utility_1.log)(randomisedGrade);
+                grade = (0, Utility_1.clamp)(randomisedGrade, gradeDeviation.min, gradeDeviation.max);
                 occupation = (0, Utility_1.uniformRandom)(occupationDeviation.min + 0.000001, occupationDeviation.max + 0.000001);
                 // debug("Grade: Deviating", gradeDeviation);
                 // debug("Grade", grade);
@@ -35,9 +35,9 @@ var Item = /** @class */ (function () {
             this_1.weight += _maxWeight * occupation;
             if (this_1.weight > _maxWeight) {
                 var reducedWeight = this_1.weight - _maxWeight;
-                (0, Utility_1.log)("Clamping weight...");
-                (0, Utility_1.debug)("\tWeight", this_1.weight + " => " + _maxWeight);
-                (0, Utility_1.debug)("\tOccupation", occupation + " => " + (occupation - (reducedWeight / this_1.maxWeight)));
+                // log("Clamping weight...")
+                // debug("\tWeight", `${this.weight} => ${_maxWeight}`);
+                // debug("\tOccupation", `${occupation} => ${occupation - (reducedWeight / this.maxWeight)}`)
                 this_1.weight = _maxWeight;
                 occupation -= (reducedWeight / this_1.maxWeight);
             }
@@ -50,23 +50,24 @@ var Item = /** @class */ (function () {
             };
             if (occupation > 0) {
                 newMaterial.occupation += occupation;
-                (0, Utility_1.debug)("New material", newMaterial);
+                // debug("New material", newMaterial);
                 if (newMaterial.new === true) {
                     newElements.push(newMaterial);
                     newMaterial.new = false;
                 }
             }
-            (0, Utility_1.log)("\tweight: " + this_1.weight);
         };
         var this_1 = this;
+        // log(`Creating new item... "${_name}". Max weight: ${_maxWeight}`)
         for (var i = 0; i < _elements.length; i++) {
             _loop_1(i);
         }
         this.name = _name;
         this.materialInfo = newElements;
+        // normalise weight => get type
+        this.normaliseWeight();
         var _type = (0, Utility_1.getItemType)(this) || 'amalgamation';
         this.type = _type;
-        this.normaliseWeight();
     }
     Item.Generate = function (_name, _customName) {
         // log(`Generating ${_name}`)
@@ -140,12 +141,12 @@ var Item = /** @class */ (function () {
     };
     Item.prototype.extract = function (_extractPercentage) {
         var _pos = (0, Utility_1.uniformRandom)(_extractPercentage / 2, 1 - (_extractPercentage / 2));
-        (0, Utility_1.debug)("pos", _pos);
+        // debug("pos", _pos);
         var extractRange = [
             Math.max(0, _pos - (_extractPercentage / 2)),
             Math.min((this.weight / this.maxWeight), _pos + (_extractPercentage / 2))
         ];
-        (0, Utility_1.log)(extractRange);
+        // log(extractRange);
         // extracting process
         var extractedMaterials = [];
         var matindex = 0;
@@ -158,14 +159,14 @@ var Item = /** @class */ (function () {
             ];
             pos += this.materialInfo[matindex].occupation;
             matindex++;
-            (0, Utility_1.debug)(material.materialName, materialRange);
+            // debug(material.materialName, materialRange);
             var condition1 = (extractRange[0] >= materialRange[0] && extractRange[0] < materialRange[1]);
             var condition2 = (extractRange[1] >= materialRange[0] && extractRange[0] < materialRange[1]);
             if (condition1 || condition2) {
                 var matExtract0 = Math.max(materialRange[0], extractRange[0]);
                 var matExtract1 = Math.min(materialRange[1], extractRange[1]);
                 var occupationRemove = (0, Utility_1.clamp)(matExtract1 - matExtract0, 0, material.occupation);
-                (0, Utility_1.debug)("removing", occupationRemove);
+                // debug("removing", occupationRemove);
                 material.occupation -= occupationRemove;
                 this.weight -= this.maxWeight * occupationRemove;
                 extractedMaterials.push({
