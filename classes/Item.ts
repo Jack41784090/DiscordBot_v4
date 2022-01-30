@@ -38,7 +38,7 @@ export class Item {
         this.maxWeight = _maxWeight;
         this.weight = 0;
 
-        // log(`Creating new item... "${_name}". Max weight: ${_maxWeight}`)
+        log(`Creating new item... "${_name}". Max weight: ${_maxWeight}`)
         for (let i = 0; i < _elements.length; i++) {
             const element = _elements[i];
             const name = element.materialName;
@@ -66,9 +66,9 @@ export class Item {
             if (this.weight > _maxWeight) {
                 const reducedWeight = this.weight - _maxWeight;
 
-                // log("Clamping weight...")
-                // debug("\tWeight", `${this.weight} => ${_maxWeight}`);
-                // debug("\tOccupation", `${occupation} => ${occupation - (reducedWeight / this.maxWeight)}`)
+                log("Clamping weight...")
+                debug("\tWeight", `${this.weight} => ${_maxWeight}`);
+                debug("\tOccupation", `${occupation} => ${occupation - (reducedWeight / this.maxWeight)}`)
 
                 this.weight = _maxWeight;
                 occupation -= (reducedWeight / this.maxWeight);
@@ -84,14 +84,14 @@ export class Item {
             };
             if (occupation > 0) {
                 newMaterial.occupation += occupation;
-                // debug("New material", newMaterial);
+                debug("New material", newMaterial);
                 if (newMaterial.new === true) {
                     newElements.push(newMaterial);
                     newMaterial.new = false;
                 }
             }
 
-            // log(`\tweight: ${this.weight}`);
+            log(`\tweight: ${this.weight}`);
         }
 
         this.name = _name;
@@ -167,15 +167,17 @@ export class Item {
         }
     }
 
-    extract(_pos: number, _extractPercentage: number): Item {
+    extract(_extractPercentage: number): Item {
+        const _pos = uniformRandom(_extractPercentage/2, 1 - (_extractPercentage/2));
+        debug("pos", _pos);
         const extractRange: [number, number] = [
-            Math.max(0, _pos - (_pos * _extractPercentage)),
-            Math.min((this.weight / this.maxWeight), _pos + (_pos * _extractPercentage))
+            Math.max(0, _pos - (_extractPercentage/2)),
+            Math.min((this.weight / this.maxWeight), _pos + (_extractPercentage/2))
         ];
+        log(extractRange);
 
         // extracting process
         const extractedMaterials: Array<MaterialQualityInfo> = [];
-        let extractedWeight: number = 0;
         let matindex: number = 0;
         let pos: number = 0;
         while (pos <= extractRange[1] && matindex < this.materialInfo.length) {
@@ -187,6 +189,8 @@ export class Item {
             pos += this.materialInfo[matindex].occupation;
             matindex++;
 
+            debug(material.materialName, materialRange);
+
             const condition1 = (extractRange[0] >= materialRange[0] && extractRange[0] < materialRange[1]);
             const condition2 = (extractRange[1] >= materialRange[0] && extractRange[0] < materialRange[1]);
             if (condition1 || condition2) {
@@ -194,6 +198,7 @@ export class Item {
                 const matExtract1 = Math.min(materialRange[1], extractRange[1]);
                 const occupationRemove: number = clamp(matExtract1 - matExtract0, 0, material.occupation);
 
+                debug("removing", occupationRemove);
                 material.occupation -= occupationRemove;
                 this.weight -= this.maxWeight * occupationRemove;
 
@@ -203,11 +208,11 @@ export class Item {
                     grade: material.grade,
                     new: true,
                 });
-                extractedWeight = this.maxWeight * occupationRemove;
             }
         }
 
-        return new Item(extractedMaterials, extractedWeight, "Extracted");
+        const extracted: Item = new Item(extractedMaterials, this.maxWeight, "Extracted");
+        return extracted;
     }
 
     junkify(_percentage: number): Item {

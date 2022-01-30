@@ -1,10 +1,10 @@
-import { User, TextChannel, Guild, Message, Client, MessageSelectOptionData, MessageActionRow, MessageEmbed, MessageOptions } from "discord.js";
-import { saveUserData } from "../classes/Database";
-import { formalise, getNewObject, getSelectMenuActionRow, setUpInteractionCollect } from "../classes/Utility";
-import { UserData, CommandModule, EMOJI_CROSS, ItemType, EMOJI_WHITEB, Material } from "../typedef";
-import dungeonItemData from "../data/itemData.json";
+import { User, TextChannel, Guild, Message, Client, MessageOptions, MessageSelectOptionData, MessageActionRow, MessageEmbed } from "discord.js";
+import { InteractionEvent } from "../classes/InteractionEvent";
+import { InteractionEventManager } from "../classes/InteractionEventManager";
 import { Item } from "../classes/Item";
+import { formalise, getSelectMenuActionRow, setUpInteractionCollect, getLoadingEmbed } from "../classes/Utility";
 import { itemData } from "../jsons";
+import { UserData, ItemType, EMOJI_WHITEB, EMOJI_CROSS, CommandModule } from "../typedef";
 
 module.exports = {
     commands: ['shop'],
@@ -12,23 +12,16 @@ module.exports = {
     minArgs: 0,
     maxArgs: 0,
     callback: async (author: User, authorUserData: UserData, content: string, channel: TextChannel, guild: Guild, args: Array<string>, message: Message, client: Client) => {
-        const getTimeout = () => {
-            return setTimeout(() => {
-                saveUserData(authorUserData);
-                shopMessage.delete()
-                    .catch(_err => console.error);
-            }, 120 * 1000);
-        }
         const returnMessage = (): MessageOptions => {
             const selectMenuOptions: MessageSelectOptionData[] = [];
-            for (const itemType of Object.keys(dungeonItemData)) {
+            for (const itemType of Object.keys(itemData)) {
                 const itemName = itemType as ItemType;
-                const itemsInInv: Array<Item> = authorUserData.inventory.filter(_i => _i.type === itemName);
-                if (dungeonItemData[itemName]?.price > 0) {
+                const itemsInInv: Array<Item> = updatedUserData.inventory.filter(_i => _i.type === itemName);
+                if (itemData[itemName]?.price > 0) {
                     selectMenuOptions.push({
-                        emoji: dungeonItemData[itemName]?.emoji || EMOJI_WHITEB,
+                        emoji: itemData[itemName]?.emoji || EMOJI_WHITEB,
                         label: `${formalise(itemName)} x${itemsInInv.length}`,
-                        description: `Buy $${dungeonItemData[itemName]?.price}`,
+                        description: `Buy $${itemData[itemName]?.price}`,
                         value: itemName,
                     });
                 }
@@ -45,7 +38,7 @@ module.exports = {
                     new MessageEmbed()
                         .setThumbnail('https://i.imgur.com/7ZU6klq.png')
                         .setTitle('"All the items you need to survive a dungeon."')
-                        .setFooter(`${authorUserData.money}`, 'https://i.imgur.com/FWylmwo.jpeg')
+                        .setFooter(`${updatedUserData.money}`, 'https://i.imgur.com/FWylmwo.jpeg')
                 ],
                 components: [selectMenuActionRow]
             }
@@ -54,21 +47,16 @@ module.exports = {
             setUpInteractionCollect(shopMessage, async _itr => {
                 if (_itr.isSelectMenu()) {
                     try {
-                        clearTimeout(timeout);
-                        timeout = getTimeout();
-
                         const itemBought: ItemType = _itr.values[0] as ItemType;
-                        const cost: number | null = dungeonItemData[itemBought]?.price || null;
+                        const cost: number | null = itemData[itemBought]?.price || null;
                         if (_itr.values[0] === 'end') {
-                            await saveUserData(authorUserData);
                             shopMessage.delete()
                                 .catch(_err => console.error);
                         }
-                        else if (cost !== null && authorUserData.money - cost >= 0) {
+                        else if (cost !== null && updatedUserData.money - cost >= 0) {
                             const vendorItem: Item = Item.Generate(itemBought, "Vendor");
-                            authorUserData.money -= cost;
-                            authorUserData.inventory.push(vendorItem);
-                            await saveUserData(authorUserData);
+                            updatedUserData.money -= cost;
+                            updatedUserData.inventory.push(vendorItem);
                             await _itr.update(returnMessage())
                         }
                         listen();
@@ -80,8 +68,14 @@ module.exports = {
                 }
             }, 1);
         }
-        let timeout = getTimeout();
-        const shopMessage: Message = await message.reply(returnMessage());
+
+        const shopMessage: Message = await message.reply({
+            embeds: [getLoadingEmbed()]
+        });
+        const interactionEvent: InteractionEvent = new InteractionEvent(author, shopMessage, 'shop');
+        const updatedUserData: UserData = await InteractionEventManager.getInstance().registerInteraction(author, interactionEvent, authorUserData);
+
+        shopMessage.edit(returnMessage());
 
         listen();
     }

@@ -31,6 +31,7 @@ export async function getAnyData(collection: string, doc: string, failureCB?: (d
         null;
 }
 export async function saveUserData(_userData: UserData) {
+    log("Saving");
     const document = database.collection("Users").doc(_userData.party[0]);
     const snapshotData = await document.get();
 

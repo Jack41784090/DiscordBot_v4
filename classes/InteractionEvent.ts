@@ -1,5 +1,6 @@
 import { Message, User } from "discord.js";
 import { InteractionEventType } from "../typedef";
+import { InteractionEventManager } from "./InteractionEventManager";
 
 export class InteractionEvent {
     user: User;

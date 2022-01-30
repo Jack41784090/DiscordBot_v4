@@ -46,51 +46,42 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var discord_js_1 = require("discord.js");
-var Database_1 = require("../classes/Database");
-var Utility_1 = require("../classes/Utility");
-var typedef_1 = require("../typedef");
-var itemData_json_1 = __importDefault(require("../data/itemData.json"));
+var InteractionEvent_1 = require("../classes/InteractionEvent");
+var InteractionEventManager_1 = require("../classes/InteractionEventManager");
 var Item_1 = require("../classes/Item");
+var Utility_1 = require("../classes/Utility");
+var jsons_1 = require("../jsons");
+var typedef_1 = require("../typedef");
 module.exports = {
     commands: ['shop'],
     expectedArgs: '',
     minArgs: 0,
     maxArgs: 0,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var getTimeout, returnMessage, listen, timeout, shopMessage;
+        var returnMessage, listen, shopMessage, interactionEvent, updatedUserData;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    getTimeout = function () {
-                        return setTimeout(function () {
-                            (0, Database_1.saveUserData)(authorUserData);
-                            shopMessage.delete()
-                                .catch(function (_err) { return console.error; });
-                        }, 120 * 1000);
-                    };
                     returnMessage = function () {
                         var e_1, _a;
                         var _b, _c, _d;
                         var selectMenuOptions = [];
                         var _loop_1 = function (itemType) {
                             var itemName = itemType;
-                            var itemsInInv = authorUserData.inventory.filter(function (_i) { return _i.type === itemName; });
-                            if (((_b = itemData_json_1.default[itemName]) === null || _b === void 0 ? void 0 : _b.price) > 0) {
+                            var itemsInInv = updatedUserData.inventory.filter(function (_i) { return _i.type === itemName; });
+                            if (((_b = jsons_1.itemData[itemName]) === null || _b === void 0 ? void 0 : _b.price) > 0) {
                                 selectMenuOptions.push({
-                                    emoji: ((_c = itemData_json_1.default[itemName]) === null || _c === void 0 ? void 0 : _c.emoji) || typedef_1.EMOJI_WHITEB,
+                                    emoji: ((_c = jsons_1.itemData[itemName]) === null || _c === void 0 ? void 0 : _c.emoji) || typedef_1.EMOJI_WHITEB,
                                     label: (0, Utility_1.formalise)(itemName) + " x" + itemsInInv.length,
-                                    description: "Buy $" + ((_d = itemData_json_1.default[itemName]) === null || _d === void 0 ? void 0 : _d.price),
+                                    description: "Buy $" + ((_d = jsons_1.itemData[itemName]) === null || _d === void 0 ? void 0 : _d.price),
                                     value: itemName,
                                 });
                             }
                         };
                         try {
-                            for (var _e = __values(Object.keys(itemData_json_1.default)), _f = _e.next(); !_f.done; _f = _e.next()) {
+                            for (var _e = __values(Object.keys(jsons_1.itemData)), _f = _e.next(); !_f.done; _f = _e.next()) {
                                 var itemType = _f.value;
                                 _loop_1(itemType);
                             }
@@ -113,7 +104,7 @@ module.exports = {
                                 new discord_js_1.MessageEmbed()
                                     .setThumbnail('https://i.imgur.com/7ZU6klq.png')
                                     .setTitle('"All the items you need to survive a dungeon."')
-                                    .setFooter("" + authorUserData.money, 'https://i.imgur.com/FWylmwo.jpeg')
+                                    .setFooter("" + updatedUserData.money, 'https://i.imgur.com/FWylmwo.jpeg')
                             ],
                             components: [selectMenuActionRow]
                         };
@@ -125,50 +116,48 @@ module.exports = {
                             return __generator(this, function (_b) {
                                 switch (_b.label) {
                                     case 0:
-                                        if (!_itr.isSelectMenu()) return [3 /*break*/, 8];
+                                        if (!_itr.isSelectMenu()) return [3 /*break*/, 6];
                                         _b.label = 1;
                                     case 1:
-                                        _b.trys.push([1, 7, , 8]);
-                                        clearTimeout(timeout);
-                                        timeout = getTimeout();
+                                        _b.trys.push([1, 5, , 6]);
                                         itemBought = _itr.values[0];
-                                        cost = ((_a = itemData_json_1.default[itemBought]) === null || _a === void 0 ? void 0 : _a.price) || null;
-                                        if (!(_itr.values[0] === 'end')) return [3 /*break*/, 3];
-                                        return [4 /*yield*/, (0, Database_1.saveUserData)(authorUserData)];
-                                    case 2:
-                                        _b.sent();
+                                        cost = ((_a = jsons_1.itemData[itemBought]) === null || _a === void 0 ? void 0 : _a.price) || null;
+                                        if (!(_itr.values[0] === 'end')) return [3 /*break*/, 2];
                                         shopMessage.delete()
                                             .catch(function (_err) { return console.error; });
-                                        return [3 /*break*/, 6];
-                                    case 3:
-                                        if (!(cost !== null && authorUserData.money - cost >= 0)) return [3 /*break*/, 6];
+                                        return [3 /*break*/, 4];
+                                    case 2:
+                                        if (!(cost !== null && updatedUserData.money - cost >= 0)) return [3 /*break*/, 4];
                                         vendorItem = Item_1.Item.Generate(itemBought, "Vendor");
-                                        authorUserData.money -= cost;
-                                        authorUserData.inventory.push(vendorItem);
-                                        return [4 /*yield*/, (0, Database_1.saveUserData)(authorUserData)];
-                                    case 4:
-                                        _b.sent();
+                                        updatedUserData.money -= cost;
+                                        updatedUserData.inventory.push(vendorItem);
                                         return [4 /*yield*/, _itr.update(returnMessage())];
-                                    case 5:
+                                    case 3:
                                         _b.sent();
-                                        _b.label = 6;
-                                    case 6:
+                                        _b.label = 4;
+                                    case 4:
                                         listen();
-                                        return [3 /*break*/, 8];
-                                    case 7:
+                                        return [3 /*break*/, 6];
+                                    case 5:
                                         _err_1 = _b.sent();
                                         console.error(_err_1);
                                         listen();
-                                        return [3 /*break*/, 8];
-                                    case 8: return [2 /*return*/];
+                                        return [3 /*break*/, 6];
+                                    case 6: return [2 /*return*/];
                                 }
                             });
                         }); }, 1);
                     };
-                    timeout = getTimeout();
-                    return [4 /*yield*/, message.reply(returnMessage())];
+                    return [4 /*yield*/, message.reply({
+                            embeds: [(0, Utility_1.getLoadingEmbed)()]
+                        })];
                 case 1:
                     shopMessage = _a.sent();
+                    interactionEvent = new InteractionEvent_1.InteractionEvent(author, shopMessage, 'shop');
+                    return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author, interactionEvent, authorUserData)];
+                case 2:
+                    updatedUserData = _a.sent();
+                    shopMessage.edit(returnMessage());
                     listen();
                     return [2 /*return*/];
             }

@@ -10,6 +10,7 @@ var Item = /** @class */ (function () {
         var newElements = [];
         this.maxWeight = _maxWeight;
         this.weight = 0;
+        (0, Utility_1.log)("Creating new item... \"" + _name + "\". Max weight: " + _maxWeight);
         var _loop_1 = function (i) {
             var element = _elements[i];
             var name_1 = element.materialName;
@@ -34,9 +35,9 @@ var Item = /** @class */ (function () {
             this_1.weight += _maxWeight * occupation;
             if (this_1.weight > _maxWeight) {
                 var reducedWeight = this_1.weight - _maxWeight;
-                // log("Clamping weight...")
-                // debug("\tWeight", `${this.weight} => ${_maxWeight}`);
-                // debug("\tOccupation", `${occupation} => ${occupation - (reducedWeight / this.maxWeight)}`)
+                (0, Utility_1.log)("Clamping weight...");
+                (0, Utility_1.debug)("\tWeight", this_1.weight + " => " + _maxWeight);
+                (0, Utility_1.debug)("\tOccupation", occupation + " => " + (occupation - (reducedWeight / this_1.maxWeight)));
                 this_1.weight = _maxWeight;
                 occupation -= (reducedWeight / this_1.maxWeight);
             }
@@ -49,15 +50,15 @@ var Item = /** @class */ (function () {
             };
             if (occupation > 0) {
                 newMaterial.occupation += occupation;
-                // debug("New material", newMaterial);
+                (0, Utility_1.debug)("New material", newMaterial);
                 if (newMaterial.new === true) {
                     newElements.push(newMaterial);
                     newMaterial.new = false;
                 }
             }
+            (0, Utility_1.log)("\tweight: " + this_1.weight);
         };
         var this_1 = this;
-        // log(`Creating new item... "${_name}". Max weight: ${_maxWeight}`)
         for (var i = 0; i < _elements.length; i++) {
             _loop_1(i);
         }
@@ -137,14 +138,16 @@ var Item = /** @class */ (function () {
             }
         }
     };
-    Item.prototype.extract = function (_pos, _extractPercentage) {
+    Item.prototype.extract = function (_extractPercentage) {
+        var _pos = (0, Utility_1.uniformRandom)(_extractPercentage / 2, 1 - (_extractPercentage / 2));
+        (0, Utility_1.debug)("pos", _pos);
         var extractRange = [
-            Math.max(0, _pos - (_pos * _extractPercentage)),
-            Math.min((this.weight / this.maxWeight), _pos + (_pos * _extractPercentage))
+            Math.max(0, _pos - (_extractPercentage / 2)),
+            Math.min((this.weight / this.maxWeight), _pos + (_extractPercentage / 2))
         ];
+        (0, Utility_1.log)(extractRange);
         // extracting process
         var extractedMaterials = [];
-        var extractedWeight = 0;
         var matindex = 0;
         var pos = 0;
         while (pos <= extractRange[1] && matindex < this.materialInfo.length) {
@@ -155,12 +158,14 @@ var Item = /** @class */ (function () {
             ];
             pos += this.materialInfo[matindex].occupation;
             matindex++;
+            (0, Utility_1.debug)(material.materialName, materialRange);
             var condition1 = (extractRange[0] >= materialRange[0] && extractRange[0] < materialRange[1]);
             var condition2 = (extractRange[1] >= materialRange[0] && extractRange[0] < materialRange[1]);
             if (condition1 || condition2) {
                 var matExtract0 = Math.max(materialRange[0], extractRange[0]);
                 var matExtract1 = Math.min(materialRange[1], extractRange[1]);
                 var occupationRemove = (0, Utility_1.clamp)(matExtract1 - matExtract0, 0, material.occupation);
+                (0, Utility_1.debug)("removing", occupationRemove);
                 material.occupation -= occupationRemove;
                 this.weight -= this.maxWeight * occupationRemove;
                 extractedMaterials.push({
@@ -169,10 +174,10 @@ var Item = /** @class */ (function () {
                     grade: material.grade,
                     new: true,
                 });
-                extractedWeight = this.maxWeight * occupationRemove;
             }
         }
-        return new Item(extractedMaterials, extractedWeight, "Extracted");
+        var extracted = new Item(extractedMaterials, this.maxWeight, "Extracted");
+        return extracted;
     };
     Item.prototype.junkify = function (_percentage) {
         var percentage = (0, Utility_1.clamp)(_percentage, 0, 1);

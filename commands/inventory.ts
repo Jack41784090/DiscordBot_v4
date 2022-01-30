@@ -1,7 +1,7 @@
 import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageSelectMenuOptions, MessageOptions, MessageSelectOptionData, MessageActionRow, SelectMenuInteraction } from "discord.js";
 import { saveUserData } from "../classes/Database";
 import { Item } from "../classes/Item";
-import { arrayRemoveItemArray, formalise, getGradeTag, getSelectMenuActionRow, log, uniformRandom, roundToDecimalPlace, setUpInteractionCollect } from "../classes/Utility";
+import { arrayRemoveItemArray, formalise, getGradeTag, getSelectMenuActionRow, log, uniformRandom, roundToDecimalPlace, setUpInteractionCollect, getLoadingEmbed } from "../classes/Utility";
 import { itemData } from "../jsons";
 import { UserData, CommandModule, EMOJI_WHITEB, EMOJI_CROSS, coinURL, EMOJI_MONEYBAG, MEW, MaterialQualityInfo } from "../typedef";
 import { InteractionEventManager } from "../classes/InteractionEventManager";
@@ -13,15 +13,8 @@ module.exports = {
     minArgs: 0,
     maxArgs: 0,
     callback: async (author: User, authorUserData: UserData, content: string, channel: TextChannel, guild: Guild, args: Array<string>, message: Message, client: Client) => {
-        const getTimeout = () => {
-            return setTimeout(() => {
-                saveUserData(authorUserData);
-                invMessage.delete()
-                    .catch(_err => console.error);
-            }, 120 * 1000);
-        }
         const returnSelectItemsMessage = (): MessageOptions => {
-            const selectMenuOptions: MessageSelectOptionData[] = authorUserData.inventory.map((_item, _i) => {
+            const selectMenuOptions: MessageSelectOptionData[] = updatedUserData.inventory.map((_item, _i) => {
                 return {
                     emoji: itemData[_item.type]?.emoji || EMOJI_WHITEB,
                     label: `${_item.getDisplayName()} (${_item.getWeight(true)})`,
@@ -41,7 +34,7 @@ module.exports = {
                     new MessageEmbed()
                         .setThumbnail('https://i.imgur.com/40Unw4T.png')
                         .setTitle('Inventory')
-                        .setFooter(`${authorUserData.money}`, coinURL)
+                        .setFooter(`${updatedUserData.money}`, coinURL)
                 ],
                 components: [selectMenuActionRow]
             }
@@ -82,7 +75,7 @@ module.exports = {
                         .setDescription(_i.materialInfo.map(_mI => _i.getMaterialInfoString(_mI)).join("\n"))
                         .setThumbnail('https://i.imgur.com/SCT19EA.png')
                         .setTitle(`${_i.getDisplayName()} ${roundToDecimalPlace(_i.getWeight())}${MEW}`)
-                        .setFooter(`${authorUserData.money}`, coinURL)
+                        .setFooter(`${updatedUserData.money}`, coinURL)
                 ],
                 components: [actionRow],
             }
@@ -92,14 +85,12 @@ module.exports = {
                 const action: string = _itr.values[0];
                 switch (action) {
                     case "end":
-                        await saveUserData(authorUserData);
-                        invMessage.delete()
-                            .catch(_err => console.error);
+                        InteractionEventManager.getInstance().stopInteraction(author.id, 'inventory');
                         break;
 
                     default:
                         const index: number = parseInt(_itr.values[0]);
-                        itemSelected = authorUserData.inventory[index];
+                        itemSelected = updatedUserData.inventory[index];
                         await _itr.update(returnItemsActionMessage(itemSelected));
                         break;
                 }
@@ -114,8 +105,8 @@ module.exports = {
                 const action: string = _itr.values[0];
                 switch (action) {
                     case "sell":
-                        authorUserData.money += itemSelected.getWorth();
-                        arrayRemoveItemArray(authorUserData.inventory, itemSelected);
+                        updatedUserData.money += itemSelected.getWorth();
+                        arrayRemoveItemArray(updatedUserData.inventory, itemSelected);
                         await _itr.update(returnSelectItemsMessage());
                         break;
                     case "chip":
@@ -125,14 +116,14 @@ module.exports = {
                         await _itr.update(returnItemsActionMessage(itemSelected));
                         break;
                     case "extract":
-                        const roll_extract = uniformRandom(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
-                        const extracted: Item = itemSelected.extract(roll_extract, 0.2);
+                        const extracted: Item = itemSelected.extract(0.2);
                         itemSelected.cleanUp();
-                        authorUserData.inventory.push(extracted);
+                        updatedUserData.inventory.push(extracted);
+
+                        itemSelected = extracted;
                         await _itr.update(returnItemsActionMessage(extracted));
                         break;
                     case "end":
-                        await saveUserData(authorUserData);
                         await _itr.update(returnSelectItemsMessage());
                         break;
                 }
@@ -143,12 +134,8 @@ module.exports = {
             }
         }
         const listen = () => {
-            const interactionEvent: InteractionEvent = new InteractionEvent(author, invMessage, 'inventory');
-            InteractionEventManager.getInstance().registerInteraction(author, interactionEvent);
             setUpInteractionCollect(invMessage, async _itr => {
                 if (_itr.isSelectMenu()) {
-                    clearTimeout(timeout);
-                    timeout = getTimeout();
                     switch (_itr.customId) {
                         case "select":
                             await selectingItem(_itr);
@@ -161,9 +148,15 @@ module.exports = {
                 }
             }, 1);
         }
+
+        const invMessage: Message = await message.reply({
+            embeds: [getLoadingEmbed()]
+        });
+        const interactionEvent: InteractionEvent = new InteractionEvent(author, invMessage, 'inventory');
+        const updatedUserData: UserData = await InteractionEventManager.getInstance().registerInteraction(author, interactionEvent, authorUserData);
+
         let itemSelected: Item;
-        let timeout = getTimeout();
-        const invMessage: Message = await message.reply(returnSelectItemsMessage());
+        invMessage.edit(returnSelectItemsMessage());
 
         listen();
     }

@@ -37,7 +37,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var discord_js_1 = require("discord.js");
-var Database_1 = require("../classes/Database");
 var Utility_1 = require("../classes/Utility");
 var jsons_1 = require("../jsons");
 var typedef_1 = require("../typedef");
@@ -49,19 +48,12 @@ module.exports = {
     minArgs: 0,
     maxArgs: 0,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var getTimeout, returnSelectItemsMessage, returnItemsActionMessage, selectingItem, managingItem, listen, itemSelected, timeout, invMessage;
+        var returnSelectItemsMessage, returnItemsActionMessage, selectingItem, managingItem, listen, invMessage, interactionEvent, updatedUserData, itemSelected;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    getTimeout = function () {
-                        return setTimeout(function () {
-                            (0, Database_1.saveUserData)(authorUserData);
-                            invMessage.delete()
-                                .catch(function (_err) { return console.error; });
-                        }, 120 * 1000);
-                    };
                     returnSelectItemsMessage = function () {
-                        var selectMenuOptions = authorUserData.inventory.map(function (_item, _i) {
+                        var selectMenuOptions = updatedUserData.inventory.map(function (_item, _i) {
                             var _a;
                             return {
                                 emoji: ((_a = jsons_1.itemData[_item.type]) === null || _a === void 0 ? void 0 : _a.emoji) || typedef_1.EMOJI_WHITEB,
@@ -81,7 +73,7 @@ module.exports = {
                                 new discord_js_1.MessageEmbed()
                                     .setThumbnail('https://i.imgur.com/40Unw4T.png')
                                     .setTitle('Inventory')
-                                    .setFooter("" + authorUserData.money, typedef_1.coinURL)
+                                    .setFooter("" + updatedUserData.money, typedef_1.coinURL)
                             ],
                             components: [selectMenuActionRow]
                         };
@@ -120,7 +112,7 @@ module.exports = {
                                     .setDescription(_i.materialInfo.map(function (_mI) { return _i.getMaterialInfoString(_mI); }).join("\n"))
                                     .setThumbnail('https://i.imgur.com/SCT19EA.png')
                                     .setTitle(_i.getDisplayName() + " " + (0, Utility_1.roundToDecimalPlace)(_i.getWeight()) + typedef_1.MEW)
-                                    .setFooter("" + authorUserData.money, typedef_1.coinURL)
+                                    .setFooter("" + updatedUserData.money, typedef_1.coinURL)
                             ],
                             components: [actionRow],
                         };
@@ -130,42 +122,39 @@ module.exports = {
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
-                                    _b.trys.push([0, 6, , 7]);
+                                    _b.trys.push([0, 5, , 6]);
                                     action = _itr.values[0];
                                     _a = action;
                                     switch (_a) {
                                         case "end": return [3 /*break*/, 1];
                                     }
-                                    return [3 /*break*/, 3];
-                                case 1: return [4 /*yield*/, (0, Database_1.saveUserData)(authorUserData)];
+                                    return [3 /*break*/, 2];
+                                case 1:
+                                    InteractionEventManager_1.InteractionEventManager.getInstance().stopInteraction(author.id, 'inventory');
+                                    return [3 /*break*/, 4];
                                 case 2:
-                                    _b.sent();
-                                    invMessage.delete()
-                                        .catch(function (_err) { return console.error; });
-                                    return [3 /*break*/, 5];
-                                case 3:
                                     index = parseInt(_itr.values[0]);
-                                    itemSelected = authorUserData.inventory[index];
+                                    itemSelected = updatedUserData.inventory[index];
                                     return [4 /*yield*/, _itr.update(returnItemsActionMessage(itemSelected))];
-                                case 4:
+                                case 3:
                                     _b.sent();
-                                    return [3 /*break*/, 5];
-                                case 5: return [3 /*break*/, 7];
-                                case 6:
+                                    return [3 /*break*/, 4];
+                                case 4: return [3 /*break*/, 6];
+                                case 5:
                                     _err_1 = _b.sent();
                                     console.error(_err_1);
                                     listen();
-                                    return [3 /*break*/, 7];
-                                case 7: return [2 /*return*/];
+                                    return [3 /*break*/, 6];
+                                case 6: return [2 /*return*/];
                             }
                         });
                     }); };
                     managingItem = function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
-                        var action, _a, roll_chip, roll_extract, extracted, _err_2;
+                        var action, _a, roll_chip, extracted, _err_2;
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
-                                    _b.trys.push([0, 11, , 12]);
+                                    _b.trys.push([0, 10, , 11]);
                                     action = _itr.values[0];
                                     _a = action;
                                     switch (_a) {
@@ -174,14 +163,14 @@ module.exports = {
                                         case "extract": return [3 /*break*/, 5];
                                         case "end": return [3 /*break*/, 7];
                                     }
-                                    return [3 /*break*/, 10];
+                                    return [3 /*break*/, 9];
                                 case 1:
-                                    authorUserData.money += itemSelected.getWorth();
-                                    (0, Utility_1.arrayRemoveItemArray)(authorUserData.inventory, itemSelected);
+                                    updatedUserData.money += itemSelected.getWorth();
+                                    (0, Utility_1.arrayRemoveItemArray)(updatedUserData.inventory, itemSelected);
                                     return [4 /*yield*/, _itr.update(returnSelectItemsMessage())];
                                 case 2:
                                     _b.sent();
-                                    return [3 /*break*/, 10];
+                                    return [3 /*break*/, 9];
                                 case 3:
                                     roll_chip = (0, Utility_1.uniformRandom)(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
                                     itemSelected.chip(roll_chip, 0.2);
@@ -189,44 +178,37 @@ module.exports = {
                                     return [4 /*yield*/, _itr.update(returnItemsActionMessage(itemSelected))];
                                 case 4:
                                     _b.sent();
-                                    return [3 /*break*/, 10];
+                                    return [3 /*break*/, 9];
                                 case 5:
-                                    roll_extract = (0, Utility_1.uniformRandom)(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
-                                    extracted = itemSelected.extract(roll_extract, 0.2);
+                                    extracted = itemSelected.extract(0.2);
                                     itemSelected.cleanUp();
-                                    authorUserData.inventory.push(extracted);
+                                    updatedUserData.inventory.push(extracted);
+                                    itemSelected = extracted;
                                     return [4 /*yield*/, _itr.update(returnItemsActionMessage(extracted))];
                                 case 6:
                                     _b.sent();
-                                    return [3 /*break*/, 10];
-                                case 7: return [4 /*yield*/, (0, Database_1.saveUserData)(authorUserData)];
+                                    return [3 /*break*/, 9];
+                                case 7: return [4 /*yield*/, _itr.update(returnSelectItemsMessage())];
                                 case 8:
                                     _b.sent();
-                                    return [4 /*yield*/, _itr.update(returnSelectItemsMessage())];
-                                case 9:
-                                    _b.sent();
-                                    return [3 /*break*/, 10];
-                                case 10: return [3 /*break*/, 12];
-                                case 11:
+                                    return [3 /*break*/, 9];
+                                case 9: return [3 /*break*/, 11];
+                                case 10:
                                     _err_2 = _b.sent();
                                     console.error(_err_2);
                                     listen();
-                                    return [3 /*break*/, 12];
-                                case 12: return [2 /*return*/];
+                                    return [3 /*break*/, 11];
+                                case 11: return [2 /*return*/];
                             }
                         });
                     }); };
                     listen = function () {
-                        var interactionEvent = new InteractionEvent_1.InteractionEvent(author, invMessage, 'inventory');
-                        InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author, interactionEvent);
                         (0, Utility_1.setUpInteractionCollect)(invMessage, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
                             var _a;
                             return __generator(this, function (_b) {
                                 switch (_b.label) {
                                     case 0:
                                         if (!_itr.isSelectMenu()) return [3 /*break*/, 6];
-                                        clearTimeout(timeout);
-                                        timeout = getTimeout();
                                         _a = _itr.customId;
                                         switch (_a) {
                                             case "select": return [3 /*break*/, 1];
@@ -249,10 +231,16 @@ module.exports = {
                             });
                         }); }, 1);
                     };
-                    timeout = getTimeout();
-                    return [4 /*yield*/, message.reply(returnSelectItemsMessage())];
+                    return [4 /*yield*/, message.reply({
+                            embeds: [(0, Utility_1.getLoadingEmbed)()]
+                        })];
                 case 1:
                     invMessage = _a.sent();
+                    interactionEvent = new InteractionEvent_1.InteractionEvent(author, invMessage, 'inventory');
+                    return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author, interactionEvent, authorUserData)];
+                case 2:
+                    updatedUserData = _a.sent();
+                    invMessage.edit(returnSelectItemsMessage());
                     listen();
                     return [2 /*return*/];
             }
