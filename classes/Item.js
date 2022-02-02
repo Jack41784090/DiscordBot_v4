@@ -18,7 +18,6 @@ var Item = /** @class */ (function () {
             if ('gradeDeviation' in element) {
                 var gradeDeviation = element.gradeDeviation, occupationDeviation = element.occupationDeviation;
                 var randomisedGrade = Math.abs(Math.round((0, Utility_1.normalRandom)(gradeDeviation.min, 1)));
-                (0, Utility_1.log)(randomisedGrade);
                 grade = (0, Utility_1.clamp)(randomisedGrade, gradeDeviation.min, gradeDeviation.max);
                 occupation = (0, Utility_1.uniformRandom)(occupationDeviation.min + 0.000001, occupationDeviation.max + 0.000001);
                 // debug("Grade: Deviating", gradeDeviation);

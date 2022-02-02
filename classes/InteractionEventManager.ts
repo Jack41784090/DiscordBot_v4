@@ -1,13 +1,16 @@
 import { User } from "discord.js";
+import { interactionEventData } from "../jsons";
 import { InteractionEventType, OwnerID, UserData } from "../typedef";
 import { getUserData, saveUserData } from "./Database";
 import { InteractionEvent } from "./InteractionEvent";
+import { log } from "./Utility";
 
 interface InteractionSplit {
-    'userData': UserData | null,
+    userData: UserData,
+    timer: NodeJS.Timer,
     'inventory': InteractionEvent | null;
     'shop': InteractionEvent | null;
-    'info': InteractionEvent | null;
+    'battle': InteractionEvent | null;
 }
 
 export class InteractionEventManager {
@@ -26,42 +29,44 @@ export class InteractionEventManager {
         this.user_interaction_map = new Map<OwnerID, InteractionSplit>();
     }
 
-    async registerInteraction(_user: User, _interactionEvent: InteractionEvent, _userData?: UserData): Promise<UserData> {
+    async registerInteraction(_id: OwnerID, _interactionEvent: InteractionEvent, _userData?: UserData): Promise<UserData> {
         const split: InteractionSplit =
-            this.user_interaction_map.get(_user.id)||
-            this.user_interaction_map.set(_user.id, {
-                userData: _userData || await getUserData(_user.id),
+            this.user_interaction_map.get(_id)||
+            this.user_interaction_map.set(_id, {
+                userData: _userData || await getUserData(_id),
+                timer: setInterval(async () => {
+                    // log("Check null...");
+                    let nulledCount: number = 0;
+                    const interactionSplit: InteractionSplit = this.user_interaction_map.get(_id)!
+                    const splitEntries = Object.entries(interactionSplit);
+                    for (const [_key, _value] of splitEntries) {
+                        const key = _key as keyof InteractionSplit;
+                        const _ = _key as keyof typeof interactionEventData;
+                        if (key === _ && _value === null) {
+                            nulledCount++;
+                        }
+                    }
+
+                    const interactionEventCount: number = Object.keys(interactionEventData).length;
+                    // log(`\tnulled: ${nulledCount} v. eventCount: ${interactionEventCount}`)
+                    
+                    if (nulledCount === interactionEventCount) {
+                        await saveUserData(interactionSplit.userData);
+                        clearInterval(interactionSplit.timer);
+                        this.user_interaction_map.delete(_id);
+                    }
+                }, 1000),
                 'inventory': null,
                 'shop': null,
-                'info': null,
-            }).get(_user.id)!;
+                'battle': null,
+            }).get(_id)!;
         const existing: InteractionEvent | null = split[_interactionEvent.interactionEventType];
         if (existing) {
-            InteractionEventManager.instance.stopInteraction(_user.id, _interactionEvent.interactionEventType);
+            InteractionEventManager.instance.stopInteraction(_id, _interactionEvent.interactionEventType);
         }
         split[_interactionEvent.interactionEventType] = _interactionEvent;
 
-        const checkAllNull = setInterval(async () => {
-            let nulledCount: number = 0;
-            const interactionSplit: InteractionSplit = this.user_interaction_map.get(_user.id)!
-            const entries = Object.entries(interactionSplit);
-            for (const [_key, _value] of entries) {
-                const key = _key as keyof InteractionSplit;
-                if (key !== 'userData' && _value === null) {
-                    nulledCount++;
-                }
-            }
-            if (nulledCount === entries.length - 1) {
-                await saveUserData(interactionSplit.userData!);
-                clearInterval(checkAllNull);
-                this.user_interaction_map.delete(_user.id);
-            }
-        }, 1000);
-
-        return split.userData || await getUserData(_user.id).then(_ud => {
-            split.userData = _ud;
-            return _ud;
-        });
+        return split.userData;
     }
 
     stopInteraction(_userID: OwnerID, _eventType: InteractionEventType) {

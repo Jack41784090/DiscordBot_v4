@@ -64,7 +64,9 @@ var __read = (this && this.__read) || function (o, n) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InteractionEventManager = void 0;
+var jsons_1 = require("../jsons");
 var Database_1 = require("./Database");
+var Utility_1 = require("./Utility");
 var InteractionEventManager = /** @class */ (function () {
     function InteractionEventManager() {
         this.user_interaction_map = new Map();
@@ -75,85 +77,80 @@ var InteractionEventManager = /** @class */ (function () {
         }
         return this.instance;
     };
-    InteractionEventManager.prototype.registerInteraction = function (_user, _interactionEvent, _userData) {
+    InteractionEventManager.prototype.registerInteraction = function (_id, _interactionEvent, _userData) {
         return __awaiter(this, void 0, void 0, function () {
-            var split, _a, _b, _c, _d, _e, existing, checkAllNull, _f;
-            var _g;
+            var split, _a, _b, _c, _d, _e, existing;
+            var _f;
             var _this = this;
-            return __generator(this, function (_h) {
-                switch (_h.label) {
+            return __generator(this, function (_g) {
+                switch (_g.label) {
                     case 0:
-                        _a = this.user_interaction_map.get(_user.id);
+                        _a = this.user_interaction_map.get(_id);
                         if (_a) return [3 /*break*/, 3];
                         _c = (_b = this.user_interaction_map).set;
-                        _d = [_user.id];
-                        _g = {};
+                        _d = [_id];
+                        _f = {};
                         _e = _userData;
                         if (_e) return [3 /*break*/, 2];
-                        return [4 /*yield*/, (0, Database_1.getUserData)(_user.id)];
+                        return [4 /*yield*/, (0, Database_1.getUserData)(_id)];
                     case 1:
-                        _e = (_h.sent());
-                        _h.label = 2;
+                        _e = (_g.sent());
+                        _g.label = 2;
                     case 2:
-                        _a = _c.apply(_b, _d.concat([(_g.userData = _e,
-                                _g['inventory'] = null,
-                                _g['shop'] = null,
-                                _g['info'] = null,
-                                _g)])).get(_user.id);
-                        _h.label = 3;
+                        _a = _c.apply(_b, _d.concat([(_f.userData = _e,
+                                _f.timer = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
+                                    var nulledCount, interactionSplit, splitEntries, splitEntries_1, splitEntries_1_1, _a, _key, _value, key, _, interactionEventCount;
+                                    var e_1, _b;
+                                    return __generator(this, function (_c) {
+                                        switch (_c.label) {
+                                            case 0:
+                                                (0, Utility_1.log)("Check null...");
+                                                nulledCount = 0;
+                                                interactionSplit = this.user_interaction_map.get(_id);
+                                                splitEntries = Object.entries(interactionSplit);
+                                                try {
+                                                    for (splitEntries_1 = __values(splitEntries), splitEntries_1_1 = splitEntries_1.next(); !splitEntries_1_1.done; splitEntries_1_1 = splitEntries_1.next()) {
+                                                        _a = __read(splitEntries_1_1.value, 2), _key = _a[0], _value = _a[1];
+                                                        key = _key;
+                                                        _ = _key;
+                                                        if (key === _ && _value === null) {
+                                                            nulledCount++;
+                                                        }
+                                                    }
+                                                }
+                                                catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                                                finally {
+                                                    try {
+                                                        if (splitEntries_1_1 && !splitEntries_1_1.done && (_b = splitEntries_1.return)) _b.call(splitEntries_1);
+                                                    }
+                                                    finally { if (e_1) throw e_1.error; }
+                                                }
+                                                interactionEventCount = Object.keys(jsons_1.interactionEventData).length;
+                                                (0, Utility_1.log)("\tnulled: " + nulledCount + " v. eventCount: " + interactionEventCount);
+                                                if (!(nulledCount === interactionEventCount)) return [3 /*break*/, 2];
+                                                return [4 /*yield*/, (0, Database_1.saveUserData)(interactionSplit.userData)];
+                                            case 1:
+                                                _c.sent();
+                                                clearInterval(interactionSplit.timer);
+                                                this.user_interaction_map.delete(_id);
+                                                _c.label = 2;
+                                            case 2: return [2 /*return*/];
+                                        }
+                                    });
+                                }); }, 1000),
+                                _f['inventory'] = null,
+                                _f['shop'] = null,
+                                _f['battle'] = null,
+                                _f)])).get(_id);
+                        _g.label = 3;
                     case 3:
                         split = _a;
                         existing = split[_interactionEvent.interactionEventType];
                         if (existing) {
-                            InteractionEventManager.instance.stopInteraction(_user.id, _interactionEvent.interactionEventType);
+                            InteractionEventManager.instance.stopInteraction(_id, _interactionEvent.interactionEventType);
                         }
                         split[_interactionEvent.interactionEventType] = _interactionEvent;
-                        checkAllNull = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
-                            var nulledCount, interactionSplit, entries, entries_1, entries_1_1, _a, _key, _value, key;
-                            var e_1, _b;
-                            return __generator(this, function (_c) {
-                                switch (_c.label) {
-                                    case 0:
-                                        nulledCount = 0;
-                                        interactionSplit = this.user_interaction_map.get(_user.id);
-                                        entries = Object.entries(interactionSplit);
-                                        try {
-                                            for (entries_1 = __values(entries), entries_1_1 = entries_1.next(); !entries_1_1.done; entries_1_1 = entries_1.next()) {
-                                                _a = __read(entries_1_1.value, 2), _key = _a[0], _value = _a[1];
-                                                key = _key;
-                                                if (key !== 'userData' && _value === null) {
-                                                    nulledCount++;
-                                                }
-                                            }
-                                        }
-                                        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-                                        finally {
-                                            try {
-                                                if (entries_1_1 && !entries_1_1.done && (_b = entries_1.return)) _b.call(entries_1);
-                                            }
-                                            finally { if (e_1) throw e_1.error; }
-                                        }
-                                        if (!(nulledCount === entries.length - 1)) return [3 /*break*/, 2];
-                                        return [4 /*yield*/, (0, Database_1.saveUserData)(interactionSplit.userData)];
-                                    case 1:
-                                        _c.sent();
-                                        clearInterval(checkAllNull);
-                                        this.user_interaction_map.delete(_user.id);
-                                        _c.label = 2;
-                                    case 2: return [2 /*return*/];
-                                }
-                            });
-                        }); }, 1000);
-                        _f = split.userData;
-                        if (_f) return [3 /*break*/, 5];
-                        return [4 /*yield*/, (0, Database_1.getUserData)(_user.id).then(function (_ud) {
-                                split.userData = _ud;
-                                return _ud;
-                            })];
-                    case 4:
-                        _f = (_h.sent());
-                        _h.label = 5;
-                    case 5: return [2 /*return*/, _f];
+                        return [2 /*return*/, split.userData];
                 }
             });
         });

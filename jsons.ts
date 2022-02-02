@@ -5,6 +5,7 @@ import dungeonData from "./data/dungeonData.json";
 import enemiesData from "./data/enemiesData.json";
 import materialData from "./data/materialData.json";
 import universalWeaponsData from "./data/universalWeaponsData.json";
+import interactionEventData from './data/interactionEventData.json';
 
 export {
     itemData,
@@ -14,4 +15,5 @@ export {
     enemiesData,
     materialData,
     universalWeaponsData,
+    interactionEventData,
 }

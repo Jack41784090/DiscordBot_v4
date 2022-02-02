@@ -1,6 +1,5 @@
 import { Coordinate, MapData, NumericDirection, OwnerID, RoomDirections, StartBattleOptions, Team, DungeonTreasure } from "../typedef";
 import { Battle } from "./Battle";
-import { BattleManager } from "./BattleManager";
 import { Dungeon } from "./Dungeon";
 import { findEqualCoordinate } from "./Utility";
 
@@ -30,10 +29,6 @@ export class Room {
             return this.battle.StartBattle(battleOptions)
                 .then(_r => {
                     this.isBattleRoom = false;
-                    const leader: OwnerID | undefined = this.dungeon.leaderUser?.id;
-                    if (leader) {
-                        BattleManager.Manager.delete(leader);
-                    }
                     return _r;
                 });
         }

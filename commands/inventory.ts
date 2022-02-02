@@ -1,9 +1,8 @@
-import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageSelectMenuOptions, MessageOptions, MessageSelectOptionData, MessageActionRow, SelectMenuInteraction } from "discord.js";
-import { saveUserData } from "../classes/Database";
+import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageOptions, MessageSelectOptionData, MessageActionRow, SelectMenuInteraction } from "discord.js";
 import { Item } from "../classes/Item";
-import { arrayRemoveItemArray, formalise, getGradeTag, getSelectMenuActionRow, log, uniformRandom, roundToDecimalPlace, setUpInteractionCollect, getLoadingEmbed } from "../classes/Utility";
+import { arrayRemoveItemArray, getSelectMenuActionRow, uniformRandom, roundToDecimalPlace, setUpInteractionCollect, getLoadingEmbed } from "../classes/Utility";
 import { itemData } from "../jsons";
-import { UserData, CommandModule, EMOJI_WHITEB, EMOJI_CROSS, coinURL, EMOJI_MONEYBAG, MEW, MaterialQualityInfo } from "../typedef";
+import { UserData, CommandModule, EMOJI_WHITEB, EMOJI_CROSS, coinURL, EMOJI_MONEYBAG, MEW } from "../typedef";
 import { InteractionEventManager } from "../classes/InteractionEventManager";
 import { InteractionEvent } from "../classes/InteractionEvent";
 
@@ -14,19 +13,24 @@ module.exports = {
     maxArgs: 0,
     callback: async (author: User, authorUserData: UserData, content: string, channel: TextChannel, guild: Guild, args: Array<string>, message: Message, client: Client) => {
         const returnSelectItemsMessage = (): MessageOptions => {
-            const selectMenuOptions: MessageSelectOptionData[] = updatedUserData.inventory.map((_item, _i) => {
+            const selectMenuOptions: MessageSelectOptionData[] = [{
+                emoji: '🔄',
+                label: "Refresh",
+                description: "Update your inventory",
+                value: "refresh"
+            }].concat(updatedUserData.inventory.map((_item, _i) => {
                 return {
                     emoji: itemData[_item.type]?.emoji || EMOJI_WHITEB,
                     label: `${_item.getDisplayName()} (${_item.getWeight(true)})`,
                     description: `$${_item.getWorth(true)}`,
                     value: `${_i}`,
                 };
-            }).splice(0, 24);
-            selectMenuOptions.push({
+            }).splice(0, 23)).concat([{
                 emoji: EMOJI_CROSS,
                 label: "Close",
+                description: "",
                 value: "end",
-            });
+            }]);
             const selectMenuActionRow: MessageActionRow = getSelectMenuActionRow(selectMenuOptions, "select");
 
             return {
@@ -84,6 +88,10 @@ module.exports = {
             try {
                 const action: string = _itr.values[0];
                 switch (action) {
+                    case "refresh":
+                        await _itr.update(returnSelectItemsMessage());
+                        break;
+
                     case "end":
                         InteractionEventManager.getInstance().stopInteraction(author.id, 'inventory');
                         break;
@@ -152,8 +160,8 @@ module.exports = {
         const invMessage: Message = await message.reply({
             embeds: [getLoadingEmbed()]
         });
-        const interactionEvent: InteractionEvent = new InteractionEvent(author, invMessage, 'inventory');
-        const updatedUserData: UserData = await InteractionEventManager.getInstance().registerInteraction(author, interactionEvent, authorUserData);
+        const interactionEvent: InteractionEvent = new InteractionEvent(author.id, invMessage, 'inventory');
+        const updatedUserData: UserData = await InteractionEventManager.getInstance().registerInteraction(author.id, interactionEvent, authorUserData);
 
         let itemSelected: Item;
         invMessage.edit(returnSelectItemsMessage());

@@ -153,8 +153,8 @@ module.exports = {
                         })];
                 case 1:
                     shopMessage = _a.sent();
-                    interactionEvent = new InteractionEvent_1.InteractionEvent(author, shopMessage, 'shop');
-                    return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author, interactionEvent, authorUserData)];
+                    interactionEvent = new InteractionEvent_1.InteractionEvent(author.id, shopMessage, 'shop');
+                    return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author.id, interactionEvent, authorUserData)];
                 case 2:
                     updatedUserData = _a.sent();
                     shopMessage.edit(returnMessage());

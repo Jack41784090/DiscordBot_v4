@@ -81,7 +81,6 @@ var discord_js_1 = require("discord.js");
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
-var Item_1 = require("./Item");
 var jsons_1 = require("../jsons");
 // import { Dungeon } from "./Dungeon";
 function clamp(value, min, max) {
@@ -557,11 +556,7 @@ function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
 exports.getAttackAction = getAttackAction;
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
-        var i, element;
         return __generator(this, function (_a) {
-            for (i = 0; i < 1000; i++) {
-                element = Item_1.Item.Generate("pure_cobalt", "test");
-            }
             return [2 /*return*/];
         });
     });

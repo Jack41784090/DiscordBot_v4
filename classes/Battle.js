@@ -86,10 +86,11 @@ var fs_1 = __importDefault(require("fs"));
 var typedef_1 = require("../typedef");
 var hGraphTheory_1 = require("./hGraphTheory");
 var WeaponEffect_1 = require("./WeaponEffect");
-var BattleManager_1 = require("./BattleManager");
 var AI_1 = require("./AI");
 var __1 = require("..");
 var Item_1 = require("./Item");
+var InteractionEventManager_1 = require("./InteractionEventManager");
+var InteractionEvent_1 = require("./InteractionEvent");
 var Battle = /** @class */ (function () {
     function Battle(_mapData, _author, _message, _client, _pvp, _party) {
         var _this = this;
@@ -133,20 +134,23 @@ var Battle = /** @class */ (function () {
     Battle.Generate = function (_mapData, _author, _message, _party, _client, _pvp) {
         if (_pvp === void 0) { _pvp = false; }
         return __awaiter(this, void 0, void 0, function () {
-            var battle, i, ownerID, userData, blankStat, user, i_1, universalWeaponName, uniWeapon, _b, _c, _d, key, value, Eclass, mod, enemyBase, spawnCount, _loop_1, i;
+            var battle, instance, i, ownerID, interactEvent, userData, blankStat, user, i_1, universalWeaponName, uniWeapon, _b, _c, _d, key, value, Eclass, mod, enemyBase, spawnCount, _loop_1, i;
             var e_1, _g;
             return __generator(this, function (_h) {
                 switch (_h.label) {
                     case 0:
                         battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
+                        instance = InteractionEventManager_1.InteractionEventManager.getInstance();
                         i = 0;
                         _h.label = 1;
                     case 1:
                         if (!(i < _party.length)) return [3 /*break*/, 5];
                         ownerID = _party[i];
-                        return [4 /*yield*/, (0, Database_1.getUserData)(ownerID)];
+                        interactEvent = new InteractionEvent_1.InteractionEvent(ownerID, _message, 'battle');
+                        return [4 /*yield*/, instance.registerInteraction(ownerID, interactEvent)];
                     case 2:
                         userData = _h.sent();
+                        battle.userDataCache.set(ownerID, userData);
                         blankStat = (0, Utility_1.getStat)((0, Utility_1.getBaseClassStat)(userData.equippedClass), ownerID);
                         if (_pvp) {
                             blankStat.pvp = true;
@@ -155,7 +159,6 @@ var Battle = /** @class */ (function () {
                         return [4 /*yield*/, __1.BotClient.users.fetch(ownerID).catch(function () { return null; })];
                     case 3:
                         user = _h.sent();
-                        battle.userDataCache.set(ownerID, userData);
                         if (user) {
                             battle.userCache.set(ownerID, user);
                         }
@@ -217,8 +220,6 @@ var Battle = /** @class */ (function () {
                                 finally { if (e_1) throw e_1.error; }
                             }
                         }
-                        // attach ongoing battle to Manager
-                        BattleManager_1.BattleManager.Manager.set(_author.id, battle);
                         return [2 /*return*/, battle];
                 }
             });
@@ -648,53 +649,44 @@ var Battle = /** @class */ (function () {
     Battle.prototype.FinishRound = function () {
         var _b;
         return __awaiter(this, void 0, void 0, function () {
-            var PVE, PVP, allStats, i, id, stat, endEmbedFields_1, victoryTitle;
+            var PVE, PVP, allStats, i, id, stat, userData, endEmbedFields_1, victoryTitle;
             return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0:
-                        (0, Utility_1.log)("Finishing Round...");
-                        PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
-                        PVP = this.playerCount === 1;
-                        if (!((this.pvp && PVP) || (!this.pvp && PVE))) return [3 /*break*/, 6];
-                        allStats = this.allStats();
-                        i = 0;
-                        _c.label = 1;
-                    case 1:
-                        if (!(i < this.party.length)) return [3 /*break*/, 5];
+                (0, Utility_1.log)("Finishing Round...");
+                PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
+                PVP = this.playerCount === 1;
+                if ((this.pvp && PVP) || (!this.pvp && PVE)) {
+                    allStats = this.allStats();
+                    for (i = 0; i < this.party.length; i++) {
                         id = this.party[i];
                         stat = allStats[i];
-                        return [4 /*yield*/, (0, Database_1.setUserWelfare)(id, (0, Utility_1.clamp)(stat.HP / stat.base.AHP, 0, 1))];
-                    case 2:
-                        _c.sent();
-                        return [4 /*yield*/, (0, Database_1.saveUserData)(this.userDataCache.get(id))];
-                    case 3:
-                        _c.sent();
-                        _c.label = 4;
-                    case 4:
-                        i++;
-                        return [3 /*break*/, 1];
-                    case 5:
-                        endEmbedFields_1 = [];
-                        this.callbackOnParty(function (stat) {
-                            var statAcco = stat.accolades;
-                            var value = "Kills: " + statAcco.kill + "\n                        Damage Dealt: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageDealt) + "\n                        Healing Done: " + (0, Utility_1.roundToDecimalPlace)(statAcco.healingDone) + "\n                        Damage Absorbed: " + (0, Utility_1.roundToDecimalPlace)(statAcco.absorbed) + "\n                        Damage Taken: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageTaken) + "\n                        Dodged: " + statAcco.dodged + " times\n                        Critical Hits: " + statAcco.critNo + " times\n                        Clashed " + statAcco.clashNo + " times\n                        Average Rolls: " + ((0, Utility_1.roundToDecimalPlace)(statAcco.rollAverage) || "N/A");
-                            endEmbedFields_1.push({
-                                name: stat.name + (" (" + stat.base.class + ")"),
-                                value: value,
-                            });
+                        userData = this.userDataCache.get(id);
+                        userData.welfare = (0, Utility_1.clamp)(stat.HP / stat.base.AHP, 0, 1);
+                        InteractionEventManager_1.InteractionEventManager.getInstance().stopInteraction(id, 'battle');
+                    }
+                    endEmbedFields_1 = [];
+                    this.callbackOnParty(function (stat) {
+                        var statAcco = stat.accolades;
+                        var value = "Kills: " + statAcco.kill + "\n                        Damage Dealt: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageDealt) + "\n                        Healing Done: " + (0, Utility_1.roundToDecimalPlace)(statAcco.healingDone) + "\n                        Damage Absorbed: " + (0, Utility_1.roundToDecimalPlace)(statAcco.absorbed) + "\n                        Damage Taken: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageTaken) + "\n                        Dodged: " + statAcco.dodged + " times\n                        Critical Hits: " + statAcco.critNo + " times\n                        Clashed " + statAcco.clashNo + " times\n                        Average Rolls: " + ((0, Utility_1.roundToDecimalPlace)(statAcco.rollAverage) || "N/A");
+                        endEmbedFields_1.push({
+                            name: stat.name + (" (" + stat.base.class + ")"),
+                            value: value,
                         });
-                        victoryTitle = this.pvp ?
-                            (((_b = this.allStats().find(function (_s) { return _s.owner && _s.HP > 0; })) === null || _b === void 0 ? void 0 : _b.base.class) || "What? No one ") + " wins!" :
-                            this.totalEnemyCount === 0 ? "VICTORY!" : "Defeat.";
-                        this.channel.send({
-                            embeds: [new discord_js_1.MessageEmbed({
-                                    title: victoryTitle,
-                                    fields: endEmbedFields_1,
-                                })]
-                        });
-                        return [2 /*return*/, this.totalEnemyCount === 0];
-                    case 6: return [2 /*return*/, this.StartRound()];
+                    });
+                    victoryTitle = this.pvp ?
+                        (((_b = this.allStats().find(function (_s) { return _s.owner && _s.HP > 0; })) === null || _b === void 0 ? void 0 : _b.base.class) || "What? No one ") + " wins!" :
+                        this.totalEnemyCount === 0 ? "VICTORY!" : "Defeat.";
+                    this.channel.send({
+                        embeds: [new discord_js_1.MessageEmbed({
+                                title: victoryTitle,
+                                fields: endEmbedFields_1,
+                            })]
+                    });
+                    return [2 /*return*/, this.totalEnemyCount === 0];
                 }
+                else {
+                    return [2 /*return*/, this.StartRound()];
+                }
+                return [2 /*return*/];
             });
         });
     };
@@ -2322,6 +2314,9 @@ var Battle = /** @class */ (function () {
             var isVertSlope = (Math.abs(slope) === Infinity) || (s.x === _x1.x);
             return coordDiff.x === coordDiff_this.x && coordDiff.y === coordDiff_this.y && isWithinDistance && (withinSlopeA || isVertSlope);
         });
+    };
+    Battle.prototype.removeEntity = function (_stat) {
+        this.CSMap.delete((0, Utility_1.getCoordString)(_stat));
     };
     Battle.prototype.validateTarget = function (_stat_aa, _weapon_null, _target_null) {
         var eM = {

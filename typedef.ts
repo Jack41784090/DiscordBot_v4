@@ -3,7 +3,7 @@ import { Battle } from "./classes/Battle";
 import { Item } from "./classes/Item";
 import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
-import { areasData, classData, dungeonData, enemiesData, itemData, materialData } from "./jsons";
+import { areasData, classData, dungeonData, enemiesData, itemData, materialData, interactionEventData } from "./jsons";
 
 export type Round = number;
 export type Priority = number;
@@ -423,7 +423,7 @@ export interface AINode extends Coordinate {
 
 export type PathFindMethod = "lowest" | "highest";
 
-export type InteractionEventType =
-    'inventory'|
-    'shop'|
-    'info'
+export type InteractionEventType = keyof typeof interactionEventData;
+export interface InteractionEventOptions {
+    battle?: Battle
+}

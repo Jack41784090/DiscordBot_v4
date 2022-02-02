@@ -1,19 +1,20 @@
-import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageCollector, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
-import { addHPBar, clearChannel, counterAxis, extractCommands, findLongArm, getAHP, getDirection, getSpd, getCompass, log, newWeapon, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag } from "./Utility";
+import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
+import { addHPBar, counterAxis, getAHP, getSpd, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { getFileImage, getIcon, getUserData, getUserWelfare, saveUserData, setUserWelfare } from "./Database";
+import { getFileImage, getIcon, getUserWelfare } from "./Database";
 import enemiesData from "../data/enemiesData.json";
 import globalWeaponsData from "../data/universalWeaponsData.json";
 
 import fs from 'fs';
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, EMOJI_CROSS, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, WeaponName, UniversalWeaponName, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialQualityInfo, EMOJI_MONEYBAG } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialQualityInfo, EMOJI_MONEYBAG } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
-import { BattleManager } from "./BattleManager";
 import { AI } from "./AI";
 import { BotClient } from "..";
 import { Item } from "./Item";
+import { InteractionEventManager } from "./InteractionEventManager";
+import { InteractionEvent } from "./InteractionEvent";
 
 export class Battle {
     static readonly MOVE_READINESS = 10;
@@ -101,11 +102,17 @@ export class Battle {
     static async Generate(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
         const battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
 
+        const instance = InteractionEventManager.getInstance();
         // initiate users
         for (let i = 0; i < _party.length; i++) {
-            // add to spawn queue
             const ownerID = _party[i];
-            const userData: UserData = await getUserData(ownerID);
+
+            // interaction event
+            const interactEvent: InteractionEvent = new InteractionEvent(ownerID, _message, 'battle');
+            const userData = await instance.registerInteraction(ownerID, interactEvent);
+            battle.userDataCache.set(ownerID, userData);
+
+            // add to spawn queue
             const blankStat = getStat(getBaseClassStat(userData.equippedClass), ownerID);
             if (_pvp) {
                 blankStat.pvp = true;
@@ -114,7 +121,6 @@ export class Battle {
 
             // initiate cache
             const user: User | null = await BotClient.users.fetch(ownerID).catch(() => null);
-            battle.userDataCache.set(ownerID, userData);
             if (user) {
                 battle.userCache.set(ownerID, user);
             }
@@ -166,8 +172,6 @@ export class Battle {
             }
         }
 
-        // attach ongoing battle to Manager
-        BattleManager.Manager.set(_author.id, battle);
         return battle;
     }
 
@@ -545,14 +549,16 @@ export class Battle {
         const PVP = this.playerCount === 1;
         if ((this.pvp && PVP) || (!this.pvp && PVE))
         {
-            // database work
-            // await Database.updateOrAddUser(author, { status: 'idle' });
+            // update InteractionManager userData
             const allStats = this.allStats();
             for (let i = 0; i < this.party.length; i++) {
                 const id: OwnerID = this.party[i];
                 const stat: Stat = allStats[i];
-                await setUserWelfare(id, clamp(stat.HP / stat.base.AHP, 0, 1));
-                await saveUserData(this.userDataCache.get(id)!);
+
+                const userData = this.userDataCache.get(id)!
+                userData.welfare = clamp(stat.HP / stat.base.AHP, 0, 1);
+
+                InteractionEventManager.getInstance().stopInteraction(id, 'battle');
             }
 
             // == ACCOLADES ==
@@ -2244,6 +2250,10 @@ export class Battle {
 
             return coordDiff.x === coordDiff_this.x && coordDiff.y === coordDiff_this.y && isWithinDistance && (withinSlopeA || isVertSlope);
         });
+    }
+
+    removeEntity(_stat: Stat) {
+        this.CSMap.delete(getCoordString(_stat));
     }
 
     // validation

@@ -5,7 +5,6 @@ import { BotClient } from "..";
 import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialQualityInfo, MaterialGrade, UserData, Material, MaterialSpawnQualityInfo } from "../typedef";
 import { Battle } from "./Battle";
 import { Item } from "./Item";
-import { getUserData, saveUserData } from "./Database";
 import { areasData, enemiesData, classData, itemData } from "../jsons";
 // import { Dungeon } from "./Dungeon";
 
@@ -490,9 +489,6 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
 }
 
 export async function Test() {
-    for (let i = 0; i < 1000; i++) {
-        const element = Item.Generate("pure_cobalt", "test");
-    }
 }
 
 export function findReferenceAngle(_angle: number): number {

@@ -53,7 +53,12 @@ module.exports = {
             switch (_a.label) {
                 case 0:
                     returnSelectItemsMessage = function () {
-                        var selectMenuOptions = updatedUserData.inventory.map(function (_item, _i) {
+                        var selectMenuOptions = [{
+                                emoji: '🔄',
+                                label: "Refresh",
+                                description: "Update your inventory",
+                                value: "refresh"
+                            }].concat(updatedUserData.inventory.map(function (_item, _i) {
                             var _a;
                             return {
                                 emoji: ((_a = jsons_1.itemData[_item.type]) === null || _a === void 0 ? void 0 : _a.emoji) || typedef_1.EMOJI_WHITEB,
@@ -61,12 +66,12 @@ module.exports = {
                                 description: "$" + _item.getWorth(true),
                                 value: "" + _i,
                             };
-                        }).splice(0, 24);
-                        selectMenuOptions.push({
-                            emoji: typedef_1.EMOJI_CROSS,
-                            label: "Close",
-                            value: "end",
-                        });
+                        }).splice(0, 23)).concat([{
+                                emoji: typedef_1.EMOJI_CROSS,
+                                label: "Close",
+                                description: "",
+                                value: "end",
+                            }]);
                         var selectMenuActionRow = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions, "select");
                         return {
                             embeds: [
@@ -122,30 +127,35 @@ module.exports = {
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
-                                    _b.trys.push([0, 5, , 6]);
+                                    _b.trys.push([0, 7, , 8]);
                                     action = _itr.values[0];
                                     _a = action;
                                     switch (_a) {
-                                        case "end": return [3 /*break*/, 1];
+                                        case "refresh": return [3 /*break*/, 1];
+                                        case "end": return [3 /*break*/, 3];
                                     }
-                                    return [3 /*break*/, 2];
-                                case 1:
-                                    InteractionEventManager_1.InteractionEventManager.getInstance().stopInteraction(author.id, 'inventory');
                                     return [3 /*break*/, 4];
+                                case 1: return [4 /*yield*/, _itr.update(returnSelectItemsMessage())];
                                 case 2:
+                                    _b.sent();
+                                    return [3 /*break*/, 6];
+                                case 3:
+                                    InteractionEventManager_1.InteractionEventManager.getInstance().stopInteraction(author.id, 'inventory');
+                                    return [3 /*break*/, 6];
+                                case 4:
                                     index = parseInt(_itr.values[0]);
                                     itemSelected = updatedUserData.inventory[index];
                                     return [4 /*yield*/, _itr.update(returnItemsActionMessage(itemSelected))];
-                                case 3:
-                                    _b.sent();
-                                    return [3 /*break*/, 4];
-                                case 4: return [3 /*break*/, 6];
                                 case 5:
+                                    _b.sent();
+                                    return [3 /*break*/, 6];
+                                case 6: return [3 /*break*/, 8];
+                                case 7:
                                     _err_1 = _b.sent();
                                     console.error(_err_1);
                                     listen();
-                                    return [3 /*break*/, 6];
-                                case 6: return [2 /*return*/];
+                                    return [3 /*break*/, 8];
+                                case 8: return [2 /*return*/];
                             }
                         });
                     }); };
@@ -236,8 +246,8 @@ module.exports = {
                         })];
                 case 1:
                     invMessage = _a.sent();
-                    interactionEvent = new InteractionEvent_1.InteractionEvent(author, invMessage, 'inventory');
-                    return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author, interactionEvent, authorUserData)];
+                    interactionEvent = new InteractionEvent_1.InteractionEvent(author.id, invMessage, 'inventory');
+                    return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author.id, interactionEvent, authorUserData)];
                 case 2:
                     updatedUserData = _a.sent();
                     invMessage.edit(returnSelectItemsMessage());
