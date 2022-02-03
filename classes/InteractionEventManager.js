@@ -66,7 +66,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InteractionEventManager = void 0;
 var jsons_1 = require("../jsons");
 var Database_1 = require("./Database");
-var Utility_1 = require("./Utility");
 var InteractionEventManager = /** @class */ (function () {
     function InteractionEventManager() {
         this.user_interaction_map = new Map();
@@ -99,21 +98,18 @@ var InteractionEventManager = /** @class */ (function () {
                     case 2:
                         _a = _c.apply(_b, _d.concat([(_f.userData = _e,
                                 _f.timer = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
-                                    var nulledCount, interactionSplit, splitEntries, splitEntries_1, splitEntries_1_1, _a, _key, _value, key, _, interactionEventCount;
+                                    var nulledCount, interactionSplit, splitEntries, splitEntries_1, splitEntries_1_1, _a, _key, _value, interactionEventCount;
                                     var e_1, _b;
                                     return __generator(this, function (_c) {
                                         switch (_c.label) {
                                             case 0:
-                                                (0, Utility_1.log)("Check null...");
                                                 nulledCount = 0;
                                                 interactionSplit = this.user_interaction_map.get(_id);
                                                 splitEntries = Object.entries(interactionSplit);
                                                 try {
                                                     for (splitEntries_1 = __values(splitEntries), splitEntries_1_1 = splitEntries_1.next(); !splitEntries_1_1.done; splitEntries_1_1 = splitEntries_1.next()) {
                                                         _a = __read(splitEntries_1_1.value, 2), _key = _a[0], _value = _a[1];
-                                                        key = _key;
-                                                        _ = _key;
-                                                        if (key === _ && _value === null) {
+                                                        if (_value === null) {
                                                             nulledCount++;
                                                         }
                                                     }
@@ -126,7 +122,6 @@ var InteractionEventManager = /** @class */ (function () {
                                                     finally { if (e_1) throw e_1.error; }
                                                 }
                                                 interactionEventCount = Object.keys(jsons_1.interactionEventData).length;
-                                                (0, Utility_1.log)("\tnulled: " + nulledCount + " v. eventCount: " + interactionEventCount);
                                                 if (!(nulledCount === interactionEventCount)) return [3 /*break*/, 2];
                                                 return [4 /*yield*/, (0, Database_1.saveUserData)(interactionSplit.userData)];
                                             case 1:
@@ -141,16 +136,21 @@ var InteractionEventManager = /** @class */ (function () {
                                 _f['inventory'] = null,
                                 _f['shop'] = null,
                                 _f['battle'] = null,
+                                _f['info'] = null,
                                 _f)])).get(_id);
                         _g.label = 3;
                     case 3:
                         split = _a;
                         existing = split[_interactionEvent.interactionEventType];
-                        if (existing) {
+                        if (existing && existing.stoppable === true) {
                             InteractionEventManager.instance.stopInteraction(_id, _interactionEvent.interactionEventType);
+                            split[_interactionEvent.interactionEventType] = _interactionEvent;
+                            return [2 /*return*/, split.userData];
                         }
-                        split[_interactionEvent.interactionEventType] = _interactionEvent;
-                        return [2 /*return*/, split.userData];
+                        else {
+                            return [2 /*return*/, null];
+                        }
+                        return [2 /*return*/];
                 }
             });
         });

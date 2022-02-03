@@ -16,6 +16,14 @@ var InteractionEvent = /** @class */ (function () {
                 InteractionEventManager_1.InteractionEventManager.getInstance().stopInteraction(_id, 'battle');
             }
         }
+        this.stoppable = (function () {
+            switch (_eventType) {
+                case 'battle':
+                    return false;
+                default:
+                    return true;
+            }
+        })();
     }
     InteractionEvent.prototype.stop = function () {
         var _this = this;

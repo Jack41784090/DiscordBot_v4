@@ -1,12 +1,12 @@
 {
-	"Hercules": {
-		"class": "Hercules",
+	"Fighter": {
+		"class": "Fighter",
 		"AHP": 70,
 		"Dodge": 10,
 		"Prot": 0.3,
 		"Spd": 5.5,
 		"maxMove": 1,
-		"iconURL": "images/Hercules1.png",
+		"iconURL": "images/class/fighter_default.png",
 		"weapons": [
 			{
 				"Name": "Obliterate",
@@ -26,7 +26,7 @@
 				},
 				"CD": 0,
 				"UPT": 3,
-				"desc": "Hercules brings down his club and destroys an enemy within range. If the damage is above 14, a Shield token is taken away from the enemy."
+				"desc": "Fighter brings down his club and destroys an enemy within range. If the damage is above 14, a Shield token is taken away from the enemy."
 			},
 			{
 				"Name": "Endure",
@@ -46,7 +46,7 @@
 				},
 				"CD": 0,
 				"UPT": 1,
-				"desc": "Hercules summons the burning will to survive, giving himself a shield and healing that is equivalent to 33% of current Labour value."
+				"desc": "Fighter summons the burning will to survive, giving himself a shield and healing that is equivalent to 33% of current Labour value."
 			}
 		],
 		"autoWeapons": [
@@ -68,20 +68,20 @@
 				},
 				"CD": 0,
 				"UPT": 1,
-				"desc": "All damage taken by Hercules is saved as the 'Labour' value, giving extra effects to specific abilities."
+				"desc": "All damage taken by Fighter is saved as the 'Labour' value, giving extra effects to specific abilities."
 			}
 		],
 		"botType": 0,
 		"lootInfo": []
 	},
 	"Mars": {
-		"class": "Mars",
+		"class": "Executioner",
 		"AHP": 55,
 		"Dodge": 10,
 		"Prot": 0.45,
 		"Spd": 6.5,
 		"maxMove": 1,
-		"iconURL": "images/Mars.png",
+		"iconURL": "images/class/executioner_default.png",
 		"weapons": [
 			{
 				"Name": "Vicious Stab",

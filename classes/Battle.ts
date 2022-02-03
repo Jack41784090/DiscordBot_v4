@@ -1,7 +1,7 @@
 import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
 import { addHPBar, counterAxis, getAHP, getSpd, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { getFileImage, getIcon, getUserWelfare } from "./Database";
+import { getFileImage, getIconCanvas, getUserWelfare } from "./Database";
 import enemiesData from "../data/enemiesData.json";
 import globalWeaponsData from "../data/universalWeaponsData.json";
 
@@ -110,27 +110,31 @@ export class Battle {
             // interaction event
             const interactEvent: InteractionEvent = new InteractionEvent(ownerID, _message, 'battle');
             const userData = await instance.registerInteraction(ownerID, interactEvent);
-            battle.userDataCache.set(ownerID, userData);
+            if (userData) {
+                battle.userDataCache.set(ownerID, userData);
+                // add to spawn queue
+                const blankStat = getStat(getBaseClassStat(userData.equippedClass), ownerID);
+                if (_pvp) {
+                    blankStat.pvp = true;
+                }
+                battle.tobespawnedArray.push(blankStat);
 
-            // add to spawn queue
-            const blankStat = getStat(getBaseClassStat(userData.equippedClass), ownerID);
-            if (_pvp) {
-                blankStat.pvp = true;
+                // initiate cache
+                const user: User | null = await BotClient.users.fetch(ownerID).catch(() => null);
+                if (user) {
+                    battle.userCache.set(ownerID, user);
+                }
+
+                // add universal weapons
+                for (let i = 0; i < Object.keys(globalWeaponsData).length; i++) {
+                    const universalWeaponName: keyof typeof globalWeaponsData = Object.keys(globalWeaponsData)[i] as keyof typeof globalWeaponsData;
+                    const uniWeapon: Weapon = getNewObject(globalWeaponsData[universalWeaponName] as Weapon);
+                    log("Pushing universal weapon " + universalWeaponName + " into the arsenal of " + `${blankStat.base.class} (${blankStat.index})`)
+                    blankStat.base.weapons.push(uniWeapon);
+                }
             }
-            battle.tobespawnedArray.push(blankStat);
-
-            // initiate cache
-            const user: User | null = await BotClient.users.fetch(ownerID).catch(() => null);
-            if (user) {
-                battle.userCache.set(ownerID, user);
-            }
-
-            // add universal weapons
-            for (let i = 0; i < Object.keys(globalWeaponsData).length; i++) {
-                const universalWeaponName: keyof typeof globalWeaponsData = Object.keys(globalWeaponsData)[i] as keyof typeof globalWeaponsData;
-                const uniWeapon: Weapon = getNewObject(globalWeaponsData[universalWeaponName] as Weapon);
-                log("Pushing universal weapon " + universalWeaponName + " into the arsenal of " + `${blankStat.base.class} (${blankStat.index})`)
-                blankStat.base.weapons.push(uniWeapon);
+            else {
+                _message.channel.send(`<@${ownerID}> is busy (most possibly already in another battle) and cannot participate.`)
             }
         }
 
@@ -1578,7 +1582,9 @@ export class Battle {
         const allStats = this.allStats();
 
         // draw initial
-        const groundImage = await getFileImage(this.mapData.map.groundURL);
+        const groundImage = this.mapData.map.groundURL?
+            await getFileImage(this.mapData.map.groundURL):
+            undefined;
         const canvas = returnGridCanvas(this.height, this.width, this.pixelsPerTile, groundImage);
         const ctx = canvas.getContext('2d');
 
@@ -1592,8 +1598,8 @@ export class Battle {
 
             // get character icon (template)
             let iconCanvas: Canvas = stat.owner?
-                await getIcon(stat):
-                (iconCache.get(baseClass) || await getIcon(stat));
+                await getIconCanvas(stat):
+                (iconCache.get(baseClass) || await getIconCanvas(stat));
             if (!stat.owner && iconCache.get(baseClass) === undefined) {
                 iconCache.set(baseClass, iconCanvas);
             }
@@ -2031,33 +2037,25 @@ export class Battle {
     }
 
     async getFullPlayerEmbedMessageOptions(stat: Stat, actions?: Array<Action>): Promise<MessageOptions> {
-        // const mapCanvas = await this.getCurrentMapWithArrowsCanvas(stat, actions);
-        // const map: Buffer = mapCanvas.toBuffer();
-
-        const frameImage: Image = await getFileImage('images/frame.png');
+        // thumbnail generation
         const characterBaseImage: Image = await getFileImage(stat.base.iconURL);
-        const { canvas, ctx } = startDrawing(frameImage.width * 3, frameImage.height * 3);
-        ctx.drawImage(characterBaseImage, 20, 20, canvas.width - 40, canvas.height - 40);
-        ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
-        ctx.textAlign = "center";
-        ctx.font = '90px serif';
-        ctx.fillStyle = "rgba(255, 255, 255, 1)";
-        ctx.fillText(stat.base.class, canvas.width / 2, canvas.height * 0.95);
-        ctx.strokeText(stat.base.class, canvas.width / 2, canvas.height * 0.95);
+        const { width, height } = characterBaseImage;
+        const { canvas, ctx } = startDrawing(width, height);
+        ctx.drawImage(characterBaseImage, 0, 0, width, height);
 
+        // player information embed
         const embed = await this.getFullPlayerEmbed(stat);
-        // sendToSandbox({ files: [{ attachment: map, name: `map.png`},] });
+ 
         return {
             embeds: [embed],
             files: [
-                // { attachment: map, name: "map.png" },
                 { attachment: canvas.toBuffer(), name: "thumbnail.png" }
             ]
         };
     }
     async getFullPlayerEmbed(stat: Stat): Promise<MessageEmbed> {
         const HP = (stat.HP / getAHP(stat)) * 50;
-        const HealthBar = `${'`'}${addHPBar(50, HP)}${'`'}`;
+        const HealthBar = `${'`'}${addHPBar(stat.base.AHP, HP, 40)}${'`'}`;
         const ReadinessBar = `${'`'}${addHPBar(50, stat.readiness)}${'`'}`;
         const explorerEmbed = new MessageEmbed({
             title: HealthBar,
@@ -2088,9 +2086,6 @@ export class Battle {
 
         // thumbnail
         explorerEmbed.setThumbnail("attachment://thumbnail.png")
-
-        // dealing with map
-        // explorerEmbed.setImage(`attachment://map.png`);
 
         // embed color to HP
         let green = (Math.round((stat.HP) * (255 / getAHP(stat)))).toString(16);

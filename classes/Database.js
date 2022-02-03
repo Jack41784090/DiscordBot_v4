@@ -58,18 +58,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.saveBattle = exports.getBufferFromImage = exports.getIcon = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.getUserWelfare = exports.setUserWelfare = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.saveUserData = exports.getAnyData = void 0;
+exports.saveBattle = exports.getBufferFromImage = exports.getIconImgurLink = exports.getIconCanvas = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.getUserWelfare = exports.setUserWelfare = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.saveUserData = exports.getAnyData = void 0;
+var typedef_1 = require("../typedef");
 var admin = __importStar(require("firebase-admin"));
 var serviceAccount = __importStar(require("../serviceAccount.json"));
 var canvas_1 = require("canvas");
 var Utility_1 = require("./Utility");
 var __1 = require("..");
 var fs_1 = __importDefault(require("fs"));
+var imgur_1 = require("imgur");
 var Item_1 = require("./Item");
+// firebase login
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
 });
 var database = admin.firestore();
+// imgur login
+var imgurClient = new imgur_1.ImgurClient({
+    clientId: 'fb524134f2cc257',
+    clientSecret: 'd3db322bb9fd8a6bd7407d6337611fcca1e31310',
+});
 function getAnyData(collection, doc, failureCB) {
     return __awaiter(this, void 0, void 0, function () {
         var docRef, snapShot;
@@ -252,15 +260,14 @@ function getDefaultUserData(_user) {
         username: "",
         id: "",
     }, username = _a.username, id = _a.id;
-    var classes = ["Hercules"];
+    var classes = ["Fighter"];
     return {
         classes: classes,
         money: 0,
         name: username,
         party: [id],
         settings: getDefaultSettings(),
-        status: "idle",
-        equippedClass: "Hercules",
+        equippedClass: "Fighter",
         welfare: 1,
         inventory: [],
     };
@@ -290,28 +297,38 @@ exports.getFileBufferImage = getFileBufferImage;
 function getFileImage(path) {
     var image = new canvas_1.Image();
     return new Promise(function (resolve) {
+        var timeoutError = setTimeout(function () {
+            image.src = "C:/Users/Jack/Documents/Jack's Workshop/Coding/DiscordBot_v4/images/black.jpg";
+        }, 10 * 1000);
         image.onload = function () {
+            clearTimeout(timeoutError);
             resolve(image);
         };
         image.src = path;
     });
 }
 exports.getFileImage = getFileImage;
-function getIcon(_stat) {
+function getIconCanvas(_stat, _drawOptions) {
+    if (_drawOptions === void 0) { _drawOptions = {
+        crop: true,
+        frame: true,
+    }; }
     var threadID = (0, Utility_1.uniformRandom)(0, 10000);
     (0, Utility_1.log)("\t\t\tGetting icon for " + _stat.base.class + "(" + _stat.index + ") (" + threadID + ")");
     var iconURL = _stat.base.iconURL;
     var image = new canvas_1.Image();
-    var requestPromise = new Promise(function (resolve) {
+    return new Promise(function (resolve) {
         try {
             // take at most 10 seconds to get icon before using default icon    
             var invalidURLTimeout_1 = setTimeout(function () {
                 (0, Utility_1.log)("\t\t\t\tFailed. (" + threadID + ")");
-                image.src = "https://cdn.discordapp.com/embed/avatars/0.png";
+                image.src = typedef_1.defaultAvatarURL;
             }, 10 * 1000);
             // set onLoad after timeout
             image.onload = function () {
-                (0, Utility_1.log)("\t\t\t\tSuccess! (" + threadID + ")");
+                if (image.src !== typedef_1.defaultAvatarURL) {
+                    (0, Utility_1.log)("\t\t\t\tSuccess! (" + threadID + ")");
+                }
                 clearTimeout(invalidURLTimeout_1);
                 var squaredSize = Math.min(image.width, image.height);
                 var _a = (0, Utility_1.startDrawing)(squaredSize, squaredSize), canvas = _a.canvas, ctx = _a.ctx;
@@ -322,48 +339,97 @@ function getIcon(_stat) {
                 var increasing = Math.abs(halfedImage - halfedSquare);
                 ctx.drawImage(image, 0, increasing, squaredSize, squaredSize, 0, 0, squaredSize, squaredSize);
                 // crop
-                ctx.globalCompositeOperation = 'destination-in';
-                ctx.fillStyle = "#000";
-                ctx.beginPath();
-                ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.closePath();
-                // team color (green/red)
-                ctx.globalCompositeOperation = "source-over";
-                ctx.lineWidth = 10;
+                if (_drawOptions.crop) {
+                    ctx.globalCompositeOperation = 'destination-in';
+                    ctx.fillStyle = "#000";
+                    ctx.beginPath();
+                    ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.closePath();
+                }
                 // black arc
-                ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    alpha: 1
-                });
-                (0, Utility_1.drawCircle)(ctx, {
-                    x: squaredSize / 2,
-                    y: squaredSize / 2,
-                }, squaredSize / 2);
+                if (_drawOptions.frame) {
+                    ctx.globalCompositeOperation = "source-over";
+                    ctx.lineWidth = 10;
+                    ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        alpha: 1
+                    });
+                    (0, Utility_1.drawCircle)(ctx, {
+                        x: squaredSize / 2,
+                        y: squaredSize / 2,
+                    }, squaredSize / 2);
+                }
                 ctx.restore();
                 resolve(canvas);
             };
-            // // getting icon for stat, changes if there is an owner (Discord user ID) attached
-            // if (_stat.owner) {
-            //     BotClient.users.fetch(_stat.owner).then(u => {
-            //         image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(".webp", ".png");
-            //     })
-            // }
-            // else {
-            //     image.src = iconURL;
-            // }
-            image.src = iconURL;
+            // getting icon for stat, changes if there is an owner (Discord user ID) attached
+            if (_stat.owner) {
+                __1.BotClient.users.fetch(_stat.owner).then(function (u) {
+                    image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(/\.webp$/g, ".png");
+                });
+            }
+            else {
+                image.src = iconURL;
+            }
+            // image.src = iconURL;
         }
         catch (error) {
             console.error(error);
-            resolve(getIcon(_stat));
+            resolve(getIconCanvas(_stat, _drawOptions));
         }
     });
-    return requestPromise;
 }
-exports.getIcon = getIcon;
+exports.getIconCanvas = getIconCanvas;
+function getIconImgurLink(_stat) {
+    return __awaiter(this, void 0, void 0, function () {
+        var ssData, _a;
+        var _this = this;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0: return [4 /*yield*/, getAnyData('Imgur', _stat.base.class)];
+                case 1:
+                    ssData = _b.sent();
+                    _a = (ssData === null || ssData === void 0 ? void 0 : ssData.url);
+                    if (_a) return [3 /*break*/, 3];
+                    return [4 /*yield*/, (function () { return __awaiter(_this, void 0, void 0, function () {
+                            var imageCanvas, uploaded;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, getIconCanvas(_stat, {})];
+                                    case 1:
+                                        imageCanvas = _a.sent();
+                                        return [4 /*yield*/, imgurClient.upload({
+                                                image: imageCanvas.toBuffer(),
+                                                type: 'stream',
+                                            })];
+                                    case 2:
+                                        uploaded = _a.sent();
+                                        if (uploaded.success) {
+                                            database.collection("Imgur").doc(_stat.base.class).set({
+                                                url: uploaded.data.link
+                                            });
+                                            return [2 /*return*/, uploaded.data.link];
+                                        }
+                                        else {
+                                            console.error("Catastrophic failure: getIconImgurLink upload failure.");
+                                            return [2 /*return*/, null];
+                                        }
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); })()];
+                case 2:
+                    _a = (_b.sent());
+                    _b.label = 3;
+                case 3: return [2 /*return*/, _a];
+            }
+        });
+    });
+}
+exports.getIconImgurLink = getIconImgurLink;
 function getBufferFromImage(image) {
     var _a = (0, Utility_1.startDrawing)(image.width, image.height), canvas = _a.canvas, ctx = _a.ctx;
     ctx.drawImage(image, 0, 0, image.width, image.height);

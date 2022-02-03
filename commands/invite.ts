@@ -24,7 +24,6 @@ module.exports = {
                     })
 
                 // invited user update
-                invitedUserData.status = "busy";
                 await saveUserData(invitedUserData);
 
                 // leader user update
@@ -40,7 +39,7 @@ module.exports = {
             }
 
             // if user has at least one class, add playerID to party
-            if (invitedUserData.status === "idle" && invitedUserData.classes[0] !== undefined) {
+            if (invitedUserData.classes[0] !== undefined) {
                 if (invitedUserData.equippedClass == null) {
                     invitedUserData.equippedClass = invitedUserData.classes[0];
                 }
@@ -63,9 +62,6 @@ module.exports = {
                         rejectedInvite();
                     }
                 }
-            }
-            else if (invitedUserData.status !== "idle") {
-                message.reply("Invited user is busy.")
             }
         }
         else {

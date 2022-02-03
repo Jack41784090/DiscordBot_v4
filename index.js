@@ -107,7 +107,7 @@ function importCommands() {
         var _loop_1 = function (fileName) {
             var isDirectory = (fs.lstatSync(path.join(__dirname, dir, fileName))).isDirectory();
             var isJSFile = (function () {
-                return fileName.search(/\.js$/gm) !== -1;
+                return fileName.search(/\.js$/g) !== -1;
             })();
             if (isDirectory) {
                 readCommands(path.join(dir, fileName));
@@ -141,7 +141,8 @@ exports.BotClient.on('ready', function () { return __awaiter(void 0, void 0, voi
         exports.BotClient.setMaxListeners(15);
         console.log("Ready.");
         importCommands();
-        quickEmbark();
+        // quickEmbark();
+        (0, Utility_js_1.Test)();
         return [2 /*return*/];
     });
 }); });

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WeaponTarget = exports.BotType = exports.AllTeams = exports.MaterialGrade = exports.NumericDirection = exports.StatMaximus = exports.coinURL = exports.deathQuotes = exports.preludeQuotes = exports.MEW = exports.EMOJI_MONEYBAG = exports.EMOJI_SPRINT = exports.EMOJI_SWORD = exports.EMOJI_SHIELD = exports.EMOJI_BROWNB = exports.EMOJI_BLACKB = exports.EMOJI_WHITEB = exports.EMOJI_STAR = exports.EMOJI_CROSS = exports.EMOJI_TICK = exports.COMMAND_CALL = void 0;
+exports.WeaponTarget = exports.BotType = exports.AllTeams = exports.MaterialGrade = exports.NumericDirection = exports.StatMaximus = exports.defaultAvatarURL = exports.coinURL = exports.deathQuotes = exports.preludeQuotes = exports.MEW = exports.EMOJI_MONEYBAG = exports.EMOJI_SPRINT = exports.EMOJI_SWORD = exports.EMOJI_SHIELD = exports.EMOJI_BROWNB = exports.EMOJI_BLACKB = exports.EMOJI_WHITEB = exports.EMOJI_STAR = exports.EMOJI_CROSS = exports.EMOJI_TICK = exports.COMMAND_CALL = void 0;
 exports.COMMAND_CALL = ";";
 // EMOJIS
 exports.EMOJI_TICK = '✅';
@@ -19,6 +19,7 @@ exports.preludeQuotes = ["Life slips away...", "You've breathed your last...", "
 exports.deathQuotes = ["Survival is a tenuous proposition in this sprawling tomb.", "More blood soaks the soil, feeding the evil therein.", "Another life wasted in the pursuit of glory and gold.", "This is no place for the weak, or the foolhardy.", "More dust, more ashes, more disappointment.", "Driven into the mud and bit the dust.", "Another pawn falls, in the grand scheme of things."];
 // LINKS
 exports.coinURL = 'https://i.imgur.com/NK84zBg.png';
+exports.defaultAvatarURL = "https://cdn.discordapp.com/embed/avatars/0.png";
 // STATISTICAL
 exports.StatMaximus = {
     AHP: 100,

@@ -96,10 +96,6 @@ module.exports = {
                     message.reply("You don't have an account set up yet. Use the `//begin` command first!");
                     return [2 /*return*/];
                 }
-                if (authorData.status !== "idle") {
-                    message.reply("You need to be in an 'idle' state. You are currently in this state: " + authorData.status);
-                    return [2 /*return*/];
-                }
                 if (!authorData.equippedClass) {
                     message.reply("You have yet to have a class equipped.");
                     return [2 /*return*/];

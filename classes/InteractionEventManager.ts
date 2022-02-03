@@ -11,6 +11,7 @@ interface InteractionSplit {
     'inventory': InteractionEvent | null;
     'shop': InteractionEvent | null;
     'battle': InteractionEvent | null;
+    'info': InteractionEvent | null;
 }
 
 export class InteractionEventManager {
@@ -29,7 +30,7 @@ export class InteractionEventManager {
         this.user_interaction_map = new Map<OwnerID, InteractionSplit>();
     }
 
-    async registerInteraction(_id: OwnerID, _interactionEvent: InteractionEvent, _userData?: UserData): Promise<UserData> {
+    async registerInteraction(_id: OwnerID, _interactionEvent: InteractionEvent, _userData?: UserData): Promise<UserData | null> {
         const split: InteractionSplit =
             this.user_interaction_map.get(_id)||
             this.user_interaction_map.set(_id, {
@@ -40,9 +41,7 @@ export class InteractionEventManager {
                     const interactionSplit: InteractionSplit = this.user_interaction_map.get(_id)!
                     const splitEntries = Object.entries(interactionSplit);
                     for (const [_key, _value] of splitEntries) {
-                        const key = _key as keyof InteractionSplit;
-                        const _ = _key as keyof typeof interactionEventData;
-                        if (key === _ && _value === null) {
+                        if (_value === null) {
                             nulledCount++;
                         }
                     }
@@ -59,14 +58,17 @@ export class InteractionEventManager {
                 'inventory': null,
                 'shop': null,
                 'battle': null,
+                'info': null,
             }).get(_id)!;
         const existing: InteractionEvent | null = split[_interactionEvent.interactionEventType];
-        if (existing) {
+        if (existing && existing.stoppable === true) {
             InteractionEventManager.instance.stopInteraction(_id, _interactionEvent.interactionEventType);
+            split[_interactionEvent.interactionEventType] = _interactionEvent;
+            return split.userData;
         }
-        split[_interactionEvent.interactionEventType] = _interactionEvent;
-
-        return split.userData;
+        else {
+            return null;
+        }
     }
 
     stopInteraction(_userID: OwnerID, _eventType: InteractionEventType) {

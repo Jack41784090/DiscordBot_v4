@@ -8,6 +8,7 @@ export class InteractionEvent {
     ownerID: OwnerID;
     interactedMessage: Message;
     interactionEventType: InteractionEventType;
+    stoppable: boolean;
 
     constructor(_id: OwnerID, _message: Message, _eventType: InteractionEventType, _options: InteractionEventOptions = {}) {
         this.ownerID = _id;
@@ -22,6 +23,15 @@ export class InteractionEvent {
                 InteractionEventManager.getInstance().stopInteraction(_id, 'battle');
             }
         }
+
+        this.stoppable = (() => {
+            switch (_eventType) {
+                case 'battle':
+                    return false;
+                default:
+                    return true;
+            }
+        })();
     }
 
     stop() {

@@ -43,78 +43,118 @@ var typedef_1 = require("../typedef");
 var classData_json_1 = __importDefault(require("../data/classData.json"));
 var Utility_1 = require("../classes/Utility");
 var Database_1 = require("../classes/Database");
+var InteractionEventManager_1 = require("../classes/InteractionEventManager");
+var InteractionEvent_1 = require("../classes/InteractionEvent");
 module.exports = {
     commands: ['info'],
     expectedArgs: '[class name]',
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var embed_1, selectMenuOptions, actionrow_1, mes, className, classChosen_1, embed_2, frameImage, characterBaseImage, _a, canvas_1, ctx, filter, arsenal, selectMenuOptions, weaponSelectActionRow_1, mes;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    if (!(args[0] === undefined)) return [3 /*break*/, 2];
-                    embed_1 = function (classChosen) {
-                        return (0, Utility_1.getStatsEmbed)(classChosen).setTitle("Enter \";info " + classChosen + "\" to know more about " + classChosen + ".");
-                    };
-                    selectMenuOptions = Object.keys(classData_json_1.default).map(function (_className) {
-                        return {
-                            label: _className,
-                            value: _className,
-                        };
-                    });
-                    actionrow_1 = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions);
-                    actionrow_1.components[0].placeholder = "Select a Class";
-                    return [4 /*yield*/, message.reply({
-                            embeds: [embed_1("Hercules")],
-                            components: [actionrow_1],
-                        })];
+        var mes, iem, iE, iconCache, getClassIconLink, getClassEmbed, selectMenuOptions, actionrow_1, selectMenu, _a, _b, _c, _d, interactionCollector, className_1, classChosen_1, arsenal, selectMenuOptions, weaponSelectActionRow_1, _e, _f, _g, _h, interactionCollector;
+        return __generator(this, function (_j) {
+            switch (_j.label) {
+                case 0: return [4 /*yield*/, message.reply({
+                        embeds: [(0, Utility_1.getLoadingEmbed)()]
+                    })];
                 case 1:
-                    mes = _b.sent();
-                    (0, Utility_1.setUpInteractionCollect)(mes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
-                        var classChosen;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
+                    mes = _j.sent();
+                    iem = InteractionEventManager_1.InteractionEventManager.getInstance();
+                    iE = new InteractionEvent_1.InteractionEvent(author.id, mes, 'info');
+                    iem.registerInteraction(author.id, iE);
+                    iconCache = new Map();
+                    getClassIconLink = function (className) { return __awaiter(void 0, void 0, void 0, function () {
+                        var _a, _b, _c, _d;
+                        return __generator(this, function (_e) {
+                            switch (_e.label) {
                                 case 0:
-                                    if (!_itr.isSelectMenu()) return [3 /*break*/, 2];
-                                    classChosen = _itr.values[0];
-                                    return [4 /*yield*/, _itr.update({
-                                            embeds: [embed_1(classChosen)],
-                                            components: [actionrow_1],
-                                        })];
+                                    _a = iconCache.get(className);
+                                    if (_a) return [3 /*break*/, 2];
+                                    _c = (_b = iconCache).set;
+                                    _d = [className];
+                                    return [4 /*yield*/, (0, Database_1.getIconImgurLink)((0, Utility_1.getStat)(className))];
                                 case 1:
-                                    _a.sent();
-                                    _a.label = 2;
-                                case 2: return [2 /*return*/];
+                                    _a = _c.apply(_b, _d.concat([(_e.sent()) || typedef_1.defaultAvatarURL])).get(className);
+                                    _e.label = 2;
+                                case 2: return [2 /*return*/, _a];
+                            }
+                        });
+                    }); };
+                    getClassEmbed = function (className) { return __awaiter(void 0, void 0, void 0, function () {
+                        var _a, _b;
+                        var _c;
+                        return __generator(this, function (_d) {
+                            switch (_d.label) {
+                                case 0:
+                                    _c = {};
+                                    _b = (_a = (0, Utility_1.getStatsEmbed)(className))
+                                        .setThumbnail;
+                                    return [4 /*yield*/, getClassIconLink(className)];
+                                case 1: return [2 /*return*/, (_c.embeds = [
+                                        _b.apply(_a, [_d.sent()])
+                                    ],
+                                        _c)];
+                            }
+                        });
+                    }); };
+                    if (!(args[0] === undefined)) return [3 /*break*/, 4];
+                    selectMenuOptions = Object.keys(classData_json_1.default)
+                        .map(function (_className) { return ({
+                        label: _className,
+                        value: _className,
+                    }); });
+                    actionrow_1 = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions);
+                    selectMenu = actionrow_1.components[0];
+                    selectMenu.placeholder = "Select a Class";
+                    _b = (_a = mes).edit;
+                    _d = (_c = Object).assign;
+                    return [4 /*yield*/, getClassEmbed('Fighter')];
+                case 2: return [4 /*yield*/, _b.apply(_a, [_d.apply(_c, [_j.sent(), {
+                                components: [actionrow_1]
+                            }])])];
+                case 3:
+                    _j.sent();
+                    interactionCollector = (0, Utility_1.setUpInteractionCollect)(mes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
+                        var classChosen, _a, _b, _c, _d, _err_1;
+                        return __generator(this, function (_e) {
+                            switch (_e.label) {
+                                case 0:
+                                    _e.trys.push([0, 4, , 5]);
+                                    if (!_itr.isSelectMenu()) return [3 /*break*/, 3];
+                                    classChosen = _itr.values[0];
+                                    _b = (_a = _itr).update;
+                                    _d = (_c = Object).assign;
+                                    return [4 /*yield*/, getClassEmbed(classChosen)];
+                                case 1: return [4 /*yield*/, _b.apply(_a, [_d.apply(_c, [_e.sent(), {
+                                                components: [actionrow_1]
+                                            }])])];
+                                case 2:
+                                    _e.sent();
+                                    _e.label = 3;
+                                case 3: return [3 /*break*/, 5];
+                                case 4:
+                                    _err_1 = _e.sent();
+                                    console.error(_err_1);
+                                    return [3 /*break*/, 5];
+                                case 5: return [2 /*return*/];
                             }
                         });
                     }); }, 10);
-                    return [3 /*break*/, 7];
-                case 2:
-                    if (!(classData_json_1.default[args[0]] === undefined)) return [3 /*break*/, 3];
+                    interactionCollector.on('end', function () {
+                        iem.stopInteraction(author.id, 'info');
+                    });
+                    return [3 /*break*/, 8];
+                case 4:
+                    if (!(classData_json_1.default[args[0]] === undefined)) return [3 /*break*/, 5];
                     message.react(typedef_1.EMOJI_CROSS)
                         .catch(function (_err) { return console.log; });
-                    return [3 /*break*/, 7];
-                case 3:
-                    className = (0, Utility_1.formalise)(args[0]);
-                    classChosen_1 = (0, Utility_1.getNewObject)(classData_json_1.default[className]);
-                    embed_2 = (0, Utility_1.getStatsEmbed)(className);
-                    return [4 /*yield*/, (0, Database_1.getFileImage)('images/frame.png')];
-                case 4:
-                    frameImage = _b.sent();
-                    return [4 /*yield*/, (0, Database_1.getFileImage)(classChosen_1.iconURL)];
+                    iem.stopInteraction(author.id, 'info');
+                    return [3 /*break*/, 8];
                 case 5:
-                    characterBaseImage = _b.sent();
-                    _a = (0, Utility_1.startDrawing)(frameImage.width * 3, frameImage.height * 3), canvas_1 = _a.canvas, ctx = _a.ctx;
-                    ctx.drawImage(characterBaseImage, 20, 20, canvas_1.width - 40, canvas_1.height - 40);
-                    ctx.drawImage(frameImage, 0, 0, canvas_1.width, canvas_1.height);
-                    ctx.textAlign = "center";
-                    ctx.font = '90px serif';
-                    ctx.fillStyle = "rgba(255, 255, 255, 1)";
-                    ctx.fillText(classChosen_1.class, canvas_1.width / 2, canvas_1.height * 0.95);
-                    ctx.strokeText(classChosen_1.class, canvas_1.width / 2, canvas_1.height * 0.95);
-                    embed_2.setThumbnail("attachment://thumbnail.png");
-                    filter = function (_w, _i) {
+                    className_1 = (0, Utility_1.formalise)(args[0]);
+                    classChosen_1 = (0, Utility_1.getNewObject)(classData_json_1.default[className_1]);
+                    arsenal = classChosen_1.weapons.concat(classChosen_1.autoWeapons);
+                    selectMenuOptions = arsenal.map(function (_w, _i) {
                         return {
                             emoji: _w.targetting.target === typedef_1.WeaponTarget.ally ?
                                 typedef_1.EMOJI_SHIELD :
@@ -122,59 +162,62 @@ module.exports = {
                             label: _w.Name,
                             value: "" + _i,
                         };
-                    };
-                    arsenal = classChosen_1.weapons.concat(classChosen_1.autoWeapons);
-                    selectMenuOptions = arsenal.map(filter);
-                    selectMenuOptions.push({
-                        emoji: typedef_1.EMOJI_STAR,
-                        label: "Stats",
-                        value: "menu",
-                    });
+                    }).concat([{
+                            emoji: typedef_1.EMOJI_STAR,
+                            label: "Stats",
+                            value: "menu",
+                        }]);
                     weaponSelectActionRow_1 = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions);
-                    return [4 /*yield*/, message.reply({
-                            embeds: [embed_2],
-                            files: [{ attachment: canvas_1.toBuffer(), name: "thumbnail.png" }],
-                            components: [weaponSelectActionRow_1],
-                        })];
-                case 6:
-                    mes = _b.sent();
-                    (0, Utility_1.setUpInteractionCollect)(mes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
-                        var weaponIndex, weaponChosen, _err_1;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
+                    _f = (_e = mes).edit;
+                    _h = (_g = Object).assign;
+                    return [4 /*yield*/, getClassEmbed(className_1)];
+                case 6: return [4 /*yield*/, _f.apply(_e, [_h.apply(_g, [_j.sent(), {
+                                components: [weaponSelectActionRow_1],
+                            }])])];
+                case 7:
+                    _j.sent();
+                    interactionCollector = (0, Utility_1.setUpInteractionCollect)(mes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
+                        var weaponIndex, weaponChosen, _a, _b, _c, _d, _err_2;
+                        return __generator(this, function (_e) {
+                            switch (_e.label) {
                                 case 0:
-                                    _a.trys.push([0, 5, , 6]);
-                                    if (!_itr.isSelectMenu()) return [3 /*break*/, 4];
+                                    _e.trys.push([0, 6, , 7]);
+                                    if (!_itr.isSelectMenu()) return [3 /*break*/, 5];
                                     weaponIndex = parseInt(_itr.values[0]);
-                                    weaponChosen = classChosen_1.weapons[weaponIndex] || classChosen_1.autoWeapons[weaponIndex % classChosen_1.weapons.length];
+                                    weaponChosen = classChosen_1.weapons[weaponIndex] ||
+                                        classChosen_1.autoWeapons[weaponIndex % classChosen_1.weapons.length];
                                     if (!weaponChosen) return [3 /*break*/, 2];
                                     return [4 /*yield*/, _itr.update({
-                                            embeds: [
-                                                (0, Utility_1.getWeaponEmbed)(weaponChosen)
-                                            ]
+                                            embeds: [(0, Utility_1.getWeaponEmbed)(weaponChosen)]
                                         })];
                                 case 1:
-                                    _a.sent();
-                                    return [3 /*break*/, 4];
-                                case 2: return [4 /*yield*/, _itr.update({
-                                        embeds: [embed_2],
-                                        files: [{ attachment: canvas_1.toBuffer(), name: "thumbnail.png" }],
-                                        components: [weaponSelectActionRow_1],
-                                    })];
-                                case 3:
-                                    _a.sent();
-                                    _a.label = 4;
-                                case 4: return [3 /*break*/, 6];
-                                case 5:
-                                    _err_1 = _a.sent();
-                                    console.log(_err_1);
-                                    return [3 /*break*/, 6];
-                                case 6: return [2 /*return*/];
+                                    _e.sent();
+                                    return [3 /*break*/, 5];
+                                case 2:
+                                    _b = (_a = _itr).update;
+                                    _d = (_c = Object).assign;
+                                    return [4 /*yield*/, getClassEmbed(className_1)];
+                                case 3: return [4 /*yield*/, _b.apply(_a, [_d.apply(_c, [_e.sent(), {
+                                                components: [weaponSelectActionRow_1],
+                                            }])])];
+                                case 4:
+                                    _e.sent();
+                                    _e.label = 5;
+                                case 5: return [3 /*break*/, 7];
+                                case 6:
+                                    _err_2 = _e.sent();
+                                    console.log(_err_2);
+                                    iem.stopInteraction(author.id, 'info');
+                                    return [3 /*break*/, 7];
+                                case 7: return [2 /*return*/];
                             }
                         });
                     }); }, 10);
-                    _b.label = 7;
-                case 7: return [2 /*return*/];
+                    interactionCollector.on('end', function () {
+                        iem.stopInteraction(author.id, 'info');
+                    });
+                    _j.label = 8;
+                case 8: return [2 /*return*/];
             }
         });
     }); }

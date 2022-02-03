@@ -6,6 +6,7 @@ import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes
 import { Battle } from "./Battle";
 import { Item } from "./Item";
 import { areasData, enemiesData, classData, itemData } from "../jsons";
+import { getIconImgurLink } from "./Database";
 // import { Dungeon } from "./Dungeon";
 
 export function clamp(value: number, min: number, max: number) {
@@ -317,7 +318,7 @@ export function returnGridCanvas(_h: number = 9, _w: number = 9, _gridPixels: nu
     }
     
     ctx.strokeStyle = 'black';
-    ctx.lineWidth = _gridPixels / 5;
+    ctx.lineWidth = _gridPixels / 50;
     ctx.beginPath();
     for (let i = 1; i < _h; i++) {
         ctx.moveTo(0, i * _gridPixels);
@@ -814,19 +815,42 @@ export function getEmptyBuff(): Buffs {
     };
 }
 
+export function getStat(_class: Class): Stat;
 export function getStat(bs: BaseStat, _owner?: string): Stat;
 export function getStat(ss: SimplePlayerStat, _owner?: string): Stat;
-export function getStat(bss: SimplePlayerStat | BaseStat, _owner: string = ''): Stat {
-    const base: BaseStat = 'team' in bss ?
-        getNewObject(classData[bss.class], bss) as BaseStat:
-        bss as BaseStat;
-    const ss = bss as SimplePlayerStat;
+export function getStat(_arg0: Class | SimplePlayerStat | BaseStat, _owner: string = ''): Stat {
+    const { base, ss } = (() => {
+        let _b: BaseStat, _s: SimplePlayerStat;
+        if (typeof _arg0 === 'string') {
+            const _c = _arg0 as Class;
+            _b = getBaseClassStat(_c);
+            _s = {
+                class: _c,
+                team: classData[_c]?
+                    'player':
+                    'enemy',
+                botType: BotType.naught,
+                x: 0,
+                y: 0,
+            };
+        }
+        else {
+            _b = 'team' in _arg0 ?
+                getNewObject(classData[_arg0.class], _arg0) as BaseStat :
+                _arg0 as BaseStat;
+            _s = _arg0 as SimplePlayerStat;
+        }
+        return {
+            base: _b,
+            ss: _s,
+        };
+    })();
 
     const endStat: Stat = {
         base: base,
         index: -1,
 
-        name: `${bss.class}`,
+        name: `${base.class}`,
 
         weaponUses: [],
         actionsAssociatedStrings: {},

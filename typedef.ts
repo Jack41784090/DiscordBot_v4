@@ -73,6 +73,7 @@ export const deathQuotes = ["Survival is a tenuous proposition in this sprawling
 
 // LINKS
 export const coinURL = 'https://i.imgur.com/NK84zBg.png';
+export const defaultAvatarURL = "https://cdn.discordapp.com/embed/avatars/0.png";
 
 // BATTLES
 export type Location= keyof typeof dungeonData;
@@ -85,7 +86,7 @@ export interface Map {
     spawners: Array<Spawner>,
     width: number,
     height: number,
-    groundURL: string,
+    groundURL?: string,
 }
 export type MapName = keyof typeof areasData;
 export interface MapData {
@@ -272,11 +273,9 @@ export interface UserData {
     name: string,
     party: Array<string>,
     settings: Settings,
-    status: UserStatus,
     welfare: number,
     inventory: Array<Item>,
 }
-export type UserStatus = "idle" | "busy"; 
 
 export type Team = "block" | "player" | "enemy";
 export const AllTeams: Team[] = [
@@ -325,7 +324,7 @@ export interface Weapon {
 export type UniversalWeaponName =
     "Reckless"
 export type WeaponName =
-    // Hercules
+    // Fighter
     "Passive: Endless Labour" |
     "Obliterate"|
     "Endure"|
@@ -362,6 +361,10 @@ export interface PossibleAttackInfo {
 export type Class = keyof typeof classData;
 export type EnemyClass = keyof typeof enemiesData;
 export type GetBuffOption = 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff';
+export interface GetIconOptions {
+    crop?: boolean,
+    frame?: boolean,
+}
 export interface Buffs {
     AHP: number,
     Damage: number,
@@ -388,7 +391,7 @@ export interface Accolade {
 export type StatusEffectType =
     "bleed"| // tick damage
     "protected"| // extra health (shield)
-    "labouring"| // Hercules unique: add 33% of taken damage to value and increase healing rate
+    "labouring"| // Fighter unique: add 33% of taken damage to value and increase healing rate
     "fury"| // Mars unique: fury over 0.66 gives a buff to damage and crit
     "DamageUp"| // damage buff
     "lifestealUp"

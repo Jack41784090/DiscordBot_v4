@@ -56,8 +56,7 @@
                 }
             ],
             "width": 5,
-            "height": 5,
-            "groundURL": "images/map.png"
+            "height": 5
         },
         "enemiesInfo": {
             "Crystal Zombie": {
@@ -102,8 +101,7 @@
                 }
             ],
             "width": 5,
-            "height": 5,
-            "groundURL": "images/map.png"
+            "height": 5
         },
         "enemiesInfo": {
             "Crystal Zombie": {
@@ -152,8 +150,7 @@
                 }
             ],
             "width": 5,
-            "height": 5,
-            "groundURL": "images/map.png"
+            "height": 5
         },
         "enemiesInfo": {
             "Crystal Zombie": {
@@ -202,8 +199,7 @@
                 }
             ],
             "width": 5,
-            "height": 5,
-            "groundURL": "images/map.png"
+            "height": 5
         },
         "enemiesInfo": {
             "Crystal Zombie": {
@@ -267,8 +263,7 @@
                 }
             ],
             "width": 5,
-            "height": 5,
-            "groundURL": "images/map.png"
+            "height": 5
         },
         "enemiesInfo": {
             "Crystal Zombie": {

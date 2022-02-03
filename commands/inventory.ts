@@ -93,7 +93,7 @@ module.exports = {
                         break;
 
                     case "end":
-                        InteractionEventManager.getInstance().stopInteraction(author.id, 'inventory');
+                        iem.stopInteraction(author.id, 'inventory');
                         break;
 
                     default:
@@ -161,11 +161,10 @@ module.exports = {
             embeds: [getLoadingEmbed()]
         });
         const interactionEvent: InteractionEvent = new InteractionEvent(author.id, invMessage, 'inventory');
-        const updatedUserData: UserData = await InteractionEventManager.getInstance().registerInteraction(author.id, interactionEvent, authorUserData);
-
+        const iem = InteractionEventManager.getInstance();
+        const updatedUserData: UserData = (await iem.registerInteraction(author.id, interactionEvent, authorUserData))!;
         let itemSelected: Item;
         invMessage.edit(returnSelectItemsMessage());
-
         listen();
     }
 } as CommandModule;

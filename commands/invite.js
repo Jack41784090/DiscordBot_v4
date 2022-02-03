@@ -49,7 +49,7 @@ module.exports = {
             switch (_a.label) {
                 case 0:
                     invitedUser = message.mentions.users.first();
-                    if (!(invitedUser && invitedUser.id !== author.id)) return [3 /*break*/, 9];
+                    if (!(invitedUser && invitedUser.id !== author.id)) return [3 /*break*/, 7];
                     return [4 /*yield*/, (0, Database_1.getUserData)(invitedUser)];
                 case 1:
                     invitedUserData_1 = _a.sent();
@@ -63,9 +63,9 @@ module.exports = {
                                             .catch();
                                     });
                                     // invited user update
-                                    invitedUserData_1.status = "busy";
                                     return [4 /*yield*/, (0, Database_1.saveUserData)(invitedUserData_1)];
                                 case 1:
+                                    // invited user update
                                     _a.sent();
                                     // leader user update
                                     authorUserData.party.push(invitedUser.id);
@@ -86,7 +86,7 @@ module.exports = {
                             return [2 /*return*/];
                         });
                     }); };
-                    if (!(invitedUserData_1.status === "idle" && invitedUserData_1.classes[0] !== undefined)) return [3 /*break*/, 7];
+                    if (!(invitedUserData_1.classes[0] !== undefined)) return [3 /*break*/, 6];
                     if (invitedUserData_1.equippedClass == null) {
                         invitedUserData_1.equippedClass = invitedUserData_1.classes[0];
                     }
@@ -114,15 +114,9 @@ module.exports = {
                     _a.label = 6;
                 case 6: return [3 /*break*/, 8];
                 case 7:
-                    if (invitedUserData_1.status !== "idle") {
-                        message.reply("Invited user is busy.");
-                    }
-                    _a.label = 8;
-                case 8: return [3 /*break*/, 10];
-                case 9:
                     message.reply("You did not mention a player. Mention another user to invite them.");
-                    _a.label = 10;
-                case 10: return [2 /*return*/];
+                    _a.label = 8;
+                case 8: return [2 /*return*/];
             }
         });
     }); }

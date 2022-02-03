@@ -73,7 +73,7 @@ module.exports = {
             embeds: [getLoadingEmbed()]
         });
         const interactionEvent: InteractionEvent = new InteractionEvent(author.id, shopMessage, 'shop');
-        const updatedUserData: UserData = await InteractionEventManager.getInstance().registerInteraction(author.id, interactionEvent, authorUserData);
+        const updatedUserData: UserData = (await InteractionEventManager.getInstance().registerInteraction(author.id, interactionEvent, authorUserData))!;
 
         shopMessage.edit(returnMessage());
 

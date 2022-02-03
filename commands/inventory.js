@@ -48,7 +48,7 @@ module.exports = {
     minArgs: 0,
     maxArgs: 0,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var returnSelectItemsMessage, returnItemsActionMessage, selectingItem, managingItem, listen, invMessage, interactionEvent, updatedUserData, itemSelected;
+        var returnSelectItemsMessage, returnItemsActionMessage, selectingItem, managingItem, listen, invMessage, interactionEvent, iem, updatedUserData, itemSelected;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -140,7 +140,7 @@ module.exports = {
                                     _b.sent();
                                     return [3 /*break*/, 6];
                                 case 3:
-                                    InteractionEventManager_1.InteractionEventManager.getInstance().stopInteraction(author.id, 'inventory');
+                                    iem.stopInteraction(author.id, 'inventory');
                                     return [3 /*break*/, 6];
                                 case 4:
                                     index = parseInt(_itr.values[0]);
@@ -247,9 +247,10 @@ module.exports = {
                 case 1:
                     invMessage = _a.sent();
                     interactionEvent = new InteractionEvent_1.InteractionEvent(author.id, invMessage, 'inventory');
-                    return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author.id, interactionEvent, authorUserData)];
+                    iem = InteractionEventManager_1.InteractionEventManager.getInstance();
+                    return [4 /*yield*/, iem.registerInteraction(author.id, interactionEvent, authorUserData)];
                 case 2:
-                    updatedUserData = _a.sent();
+                    updatedUserData = (_a.sent());
                     invMessage.edit(returnSelectItemsMessage());
                     listen();
                     return [2 /*return*/];

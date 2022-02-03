@@ -144,12 +144,13 @@ var Battle = /** @class */ (function () {
                         i = 0;
                         _h.label = 1;
                     case 1:
-                        if (!(i < _party.length)) return [3 /*break*/, 5];
+                        if (!(i < _party.length)) return [3 /*break*/, 6];
                         ownerID = _party[i];
                         interactEvent = new InteractionEvent_1.InteractionEvent(ownerID, _message, 'battle');
                         return [4 /*yield*/, instance.registerInteraction(ownerID, interactEvent)];
                     case 2:
                         userData = _h.sent();
+                        if (!userData) return [3 /*break*/, 4];
                         battle.userDataCache.set(ownerID, userData);
                         blankStat = (0, Utility_1.getStat)((0, Utility_1.getBaseClassStat)(userData.equippedClass), ownerID);
                         if (_pvp) {
@@ -169,11 +170,14 @@ var Battle = /** @class */ (function () {
                             (0, Utility_1.log)("Pushing universal weapon " + universalWeaponName + " into the arsenal of " + (blankStat.base.class + " (" + blankStat.index + ")"));
                             blankStat.base.weapons.push(uniWeapon);
                         }
-                        _h.label = 4;
+                        return [3 /*break*/, 5];
                     case 4:
+                        _message.channel.send("<@" + ownerID + "> is busy (most possibly already in another battle) and cannot participate.");
+                        _h.label = 5;
+                    case 5:
                         i++;
                         return [3 /*break*/, 1];
-                    case 5:
+                    case 6:
                         // add enemies to the spawning list, only valid if battle is not pvp
                         if (!_pvp) {
                             try {
@@ -1608,42 +1612,49 @@ var Battle = /** @class */ (function () {
     /** Draws the base map and character icons. Does not contain health arcs or indexi */
     Battle.prototype.getNewCanvasMap = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var allStats, groundImage, canvas, ctx, iconCache, i, stat, X, Y, baseClass, iconCanvas, _b, _c, imageCanvasCoord;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            var allStats, groundImage, _b, canvas, ctx, iconCache, i, stat, X, Y, baseClass, iconCanvas, _c, _d, imageCanvasCoord;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
                     case 0:
                         allStats = this.allStats();
+                        if (!this.mapData.map.groundURL) return [3 /*break*/, 2];
                         return [4 /*yield*/, (0, Database_1.getFileImage)(this.mapData.map.groundURL)];
                     case 1:
-                        groundImage = _d.sent();
+                        _b = _g.sent();
+                        return [3 /*break*/, 3];
+                    case 2:
+                        _b = undefined;
+                        _g.label = 3;
+                    case 3:
+                        groundImage = _b;
                         canvas = (0, Utility_1.returnGridCanvas)(this.height, this.width, this.pixelsPerTile, groundImage);
                         ctx = canvas.getContext('2d');
                         iconCache = new Map();
                         i = 0;
-                        _d.label = 2;
-                    case 2:
-                        if (!(i < allStats.length)) return [3 /*break*/, 9];
+                        _g.label = 4;
+                    case 4:
+                        if (!(i < allStats.length)) return [3 /*break*/, 11];
                         stat = allStats[i];
                         X = stat.x;
                         Y = stat.y;
                         baseClass = stat.base.class;
-                        if (!stat.owner) return [3 /*break*/, 4];
-                        return [4 /*yield*/, (0, Database_1.getIcon)(stat)];
-                    case 3:
-                        _b = _d.sent();
-                        return [3 /*break*/, 7];
-                    case 4:
-                        _c = iconCache.get(baseClass);
-                        if (_c) return [3 /*break*/, 6];
-                        return [4 /*yield*/, (0, Database_1.getIcon)(stat)];
+                        if (!stat.owner) return [3 /*break*/, 6];
+                        return [4 /*yield*/, (0, Database_1.getIconCanvas)(stat)];
                     case 5:
-                        _c = (_d.sent());
-                        _d.label = 6;
+                        _c = _g.sent();
+                        return [3 /*break*/, 9];
                     case 6:
-                        _b = (_c);
-                        _d.label = 7;
+                        _d = iconCache.get(baseClass);
+                        if (_d) return [3 /*break*/, 8];
+                        return [4 /*yield*/, (0, Database_1.getIconCanvas)(stat)];
                     case 7:
-                        iconCanvas = _b;
+                        _d = (_g.sent());
+                        _g.label = 8;
+                    case 8:
+                        _c = (_d);
+                        _g.label = 9;
+                    case 9:
+                        iconCanvas = _c;
                         if (!stat.owner && iconCache.get(baseClass) === undefined) {
                             iconCache.set(baseClass, iconCanvas);
                         }
@@ -1652,11 +1663,11 @@ var Battle = /** @class */ (function () {
                             y: Y
                         }, this.pixelsPerTile, this.height, false);
                         ctx.drawImage(iconCanvas, imageCanvasCoord.x, imageCanvasCoord.y, Math.min(iconCanvas.width, this.pixelsPerTile), Math.min(iconCanvas.height, this.pixelsPerTile));
-                        _d.label = 8;
-                    case 8:
+                        _g.label = 10;
+                    case 10:
                         i++;
-                        return [3 /*break*/, 2];
-                    case 9: 
+                        return [3 /*break*/, 4];
+                    case 11: 
                     // end
                     return [2 /*return*/, canvas];
                 }
@@ -2100,31 +2111,21 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.getFullPlayerEmbedMessageOptions = function (stat, actions) {
         return __awaiter(this, void 0, void 0, function () {
-            var frameImage, characterBaseImage, _b, canvas, ctx, embed;
+            var characterBaseImage, width, height, _b, canvas, ctx, embed;
             return __generator(this, function (_c) {
                 switch (_c.label) {
-                    case 0: return [4 /*yield*/, (0, Database_1.getFileImage)('images/frame.png')];
+                    case 0: return [4 /*yield*/, (0, Database_1.getFileImage)(stat.base.iconURL)];
                     case 1:
-                        frameImage = _c.sent();
-                        return [4 /*yield*/, (0, Database_1.getFileImage)(stat.base.iconURL)];
-                    case 2:
                         characterBaseImage = _c.sent();
-                        _b = (0, Utility_1.startDrawing)(frameImage.width * 3, frameImage.height * 3), canvas = _b.canvas, ctx = _b.ctx;
-                        ctx.drawImage(characterBaseImage, 20, 20, canvas.width - 40, canvas.height - 40);
-                        ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
-                        ctx.textAlign = "center";
-                        ctx.font = '90px serif';
-                        ctx.fillStyle = "rgba(255, 255, 255, 1)";
-                        ctx.fillText(stat.base.class, canvas.width / 2, canvas.height * 0.95);
-                        ctx.strokeText(stat.base.class, canvas.width / 2, canvas.height * 0.95);
+                        width = characterBaseImage.width, height = characterBaseImage.height;
+                        _b = (0, Utility_1.startDrawing)(width, height), canvas = _b.canvas, ctx = _b.ctx;
+                        ctx.drawImage(characterBaseImage, 0, 0, width, height);
                         return [4 /*yield*/, this.getFullPlayerEmbed(stat)];
-                    case 3:
+                    case 2:
                         embed = _c.sent();
-                        // sendToSandbox({ files: [{ attachment: map, name: `map.png`},] });
                         return [2 /*return*/, {
                                 embeds: [embed],
                                 files: [
-                                    // { attachment: map, name: "map.png" },
                                     { attachment: canvas.toBuffer(), name: "thumbnail.png" }
                                 ]
                             }];
@@ -2137,7 +2138,7 @@ var Battle = /** @class */ (function () {
             var HP, HealthBar, ReadinessBar, explorerEmbed, green, red, num;
             return __generator(this, function (_b) {
                 HP = (stat.HP / (0, Utility_1.getAHP)(stat)) * 50;
-                HealthBar = "" + '`' + (0, Utility_1.addHPBar)(50, HP) + '`';
+                HealthBar = "" + '`' + (0, Utility_1.addHPBar)(stat.base.AHP, HP, 40) + '`';
                 ReadinessBar = "" + '`' + (0, Utility_1.addHPBar)(50, stat.readiness) + '`';
                 explorerEmbed = new discord_js_1.MessageEmbed({
                     title: HealthBar,

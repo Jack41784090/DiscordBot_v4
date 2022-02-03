@@ -26,7 +26,7 @@ function importCommands() {
         for (const fileName of files) {
             const isDirectory = (fs.lstatSync(path.join(__dirname, dir, fileName))).isDirectory();
             const isJSFile = (() => {
-                return fileName.search(/\.js$/gm) !== -1;
+                return fileName.search(/\.js$/g) !== -1;
             })();
             if (isDirectory) {
                 readCommands(path.join(dir, fileName));
@@ -47,8 +47,8 @@ BotClient.on('ready', async () => {
     BotClient.setMaxListeners(15);
     console.log("Ready.");
     importCommands();
-    quickEmbark();
-    // Test();
+    // quickEmbark();
+    Test();
 });
 
 BotClient.on('messageCreate', async m => {

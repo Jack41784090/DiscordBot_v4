@@ -397,7 +397,7 @@ function returnGridCanvas(_h, _w, _gridPixels, groundImage) {
         ctx.fillRect(0, 0, _w * _gridPixels, _h * _gridPixels);
     }
     ctx.strokeStyle = 'black';
-    ctx.lineWidth = _gridPixels / 5;
+    ctx.lineWidth = _gridPixels / 50;
     ctx.beginPath();
     for (var i = 1; i < _h; i++) {
         ctx.moveTo(0, i * _gridPixels);
@@ -627,7 +627,7 @@ function clearChannel(channel, afterMessage) {
                             };
                             try {
                                 for (var messages_1 = __values(messages), messages_1_1 = messages_1.next(); !messages_1_1.done; messages_1_1 = messages_1.next()) {
-                                    var _b = __read(messages_1_1.value, 2), m = _b[1];
+                                    var _d = __read(messages_1_1.value, 2), m = _d[1];
                                     _loop_1(m);
                                 }
                             }
@@ -863,21 +863,21 @@ function printCSMap(map) {
 }
 exports.printCSMap = printCSMap;
 function getMapFromCS(coordStat) {
-    var e_2, _a, e_3, _b;
+    var e_2, _a, e_3, _d;
     var mapReturn = new Map();
     try {
-        for (var _d = __values(Object.values(coordStat)), _f = _d.next(); !_f.done; _f = _d.next()) {
-            var yStat = _f.value;
+        for (var _f = __values(Object.values(coordStat)), _g = _f.next(); !_g.done; _g = _f.next()) {
+            var yStat = _g.value;
             try {
-                for (var _g = (e_3 = void 0, __values(Object.values(yStat))), _j = _g.next(); !_j.done; _j = _g.next()) {
-                    var stat = _j.value;
+                for (var _j = (e_3 = void 0, __values(Object.values(yStat))), _k = _j.next(); !_k.done; _k = _j.next()) {
+                    var stat = _k.value;
                     mapReturn.set(getCoordString(stat), getStat(stat));
                 }
             }
             catch (e_3_1) { e_3 = { error: e_3_1 }; }
             finally {
                 try {
-                    if (_j && !_j.done && (_b = _g.return)) _b.call(_g);
+                    if (_k && !_k.done && (_d = _j.return)) _d.call(_j);
                 }
                 finally { if (e_3) throw e_3.error; }
             }
@@ -886,7 +886,7 @@ function getMapFromCS(coordStat) {
     catch (e_2_1) { e_2 = { error: e_2_1 }; }
     finally {
         try {
-            if (_f && !_f.done && (_a = _d.return)) _a.call(_d);
+            if (_g && !_g.done && (_a = _f.return)) _a.call(_f);
         }
         finally { if (e_2) throw e_2.error; }
     }
@@ -945,16 +945,38 @@ function getEmptyBuff() {
     };
 }
 exports.getEmptyBuff = getEmptyBuff;
-function getStat(bss, _owner) {
+function getStat(_arg0, _owner) {
     if (_owner === void 0) { _owner = ''; }
-    var base = 'team' in bss ?
-        getNewObject(jsons_1.classData[bss.class], bss) :
-        bss;
-    var ss = bss;
+    var _a = (function () {
+        var _b, _s;
+        if (typeof _arg0 === 'string') {
+            var _c = _arg0;
+            _b = getBaseClassStat(_c);
+            _s = {
+                class: _c,
+                team: jsons_1.classData[_c] ?
+                    'player' :
+                    'enemy',
+                botType: typedef_1.BotType.naught,
+                x: 0,
+                y: 0,
+            };
+        }
+        else {
+            _b = 'team' in _arg0 ?
+                getNewObject(jsons_1.classData[_arg0.class], _arg0) :
+                _arg0;
+            _s = _arg0;
+        }
+        return {
+            base: _b,
+            ss: _s,
+        };
+    })(), base = _a.base, ss = _a.ss;
     var endStat = {
         base: base,
         index: -1,
-        name: "" + bss.class,
+        name: "" + base.class,
         weaponUses: [],
         actionsAssociatedStrings: {},
         statusEffects: [],
@@ -1135,29 +1157,29 @@ function drawCircle(_ctx, _canvasCoord, _radius, _stroke, _percentage) {
 exports.drawCircle = drawCircle;
 function sendInvitation(_user_id, _from, channel) {
     return __awaiter(this, void 0, void 0, function () {
-        var inviterUser, _a, user, _b;
+        var inviterUser, _a, user, _d;
         var _this = this;
-        return __generator(this, function (_d) {
-            switch (_d.label) {
+        return __generator(this, function (_f) {
+            switch (_f.label) {
                 case 0:
                     if (!_from.avatar) return [3 /*break*/, 1];
                     _a = _from;
                     return [3 /*break*/, 3];
                 case 1: return [4 /*yield*/, __1.BotClient.users.fetch(_from).then(function (u) { return u; }).catch(function () { return undefined; })];
                 case 2:
-                    _a = _d.sent();
-                    _d.label = 3;
+                    _a = _f.sent();
+                    _f.label = 3;
                 case 3:
                     inviterUser = _a;
                     if (!_user_id.avatar) return [3 /*break*/, 4];
-                    _b = _user_id;
+                    _d = _user_id;
                     return [3 /*break*/, 6];
                 case 4: return [4 /*yield*/, __1.BotClient.users.fetch(_user_id).then(function (u) { return u; }).catch(function () { return undefined; })];
                 case 5:
-                    _b = _d.sent();
-                    _d.label = 6;
+                    _d = _f.sent();
+                    _f.label = 6;
                 case 6:
-                    user = _b;
+                    user = _d;
                     return [2 /*return*/, new Promise(function (resolve) {
                             if (user && inviterUser) {
                                 var buttonOptions = [
@@ -1285,18 +1307,18 @@ function getGradeTag(_mI) {
 }
 exports.getGradeTag = getGradeTag;
 function getItemType(_i) {
-    var e_4, _a, e_5, _b;
+    var e_4, _a, e_5, _d;
     // log(`Get item type for: ${_i.name}`)
     var weight = _i.weight;
     try {
-        for (var _d = __values(Object.entries(jsons_1.itemData)), _f = _d.next(); !_f.done; _f = _d.next()) {
-            var _g = __read(_f.value, 2), _itemName = _g[0], _data = _g[1];
+        for (var _f = __values(Object.entries(jsons_1.itemData)), _g = _f.next(); !_g.done; _g = _f.next()) {
+            var _j = __read(_g.value, 2), _itemName = _j[0], _data = _j[1];
             // debug("Qualifying for", _itemName);
             var itemName = _itemName;
             var data = _data;
             var qualification = data.qualification;
             /** weight qualification */
-            var _j = qualification.weightDeviation, min = _j.min, max = _j.max;
+            var _k = qualification.weightDeviation, min = _k.min, max = _k.max;
             if (min <= weight && max >= weight) {
                 /** materials qualification */
                 var passed = 0;
@@ -1308,22 +1330,22 @@ function getItemType(_i) {
                     //     name: mI?.materialName,
                     //     occupation: mI?.occupation,
                     // });
-                    var _o = _materialInfo.occupationDeviation, min_1 = _o.min, max_1 = _o.max;
+                    var _p = _materialInfo.occupationDeviation, min_1 = _p.min, max_1 = _p.max;
                     if (mI && mI.occupation >= min_1 && mI.occupation <= max_1) {
                         // log("\t\tQualified!");
                         passed++;
                     }
                 };
                 try {
-                    for (var _k = (e_5 = void 0, __values(qualification.materials)), _l = _k.next(); !_l.done; _l = _k.next()) {
-                        var _materialInfo = _l.value;
+                    for (var _l = (e_5 = void 0, __values(qualification.materials)), _o = _l.next(); !_o.done; _o = _l.next()) {
+                        var _materialInfo = _o.value;
                         _loop_2(_materialInfo);
                     }
                 }
                 catch (e_5_1) { e_5 = { error: e_5_1 }; }
                 finally {
                     try {
-                        if (_l && !_l.done && (_b = _k.return)) _b.call(_k);
+                        if (_o && !_o.done && (_d = _l.return)) _d.call(_l);
                     }
                     finally { if (e_5) throw e_5.error; }
                 }
@@ -1337,7 +1359,7 @@ function getItemType(_i) {
     catch (e_4_1) { e_4 = { error: e_4_1 }; }
     finally {
         try {
-            if (_f && !_f.done && (_a = _d.return)) _a.call(_d);
+            if (_g && !_g.done && (_a = _f.return)) _a.call(_f);
         }
         finally { if (e_4) throw e_4.error; }
     }

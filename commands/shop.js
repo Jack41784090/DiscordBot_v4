@@ -156,7 +156,7 @@ module.exports = {
                     interactionEvent = new InteractionEvent_1.InteractionEvent(author.id, shopMessage, 'shop');
                     return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance().registerInteraction(author.id, interactionEvent, authorUserData)];
                 case 2:
-                    updatedUserData = _a.sent();
+                    updatedUserData = (_a.sent());
                     shopMessage.edit(returnMessage());
                     listen();
                     return [2 /*return*/];

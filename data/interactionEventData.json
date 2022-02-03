@@ -3,5 +3,6 @@
     "shop": {},
     "battle": {
         "battle": true
-    }
+    },
+    "info": {}
 }

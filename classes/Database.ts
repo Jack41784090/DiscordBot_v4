@@ -1,4 +1,4 @@
-import { Class, OwnerID, Settings, Stat, UserData, UserStatus } from "../typedef"
+import { BaseStat, Class, defaultAvatarURL, GetIconOptions, OwnerID, Settings, Stat, UserData, } from "../typedef"
 import { User } from "discord.js";
 
 import * as admin from 'firebase-admin'
@@ -10,13 +10,20 @@ import { Battle } from "./Battle";
 import { BotClient } from "..";
 
 import fs from 'fs';
+import { ImgurClient } from 'imgur';
 import { Item } from "./Item";
 
+// firebase login
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount as ServiceAccount),
 })
-
 const database = admin.firestore();
+
+// imgur login
+const imgurClient = new ImgurClient({
+    clientId: 'fb524134f2cc257',
+    clientSecret: 'd3db322bb9fd8a6bd7407d6337611fcca1e31310',
+});
 
 export async function getAnyData(collection: string, doc: string, failureCB?: (dR: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>, sS: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) => void) {
     const docRef = database.collection(collection).doc(doc);
@@ -126,15 +133,14 @@ export function getDefaultUserData(_user?: User) {
         username: "",
         id: "",
     };
-    const classes: Class[] = ["Hercules"];
+    const classes: Class[] = ["Fighter"];
     return {
         classes: classes,
         money: 0,
         name: username,
         party: [id],
         settings: getDefaultSettings(),
-        status: "idle" as UserStatus,
-        equippedClass: "Hercules" as Class,
+        equippedClass: "Fighter" as Class,
         welfare: 1,
         inventory: [],
     };
@@ -157,36 +163,45 @@ export function getFileBufferImage(path: string): Promise<Image | null> {
             console.log(err);
             resolve(null);
         }
-
     });
 }
 export function getFileImage(path: string): Promise<Image> {
     const image = new Image();
     return new Promise((resolve) => {
+        const timeoutError = setTimeout(() => {
+            image.src = "C:/Users/Jack/Documents/Jack's Workshop/Coding/DiscordBot_v4/images/black.jpg";
+        }, 10 * 1000);
+
         image.onload = () => {
+            clearTimeout(timeoutError);
             resolve(image);
         };
         image.src = path;
     });
 }
-export function getIcon(_stat: Stat): Promise<Canvas>
+export function getIconCanvas(_stat: Stat, _drawOptions: GetIconOptions = {
+    crop: true,
+    frame: true,
+}): Promise<Canvas>
 {
     const threadID = uniformRandom(0, 10000);
     log(`\t\t\tGetting icon for ${_stat.base.class}(${_stat.index}) (${threadID})`)
 
     const iconURL = _stat.base.iconURL;
     const image = new Image();
-    const requestPromise = new Promise<Canvas>((resolve) => {
+    return new Promise<Canvas>((resolve) => {
         try {
             // take at most 10 seconds to get icon before using default icon    
             const invalidURLTimeout = setTimeout(() => {
                 log(`\t\t\t\tFailed. (${threadID})`)
-                image.src = "https://cdn.discordapp.com/embed/avatars/0.png";
+                image.src = defaultAvatarURL;
             }, 10 * 1000);
 
             // set onLoad after timeout
             image.onload = () => {
-                log(`\t\t\t\tSuccess! (${threadID})`)
+                if (image.src !== defaultAvatarURL) {
+                    log(`\t\t\t\tSuccess! (${threadID})`)
+                }
 
                 clearTimeout(invalidURLTimeout);
 
@@ -202,56 +217,77 @@ export function getIcon(_stat: Stat): Promise<Canvas>
                 ctx.drawImage(image, 0, increasing, squaredSize, squaredSize, 0, 0, squaredSize, squaredSize);
 
                 // crop
-                ctx.globalCompositeOperation = 'destination-in';
-
-                ctx.fillStyle = "#000";
-                ctx.beginPath();
-                ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.closePath();
-
-                // team color (green/red)
-                ctx.globalCompositeOperation = "source-over";
-                ctx.lineWidth = 10;
+                if (_drawOptions.crop) {
+                    ctx.globalCompositeOperation = 'destination-in';
+                    ctx.fillStyle = "#000";
+                    ctx.beginPath();
+                    ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.closePath();
+                }
 
                 // black arc
-                ctx.strokeStyle = stringifyRGBA({
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    alpha: 1
-                });
-                drawCircle(
-                    ctx,
-                    {
-                        x: squaredSize / 2,
-                        y: squaredSize / 2,
-                    },
-                    squaredSize / 2,
-                )
+                if (_drawOptions.frame) {
+                    ctx.globalCompositeOperation = "source-over";
+                    ctx.lineWidth = 10;
+                    ctx.strokeStyle = stringifyRGBA({
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        alpha: 1
+                    });
+                    drawCircle(
+                        ctx,
+                        {
+                            x: squaredSize / 2,
+                            y: squaredSize / 2,
+                        },
+                        squaredSize / 2,
+                    )
+                }
 
                 ctx.restore();
 
                 resolve(canvas);
             };
 
-            // // getting icon for stat, changes if there is an owner (Discord user ID) attached
-            // if (_stat.owner) {
-            //     BotClient.users.fetch(_stat.owner).then(u => {
-            //         image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(".webp", ".png");
-            //     })
-            // }
-            // else {
-            //     image.src = iconURL;
-            // }
-            image.src = iconURL;
+            // getting icon for stat, changes if there is an owner (Discord user ID) attached
+            if (_stat.owner) {
+                BotClient.users.fetch(_stat.owner).then(u => {
+                    image.src = (u.displayAvatarURL() || u.defaultAvatarURL).replace(/\.webp$/g, ".png");
+                })
+            }
+            else {
+                image.src = iconURL;
+            }
+            // image.src = iconURL;
         }
         catch (error) {
             console.error(error);
-            resolve(getIcon(_stat));
+            resolve(getIconCanvas(_stat, _drawOptions));
         }
     });
-    return requestPromise;
+}
+export async function getIconImgurLink(_stat: Stat): Promise<null | string> {
+    const ssData = await getAnyData('Imgur', _stat.base.class);
+
+    return ssData?.url || await (async () => {
+        const imageCanvas = await getIconCanvas(_stat, {});
+        const uploaded = await imgurClient.upload({
+            image: imageCanvas.toBuffer(),
+            type: 'stream',
+        })
+        if (uploaded.success) {
+            database.collection("Imgur").doc(_stat.base.class).set({
+                url: uploaded.data.link
+            });
+            return uploaded.data.link;
+        }
+        else {
+            console.error(`Catastrophic failure: getIconImgurLink upload failure.`);
+            return null;
+        }
+    })();
 }
 export function getBufferFromImage(image: Image): Buffer {
     const { canvas, ctx } = startDrawing(image.width, image.height);
