@@ -5,9 +5,8 @@ import * as path from "path";
 import { Battle } from "./classes/Battle.js";
 import { getDefaultUserData, getUserData } from "./classes/Database.js";
 import { extractCommands, getNewObject, log, Test } from "./classes/Utility.js";
+import { areasData } from "./jsons.js";
 import { CommandModule, COMMAND_CALL, MapData } from "./typedef.js";
-
-import areasData from "./data/areasData.json";
 
 const commandReferral: { [key: string]: CommandModule } = {};
 

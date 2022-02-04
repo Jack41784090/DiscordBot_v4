@@ -5,9 +5,9 @@ import { Battle } from "./Battle";
 import { Room } from "./Room";
 import { addHPBar, breadthFirstSearch, debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalise, getButtonsActionRow, getDistance, getNewObject, arrayGetRandom, getSelectMenuActionRow, log, numericDirectionToDirection, uniformRandom, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
 
-import areasData from "../data/areasData.json";
 import { getUserData, getUserWelfare } from "./Database";
 import { Item } from "./Item";
+import { areasData } from "../jsons";
 
 export class Dungeon {
     static readonly BRANCHOUT_CHANCE = 0.1;
@@ -407,7 +407,6 @@ export class Dungeon {
         }
         const listenToQueue = async () => {
             setUpInteractionCollect(mapMessage, async itr => {
-                log(itr.user.id, this.leaderUser!.id);
                 if (itr.user.id === this.leaderUser!.id) {
                     try {
                         if (itr.isButton()) {

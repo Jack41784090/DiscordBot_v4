@@ -80,8 +80,6 @@ var discord_js_1 = require("discord.js");
 var Utility_1 = require("./Utility");
 var canvas_1 = require("canvas");
 var Database_1 = require("./Database");
-var enemiesData_json_1 = __importDefault(require("../data/enemiesData.json"));
-var universalWeaponsData_json_1 = __importDefault(require("../data/universalWeaponsData.json"));
 var fs_1 = __importDefault(require("fs"));
 var typedef_1 = require("../typedef");
 var hGraphTheory_1 = require("./hGraphTheory");
@@ -91,6 +89,7 @@ var __1 = require("..");
 var Item_1 = require("./Item");
 var InteractionEventManager_1 = require("./InteractionEventManager");
 var InteractionEvent_1 = require("./InteractionEvent");
+var jsons_1 = require("../jsons");
 var Battle = /** @class */ (function () {
     function Battle(_mapData, _author, _message, _client, _pvp, _party) {
         var _this = this;
@@ -134,102 +133,14 @@ var Battle = /** @class */ (function () {
     Battle.Generate = function (_mapData, _author, _message, _party, _client, _pvp) {
         if (_pvp === void 0) { _pvp = false; }
         return __awaiter(this, void 0, void 0, function () {
-            var battle, instance, i, ownerID, interactEvent, userData, blankStat, user, i_1, universalWeaponName, uniWeapon, _b, _c, _d, key, value, Eclass, mod, enemyBase, spawnCount, _loop_1, i;
-            var e_1, _g;
-            return __generator(this, function (_h) {
-                switch (_h.label) {
-                    case 0:
-                        battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
-                        instance = InteractionEventManager_1.InteractionEventManager.getInstance();
-                        i = 0;
-                        _h.label = 1;
-                    case 1:
-                        if (!(i < _party.length)) return [3 /*break*/, 6];
-                        ownerID = _party[i];
-                        interactEvent = new InteractionEvent_1.InteractionEvent(ownerID, _message, 'battle');
-                        return [4 /*yield*/, instance.registerInteraction(ownerID, interactEvent)];
-                    case 2:
-                        userData = _h.sent();
-                        if (!userData) return [3 /*break*/, 4];
-                        battle.userDataCache.set(ownerID, userData);
-                        blankStat = (0, Utility_1.getStat)((0, Utility_1.getBaseClassStat)(userData.equippedClass), ownerID);
-                        if (_pvp) {
-                            blankStat.pvp = true;
-                        }
-                        battle.tobespawnedArray.push(blankStat);
-                        return [4 /*yield*/, __1.BotClient.users.fetch(ownerID).catch(function () { return null; })];
-                    case 3:
-                        user = _h.sent();
-                        if (user) {
-                            battle.userCache.set(ownerID, user);
-                        }
-                        // add universal weapons
-                        for (i_1 = 0; i_1 < Object.keys(universalWeaponsData_json_1.default).length; i_1++) {
-                            universalWeaponName = Object.keys(universalWeaponsData_json_1.default)[i_1];
-                            uniWeapon = (0, Utility_1.getNewObject)(universalWeaponsData_json_1.default[universalWeaponName]);
-                            (0, Utility_1.log)("Pushing universal weapon " + universalWeaponName + " into the arsenal of " + (blankStat.base.class + " (" + blankStat.index + ")"));
-                            blankStat.base.weapons.push(uniWeapon);
-                        }
-                        return [3 /*break*/, 5];
-                    case 4:
-                        _message.channel.send("<@" + ownerID + "> is busy (most possibly already in another battle) and cannot participate.");
-                        _h.label = 5;
-                    case 5:
-                        i++;
-                        return [3 /*break*/, 1];
-                    case 6:
-                        // add enemies to the spawning list, only valid if battle is not pvp
-                        if (!_pvp) {
-                            try {
-                                for (_b = __values(Object.entries(_mapData.enemiesInfo)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                                    _d = __read(_c.value, 2), key = _d[0], value = _d[1];
-                                    Eclass = key;
-                                    mod = { name: "" + Eclass };
-                                    enemyBase = (0, Utility_1.getNewObject)(enemiesData_json_1.default[Eclass], mod);
-                                    spawnCount = (0, Utility_1.uniformRandom)(value.min, value.max);
-                                    _loop_1 = function (i) {
-                                        var enemyEntity = (0, Utility_1.getStat)(enemyBase);
-                                        // randomly spawn in loot
-                                        enemyEntity.base.lootInfo.forEach(function (_LInfo) {
-                                            // roll for spawn item
-                                            var roll = Math.random();
-                                            if (roll < _LInfo.chance) {
-                                                // initialise if haven't yet
-                                                if (enemyEntity.drops === undefined) {
-                                                    enemyEntity.drops = {
-                                                        items: [],
-                                                        money: 0,
-                                                        droppedBy: enemyEntity
-                                                    };
-                                                }
-                                                // spawn in item
-                                                var weight = (0, Utility_1.uniformRandom)(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
-                                                enemyEntity.drops.items.push(new Item_1.Item(_LInfo.materials, weight, _LInfo.itemName));
-                                            }
-                                        });
-                                        battle.tobespawnedArray.push(enemyEntity);
-                                        battle.totalEnemyCount++;
-                                        battle.enemyCount++;
-                                    };
-                                    for (i = 0; i < spawnCount; i++) {
-                                        _loop_1(i);
-                                    }
-                                }
-                            }
-                            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-                            finally {
-                                try {
-                                    if (_c && !_c.done && (_g = _b.return)) _g.call(_b);
-                                }
-                                finally { if (e_1) throw e_1.error; }
-                            }
-                        }
-                        return [2 /*return*/, battle];
-                }
+            var battle;
+            return __generator(this, function (_b) {
+                battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
+                return [2 /*return*/, battle];
             });
         });
     };
-    /** Main function to access in order to start a thread of battle */
+    /** Main function to access in order to start a battle, replacing the constructor */
     Battle.Start = function (_mapData, _author, _message, _party, _client, _pvp) {
         if (_pvp === void 0) { _pvp = false; }
         return __awaiter(this, void 0, void 0, function () {
@@ -239,55 +150,26 @@ var Battle = /** @class */ (function () {
                     case 0: return [4 /*yield*/, Battle.Generate(_mapData, _author, _message, _party, _client, _pvp)];
                     case 1:
                         battle = _b.sent();
-                        battle.StartRound();
-                        return [2 /*return*/];
+                        return [4 /*yield*/, battle.StartBattle()];
+                    case 2: return [2 /*return*/, _b.sent()];
                 }
             });
         });
     };
-    /** An alternative to Start when the battle is already initiated. Gives additional options to begin. */
+    /** Start an already generated battle. */
     Battle.prototype.StartBattle = function (_options) {
+        if (_options === void 0) { _options = {
+            ambush: null
+        }; }
         return __awaiter(this, void 0, void 0, function () {
-            var playerStats, i, player, welfare, ambushingTeam, i, ambusher;
-            var _this = this;
+            var ambushingTeam, i, ambusher;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0:
-                        // check player welfare
-                        (0, Utility_1.log)("Checking welfare...");
-                        playerStats = this.party.map(function (_ownerID) { return _this.tobespawnedArray.find(function (_s) { return _s.owner === _ownerID; }); });
-                        i = 0;
-                        _b.label = 1;
+                    case 0: return [4 /*yield*/, this.InitiateUsers()];
                     case 1:
-                        if (!(i < playerStats.length)) return [3 /*break*/, 4];
-                        player = playerStats[i];
-                        if (!player) return [3 /*break*/, 3];
-                        return [4 /*yield*/, (0, Database_1.getUserWelfare)(player.owner)];
-                    case 2:
-                        welfare = _b.sent();
-                        (0, Utility_1.debug)("\t" + player.base.class, welfare);
-                        if (welfare !== null) {
-                            (0, Utility_1.log)("\t" + player.HP + " => " + player.base.AHP * (0, Utility_1.clamp)(welfare, 0, 1));
-                            player.HP = player.base.AHP * (0, Utility_1.clamp)(welfare, 0, 1);
-                            if (welfare <= 0) {
-                                this.author.send({
-                                    embeds: [
-                                        new discord_js_1.MessageEmbed({
-                                            title: "Alert!",
-                                            description: "One of your teammates, " + player.base.class + ", has 0 welfare and cannot attend the battle.",
-                                            footer: {
-                                                text: "id: " + player.owner
-                                            }
-                                        })
-                                    ]
-                                });
-                            }
-                        }
-                        _b.label = 3;
-                    case 3:
-                        i++;
-                        return [3 /*break*/, 1];
-                    case 4:
+                        _b.sent();
+                        this.ManageWelfare();
+                        this.AddEnemies();
                         // ambush
                         if (_options.ambush && _options.ambush !== 'block') {
                             ambushingTeam = _options.ambush;
@@ -305,12 +187,135 @@ var Battle = /** @class */ (function () {
             });
         });
     };
+    Battle.prototype.AddEnemies = function () {
+        var e_1, _b;
+        // add enemies to the spawning list, only valid if battle is not pvp
+        if (!this.pvp) {
+            try {
+                for (var _c = __values(Object.entries(this.mapData.enemiesInfo)), _d = _c.next(); !_d.done; _d = _c.next()) {
+                    var _g = __read(_d.value, 2), key = _g[0], value = _g[1];
+                    var Eclass = key;
+                    var mod = { name: "" + Eclass };
+                    var enemyBase = (0, Utility_1.getNewObject)(jsons_1.enemiesData[Eclass], mod);
+                    var spawnCount = (0, Utility_1.uniformRandom)(value.min, value.max);
+                    var _loop_1 = function (i) {
+                        var enemyEntity = (0, Utility_1.getStat)(enemyBase);
+                        // randomly spawn in loot
+                        enemyEntity.base.lootInfo.forEach(function (_LInfo) {
+                            // roll for spawn item
+                            var roll = Math.random();
+                            if (roll < _LInfo.chance) {
+                                // initialise if haven't yet
+                                if (enemyEntity.drops === undefined) {
+                                    enemyEntity.drops = {
+                                        items: [],
+                                        money: 0,
+                                        droppedBy: enemyEntity
+                                    };
+                                }
+                                // spawn in item
+                                var _b = _LInfo.weightDeviation, min = _b.min, max = _b.max;
+                                var weight = (0, Utility_1.uniformRandom)(min + min * 0.05, max);
+                                enemyEntity.drops.items.push(new Item_1.Item(_LInfo.materials, weight, _LInfo.itemName));
+                            }
+                        });
+                        this_1.tobespawnedArray.push(enemyEntity);
+                        this_1.totalEnemyCount++;
+                        this_1.enemyCount++;
+                    };
+                    var this_1 = this;
+                    for (var i = 0; i < spawnCount; i++) {
+                        _loop_1(i);
+                    }
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (_d && !_d.done && (_b = _c.return)) _b.call(_c);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+        }
+    };
+    /** Initiate users by registering them into iem, add them in the battle, initiate cache. */
+    Battle.prototype.InitiateUsers = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var instance, i, ownerID, interactEvent, userData, blankStat, user;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        instance = InteractionEventManager_1.InteractionEventManager.getInstance();
+                        i = 0;
+                        _b.label = 1;
+                    case 1:
+                        if (!(i < this.party.length)) return [3 /*break*/, 6];
+                        ownerID = this.party[i];
+                        interactEvent = new InteractionEvent_1.InteractionEvent(ownerID, this.message, 'battle');
+                        return [4 /*yield*/, instance.registerInteraction(ownerID, interactEvent)];
+                    case 2:
+                        userData = _b.sent();
+                        if (!userData) return [3 /*break*/, 4];
+                        this.userDataCache.set(ownerID, userData);
+                        blankStat = (0, Utility_1.getStat)((0, Utility_1.getBaseClassStat)(userData.equippedClass), ownerID);
+                        blankStat.pvp = this.pvp;
+                        this.tobespawnedArray.push(blankStat);
+                        return [4 /*yield*/, __1.BotClient.users.fetch(ownerID).catch(function () { return null; })];
+                    case 3:
+                        user = _b.sent();
+                        if (user) {
+                            this.userCache.set(ownerID, user);
+                        }
+                        return [3 /*break*/, 5];
+                    case 4:
+                        this.message.channel.send("<@" + ownerID + "> is busy (most possibly already in another battle) and cannot participate.");
+                        (0, Utility_1.arrayRemoveItemArray)(this.party, ownerID);
+                        _b.label = 5;
+                    case 5:
+                        i++;
+                        return [3 /*break*/, 1];
+                    case 6: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Battle.prototype.ManageWelfare = function () {
+        var _this = this;
+        var _b, _c;
+        // check player welfare
+        (0, Utility_1.log)("Checking welfare...");
+        var playerStats = this.party.map(function (_ownerID) { return _this.tobespawnedArray.find(function (_s) { return _s.owner === _ownerID; }); });
+        for (var i = 0; i < playerStats.length; i++) {
+            var player = playerStats[i];
+            if (player) {
+                var welfare = (_b = this.userDataCache.get(player.owner)) === null || _b === void 0 ? void 0 : _b.welfare;
+                (0, Utility_1.debug)("\t" + player.base.class, welfare);
+                if (welfare) {
+                    (0, Utility_1.log)("\t" + player.HP + " => " + player.base.AHP * (0, Utility_1.clamp)(welfare, 0, 1));
+                    player.HP = player.base.AHP * (0, Utility_1.clamp)(welfare, 0, 1);
+                }
+                else {
+                    this.author.send({
+                        embeds: [
+                            new discord_js_1.MessageEmbed({
+                                title: "Alert!",
+                                description: "One of your teammates playing " + player.base.class + " has 0 welfare and cannot attend the battle.",
+                                footer: {
+                                    text: "associated user: " + (((_c = this.userCache.get(player.owner)) === null || _c === void 0 ? void 0 : _c.username) || player.owner)
+                                }
+                            })
+                        ]
+                    });
+                }
+            }
+        }
+    };
     /** Begin a new round
         Recurses into another StartRound until all enemies / players are defeated (HP <= 0). */
     Battle.prototype.StartRound = function () {
         var _b, _c, _d;
         return __awaiter(this, void 0, void 0, function () {
-            var i, spawning, allStats, _loop_2, i, existingCategory, commandCategory, _g, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_3, this_1, allStats_1, allStats_1_1, realStat, e_2_1, priorityActionMap, i, act, actionListThisRound, latestAction, latestRound, i, roundExpectedActions, canvas, ctx, roundCanvas, executedActions, actualCanvas, _loop_4, i, allPromise, players;
+            var i, spawning, allStats, _loop_2, i, existingCategory, commandCategory, _g, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_3, this_2, allStats_1, allStats_1_1, realStat, e_2_1, priorityActionMap, i, act, actionListThisRound, latestAction, latestRound, i, roundExpectedActions, canvas, ctx, roundCanvas, executedActions, actualCanvas, _loop_4, i, allPromise, players;
             var e_2, _h;
             var _this = this;
             return __generator(this, function (_j) {
@@ -342,7 +347,7 @@ var Battle = /** @class */ (function () {
                             if (s.team === 'block')
                                 return "continue";
                             // randomly assign tokens
-                            for (var i_2 = 0; i_2 < 2; i_2++) {
+                            for (var i_1 = 0; i_1 < 2; i_1++) {
                                 var token = (0, Utility_1.uniformRandom)(0, 2);
                                 (0, Utility_1.log)("\t" + s.base.class + " (" + s.index + ") got " + token);
                                 switch (token) {
@@ -427,9 +432,9 @@ var Battle = /** @class */ (function () {
                                         realStat.actionsAssociatedStrings = {};
                                         if (!(realStat.botType === typedef_1.BotType.naught && realStat.owner)) return [3 /*break*/, 6];
                                         (0, Utility_1.log)("Player: " + realStat.base.class + " (" + realStat.index + ")");
-                                        _k = this_1.userCache.get(realStat.owner);
+                                        _k = this_2.userCache.get(realStat.owner);
                                         if (_k) return [3 /*break*/, 2];
-                                        return [4 /*yield*/, this_1.client.users.fetch(realStat.owner)
+                                        return [4 /*yield*/, this_2.client.users.fetch(realStat.owner)
                                                 .then(function (u) {
                                                 _this.userCache.set(realStat.owner, u);
                                                 return u;
@@ -450,10 +455,10 @@ var Battle = /** @class */ (function () {
                                             virtual: true
                                         });
                                         virtualStat_1.weaponUses = realStat.weaponUses.map(function (_) { return _; });
-                                        channelAlreadyExist = this_1.guild.channels.cache.find(function (c) { return c.name === virtualStat_1.owner && c.type === 'GUILD_TEXT'; });
+                                        channelAlreadyExist = this_2.guild.channels.cache.find(function (c) { return c.name === virtualStat_1.owner && c.type === 'GUILD_TEXT'; });
                                         _l = channelAlreadyExist;
                                         if (_l) return [3 /*break*/, 4];
-                                        return [4 /*yield*/, this_1.guild.channels.create("" + virtualStat_1.owner, { type: 'GUILD_TEXT' })];
+                                        return [4 /*yield*/, this_2.guild.channels.create("" + virtualStat_1.owner, { type: 'GUILD_TEXT' })];
                                     case 3:
                                         _l = (_t.sent());
                                         _t.label = 4;
@@ -462,7 +467,7 @@ var Battle = /** @class */ (function () {
                                         if (!createdChannel_1.parent || createdChannel_1.parent.name !== commandCategory.name) {
                                             createdChannel_1.setParent(commandCategory.id);
                                         }
-                                        existingPermissions_everyone_1 = (_c = createdChannel_1.permissionOverwrites.cache.get(this_1.guild.roles.everyone.id)) === null || _c === void 0 ? void 0 : _c.deny.toArray();
+                                        existingPermissions_everyone_1 = (_c = createdChannel_1.permissionOverwrites.cache.get(this_2.guild.roles.everyone.id)) === null || _c === void 0 ? void 0 : _c.deny.toArray();
                                         existingPermissions_author = (_d = createdChannel_1.permissionOverwrites.cache.get(virtualStat_1.owner)) === null || _d === void 0 ? void 0 : _d.allow.toArray();
                                         newChannel = !channelAlreadyExist;
                                         noExistingPermission = (!existingPermissions_author || !existingPermissions_everyone_1);
@@ -479,7 +484,7 @@ var Battle = /** @class */ (function () {
                                         // missing permissions
                                         ) {
                                             overWrites = [
-                                                { id: this_1.guild.roles.everyone, deny: 'VIEW_CHANNEL' },
+                                                { id: this_2.guild.roles.everyone, deny: 'VIEW_CHANNEL' },
                                                 { id: virtualStat_1.owner, allow: 'VIEW_CHANNEL' }
                                             ];
                                             createdChannel_1.permissionOverwrites.set(overWrites);
@@ -490,7 +495,7 @@ var Battle = /** @class */ (function () {
                                         _o = (_m = createdChannel_1).send;
                                         _p = {};
                                         _q = {};
-                                        return [4 /*yield*/, this_1.getCurrentMapBuffer()];
+                                        return [4 /*yield*/, this_2.getCurrentMapBuffer()];
                                     case 5:
                                         // send time, player embed, and input manual
                                         _o.apply(_m, [(_p.files = [
@@ -501,7 +506,7 @@ var Battle = /** @class */ (function () {
                                                         .setImage("attachment://map.png")
                                                 ],
                                                 _p)]);
-                                        readingPlayerPromise = this_1.readActions(120, createdChannel_1, virtualStat_1, realStat).then(function () {
+                                        readingPlayerPromise = this_2.readActions(120, createdChannel_1, virtualStat_1, realStat).then(function () {
                                             createdChannel_1.send({ embeds: [new discord_js_1.MessageEmbed().setTitle("Your turn has ended.")] });
                                         });
                                         reportPromises.push(readingPlayerPromise);
@@ -511,14 +516,14 @@ var Battle = /** @class */ (function () {
                                         //#region AI
                                         if (realStat.botType !== typedef_1.BotType.naught) {
                                             (0, Utility_1.log)("AI: " + realStat.base.class + " (" + realStat.index + ")");
-                                            ai_f = new AI_1.AI(realStat, realStat.botType, this_1);
+                                            ai_f = new AI_1.AI(realStat, realStat.botType, this_2);
                                             ai_f.activate();
                                         }
                                         return [2 /*return*/];
                                 }
                             });
                         };
-                        this_1 = this;
+                        this_2 = this;
                         _j.label = 5;
                     case 5:
                         _j.trys.push([5, 10, 11, 12]);
@@ -664,7 +669,9 @@ var Battle = /** @class */ (function () {
                         id = this.party[i];
                         stat = allStats[i];
                         userData = this.userDataCache.get(id);
-                        userData.welfare = (0, Utility_1.clamp)(stat.HP / stat.base.AHP, 0, 1);
+                        if (userData) {
+                            userData.welfare = (0, Utility_1.clamp)(stat.HP / stat.base.AHP, 0, 1);
+                        }
                         InteractionEventManager_1.InteractionEventManager.getInstance().stopInteraction(id, 'battle');
                     }
                     endEmbedFields_1 = [];
@@ -1074,8 +1081,8 @@ var Battle = /** @class */ (function () {
                                                 var loot = allLoot[i];
                                                 var userData = _this.userDataCache.get(_rS.owner) || null;
                                                 // for each item in the lootbox
-                                                for (var i_3 = 0; i_3 < loot.items.length; i_3++) {
-                                                    var item = loot.items[i_3];
+                                                for (var i_2 = 0; i_2 < loot.items.length; i_2++) {
+                                                    var item = loot.items[i_2];
                                                     userData === null || userData === void 0 ? void 0 : userData.inventory.push(item);
                                                     var totalWorth = (0, Utility_1.roundToDecimalPlace)(item.getWorth());
                                                     var totalWeight = (0, Utility_1.roundToDecimalPlace)(item.weight);
@@ -1375,9 +1382,9 @@ var Battle = /** @class */ (function () {
         }
         var failedToSpawn = [];
         var _loop_5 = function () {
-            var stat = this_2.tobespawnedArray.shift();
+            var stat = this_3.tobespawnedArray.shift();
             // 1. look for spawner
-            var possibleCoords = this_2.mapData.map.spawners
+            var possibleCoords = this_3.mapData.map.spawners
                 .filter(function (s) { return s.spawns === stat.team; })
                 .map(function (s) { return ({ x: s.x, y: s.y }); });
             // 2. look for coords if occupied and spawn if not
@@ -1385,13 +1392,13 @@ var Battle = /** @class */ (function () {
             // 3. Spawn on Coords
             if (availableCoords.length > 0) {
                 var c = availableCoords[(0, Utility_1.uniformRandom)(0, availableCoords.length - 1)];
-                this_2.Spawn(stat, c);
+                this_3.Spawn(stat, c);
             }
             else {
                 failedToSpawn.push(stat);
             }
         };
-        var this_2 = this;
+        var this_3 = this;
         while (this.tobespawnedArray[0]) {
             _loop_5();
         }
@@ -1909,7 +1916,7 @@ var Battle = /** @class */ (function () {
                                         victim_beforeCoords = virtualCoordsMap.get(victimIndex);
                                         attacker_beforeCoords = virtualCoordsMap.get(attackerIndex);
                                         return [4 /*yield*/, (0, Utility_1.dealWithAction)(action, function (aA) { return __awaiter(_this, void 0, void 0, function () {
-                                                var weapon, epicenterCoord, affecteds, i_4, af, singleTarget, _b, _c, coord;
+                                                var weapon, epicenterCoord, affecteds, i_3, af, singleTarget, _b, _c, coord;
                                                 var e_4, _d;
                                                 return __generator(this, function (_g) {
                                                     weapon = aA.weapon;
@@ -1926,10 +1933,10 @@ var Battle = /** @class */ (function () {
                                                                 victim_beforeCoords;
                                                             affecteds = this.findEntities_radius((0, Utility_1.getNewObject)(epicenterCoord, { index: victimIndex }), // assign victim
                                                             weapon.Range[2], weapon.targetting.AOE === "circle");
-                                                            for (i_4 = 0; i_4 < affecteds.length; i_4++) {
-                                                                af = affecteds[i_4];
+                                                            for (i_3 = 0; i_3 < affecteds.length; i_3++) {
+                                                                af = affecteds[i_3];
                                                                 singleTarget = (0, Utility_1.getNewObject)(aA, { from: epicenterCoord, affected: af });
-                                                                appendGraph(singleTarget, epicenterCoord, af, i_4 + 1);
+                                                                appendGraph(singleTarget, epicenterCoord, af, i_3 + 1);
                                                             }
                                                             if (weapon.targetting.AOE === "circle") {
                                                                 // show AOE throw trajectory

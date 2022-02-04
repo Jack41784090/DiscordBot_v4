@@ -75,8 +75,8 @@ admin.initializeApp({
 var database = admin.firestore();
 // imgur login
 var imgurClient = new imgur_1.ImgurClient({
-    clientId: 'fb524134f2cc257',
-    clientSecret: 'd3db322bb9fd8a6bd7407d6337611fcca1e31310',
+    clientId: process.env.IMGUR_CLIENT,
+    clientSecret: process.env.IMGUR_CLIENTSECRET,
 });
 function getAnyData(collection, doc, failureCB) {
     return __awaiter(this, void 0, void 0, function () {

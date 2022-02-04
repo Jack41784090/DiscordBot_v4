@@ -35,9 +35,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Dungeon = void 0;
 var discord_js_1 = require("discord.js");
@@ -46,8 +43,8 @@ var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
 var Room_1 = require("./Room");
 var Utility_1 = require("./Utility");
-var areasData_json_1 = __importDefault(require("../data/areasData.json"));
 var Database_1 = require("./Database");
+var jsons_1 = require("../jsons");
 var Dungeon = /** @class */ (function () {
     /** Be sure to follow it up with initialise users */
     function Dungeon(_data) {
@@ -411,7 +408,6 @@ var Dungeon = /** @class */ (function () {
                                     return __generator(this, function (_a) {
                                         switch (_a.label) {
                                             case 0:
-                                                (0, Utility_1.log)(itr.user.id, this.leaderUser.id);
                                                 if (!(itr.user.id === this.leaderUser.id)) return [3 /*break*/, 8];
                                                 _a.label = 1;
                                             case 1:
@@ -680,8 +676,8 @@ var Dungeon = /** @class */ (function () {
                                         room = this_2.rooms[i];
                                         if (!room.isBattleRoom) return [3 /*break*/, 2];
                                         encounterName = (0, Utility_1.arrayGetRandom)(this_2.data.encounterMaps);
-                                        if (!(encounterName && areasData_json_1.default[encounterName])) return [3 /*break*/, 2];
-                                        mapdata = (0, Utility_1.getNewObject)(areasData_json_1.default[encounterName]);
+                                        if (!(encounterName && jsons_1.areasData[encounterName])) return [3 /*break*/, 2];
+                                        mapdata = (0, Utility_1.getNewObject)(jsons_1.areasData[encounterName]);
                                         return [4 /*yield*/, Battle_1.Battle.Generate(mapdata, this_2.leaderUser, _message, userData.party, __1.BotClient, false)
                                                 .then(function (_b) {
                                                 room.battle = _b;

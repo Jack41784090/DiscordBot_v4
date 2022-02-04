@@ -1,11 +1,11 @@
 import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageSelectOptionData, MessageSelectMenu, MessageOptions } from "discord.js";
 import { UserData, CommandModule, Class, EMOJI_CROSS, StatMaximus, StatPrimus, WeaponTarget, EMOJI_SHIELD, EMOJI_SWORD, Weapon, EMOJI_STAR, defaultAvatarURL } from "../typedef";
-import classData from "../data/classData.json";
 import { addHPBar, formalise, getBaseClassStat, getLoadingEmbed, getNewObject, getSelectMenuActionRow, getStat, getStatsEmbed, getWeaponEmbed, setUpInteractionCollect, startDrawing } from "../classes/Utility";
 import { getFileImage, getIconCanvas, getIconImgurLink } from "../classes/Database";
 import { Image } from "canvas";
 import { InteractionEventManager } from "../classes/InteractionEventManager";
 import { InteractionEvent } from "../classes/InteractionEvent";
+import { classData } from "../jsons";
 
 module.exports = {
     commands: ['info'],

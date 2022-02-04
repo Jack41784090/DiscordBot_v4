@@ -330,7 +330,7 @@ export type WeaponName =
     "Endure"|
     "Blind Charge"|
 
-    // Mars
+    // Executioner
     "Passive: Unrelenting Fury" |
     "Vicious Stab"|
     "Decimate"|
@@ -392,7 +392,7 @@ export type StatusEffectType =
     "bleed"| // tick damage
     "protected"| // extra health (shield)
     "labouring"| // Fighter unique: add 33% of taken damage to value and increase healing rate
-    "fury"| // Mars unique: fury over 0.66 gives a buff to damage and crit
+    "fury"| // Executioner unique: fury over 0.66 gives a buff to damage and crit
     "DamageUp"| // damage buff
     "lifestealUp"
 export interface StatusEffectFunction {

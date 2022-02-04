@@ -61,8 +61,8 @@ export class InteractionEventManager {
                 'info': null,
             }).get(_id)!;
         const existing: InteractionEvent | null = split[_interactionEvent.interactionEventType];
-        if (existing && existing.stoppable === true) {
-            InteractionEventManager.instance.stopInteraction(_id, _interactionEvent.interactionEventType);
+        if (!existing || (existing && existing.stoppable === true)) {
+            this.stopInteraction(_id, _interactionEvent.interactionEventType);
             split[_interactionEvent.interactionEventType] = _interactionEvent;
             return split.userData;
         }

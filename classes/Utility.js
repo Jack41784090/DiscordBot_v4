@@ -556,7 +556,12 @@ function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
 exports.getAttackAction = getAttackAction;
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
+        var data, i;
         return __generator(this, function (_a) {
+            data = jsons_1.enemiesData["Crystal Zombie"].lootInfo;
+            for (i = 0; i < 1000; i++) {
+                log(uniformRandom(Number.EPSILON, 1));
+            }
             return [2 /*return*/];
         });
     });
@@ -973,6 +978,12 @@ function getStat(_arg0, _owner) {
             ss: _s,
         };
     })(), base = _a.base, ss = _a.ss;
+    // add universal weapons
+    for (var i = 0; i < Object.keys(jsons_1.universalWeaponsData).length; i++) {
+        var universalWeaponName = Object.keys(jsons_1.universalWeaponsData)[i];
+        var uniWeapon = getNewObject(jsons_1.universalWeaponsData[universalWeaponName]);
+        base.weapons.push(uniWeapon);
+    }
     var endStat = {
         base: base,
         index: -1,

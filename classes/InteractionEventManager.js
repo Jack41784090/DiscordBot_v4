@@ -142,8 +142,8 @@ var InteractionEventManager = /** @class */ (function () {
                     case 3:
                         split = _a;
                         existing = split[_interactionEvent.interactionEventType];
-                        if (existing && existing.stoppable === true) {
-                            InteractionEventManager.instance.stopInteraction(_id, _interactionEvent.interactionEventType);
+                        if (!existing || (existing && existing.stoppable === true)) {
+                            this.stopInteraction(_id, _interactionEvent.interactionEventType);
                             split[_interactionEvent.interactionEventType] = _interactionEvent;
                             return [2 /*return*/, split.userData];
                         }

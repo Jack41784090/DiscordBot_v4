@@ -1,8 +1,8 @@
 import { Client, Guild, Message, TextChannel, User } from "discord.js";
 import { Battle } from "../classes/Battle";
 import { CommandModule, MapData, UserData } from "../typedef";
-import areasData from "../data/areasData.json"
 import { getNewObject } from "../classes/Utility";
+import { areasData } from "../jsons";
 
 module.exports = {
     commands: ['pvp'],

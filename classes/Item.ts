@@ -1,6 +1,6 @@
 import { itemData, materialData } from "../jsons";
 import { ItemType, Material, MaterialGrade, MaterialQualityInfo, MaterialSpawnQualityInfo, MEW } from "../typedef";
-import { addHPBar, arrayGetLargestInArray, clamp, formalise, getGradeTag, getItemType, getNewObject, arrayGetRandom, uniformRandom, roundToDecimalPlace, normalRandom } from "./Utility";
+import { addHPBar, arrayGetLargestInArray, clamp, formalise, getGradeTag, getItemType, getNewObject, arrayGetRandom, uniformRandom, roundToDecimalPlace, normalRandom, debug } from "./Utility";
 
 export class Item {
     static Generate(_name: ItemType, _customName: string): Item {
@@ -16,7 +16,7 @@ export class Item {
                     occupationDeviation: _m.occupationDeviation,
                 };
             }),
-            uniformRandom(min + 0.0000000001, max),
+            uniformRandom(min + Number.EPSILON, max),
             _customName
         );
         item.fillJunk(min);
@@ -49,7 +49,7 @@ export class Item {
                 const { gradeDeviation, occupationDeviation } = element;
                 const randomisedGrade: MaterialGrade = Math.abs(Math.round(normalRandom(gradeDeviation.min, 1)));
                 grade = clamp(randomisedGrade, gradeDeviation.min, gradeDeviation.max);
-                occupation = uniformRandom(occupationDeviation.min + 0.000001, occupationDeviation.max + 0.000001);
+                occupation = uniformRandom(occupationDeviation.min + Number.EPSILON, occupationDeviation.max);
                 // debug("Grade: Deviating", gradeDeviation);
                 // debug("Grade", grade);
                 // debug("Occupation: Deviating", occupationDeviation);
@@ -231,7 +231,7 @@ export class Item {
         while (this.weight < _untilWeight) {
             const randomMaterial: Material = arrayGetRandom(Object.keys(materialData) as (keyof typeof materialData)[]);
             const randomGrade: MaterialGrade = clamp(Math.abs(Math.round(normalRandom(0, 1))), 0, 10);
-            const randomOccupation: number = uniformRandom(0, 0.0005);
+            const randomOccupation: number = 10e-5;
             const newMaterialInfo: MaterialQualityInfo = {
                 materialName: randomMaterial,
                 grade: randomGrade,

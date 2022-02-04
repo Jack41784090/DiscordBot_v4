@@ -35,16 +35,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var typedef_1 = require("../typedef");
-var classData_json_1 = __importDefault(require("../data/classData.json"));
 var Utility_1 = require("../classes/Utility");
 var Database_1 = require("../classes/Database");
 var InteractionEventManager_1 = require("../classes/InteractionEventManager");
 var InteractionEvent_1 = require("../classes/InteractionEvent");
+var jsons_1 = require("../jsons");
 module.exports = {
     commands: ['info'],
     expectedArgs: '[class name]',
@@ -98,7 +95,7 @@ module.exports = {
                         });
                     }); };
                     if (!(args[0] === undefined)) return [3 /*break*/, 4];
-                    selectMenuOptions = Object.keys(classData_json_1.default)
+                    selectMenuOptions = Object.keys(jsons_1.classData)
                         .map(function (_className) { return ({
                         label: _className,
                         value: _className,
@@ -145,14 +142,14 @@ module.exports = {
                     });
                     return [3 /*break*/, 8];
                 case 4:
-                    if (!(classData_json_1.default[args[0]] === undefined)) return [3 /*break*/, 5];
+                    if (!(jsons_1.classData[args[0]] === undefined)) return [3 /*break*/, 5];
                     message.react(typedef_1.EMOJI_CROSS)
                         .catch(function (_err) { return console.log; });
                     iem.stopInteraction(author.id, 'info');
                     return [3 /*break*/, 8];
                 case 5:
                     className_1 = (0, Utility_1.formalise)(args[0]);
-                    classChosen_1 = (0, Utility_1.getNewObject)(classData_json_1.default[className_1]);
+                    classChosen_1 = (0, Utility_1.getNewObject)(jsons_1.classData[className_1]);
                     arsenal = classChosen_1.weapons.concat(classChosen_1.autoWeapons);
                     selectMenuOptions = arsenal.map(function (_w, _i) {
                         return {

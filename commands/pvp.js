@@ -35,13 +35,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var Battle_1 = require("../classes/Battle");
-var areasData_json_1 = __importDefault(require("../data/areasData.json"));
 var Utility_1 = require("../classes/Utility");
+var jsons_1 = require("../jsons");
 module.exports = {
     commands: ['pvp'],
     expectedArgs: '',
@@ -54,7 +51,7 @@ module.exports = {
                 message.reply("Have more than just yourself in the team!");
             }
             else {
-                mapData = (0, Utility_1.getNewObject)(areasData_json_1.default.pvp_5x5, {});
+                mapData = (0, Utility_1.getNewObject)(jsons_1.areasData.pvp_5x5, {});
                 Battle_1.Battle.Start(mapData, author, message, authorUserData.party, client, true);
             }
             return [2 /*return*/];

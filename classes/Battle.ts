@@ -2,8 +2,6 @@ import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Mess
 import { addHPBar, counterAxis, getAHP, getSpd, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIconCanvas, getUserWelfare } from "./Database";
-import enemiesData from "../data/enemiesData.json";
-import globalWeaponsData from "../data/universalWeaponsData.json";
 
 import fs from 'fs';
 import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialQualityInfo, EMOJI_MONEYBAG } from "../typedef";
@@ -15,6 +13,7 @@ import { BotClient } from "..";
 import { Item } from "./Item";
 import { InteractionEventManager } from "./InteractionEventManager";
 import { InteractionEvent } from "./InteractionEvent";
+import { enemiesData } from "../jsons";
 
 export class Battle {
     static readonly MOVE_READINESS = 10;
@@ -101,46 +100,43 @@ export class Battle {
     /** Generate a Battle but does not start it */
     static async Generate(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
         const battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
+        return battle;
+    }
 
-        const instance = InteractionEventManager.getInstance();
-        // initiate users
-        for (let i = 0; i < _party.length; i++) {
-            const ownerID = _party[i];
+    /** Main function to access in order to start a battle, replacing the constructor */
+    static async Start(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
+        const battle = await Battle.Generate(_mapData, _author, _message, _party, _client, _pvp);
+        return await battle.StartBattle();
+    }
 
-            // interaction event
-            const interactEvent: InteractionEvent = new InteractionEvent(ownerID, _message, 'battle');
-            const userData = await instance.registerInteraction(ownerID, interactEvent);
-            if (userData) {
-                battle.userDataCache.set(ownerID, userData);
-                // add to spawn queue
-                const blankStat = getStat(getBaseClassStat(userData.equippedClass), ownerID);
-                if (_pvp) {
-                    blankStat.pvp = true;
+    /** Start an already generated battle. */
+    async StartBattle(_options: StartBattleOptions = {
+        ambush: null
+    }): Promise<boolean> {
+        await this.InitiateUsers();
+        this.ManageWelfare();
+
+        this.AddEnemies();
+        // ambush
+        if (_options.ambush && _options.ambush !== 'block') {
+            const ambushingTeam: Team = _options.ambush;
+            for (let i = 0; i < this.tobespawnedArray.length; i++) {
+                const ambusher = this.tobespawnedArray[i];
+                if (ambusher.team === ambushingTeam) {
+                    ambusher.readiness = 50;
+                    ambusher.sword = 3;
+                    ambusher.sprint = 3;
                 }
-                battle.tobespawnedArray.push(blankStat);
-
-                // initiate cache
-                const user: User | null = await BotClient.users.fetch(ownerID).catch(() => null);
-                if (user) {
-                    battle.userCache.set(ownerID, user);
-                }
-
-                // add universal weapons
-                for (let i = 0; i < Object.keys(globalWeaponsData).length; i++) {
-                    const universalWeaponName: keyof typeof globalWeaponsData = Object.keys(globalWeaponsData)[i] as keyof typeof globalWeaponsData;
-                    const uniWeapon: Weapon = getNewObject(globalWeaponsData[universalWeaponName] as Weapon);
-                    log("Pushing universal weapon " + universalWeaponName + " into the arsenal of " + `${blankStat.base.class} (${blankStat.index})`)
-                    blankStat.base.weapons.push(uniWeapon);
-                }
-            }
-            else {
-                _message.channel.send(`<@${ownerID}> is busy (most possibly already in another battle) and cannot participate.`)
             }
         }
 
+        return this.StartRound();
+    }
+
+    AddEnemies(): void {
         // add enemies to the spawning list, only valid if battle is not pvp
-        if (!_pvp) {
-            for (const [key, value] of Object.entries(_mapData.enemiesInfo)) {
+        if (!this.pvp) {
+            for (const [key, value] of Object.entries(this.mapData.enemiesInfo)) {
                 const Eclass = key as EnemyClass;
                 const mod = { name: `${Eclass}` };
                 const enemyBase: BaseStat = getNewObject(enemiesData[Eclass], mod) as BaseStat;
@@ -148,7 +144,7 @@ export class Battle {
 
                 for (let i = 0; i < spawnCount; i++) {
                     const enemyEntity: Stat = getStat(enemyBase);
-                    
+
                     // randomly spawn in loot
                     enemyEntity.base.lootInfo.forEach(_LInfo => {
                         // roll for spawn item
@@ -164,71 +160,78 @@ export class Battle {
                             }
 
                             // spawn in item
-                            const weight = uniformRandom(_LInfo.weightDeviation.min + Number.EPSILON, _LInfo.weightDeviation.max + Number.EPSILON);
+                            const { min, max } = _LInfo.weightDeviation;
+                            const weight = uniformRandom(min + min * 0.05, max);
                             enemyEntity.drops.items.push(new Item(_LInfo.materials, weight, _LInfo.itemName));
                         }
                     });
 
-                    battle.tobespawnedArray.push(enemyEntity);
-                    battle.totalEnemyCount++;
-                    battle.enemyCount++;
+                    this.tobespawnedArray.push(enemyEntity);
+                    this.totalEnemyCount++;
+                    this.enemyCount++;
                 }
             }
         }
-
-        return battle;
     }
 
-    /** Main function to access in order to start a thread of battle */
-    static async Start(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
-        const battle = await Battle.Generate(_mapData, _author, _message, _party, _client, _pvp);
-        battle.StartRound();
+    /** Initiate users by registering them into iem, add them in the battle, initiate cache. */
+    async InitiateUsers(): Promise<void> {
+        const instance = InteractionEventManager.getInstance();
+        // initiate users
+        for (let i = 0; i < this.party.length; i++) {
+            const ownerID = this.party[i];
+
+            // interaction event
+            const interactEvent: InteractionEvent = new InteractionEvent(ownerID, this.message, 'battle');
+            const userData = await instance.registerInteraction(ownerID, interactEvent);
+            if (userData) {
+                this.userDataCache.set(ownerID, userData);
+                // add to spawn queue
+                const blankStat = getStat(getBaseClassStat(userData.equippedClass), ownerID);
+                blankStat.pvp = this.pvp;
+                this.tobespawnedArray.push(blankStat);
+
+                // initiate cache
+                const user: User | null = await BotClient.users.fetch(ownerID).catch(() => null);
+                if (user) {
+                    this.userCache.set(ownerID, user);
+                }
+            }
+            else {
+                this.message.channel.send(`<@${ownerID}> is busy (most possibly already in another battle) and cannot participate.`)
+                arrayRemoveItemArray(this.party, ownerID);
+            }
+        }
     }
 
-    /** An alternative to Start when the battle is already initiated. Gives additional options to begin. */
-    async StartBattle(_options: StartBattleOptions) {
+    ManageWelfare(): void {
         // check player welfare
         log("Checking welfare...")
         const playerStats = this.party.map(_ownerID => this.tobespawnedArray.find(_s => _s.owner === _ownerID));
         for (let i = 0; i < playerStats.length; i++) {
             const player = playerStats[i];
             if (player) {
-                const welfare = await getUserWelfare(player.owner);
+                const welfare = this.userDataCache.get(player.owner)?.welfare;
                 debug(`\t${player.base.class}`, welfare);
-                if (welfare !== null) {
+                if (welfare) {
                     log(`\t${player.HP} => ${player.base.AHP * clamp(welfare, 0, 1)}`)
                     player.HP = player.base.AHP * clamp(welfare, 0, 1);
-                    if (welfare <= 0) {
-                        this.author.send({
-                            embeds: [
-                                new MessageEmbed({
-                                    title: "Alert!",
-                                    description: `One of your teammates, ${player.base.class}, has 0 welfare and cannot attend the battle.`,
-                                    footer: {
-                                        text: `id: ${player.owner}`
-                                    }
-                                })
-                            ]
-                        })
-                    }
+                }
+                else {
+                    this.author.send({
+                        embeds: [
+                            new MessageEmbed({
+                                title: "Alert!",
+                                description: `One of your teammates playing ${player.base.class} has 0 welfare and cannot attend the battle.`,
+                                footer: {
+                                    text: `associated user: ${this.userCache.get(player.owner)?.username || player.owner}`
+                                }
+                            })
+                        ]
+                    })
                 }
             }
         }
-
-        // ambush
-        if (_options.ambush && _options.ambush !== 'block') {
-            const ambushingTeam: Team = _options.ambush;
-            for (let i = 0; i < this.tobespawnedArray.length; i++) {
-                const ambusher = this.tobespawnedArray[i];
-                if (ambusher.team === ambushingTeam) {
-                    ambusher.readiness = 50;
-                    ambusher.sword = 3;
-                    ambusher.sprint = 3;
-                }
-            }
-        }
-
-        return this.StartRound();
     }
 
     /** Begin a new round
@@ -559,8 +562,10 @@ export class Battle {
                 const id: OwnerID = this.party[i];
                 const stat: Stat = allStats[i];
 
-                const userData = this.userDataCache.get(id)!
-                userData.welfare = clamp(stat.HP / stat.base.AHP, 0, 1);
+                const userData = this.userDataCache.get(id);
+                if (userData) {
+                    userData.welfare = clamp(stat.HP / stat.base.AHP, 0, 1);
+                }
 
                 InteractionEventManager.getInstance().stopInteraction(id, 'battle');
             }

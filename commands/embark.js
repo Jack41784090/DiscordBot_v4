@@ -46,15 +46,12 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var discord_js_1 = require("discord.js");
 var Utility_1 = require("../classes/Utility");
 var typedef_1 = require("../typedef");
-var dungeonData_json_1 = __importDefault(require("../data/dungeonData.json"));
 var Dungeon_1 = require("../classes/Dungeon");
+var jsons_1 = require("../jsons");
 module.exports = {
     commands: ['embark', 'adventure', 'go'],
     expectedArgs: '[location]',
@@ -73,7 +70,7 @@ module.exports = {
                     }
                 });
                 try {
-                    for (_a = __values(Object.keys(dungeonData_json_1.default)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                    for (_a = __values(Object.keys(jsons_1.dungeonData)), _b = _a.next(); !_b.done; _b = _a.next()) {
                         locationName = _b.value;
                         formalName = (0, Utility_1.formalise)(locationName);
                         locationsEmbed.description += "**" + formalName + "**\n";
@@ -100,8 +97,8 @@ module.exports = {
                     message.reply("You have yet to have a class equipped.");
                     return [2 /*return*/];
                 }
-                dungeon = dungeonData_json_1.default[location_1] ?
-                    (0, Utility_1.getNewObject)(dungeonData_json_1.default[location_1], {}) :
+                dungeon = jsons_1.dungeonData[location_1] ?
+                    (0, Utility_1.getNewObject)(jsons_1.dungeonData[location_1], {}) :
                     null;
                 // BATTLEDATA INIT (SPAWN PLAYERS)
                 if (dungeon) {

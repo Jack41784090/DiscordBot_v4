@@ -19,7 +19,7 @@ var Item = /** @class */ (function () {
                 var gradeDeviation = element.gradeDeviation, occupationDeviation = element.occupationDeviation;
                 var randomisedGrade = Math.abs(Math.round((0, Utility_1.normalRandom)(gradeDeviation.min, 1)));
                 grade = (0, Utility_1.clamp)(randomisedGrade, gradeDeviation.min, gradeDeviation.max);
-                occupation = (0, Utility_1.uniformRandom)(occupationDeviation.min + 0.000001, occupationDeviation.max + 0.000001);
+                occupation = (0, Utility_1.uniformRandom)(occupationDeviation.min + Number.EPSILON, occupationDeviation.max);
                 // debug("Grade: Deviating", gradeDeviation);
                 // debug("Grade", grade);
                 // debug("Occupation: Deviating", occupationDeviation);
@@ -79,7 +79,7 @@ var Item = /** @class */ (function () {
                 gradeDeviation: _m.gradeDeviation,
                 occupationDeviation: _m.occupationDeviation,
             };
-        }), (0, Utility_1.uniformRandom)(min + 0.0000000001, max), _customName);
+        }), (0, Utility_1.uniformRandom)(min + Number.EPSILON, max), _customName);
         item.fillJunk(min);
         // log(item);
         return item;
@@ -190,7 +190,7 @@ var Item = /** @class */ (function () {
         var _loop_2 = function () {
             var randomMaterial = (0, Utility_1.arrayGetRandom)(Object.keys(jsons_1.materialData));
             var randomGrade = (0, Utility_1.clamp)(Math.abs(Math.round((0, Utility_1.normalRandom)(0, 1))), 0, 10);
-            var randomOccupation = (0, Utility_1.uniformRandom)(0, 0.0005);
+            var randomOccupation = 10e-5;
             var newMaterialInfo = {
                 materialName: randomMaterial,
                 grade: randomGrade,

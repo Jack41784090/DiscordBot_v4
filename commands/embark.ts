@@ -1,8 +1,8 @@
 import { Client, Guild, Message, MessageEmbed, TextChannel, User } from "discord.js";
 import { formalise, getNewObject } from "../classes/Utility";
 import { CommandModule, Location, EMOJI_TICK, UserData, DungeonData } from "../typedef";
-import dungeonData from "../data/dungeonData.json";
 import { Dungeon } from "../classes/Dungeon";
+import { dungeonData } from "../jsons";
 
 module.exports = {
     commands: ['embark', 'adventure', 'go'],

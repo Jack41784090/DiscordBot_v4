@@ -65,9 +65,6 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BotClient = void 0;
 require('dotenv').config();
@@ -77,8 +74,8 @@ var path = __importStar(require("path"));
 var Battle_js_1 = require("./classes/Battle.js");
 var Database_js_1 = require("./classes/Database.js");
 var Utility_js_1 = require("./classes/Utility.js");
+var jsons_js_1 = require("./jsons.js");
 var typedef_js_1 = require("./typedef.js");
-var areasData_json_1 = __importDefault(require("./data/areasData.json"));
 var commandReferral = {};
 exports.BotClient = new discord_js_1.Client({ intents: [discord_js_1.Intents.FLAGS.GUILDS, discord_js_1.Intents.FLAGS.GUILD_MESSAGES, discord_js_1.Intents.FLAGS.GUILD_MESSAGE_REACTIONS, discord_js_1.Intents.FLAGS.DIRECT_MESSAGES, discord_js_1.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS] });
 function quickEmbark() {
@@ -93,7 +90,7 @@ function quickEmbark() {
                 case 2: return [4 /*yield*/, (_a.sent()).send("Stuff")];
                 case 3:
                     mes = _a.sent();
-                    Battle_js_1.Battle.Start((0, Utility_js_1.getNewObject)(areasData_json_1.default.farmstead_empty), Ike, mes, ["262871357455466496"], exports.BotClient, false);
+                    Battle_js_1.Battle.Start((0, Utility_js_1.getNewObject)(jsons_js_1.areasData.farmstead_empty), Ike, mes, ["262871357455466496"], exports.BotClient, false);
                     return [2 /*return*/];
             }
         });

@@ -21,8 +21,8 @@ const database = admin.firestore();
 
 // imgur login
 const imgurClient = new ImgurClient({
-    clientId: 'fb524134f2cc257',
-    clientSecret: 'd3db322bb9fd8a6bd7407d6337611fcca1e31310',
+    clientId: process.env.IMGUR_CLIENT,
+    clientSecret: process.env.IMGUR_CLIENTSECRET,
 });
 
 export async function getAnyData(collection: string, doc: string, failureCB?: (dR: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>, sS: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) => void) {

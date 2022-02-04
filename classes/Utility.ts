@@ -5,7 +5,7 @@ import { BotClient } from "..";
 import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialQualityInfo, MaterialGrade, UserData, Material, MaterialSpawnQualityInfo } from "../typedef";
 import { Battle } from "./Battle";
 import { Item } from "./Item";
-import { areasData, enemiesData, classData, itemData } from "../jsons";
+import { areasData, enemiesData, classData, itemData, universalWeaponsData } from "../jsons";
 import { getIconImgurLink } from "./Database";
 // import { Dungeon } from "./Dungeon";
 
@@ -490,6 +490,10 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: Weapon,
 }
 
 export async function Test() {
+    const data = enemiesData["Crystal Zombie"].lootInfo;
+    for (let i = 0; i < 1000; i++) {
+        log(uniformRandom(Number.EPSILON, 1));
+    }
 }
 
 export function findReferenceAngle(_angle: number): number {
@@ -845,6 +849,13 @@ export function getStat(_arg0: Class | SimplePlayerStat | BaseStat, _owner: stri
             ss: _s,
         };
     })();
+
+    // add universal weapons
+    for (let i = 0; i < Object.keys(universalWeaponsData).length; i++) {
+        const universalWeaponName: keyof typeof universalWeaponsData = Object.keys(universalWeaponsData)[i] as keyof typeof universalWeaponsData;
+        const uniWeapon: Weapon = getNewObject(universalWeaponsData[universalWeaponName] as Weapon);
+        base.weapons.push(uniWeapon);
+    }
 
     const endStat: Stat = {
         base: base,

@@ -74,7 +74,7 @@
 		"botType": 0,
 		"lootInfo": []
 	},
-	"Mars": {
+	"Executioner": {
 		"class": "Executioner",
 		"AHP": 55,
 		"Dodge": 10,
@@ -101,7 +101,7 @@
 				},
 				"CD": 0,
 				"UPT": 5,
-				"desc": "Mars stabs his *gladius* viciously into the enemy, bleeding the target with a value proportionate to his Fury, up to 33% extra damage at max 100 Fury."
+				"desc": "Executioner stabs his *gladius* viciously into the enemy, bleeding the target with a value proportionate to his Fury, up to 33% extra damage at max 100 Fury."
 			},
 			{
 				"Name": "Decimate",
@@ -121,7 +121,7 @@
 				},
 				"CD": 0,
 				"UPT": 2,
-				"desc": "Mars grasps his spear and recklessly spins around once, dealing damage to anyone adjacent or diagonal to him."
+				"desc": "Executioner grasps his spear and recklessly spins around once, dealing damage to anyone adjacent or diagonal to him."
 			}
 		],
 		"autoWeapons": [
@@ -143,7 +143,7 @@
 				},
 				"CD": 0,
 				"UPT": 1,
-				"desc": "All damage dealt by Mars is stored as Fury. When an enemy's health is below 0 after an attack, stores an extra 15 Fury. When Fury is above 66, Mars becomes ENRAGED "
+				"desc": "All damage dealt by Executioner is stored as Fury. When an enemy's health is below 0 after an attack, stores an extra 15 Fury. When Fury is above 66, Executioner becomes ENRAGED "
 			}
 		],
 		"botType": 0,
