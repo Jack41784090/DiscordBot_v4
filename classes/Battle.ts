@@ -1602,9 +1602,7 @@ export class Battle {
             const baseClass = stat.base.class;
 
             // get character icon (template)
-            let iconCanvas: Canvas = stat.owner?
-                await getIconCanvas(stat):
-                (iconCache.get(baseClass) || await getIconCanvas(stat));
+            let iconCanvas: Canvas = iconCache.get(baseClass) || await getIconCanvas(stat)
             if (!stat.owner && iconCache.get(baseClass) === undefined) {
                 iconCache.set(baseClass, iconCanvas);
             }
@@ -1614,7 +1612,10 @@ export class Battle {
                 x: X,
                 y: Y
             }, this.pixelsPerTile, this.height, false);
-            ctx.drawImage(iconCanvas, imageCanvasCoord.x, imageCanvasCoord.y, Math.min(iconCanvas.width, this.pixelsPerTile), Math.min(iconCanvas.height, this.pixelsPerTile));
+            ctx.drawImage(iconCanvas, imageCanvasCoord.x, imageCanvasCoord.y,
+                Math.min(iconCanvas.width, this.pixelsPerTile),
+                Math.min(iconCanvas.height, this.pixelsPerTile)
+            );
         }
 
         // end
@@ -2042,11 +2043,15 @@ export class Battle {
     }
 
     async getFullPlayerEmbedMessageOptions(stat: Stat, actions?: Array<Action>): Promise<MessageOptions> {
-        // thumbnail generation
-        const characterBaseImage: Image = await getFileImage(stat.base.iconURL);
-        const { width, height } = characterBaseImage;
+        // thumbnail (top right icon) generation
+        const characterBaseCanvas: Canvas = await getIconCanvas(stat, {
+            crop: true,
+            frame: true,
+            healthArc: true,
+        });
+        const { width, height } = characterBaseCanvas;
         const { canvas, ctx } = startDrawing(width, height);
-        ctx.drawImage(characterBaseImage, 0, 0, width, height);
+        ctx.drawImage(characterBaseCanvas, 0, 0, width, height);
 
         // player information embed
         const embed = await this.getFullPlayerEmbed(stat);
@@ -2059,8 +2064,7 @@ export class Battle {
         };
     }
     async getFullPlayerEmbed(stat: Stat): Promise<MessageEmbed> {
-        const HP = (stat.HP / getAHP(stat)) * 50;
-        const HealthBar = `${'`'}${addHPBar(stat.base.AHP, HP, 40)}${'`'}`;
+        const HealthBar = `${'`'}${addHPBar(stat.base.AHP, stat.HP, 40)}${'`'}`;
         const ReadinessBar = `${'`'}${addHPBar(50, stat.readiness)}${'`'}`;
         const explorerEmbed = new MessageEmbed({
             title: HealthBar,

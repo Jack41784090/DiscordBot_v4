@@ -331,6 +331,7 @@ function getIconCanvas(_stat, _drawOptions) {
                 }
                 clearTimeout(invalidURLTimeout_1);
                 var squaredSize = Math.min(image.width, image.height);
+                var radius = (squaredSize / 2) * 0.95;
                 var _a = (0, Utility_1.startDrawing)(squaredSize, squaredSize), canvas = _a.canvas, ctx = _a.ctx;
                 ctx.save();
                 // draw image
@@ -343,7 +344,7 @@ function getIconCanvas(_stat, _drawOptions) {
                     ctx.globalCompositeOperation = 'destination-in';
                     ctx.fillStyle = "#000";
                     ctx.beginPath();
-                    ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
+                    ctx.arc(squaredSize * 0.5, squaredSize * 0.5, radius, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.closePath();
                 }
@@ -360,7 +361,22 @@ function getIconCanvas(_stat, _drawOptions) {
                     (0, Utility_1.drawCircle)(ctx, {
                         x: squaredSize / 2,
                         y: squaredSize / 2,
-                    }, squaredSize / 2);
+                    }, radius);
+                }
+                // health arc
+                if (_drawOptions.healthArc) {
+                    // attach health arc
+                    var healthPercentage = (0, Utility_1.clamp)(_stat.HP / _stat.base.AHP, 0, 1);
+                    ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
+                        r: 255 * Number(_stat.team === "enemy"),
+                        g: 255 * Number(_stat.team === "player"),
+                        b: 0,
+                        alpha: 1
+                    });
+                    (0, Utility_1.drawCircle)(ctx, {
+                        x: squaredSize / 2,
+                        y: squaredSize / 2,
+                    }, radius, true, healthPercentage);
                 }
                 ctx.restore();
                 resolve(canvas);

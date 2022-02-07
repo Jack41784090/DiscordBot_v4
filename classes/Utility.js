@@ -341,8 +341,8 @@ function roundToDecimalPlace(_number, _decimalPlace) {
     }
 }
 exports.roundToDecimalPlace = roundToDecimalPlace;
-function addHPBar(_maxValue, _nowValue, maxBarProportion) {
-    if (maxBarProportion === void 0) { maxBarProportion = Math.round(_maxValue); }
+function addHPBar(_maxValue, _nowValue, _maxBarProportion) {
+    if (_maxBarProportion === void 0) { _maxBarProportion = Math.round(_maxValue); }
     var bar = '█';
     var line = '|';
     if (_maxValue < 0)
@@ -351,12 +351,19 @@ function addHPBar(_maxValue, _nowValue, maxBarProportion) {
         _nowValue = 0;
     if (_nowValue > _maxValue)
         _nowValue = _maxValue;
-    var maxValue = _maxValue * (maxBarProportion / _maxValue);
-    var nowValue = _nowValue * (maxBarProportion / _maxValue);
+    var maxValue = _maxValue * (_maxBarProportion / _maxValue);
+    var nowValue = _nowValue * (_maxBarProportion / _maxValue);
     var blockCount = nowValue <= 0 ?
         0 :
         Math.round(nowValue);
     var lineCount = Math.round(maxValue) - blockCount;
+    // debug("_maxBarProportion", _maxBarProportion);
+    // debug("_maxValue", _maxValue);
+    // debug("_nowValue", _nowValue);
+    // debug("maxValue", maxValue);
+    // debug("nowValue", nowValue);
+    // debug("blockCount", blockCount);
+    // debug("lineCount", lineCount);
     var result = '';
     for (var i = 0; i < blockCount; i++) {
         result += bar;

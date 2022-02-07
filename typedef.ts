@@ -364,6 +364,7 @@ export type GetBuffOption = 'Base' | 'WithBoth' | 'WithBuff' | 'WithDebuff';
 export interface GetIconOptions {
     crop?: boolean,
     frame?: boolean,
+    healthArc?: boolean,
 }
 export interface Buffs {
     AHP: number,

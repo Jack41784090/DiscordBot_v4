@@ -77,7 +77,15 @@ var Utility_js_1 = require("./classes/Utility.js");
 var jsons_js_1 = require("./jsons.js");
 var typedef_js_1 = require("./typedef.js");
 var commandReferral = {};
-exports.BotClient = new discord_js_1.Client({ intents: [discord_js_1.Intents.FLAGS.GUILDS, discord_js_1.Intents.FLAGS.GUILD_MESSAGES, discord_js_1.Intents.FLAGS.GUILD_MESSAGE_REACTIONS, discord_js_1.Intents.FLAGS.DIRECT_MESSAGES, discord_js_1.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS] });
+exports.BotClient = new discord_js_1.Client({
+    intents: [
+        discord_js_1.Intents.FLAGS.GUILDS,
+        discord_js_1.Intents.FLAGS.GUILD_MESSAGES,
+        discord_js_1.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+        discord_js_1.Intents.FLAGS.DIRECT_MESSAGES,
+        discord_js_1.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+    ]
+});
 function quickEmbark() {
     return __awaiter(this, void 0, void 0, function () {
         var Ike, mes;
@@ -138,8 +146,7 @@ exports.BotClient.on('ready', function () { return __awaiter(void 0, void 0, voi
         exports.BotClient.setMaxListeners(15);
         console.log("Ready.");
         importCommands();
-        // quickEmbark();
-        (0, Utility_js_1.Test)();
+        quickEmbark();
         return [2 /*return*/];
     });
 }); });

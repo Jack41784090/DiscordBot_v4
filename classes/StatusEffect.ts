@@ -59,12 +59,11 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
         (_statusEffect: StatusEffect, _sameRound_action: Action, _bd: Battle) => {
             const affected = _statusEffect.affected;
             const value = clamp(_statusEffect.value, 0, 100); _statusEffect.value = value;
-            const fullBar = 12;
             const fullFury = 100;
             let returnString = "";
 
             if (value > 66) {
-                returnString += `**ENRAGED**! ( \`${addHPBar(fullBar, value * fullBar / fullFury)}\` )`;
+                returnString += `**ENRAGED**! ( ${value}/${fullFury} )`;
                 if (affected.buffs.Damage < 5) {
                     affected.buffs.Damage = 5;
                 }
@@ -73,7 +72,7 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
                 }
             }
             else {
-                returnString += `Growing in rage... ( \`${addHPBar(fullBar, value * fullBar / fullFury)}\` )`;
+                returnString += `Growing in rage... ( ${value}/${fullFury} )`;
                 _bd.removeBuffStatus(_statusEffect.affected, 5, "Damage");
                 _bd.removeBuffStatus(_statusEffect.affected, 0.2, "lifesteal");
             }

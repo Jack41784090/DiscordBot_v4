@@ -55,11 +55,10 @@ var statusEffect_effects = new Map([
             var affected = _statusEffect.affected;
             var value = (0, Utility_1.clamp)(_statusEffect.value, 0, 100);
             _statusEffect.value = value;
-            var fullBar = 12;
             var fullFury = 100;
             var returnString = "";
             if (value > 66) {
-                returnString += "**ENRAGED**! ( `" + (0, Utility_1.addHPBar)(fullBar, value * fullBar / fullFury) + "` )";
+                returnString += "**ENRAGED**! ( " + value + "/" + fullFury + " )";
                 if (affected.buffs.Damage < 5) {
                     affected.buffs.Damage = 5;
                 }
@@ -68,7 +67,7 @@ var statusEffect_effects = new Map([
                 }
             }
             else {
-                returnString += "Growing in rage... ( `" + (0, Utility_1.addHPBar)(fullBar, value * fullBar / fullFury) + "` )";
+                returnString += "Growing in rage... ( " + value + "/" + fullFury + " )";
                 _bd.removeBuffStatus(_statusEffect.affected, 5, "Damage");
                 _bd.removeBuffStatus(_statusEffect.affected, 0.2, "lifesteal");
             }

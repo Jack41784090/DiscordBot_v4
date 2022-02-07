@@ -1619,48 +1619,39 @@ var Battle = /** @class */ (function () {
     /** Draws the base map and character icons. Does not contain health arcs or indexi */
     Battle.prototype.getNewCanvasMap = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var allStats, groundImage, _b, canvas, ctx, iconCache, i, stat, X, Y, baseClass, iconCanvas, _c, _d, imageCanvasCoord;
-            return __generator(this, function (_g) {
-                switch (_g.label) {
+            var allStats, groundImage, _b, canvas, ctx, iconCache, i, stat, X, Y, baseClass, iconCanvas, _c, imageCanvasCoord;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         allStats = this.allStats();
                         if (!this.mapData.map.groundURL) return [3 /*break*/, 2];
                         return [4 /*yield*/, (0, Database_1.getFileImage)(this.mapData.map.groundURL)];
                     case 1:
-                        _b = _g.sent();
+                        _b = _d.sent();
                         return [3 /*break*/, 3];
                     case 2:
                         _b = undefined;
-                        _g.label = 3;
+                        _d.label = 3;
                     case 3:
                         groundImage = _b;
                         canvas = (0, Utility_1.returnGridCanvas)(this.height, this.width, this.pixelsPerTile, groundImage);
                         ctx = canvas.getContext('2d');
                         iconCache = new Map();
                         i = 0;
-                        _g.label = 4;
+                        _d.label = 4;
                     case 4:
-                        if (!(i < allStats.length)) return [3 /*break*/, 11];
+                        if (!(i < allStats.length)) return [3 /*break*/, 8];
                         stat = allStats[i];
                         X = stat.x;
                         Y = stat.y;
                         baseClass = stat.base.class;
-                        if (!stat.owner) return [3 /*break*/, 6];
+                        _c = iconCache.get(baseClass);
+                        if (_c) return [3 /*break*/, 6];
                         return [4 /*yield*/, (0, Database_1.getIconCanvas)(stat)];
                     case 5:
-                        _c = _g.sent();
-                        return [3 /*break*/, 9];
+                        _c = (_d.sent());
+                        _d.label = 6;
                     case 6:
-                        _d = iconCache.get(baseClass);
-                        if (_d) return [3 /*break*/, 8];
-                        return [4 /*yield*/, (0, Database_1.getIconCanvas)(stat)];
-                    case 7:
-                        _d = (_g.sent());
-                        _g.label = 8;
-                    case 8:
-                        _c = (_d);
-                        _g.label = 9;
-                    case 9:
                         iconCanvas = _c;
                         if (!stat.owner && iconCache.get(baseClass) === undefined) {
                             iconCache.set(baseClass, iconCanvas);
@@ -1670,11 +1661,11 @@ var Battle = /** @class */ (function () {
                             y: Y
                         }, this.pixelsPerTile, this.height, false);
                         ctx.drawImage(iconCanvas, imageCanvasCoord.x, imageCanvasCoord.y, Math.min(iconCanvas.width, this.pixelsPerTile), Math.min(iconCanvas.height, this.pixelsPerTile));
-                        _g.label = 10;
-                    case 10:
+                        _d.label = 7;
+                    case 7:
                         i++;
                         return [3 /*break*/, 4];
-                    case 11: 
+                    case 8: 
                     // end
                     return [2 /*return*/, canvas];
                 }
@@ -2118,15 +2109,19 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.getFullPlayerEmbedMessageOptions = function (stat, actions) {
         return __awaiter(this, void 0, void 0, function () {
-            var characterBaseImage, width, height, _b, canvas, ctx, embed;
+            var characterBaseCanvas, width, height, _b, canvas, ctx, embed;
             return __generator(this, function (_c) {
                 switch (_c.label) {
-                    case 0: return [4 /*yield*/, (0, Database_1.getFileImage)(stat.base.iconURL)];
+                    case 0: return [4 /*yield*/, (0, Database_1.getIconCanvas)(stat, {
+                            crop: true,
+                            frame: true,
+                            healthArc: true,
+                        })];
                     case 1:
-                        characterBaseImage = _c.sent();
-                        width = characterBaseImage.width, height = characterBaseImage.height;
+                        characterBaseCanvas = _c.sent();
+                        width = characterBaseCanvas.width, height = characterBaseCanvas.height;
                         _b = (0, Utility_1.startDrawing)(width, height), canvas = _b.canvas, ctx = _b.ctx;
-                        ctx.drawImage(characterBaseImage, 0, 0, width, height);
+                        ctx.drawImage(characterBaseCanvas, 0, 0, width, height);
                         return [4 /*yield*/, this.getFullPlayerEmbed(stat)];
                     case 2:
                         embed = _c.sent();
@@ -2142,10 +2137,9 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.getFullPlayerEmbed = function (stat) {
         return __awaiter(this, void 0, void 0, function () {
-            var HP, HealthBar, ReadinessBar, explorerEmbed, green, red, num;
+            var HealthBar, ReadinessBar, explorerEmbed, green, red, num;
             return __generator(this, function (_b) {
-                HP = (stat.HP / (0, Utility_1.getAHP)(stat)) * 50;
-                HealthBar = "" + '`' + (0, Utility_1.addHPBar)(stat.base.AHP, HP, 40) + '`';
+                HealthBar = "" + '`' + (0, Utility_1.addHPBar)(stat.base.AHP, stat.HP, 40) + '`';
                 ReadinessBar = "" + '`' + (0, Utility_1.addHPBar)(50, stat.readiness) + '`';
                 explorerEmbed = new discord_js_1.MessageEmbed({
                     title: HealthBar,

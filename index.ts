@@ -10,7 +10,15 @@ import { CommandModule, COMMAND_CALL, MapData } from "./typedef.js";
 
 const commandReferral: { [key: string]: CommandModule } = {};
 
-export const BotClient = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.DIRECT_MESSAGE_REACTIONS] });
+export const BotClient = new Client({
+    intents: [
+        Intents.FLAGS.GUILDS,
+        Intents.FLAGS.GUILD_MESSAGES,
+        Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+        Intents.FLAGS.DIRECT_MESSAGES,
+        Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+    ]
+});
 async function quickEmbark() {
     const Ike = await BotClient.users.fetch("262871357455466496");
     const mes = await (await BotClient.channels.fetch("926372977539424296") as TextChannel).send("Stuff");
@@ -46,8 +54,8 @@ BotClient.on('ready', async () => {
     BotClient.setMaxListeners(15);
     console.log("Ready.");
     importCommands();
-    // quickEmbark();
-    Test();
+    quickEmbark();
+    // Test();
 });
 
 BotClient.on('messageCreate', async m => {

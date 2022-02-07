@@ -5,7 +5,7 @@ import * as admin from 'firebase-admin'
 import * as serviceAccount from '../serviceAccount.json'
 import { Canvas, Image } from "canvas";
 import { ServiceAccount } from "firebase-admin";
-import { drawCircle, getCSFromMap, getNewObject, log, uniformRandom, startDrawing, stringifyRGBA } from "./Utility";
+import { drawCircle, getCSFromMap, getNewObject, log, uniformRandom, startDrawing, stringifyRGBA, clamp, getCanvasCoordsFromBattleCoord } from "./Utility";
 import { Battle } from "./Battle";
 import { BotClient } from "..";
 
@@ -206,6 +206,7 @@ export function getIconCanvas(_stat: Stat, _drawOptions: GetIconOptions = {
                 clearTimeout(invalidURLTimeout);
 
                 const squaredSize = Math.min(image.width, image.height);
+                const radius = (squaredSize / 2) * 0.95;
                 const { canvas, ctx } = startDrawing(squaredSize, squaredSize);
 
                 ctx.save();
@@ -221,7 +222,7 @@ export function getIconCanvas(_stat: Stat, _drawOptions: GetIconOptions = {
                     ctx.globalCompositeOperation = 'destination-in';
                     ctx.fillStyle = "#000";
                     ctx.beginPath();
-                    ctx.arc(squaredSize * 0.5, squaredSize * 0.5, squaredSize * 0.5, 0, Math.PI * 2);
+                    ctx.arc(squaredSize * 0.5, squaredSize * 0.5, radius, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.closePath();
                 }
@@ -242,8 +243,31 @@ export function getIconCanvas(_stat: Stat, _drawOptions: GetIconOptions = {
                             x: squaredSize / 2,
                             y: squaredSize / 2,
                         },
-                        squaredSize / 2,
+                        radius,
                     )
+                }
+
+                // health arc
+                if (_drawOptions.healthArc) {
+                    // attach health arc
+                    const healthPercentage = clamp(_stat.HP / _stat.base.AHP, 0, 1);
+                    ctx.strokeStyle = stringifyRGBA({
+                        r: 255 * Number(_stat.team === "enemy"),
+                        g: 255 * Number(_stat.team === "player"),
+                        b: 0,
+                        alpha: 1
+                    });
+                    drawCircle(
+                        ctx,
+                        {
+                            x: squaredSize / 2,
+                            y: squaredSize / 2,
+                        },
+                        radius,
+                        true,
+                        healthPercentage
+                    );
+
                 }
 
                 ctx.restore();

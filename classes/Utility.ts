@@ -261,7 +261,7 @@ export function roundToDecimalPlace(_number: number, _decimalPlace?: number) {
     }
 }
 
-export function addHPBar(_maxValue: number, _nowValue: number, maxBarProportion = Math.round(_maxValue)) {
+export function addHPBar(_maxValue: number, _nowValue: number, _maxBarProportion = Math.round(_maxValue)) {
     const bar = '█';
     const line = '|';
 
@@ -270,15 +270,23 @@ export function addHPBar(_maxValue: number, _nowValue: number, maxBarProportion 
     if (_nowValue > _maxValue) _nowValue = _maxValue;
 
     const maxValue =
-        _maxValue * (maxBarProportion / _maxValue);
+        _maxValue * (_maxBarProportion / _maxValue);
     const nowValue =
-        _nowValue * (maxBarProportion / _maxValue);
+        _nowValue * (_maxBarProportion / _maxValue);
 
     const blockCount =
         nowValue <= 0?
             0:
             Math.round(nowValue);
     const lineCount = Math.round(maxValue) - blockCount;
+
+    // debug("_maxBarProportion", _maxBarProportion);
+    // debug("_maxValue", _maxValue);
+    // debug("_nowValue", _nowValue);
+    // debug("maxValue", maxValue);
+    // debug("nowValue", nowValue);
+    // debug("blockCount", blockCount);
+    // debug("lineCount", lineCount);
 
     let result = '';
     for (let i = 0; i < blockCount; i++) {

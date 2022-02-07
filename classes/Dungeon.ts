@@ -345,7 +345,7 @@ export class Dungeon {
             if (welfare) {
                 fields.push({
                     name: `${this.party[i].username}`,
-                    value: "`"+addHPBar(25, welfare * 25)+"`",
+                    value: "`"+addHPBar(1, welfare, 25)+"`",
                     inline: true,
                 })
             }   

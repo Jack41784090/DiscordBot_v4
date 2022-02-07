@@ -338,7 +338,7 @@ var Dungeon = /** @class */ (function () {
             if (welfare) {
                 fields.push({
                     name: "" + this.party[i].username,
-                    value: "`" + (0, Utility_1.addHPBar)(25, welfare * 25) + "`",
+                    value: "`" + (0, Utility_1.addHPBar)(1, welfare, 25) + "`",
                     inline: true,
                 });
             }
