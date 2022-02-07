@@ -932,6 +932,18 @@ export function getStat(_arg0: Class | SimplePlayerStat | BaseStat, _owner: stri
 export function getCoordString(coord: Coordinate): StringCoordinate {
     return `${coord.x},${coord.y}`;
 }
+export function getCoord(_coordString: string): Coordinate | null {
+    const c = _coordString.split(",");
+    if (c.length === 2) {
+        return {
+            x: parseInt(c[0]),
+            y: parseInt(c[1]),
+        }
+    }
+    else {
+        return null;
+    }
+}
 
 export function getRandomCode(length: number = 5) {
     const codeArray = [];

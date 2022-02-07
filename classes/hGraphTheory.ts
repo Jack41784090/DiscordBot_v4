@@ -1,5 +1,5 @@
 import { Coordinate } from "../typedef";
-import { debug, uniformRandom } from "./Utility";
+import { debug, getCoordString, uniformRandom } from "./Utility";
 
 export class hNode<dataType> {
     data?: dataType;
@@ -7,13 +7,12 @@ export class hNode<dataType> {
     position: Coordinate;
     constructor(_pos: Coordinate, _data?: dataType) {
         this.data = _data;
-        
-        this.id = `${uniformRandom(0.0, 100000.5)}`;
-        // debug("Created node with id", `${this.id} @ (${_pos.x}, ${_pos.y})`);
-
         this.position = {
             x: _pos.x, y: _pos.y
-        };
+        };        
+        this.id = getCoordString(this.position);
+
+        // debug("Created node with id", `${this.id} @ (${_pos.x}, ${_pos.y})`);
     }
 }
 
@@ -35,9 +34,9 @@ export class hEdge<nodeDataType, weightType> {
 }
 
 export class hGraph<nodeDataType, weightType> {
-    nodeList: Array<hNode<nodeDataType>>;
-    adjGraph: Map<string, Array<hEdge<nodeDataType, weightType>>>;
-    directedGraph: boolean;
+    private nodeList: Array<hNode<nodeDataType>>;
+    private adjGraph: Map<string, Array<hEdge<nodeDataType, weightType>>>;
+    isDirectedGraph: boolean;
     
     constructor(_directedGraph: boolean) {
         this.adjGraph = new Map<
@@ -45,7 +44,7 @@ export class hGraph<nodeDataType, weightType> {
             Array<hEdge<nodeDataType, weightType>>
         >();
         this.nodeList = [];
-        this.directedGraph = _directedGraph;
+        this.isDirectedGraph = _directedGraph;
     }
 
     addNode(_pos: Coordinate, _?: undefined): hNode<nodeDataType>;
@@ -111,5 +110,9 @@ export class hGraph<nodeDataType, weightType> {
         else {
             from_edgeArray.push(edge);
         }
+    }
+
+    getEntries() {
+        return this.adjGraph.entries();
     }
 }

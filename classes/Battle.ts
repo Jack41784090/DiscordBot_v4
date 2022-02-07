@@ -1,4 +1,4 @@
-import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
+import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Interaction, InteractionCollector, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
 import { addHPBar, counterAxis, getAHP, getSpd, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, handleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag, getLootAction } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIconCanvas, getUserWelfare } from "./Database";
@@ -16,6 +16,7 @@ import { InteractionEvent } from "./InteractionEvent";
 import { enemiesData } from "../jsons";
 
 export class Battle {
+    static readonly ROUND_SECONDS = 10;
     static readonly MAX_READINESS = 25;
     static readonly MOVE_READINESS = 5;
 
@@ -465,11 +466,12 @@ export class Battle {
         // find the latest action's priority
         const latestAction = arrayGetLargestInArray(this.roundActionsArray, _a => _a.round);
         if (latestAction) {
-            const latestRound = latestAction.round;
+            const latestRound: Round = latestAction.round;
 
             // execute every move from lowest priority to highest
             for (let i = 0; i <= latestRound; i++) {
                 const roundExpectedActions: Action[] | undefined = priorityActionMap.get(i);
+                debug(`roundea ${i}`, roundExpectedActions);
                 if (roundExpectedActions) {
                     this.greaterPriorSort(roundExpectedActions);
 
@@ -775,7 +777,7 @@ export class Battle {
     async readActions(_givenSeconds: number, _ownerTextChannel: TextChannel, _vS: VirtualStat, _rS: Stat) {
         let possibleError: string = '';
         const tempLootMap: Map<string, boolean> = new Map<string, boolean>(
-            Array.from(this.LootMap.keys()).map(_k => {
+            [...this.LootMap.keys()].map(_k => {
                 return [
                     _k,
                     true,
@@ -915,9 +917,10 @@ export class Battle {
         // returns a Promise that resolves when the player is finished with their moves
         return new Promise((resolve) => {
             let executingActions: Action[] = [];
+            let listener: InteractionCollector<Interaction>;
 
             const listenToQueue = () => {
-                setUpInteractionCollect(_infoMessage, async itr => {
+                listener = setUpInteractionCollect(_infoMessage, async itr => {
                     if (itr.user.id === _rS.owner) {
                         try {
                             if (itr.isButton()) {
@@ -1038,6 +1041,14 @@ export class Battle {
 
                 return valid;
             }
+
+            setTimeout(() => {
+                if (listener) {
+                    listener.stop();
+                }
+                this.roundActionsArray.push(...executingActions);
+                resolve(void 0);
+            }, Battle.ROUND_SECONDS * 1000 );
 
             listenToQueue();
         })
@@ -1451,10 +1462,9 @@ export class Battle {
 
         this.greaterPriorSort(_actions);
 
-        let executing = _actions.shift();
-        while (executing) {
+        for (let i = 0; i < _actions.length; i++) {
+            const executing = _actions[i];
             this.executeOneAction(executing);
-            executing = _actions.shift()!;
         }
     }
     executeOneAction(_action: Action) {
@@ -1597,10 +1607,14 @@ export class Battle {
         const stat = _mA.affected;
         const axis = _mA.axis;
 
-        const possibleSeats = this.getAvailableSpacesAhead(_mA);
-        const finalCoord = arrayGetLastElement(possibleSeats);
+        const possibleSeats: Array<Coordinate> = this.getAvailableSpacesAhead(_mA);
+        const furthestCoord: Coordinate = arrayGetLastElement(possibleSeats);
 
-        const newMagnitude = (finalCoord ? getDistance(finalCoord, _mA.affected) : 0) * Math.sign(_mA.magnitude);
+        const newMagnitude: number = furthestCoord?
+            getDistance(furthestCoord, _mA.affected) * Math.sign(_mA.magnitude):
+            0;
+
+        _mA.magnitude = newMagnitude;
 
         this.CSMap.delete(getCoordString(stat))
         stat[axis] += newMagnitude;
@@ -1616,7 +1630,7 @@ export class Battle {
             affected[t] -= _mA[t]
         });
 
-        return getNewObject(_mA, { magnitude: newMagnitude });
+        return _mA;
     }
     heal(_healedStat: Stat, _val: number): string {
         const beforeHP = roundToDecimalPlace(_healedStat.HP);
@@ -1724,30 +1738,7 @@ export class Battle {
 
     /** Draws actions arrows based on provided actions */
     async getActionArrowsCanvas(_actions: Action[]): Promise<Canvas> {
-        const actions = _actions.map((_a: Action, _index: number) => {
-            _a.priority = _index + 1;
-            return _a;
-        });
-        const canvas = new Canvas(this.width * 50, this.height * 50);
-        const ctx = canvas.getContext("2d");
-
-        const style: RGBA = {
-            r: 0,
-            g: 0,
-            b: 0,
-            alpha: 1
-        };
-        ctx.fillStyle = stringifyRGBA(style);
-        ctx.strokeStyle = stringifyRGBA(style);
-
-        /**
-         * @param _aA 
-         * @param _fromBattleCoord 
-         * @param _toBattleCoord 
-         * @param minorPrio 
-         * @param _width 
-         * @param _offset default: half of this.pixelsPerTile
-         */
+        log(_actions.map(_a => `${_a.from.base.class} => ${_a.affected.base.class}`))
         const drawAttackAction = async (_aA: AttackAction, _fromBattleCoord: Coordinate, _toBattleCoord: Coordinate, _width: number = 5, _offset: Coordinate = {
             x: 0,
             y: 0
@@ -1755,7 +1746,7 @@ export class Battle {
             log("Drawing attack action...")
             debug("\tfromCoord", { x: _fromBattleCoord.x, y: _fromBattleCoord.y });
             debug("\ttoCoord", { x: _toBattleCoord.x, y: _toBattleCoord.y });
-            
+
             ctx.save();
 
             style.r = 255;
@@ -1780,8 +1771,8 @@ export class Battle {
 
             // draw hit
             if (victimWithinDistance) {
-                const hitImage = _aA.weapon.targetting.target === WeaponTarget.ally?
-                    await getFileImage('./images/Shield.png'):
+                const hitImage = _aA.weapon.targetting.target === WeaponTarget.ally ?
+                    await getFileImage('./images/Shield.png') :
                     await getFileImage('./images/Hit.png');
                 const imageWidth = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile / 3));
                 const imageHeight = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile / 3));
@@ -1801,7 +1792,7 @@ export class Battle {
             }, this.pixelsPerTile, this.height);
             const x = _toBattleCoord.x - _fromBattleCoord.x;
             const y = _toBattleCoord.y - _fromBattleCoord.y;
-            const angle = Math.atan2(y,x);
+            const angle = Math.atan2(y, x);
             drawText(
                 ctx,
                 `${_aA.priority}`,
@@ -1841,8 +1832,8 @@ export class Battle {
             ctx.closePath();
 
             // draw circle
-            const arrivingCanvasCoord = _mA.executed?
-                beforeCanvasCoord:
+            const arrivingCanvasCoord = _mA.executed ?
+                beforeCanvasCoord :
                 afterCanvasCoord;
             drawCircle(ctx, arrivingCanvasCoord, this.pixelsPerTile / 5, false);
 
@@ -1862,28 +1853,40 @@ export class Battle {
             );
             ctx.restore();
         }
-
         const appendGraph = (action: Action, from: Coordinate, to: Coordinate, _iVal: number) => {
             const fromNode = new hNode<number>(from, _iVal);
             const toNode = new hNode<number>(to, _iVal);
             graph.connectNodes(fromNode, toNode, action);
         }
+        const actions = _actions.map((_a: Action, _index: number) => {
+            _a.priority = _index + 1;
+            return _a;
+        });
+        const canvas = new Canvas(this.width * 50, this.height * 50);
+        const ctx = canvas.getContext("2d");
+        const style: RGBA = {
+            r: 0,
+            g: 0,
+            b: 0,
+            alpha: 1
+        };
 
         const virtualCoordsMap = new Map<number, Coordinate>();
         const graph = new hGraph<number, Action>(true);
+
+        ctx.fillStyle = stringifyRGBA(style);
+        ctx.strokeStyle = stringifyRGBA(style);
         
         for (let i = 0; i < actions.length; i++) {
             const action = actions[i];
             const attackerIndex = action.from.index;
             const victimIndex = action.affected.index;
-            if (!virtualCoordsMap.has(victimIndex)) {
-                virtualCoordsMap.set(victimIndex, { x: action.affected.x, y: action.affected.y });
-            }
-            if (!virtualCoordsMap.has(attackerIndex)) {
-                virtualCoordsMap.set(attackerIndex, { x: action.from.x, y: action.from.y });
-            }
-            const victim_beforeCoords = virtualCoordsMap.get(victimIndex)!;
-            const attacker_beforeCoords = virtualCoordsMap.get(attackerIndex)!;
+            const victim_beforeCoords = 
+                virtualCoordsMap.get(victimIndex)||
+                virtualCoordsMap.set(victimIndex, { x: action.affected.x, y: action.affected.y }).get(victimIndex)!;
+            const attacker_beforeCoords =
+                virtualCoordsMap.get(attackerIndex) ||
+                virtualCoordsMap.set(attackerIndex, { x: action.from.x, y: action.from.y }).get(attackerIndex)!;
 
             await dealWithAction(action,
                 async (aA: AttackAction) => {
@@ -1951,33 +1954,20 @@ export class Battle {
             );
         }
         
-        for (const [key, value] of graph.adjGraph.entries()) {
+        // draw arrows
+        for (const [coordString, arrayOfConnections] of graph.getEntries()) {
             // log(`Node ${key}`);
-            const solidColumns = clamp(value.length, 0, 10);
-            const columns = 2 * solidColumns + 1;
-            const columnWidth = Math.floor(this.pixelsPerTile / columns);
-            for (let o = 1; o <= columns; o++) {
-                const widthStart = (o-1) * columnWidth;
+            const solidColumns: number = clamp(arrayOfConnections.length, 0, 10); // attack/move lines
+            const columns: number = 2 * solidColumns + 1; // gap + attack/move lines
+            const columnWidth: number = Math.floor(this.pixelsPerTile / columns);
+            for (let columnIndex = 1; columnIndex <= columns; columnIndex++) {
+                const widthStart = (columnIndex-1) * columnWidth;
                 const widthEnd = widthStart + columnWidth;
-                /**
-                 * eg:
-                 * columnWidth: 5
-                 * 0th pixel =>   ||==========|| <= 5th pixel
-                 *                [-==========-][-==========-]
-                 *                [-==========-][-==========-]
-                 *                [-==========-][-==========-]
-                 *                [-==========-][-==========-]
-                 *                [-==========-][-==========-]
-                 *                [-==========-][-==========-]
-                 *                [-==========-][-==========-]
-                 *                [-==========-][-==========-]
-                 */
-
                 // is solid column
-                if (o % 2 === 0) {
+                if (columnIndex % 2 === 0) {
                     // log(`Solid edge #${o/2}`);
-                    const edgeIndex = (o / 2) - 1;
-                    const edge = value[edgeIndex]; // edge.print();
+                    const edgeIndex = (columnIndex / 2) - 1;
+                    const edge = arrayOfConnections[edgeIndex]; // edge.print();
                     const connectingAction = edge.weight;
 
                     const isXtransition = edge.from.position.x !== edge.to.position.x; // change y
@@ -1990,11 +1980,11 @@ export class Battle {
                             edge.to.position,
                             columnWidth,
                             {
-                                x: isYtransition?
-                                    ((widthEnd + widthStart)/2) - (this.pixelsPerTile/2):
+                                x: isYtransition ?
+                                    ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2) :
                                     0,
-                                y: isXtransition?
-                                    ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2):
+                                y: isXtransition ?
+                                    ((widthEnd + widthStart) / 2) - (this.pixelsPerTile / 2) :
                                     0,
                             }
                         );
@@ -2114,10 +2104,8 @@ export class Battle {
         };
     }
     async getFullPlayerEmbed(stat: Stat): Promise<MessageEmbed> {
-        const HealthBar = `${'`'}${addHPBar(stat.base.AHP, stat.HP, 40)}${'`'}`;
         const ReadinessBar = `${'`'}${addHPBar(Battle.MAX_READINESS, stat.readiness)}${'`'}`;
         const explorerEmbed = new MessageEmbed({
-            title: HealthBar,
             description:
                 `*Readiness* (${Math.round(stat.readiness)}/${Battle.MAX_READINESS})
                 ${ReadinessBar}`,

@@ -116,7 +116,7 @@ var statusEffect_effects = new Map([
         function (_action, _cR, _bd) {
             var returnString = "";
             if (_cR.fate !== "Miss") {
-                _action.affected.readiness -= 10;
+                _action.affected.readiness -= 3;
                 returnString += "💦 Exhaust!";
             }
             return returnString;

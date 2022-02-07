@@ -570,6 +570,7 @@ var Battle = /** @class */ (function () {
                     case 14:
                         if (!(i <= latestRound)) return [3 /*break*/, 18];
                         roundExpectedActions = priorityActionMap.get(i);
+                        (0, Utility_1.debug)("roundea " + i, roundExpectedActions);
                         if (!roundExpectedActions) return [3 /*break*/, 17];
                         this.greaterPriorSort(roundExpectedActions);
                         canvas = this.roundSavedCanvasMap.get(i);
@@ -879,7 +880,7 @@ var Battle = /** @class */ (function () {
                 switch (_d.label) {
                     case 0:
                         possibleError = '';
-                        tempLootMap = new Map(Array.from(this.LootMap.keys()).map(function (_k) {
+                        tempLootMap = new Map(__spreadArray([], __read(this.LootMap.keys()), false).map(function (_k) {
                             return [
                                 _k,
                                 true,
@@ -1018,8 +1019,9 @@ var Battle = /** @class */ (function () {
                         // returns a Promise that resolves when the player is finished with their moves
                         return [2 /*return*/, new Promise(function (resolve) {
                                 var executingActions = [];
+                                var listener;
                                 var listenToQueue = function () {
-                                    (0, Utility_1.setUpInteractionCollect)(_infoMessage, function (itr) { return __awaiter(_this, void 0, void 0, function () {
+                                    listener = (0, Utility_1.setUpInteractionCollect)(_infoMessage, function (itr) { return __awaiter(_this, void 0, void 0, function () {
                                         var valid, _b, _c, valid, _d, _g, _err_1;
                                         return __generator(this, function (_h) {
                                             switch (_h.label) {
@@ -1150,6 +1152,14 @@ var Battle = /** @class */ (function () {
                                     listenToQueue();
                                     return valid;
                                 };
+                                setTimeout(function () {
+                                    var _b;
+                                    if (listener) {
+                                        listener.stop();
+                                    }
+                                    (_b = _this.roundActionsArray).push.apply(_b, __spreadArray([], __read(executingActions), false));
+                                    resolve(void 0);
+                                }, Battle.ROUND_SECONDS * 1000);
                                 listenToQueue();
                             })];
                 }
@@ -1502,10 +1512,9 @@ var Battle = /** @class */ (function () {
     Battle.prototype.executeActions = function (_actions) {
         (0, Utility_1.log)("Executing actions...");
         this.greaterPriorSort(_actions);
-        var executing = _actions.shift();
-        while (executing) {
+        for (var i = 0; i < _actions.length; i++) {
+            var executing = _actions[i];
             this.executeOneAction(executing);
-            executing = _actions.shift();
         }
     };
     Battle.prototype.executeOneAction = function (_action) {
@@ -1637,8 +1646,11 @@ var Battle = /** @class */ (function () {
         var stat = _mA.affected;
         var axis = _mA.axis;
         var possibleSeats = this.getAvailableSpacesAhead(_mA);
-        var finalCoord = (0, Utility_1.arrayGetLastElement)(possibleSeats);
-        var newMagnitude = (finalCoord ? (0, Utility_1.getDistance)(finalCoord, _mA.affected) : 0) * Math.sign(_mA.magnitude);
+        var furthestCoord = (0, Utility_1.arrayGetLastElement)(possibleSeats);
+        var newMagnitude = furthestCoord ?
+            (0, Utility_1.getDistance)(furthestCoord, _mA.affected) * Math.sign(_mA.magnitude) :
+            0;
+        _mA.magnitude = newMagnitude;
         this.CSMap.delete((0, Utility_1.getCoordString)(stat));
         stat[axis] += newMagnitude;
         this.CSMap = this.CSMap.set((0, Utility_1.getCoordString)(stat), stat);
@@ -1650,7 +1662,7 @@ var Battle = /** @class */ (function () {
             (0, Utility_1.log)("\t\t" + affected.index + ") " + t + " --" + _mA[t]);
             affected[t] -= _mA[t];
         });
-        return (0, Utility_1.getNewObject)(_mA, { magnitude: newMagnitude });
+        return _mA;
     };
     Battle.prototype.heal = function (_healedStat, _val) {
         var beforeHP = (0, Utility_1.roundToDecimalPlace)(_healedStat.HP);
@@ -1809,26 +1821,13 @@ var Battle = /** @class */ (function () {
     /** Draws actions arrows based on provided actions */
     Battle.prototype.getActionArrowsCanvas = function (_actions) {
         return __awaiter(this, void 0, void 0, function () {
-            var actions, canvas, ctx, style, drawAttackAction, drawMoveAction, appendGraph, virtualCoordsMap, graph, _loop_6, i, _b, _c, _d, key, value, solidColumns, columns, columnWidth, o, widthStart, widthEnd, edgeIndex, edge, connectingAction, isXtransition, isYtransition;
+            var drawAttackAction, drawMoveAction, appendGraph, actions, canvas, ctx, style, virtualCoordsMap, graph, _loop_6, i, _b, _c, _d, key, value, solidColumns, columns, columnWidth, o, widthStart, widthEnd, edgeIndex, edge, connectingAction, isXtransition, isYtransition;
             var e_3, _g;
             var _this = this;
             return __generator(this, function (_h) {
                 switch (_h.label) {
                     case 0:
-                        actions = _actions.map(function (_a, _index) {
-                            _a.priority = _index + 1;
-                            return _a;
-                        });
-                        canvas = new canvas_1.Canvas(this.width * 50, this.height * 50);
-                        ctx = canvas.getContext("2d");
-                        style = {
-                            r: 0,
-                            g: 0,
-                            b: 0,
-                            alpha: 1
-                        };
-                        ctx.fillStyle = (0, Utility_1.stringifyRGBA)(style);
-                        ctx.strokeStyle = (0, Utility_1.stringifyRGBA)(style);
+                        (0, Utility_1.log)(_actions.map(function (_a) { return _a.from.base.class + " => " + _a.affected.base.class; }));
                         drawAttackAction = function (_aA, _fromBattleCoord, _toBattleCoord, _width, _offset) {
                             if (_width === void 0) { _width = 5; }
                             if (_offset === void 0) { _offset = {
@@ -1937,8 +1936,22 @@ var Battle = /** @class */ (function () {
                             var toNode = new hGraphTheory_1.hNode(to, _iVal);
                             graph.connectNodes(fromNode, toNode, action);
                         };
+                        actions = _actions.map(function (_a, _index) {
+                            _a.priority = _index + 1;
+                            return _a;
+                        });
+                        canvas = new canvas_1.Canvas(this.width * 50, this.height * 50);
+                        ctx = canvas.getContext("2d");
+                        style = {
+                            r: 0,
+                            g: 0,
+                            b: 0,
+                            alpha: 1
+                        };
                         virtualCoordsMap = new Map();
                         graph = new hGraphTheory_1.hGraph(true);
+                        ctx.fillStyle = (0, Utility_1.stringifyRGBA)(style);
+                        ctx.strokeStyle = (0, Utility_1.stringifyRGBA)(style);
                         _loop_6 = function (i) {
                             var action, attackerIndex, victimIndex, victim_beforeCoords, attacker_beforeCoords;
                             return __generator(this, function (_j) {
@@ -1947,14 +1960,10 @@ var Battle = /** @class */ (function () {
                                         action = actions[i];
                                         attackerIndex = action.from.index;
                                         victimIndex = action.affected.index;
-                                        if (!virtualCoordsMap.has(victimIndex)) {
-                                            virtualCoordsMap.set(victimIndex, { x: action.affected.x, y: action.affected.y });
-                                        }
-                                        if (!virtualCoordsMap.has(attackerIndex)) {
-                                            virtualCoordsMap.set(attackerIndex, { x: action.from.x, y: action.from.y });
-                                        }
-                                        victim_beforeCoords = virtualCoordsMap.get(victimIndex);
-                                        attacker_beforeCoords = virtualCoordsMap.get(attackerIndex);
+                                        victim_beforeCoords = virtualCoordsMap.get(victimIndex) ||
+                                            virtualCoordsMap.set(victimIndex, { x: action.affected.x, y: action.affected.y }).get(victimIndex);
+                                        attacker_beforeCoords = virtualCoordsMap.get(attackerIndex) ||
+                                            virtualCoordsMap.set(attackerIndex, { x: action.from.x, y: action.from.y }).get(attackerIndex);
                                         return [4 /*yield*/, (0, Utility_1.dealWithAction)(action, function (aA) { return __awaiter(_this, void 0, void 0, function () {
                                                 var weapon, epicenterCoord, affecteds, i_3, af, singleTarget, _b, _c, coord;
                                                 var e_4, _d;
@@ -2038,6 +2047,7 @@ var Battle = /** @class */ (function () {
                         return [3 /*break*/, 1];
                     case 4:
                         try {
+                            // draw arrows
                             for (_b = __values(graph.adjGraph.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
                                 _d = __read(_c.value, 2), key = _d[0], value = _d[1];
                                 solidColumns = (0, Utility_1.clamp)(value.length, 0, 10);
@@ -2186,12 +2196,10 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.getFullPlayerEmbed = function (stat) {
         return __awaiter(this, void 0, void 0, function () {
-            var HealthBar, ReadinessBar, explorerEmbed, green, red, num;
+            var ReadinessBar, explorerEmbed, green, red, num;
             return __generator(this, function (_b) {
-                HealthBar = "" + '`' + (0, Utility_1.addHPBar)(stat.base.AHP, stat.HP, 40) + '`';
                 ReadinessBar = "" + '`' + (0, Utility_1.addHPBar)(Battle.MAX_READINESS, stat.readiness) + '`';
                 explorerEmbed = new discord_js_1.MessageEmbed({
-                    title: HealthBar,
                     description: "*Readiness* (" + Math.round(stat.readiness) + "/" + Battle.MAX_READINESS + ")\n                " + ReadinessBar,
                     fields: [
                         {
@@ -2732,6 +2740,7 @@ var Battle = /** @class */ (function () {
     Battle.prototype.getStatus = function (_stat, _type) {
         return _stat.statusEffects.filter(function (_s) { return _s.type === _type; });
     };
+    Battle.ROUND_SECONDS = 10;
     Battle.MAX_READINESS = 25;
     Battle.MOVE_READINESS = 5;
     return Battle;
