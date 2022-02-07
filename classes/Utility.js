@@ -74,8 +74,8 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.getItemType = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.HandleTokens = exports.dealWithUndoAction = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = void 0;
+exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
+exports.getItemType = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var __1 = require("..");
@@ -321,13 +321,15 @@ function newWeapon(origin, modifier) {
 }
 exports.newWeapon = newWeapon;
 function roundToDecimalPlace(_number, _decimalPlace) {
+    if (_number === 0)
+        return 0;
     var decimalPlace = _decimalPlace === undefined ?
         1 :
         Math.round(_decimalPlace);
     var decimal = Math.pow(10, decimalPlace);
     if (_decimalPlace === undefined) {
         var value = void 0;
-        for (var i = 0; i < 100; i++) {
+        for (var i = 0; i < 25; i++) {
             var newDecimal = Math.pow(10, decimalPlace + i);
             value = Math.round((_number + Number.EPSILON) * newDecimal) / newDecimal;
             if (value !== 0) {
@@ -463,6 +465,23 @@ function getMoveAction(_stat, args2, _round, args4) {
     return moveAction;
 }
 exports.getMoveAction = getMoveAction;
+function getLootAction(_stat, _c, _round) {
+    return {
+        x: _c.x,
+        y: _c.y,
+        round: _round,
+        priority: 0,
+        from: _stat,
+        affected: _stat,
+        readiness: 0,
+        type: 'Loot',
+        executed: false,
+        sword: 0,
+        shield: 0,
+        sprint: 0,
+    };
+}
+exports.getLootAction = getLootAction;
 function numericDirectionToDirection(_numericDir) {
     switch (_numericDir) {
         case typedef_1.NumericDirection.down:
@@ -774,11 +793,9 @@ function getStatsEmbed(_class) {
     var classChosen = getNewObject(jsons_1.classData[_class]);
     for (var i = 0; i < Object.keys(typedef_1.StatMaximus).length; i++) {
         var statName = Object.keys(typedef_1.StatMaximus)[i];
-        var maxBar = 50;
-        var nowBar = classChosen[statName] * (50 / typedef_1.StatMaximus[statName]);
         embed.fields.push({
             name: statName + " (" + classChosen[statName] + "/" + typedef_1.StatMaximus[statName] + ")",
-            value: "`" + addHPBar(maxBar, nowBar) + "`",
+            value: "`" + addHPBar(typedef_1.StatMaximus[statName], classChosen[statName], 20) + "`",
             inline: false,
         });
     }
@@ -1082,24 +1099,7 @@ function getDeathEmbed() {
         .setColor("#530000");
 }
 exports.getDeathEmbed = getDeathEmbed;
-function dealWithUndoAction(stat, action) {
-    stat.sword += action.sword;
-    stat.shield += action.shield;
-    stat.sprint += action.sprint;
-    stat.readiness += action.readiness;
-    action.executed = false;
-    var moveAction = action;
-    if (moveAction.magnitude !== undefined) {
-        // if action is a free movement action
-        if (moveAction.sprint === 0) {
-            stat.moved = false;
-        }
-        // reposition
-        stat[moveAction.axis] += moveAction.magnitude * -1;
-    }
-}
-exports.dealWithUndoAction = dealWithUndoAction;
-function HandleTokens(changeToken, changingFunction) {
+function handleTokens(changeToken, changingFunction) {
     if (changeToken.sword !== undefined) {
         changingFunction(changeToken.sword, "sword");
     }
@@ -1110,7 +1110,7 @@ function HandleTokens(changeToken, changingFunction) {
         changingFunction(changeToken.sprint, "sprint");
     }
 }
-exports.HandleTokens = HandleTokens;
+exports.handleTokens = handleTokens;
 function getNewNode(_x, _y, _destination, _distanceTravelled) {
     if (_distanceTravelled === void 0) { _distanceTravelled = 0; }
     var desC = Math.abs(_x - _destination.x) + Math.abs(_y - _destination.y);

@@ -2,7 +2,7 @@ import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions, MessageSelectOptionData } from "discord.js";
 
 import { BotClient } from "..";
-import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialQualityInfo, MaterialGrade, UserData, Material, MaterialSpawnQualityInfo } from "../typedef";
+import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Weapon, WeaponAOE, WeaponTarget, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialQualityInfo, MaterialGrade, UserData, Material, MaterialSpawnQualityInfo, LootAction } from "../typedef";
 import { Battle } from "./Battle";
 import { Item } from "./Item";
 import { areasData, enemiesData, classData, itemData, universalWeaponsData } from "../jsons";
@@ -240,6 +240,8 @@ export function newWeapon(origin: Weapon, modifier: {
 }
 
 export function roundToDecimalPlace(_number: number, _decimalPlace?: number) {
+    if (_number === 0) return 0;
+
     const decimalPlace = _decimalPlace === undefined?
         1:
         Math.round(_decimalPlace);
@@ -247,7 +249,7 @@ export function roundToDecimalPlace(_number: number, _decimalPlace?: number) {
 
     if (_decimalPlace === undefined) {
         let value: number;
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 25; i++) {
             const newDecimal = Math.pow(10, decimalPlace + i);
             value = Math.round((_number + Number.EPSILON) * newDecimal) / newDecimal;
             if (value !== 0) {
@@ -392,6 +394,23 @@ export function getMoveAction(_stat: Stat, args2: string | number, _round: numbe
     }
     moveAction.readiness = Math.abs(moveAction.magnitude * Battle.MOVE_READINESS);
     return moveAction;
+}
+
+export function getLootAction(_stat: Stat, _c: Coordinate, _round: Round): LootAction {
+    return {
+        x: _c.x,
+        y: _c.y,
+        round: _round,
+        priority: 0,
+        from: _stat,
+        affected: _stat,
+        readiness: 0,
+        type: 'Loot',
+        executed: false,
+        sword: 0,
+        shield: 0,
+        sprint: 0,
+    }
 }
 
 export function numericDirectionToDirection(_numericDir: NumericDirection): Direction {
@@ -671,11 +690,9 @@ export function getStatsEmbed(_class: Class) {
     const classChosen = getNewObject(classData[_class]);
     for (let i = 0; i < Object.keys(StatMaximus).length; i++) {
         const statName: StatPrimus = Object.keys(StatMaximus)[i] as StatPrimus;
-        const maxBar = 50;
-        const nowBar = classChosen[statName] * (50 / StatMaximus[statName]);
         embed.fields.push({
             name: `${statName} (${classChosen[statName]}/${StatMaximus[statName]})`,
-            value: `\`${addHPBar(maxBar, nowBar)}\``,
+            value: `\`${addHPBar(StatMaximus[statName], classChosen[statName], 20)}\``,
             inline: false,
         })
     }
@@ -954,26 +971,7 @@ export function getDeathEmbed() {
         .setColor("#530000");
 }
 
-export function dealWithUndoAction(stat: Stat, action: Action) {
-    stat.sword += action.sword;
-    stat.shield += action.shield;
-    stat.sprint += action.sprint;
-    stat.readiness += action.readiness;
-    action.executed = false;
-
-    const moveAction: MoveAction = action as MoveAction;
-    if (moveAction.magnitude !== undefined) {
-        // if action is a free movement action
-        if (moveAction.sprint === 0) {
-            stat.moved = false;
-        }
-
-        // reposition
-        stat[moveAction.axis] += moveAction.magnitude * -1;
-    }
-}
-
-export function HandleTokens(changeToken: { sword?: number, shield?: number, sprint?: number }, changingFunction: ((p:number, type: "sword" | "shield" | "sprint") => void)) {
+export function handleTokens(changeToken: { sword?: number, shield?: number, sprint?: number }, changingFunction: ((p:number, type: "sword" | "shield" | "sprint") => void)) {
     if (changeToken.sword !== undefined) {
         changingFunction(changeToken.sword, "sword");
     }

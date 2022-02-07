@@ -176,7 +176,7 @@ var Battle = /** @class */ (function () {
                             for (i = 0; i < this.tobespawnedArray.length; i++) {
                                 ambusher = this.tobespawnedArray[i];
                                 if (ambusher.team === ambushingTeam) {
-                                    ambusher.readiness = 50;
+                                    ambusher.readiness = Battle.MAX_READINESS;
                                     ambusher.sword = 3;
                                     ambusher.sprint = 3;
                                 }
@@ -315,7 +315,7 @@ var Battle = /** @class */ (function () {
     Battle.prototype.StartRound = function () {
         var _b, _c, _d;
         return __awaiter(this, void 0, void 0, function () {
-            var i, spawning, allStats, _loop_2, i, existingCategory, commandCategory, _g, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_3, this_2, allStats_1, allStats_1_1, realStat, e_2_1, priorityActionMap, i, act, actionListThisRound, latestAction, latestRound, i, roundExpectedActions, canvas, ctx, roundCanvas, executedActions, actualCanvas, _loop_4, i, allPromise, players;
+            var i, spawning, allStats, _loop_2, i, existingCategory, commandCategory, _g, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_3, this_2, allStats_1, allStats_1_1, realStat, e_2_1, priorityActionMap, i, act, actionListThisRound, latestAction, latestRound, i, roundExpectedActions, canvas, ctx, roundCanvas, actualCanvas, _loop_4, i, allPromise, players;
             var e_2, _h;
             var _this = this;
             return __generator(this, function (_j) {
@@ -363,20 +363,14 @@ var Battle = /** @class */ (function () {
                                 }
                             }
                             // limit the entity's tokens
-                            (0, Utility_1.HandleTokens)(s, function (p, t) {
+                            (0, Utility_1.handleTokens)(s, function (p, t) {
                                 (0, Utility_1.log)("\t\t" + s.index + ") " + t + " =" + (0, Utility_1.clamp)(p, 0, 5));
                                 s[t] = (0, Utility_1.clamp)(p, 0, 5);
                             });
                             // increment readiness
-                            if (s.readiness <= 50) {
-                                var Spd = (0, Utility_1.getSpd)(s);
-                                var read = (0, Utility_1.uniformRandom)(Spd * 4, Spd * 4.25);
-                                s.readiness += read;
-                                // limit readiness to 50
-                                if (s.readiness > 50) {
-                                    s.readiness = 50;
-                                }
-                            }
+                            var Spd = (0, Utility_1.getSpd)(s);
+                            s.readiness += Spd;
+                            s.readiness = (0, Utility_1.clamp)(s.readiness, -Battle.MAX_READINESS, Battle.MAX_READINESS);
                         };
                         for (i = 0; i < allStats.length; i++) {
                             _loop_2(i);
@@ -416,10 +410,10 @@ var Battle = /** @class */ (function () {
                         reportPromises = [];
                         (0, Utility_1.log)("Playing phase!");
                         _loop_3 = function (realStat) {
-                            var user, _k, virtualStat_1, channelAlreadyExist, createdChannel_1, _l, existingPermissions_everyone_1, existingPermissions_author, newChannel, noExistingPermission, extraPermissions, missingPermissions, overWrites, _m, _o, readingPlayerPromise, ai_f;
-                            var _p, _q;
-                            return __generator(this, function (_t) {
-                                switch (_t.label) {
+                            var user, _l, virtualStat_1, channelAlreadyExist, createdChannel_1, _m, existingPermissions_everyone_1, existingPermissions_author, newChannel, noExistingPermission, extraPermissions, missingPermissions, overWrites, _o, _p, readingPlayerPromise, ai_f;
+                            var _q, _t;
+                            return __generator(this, function (_u) {
+                                switch (_u.label) {
                                     case 0:
                                         // if the entity is dead or is just an inanimate block, skip turn
                                         if (realStat.HP <= 0 || realStat.team === "block")
@@ -432,8 +426,8 @@ var Battle = /** @class */ (function () {
                                         realStat.actionsAssociatedStrings = {};
                                         if (!(realStat.botType === typedef_1.BotType.naught && realStat.owner)) return [3 /*break*/, 6];
                                         (0, Utility_1.log)("Player: " + realStat.base.class + " (" + realStat.index + ")");
-                                        _k = this_2.userCache.get(realStat.owner);
-                                        if (_k) return [3 /*break*/, 2];
+                                        _l = this_2.userCache.get(realStat.owner);
+                                        if (_l) return [3 /*break*/, 2];
                                         return [4 /*yield*/, this_2.client.users.fetch(realStat.owner)
                                                 .then(function (u) {
                                                 _this.userCache.set(realStat.owner, u);
@@ -444,10 +438,10 @@ var Battle = /** @class */ (function () {
                                                 return null;
                                             })];
                                     case 1:
-                                        _k = (_t.sent());
-                                        _t.label = 2;
+                                        _l = (_u.sent());
+                                        _u.label = 2;
                                     case 2:
-                                        user = _k;
+                                        user = _l;
                                         if (user === null)
                                             return [2 /*return*/, "continue"];
                                         virtualStat_1 = (0, Utility_1.getNewObject)(realStat, {
@@ -456,14 +450,14 @@ var Battle = /** @class */ (function () {
                                         });
                                         virtualStat_1.weaponUses = realStat.weaponUses.map(function (_) { return _; });
                                         channelAlreadyExist = this_2.guild.channels.cache.find(function (c) { return c.name === virtualStat_1.owner && c.type === 'GUILD_TEXT'; });
-                                        _l = channelAlreadyExist;
-                                        if (_l) return [3 /*break*/, 4];
+                                        _m = channelAlreadyExist;
+                                        if (_m) return [3 /*break*/, 4];
                                         return [4 /*yield*/, this_2.guild.channels.create("" + virtualStat_1.owner, { type: 'GUILD_TEXT' })];
                                     case 3:
-                                        _l = (_t.sent());
-                                        _t.label = 4;
+                                        _m = (_u.sent());
+                                        _u.label = 4;
                                     case 4:
-                                        createdChannel_1 = _l;
+                                        createdChannel_1 = _m;
                                         if (!createdChannel_1.parent || createdChannel_1.parent.name !== commandCategory.name) {
                                             createdChannel_1.setParent(commandCategory.id);
                                         }
@@ -492,25 +486,25 @@ var Battle = /** @class */ (function () {
                                         // mention user
                                         createdChannel_1.send("<@" + (user === null || user === void 0 ? void 0 : user.id) + ">").then(function (mes) { return mes.delete().catch(console.log); });
                                         // send time, player embed, and input manual
-                                        _o = (_m = createdChannel_1).send;
-                                        _p = {};
+                                        _p = (_o = createdChannel_1).send;
                                         _q = {};
+                                        _t = {};
                                         return [4 /*yield*/, this_2.getCurrentMapBuffer()];
                                     case 5:
                                         // send time, player embed, and input manual
-                                        _o.apply(_m, [(_p.files = [
-                                                (_q.attachment = _t.sent(), _q.name = "map.png", _q)
+                                        _p.apply(_o, [(_q.files = [
+                                                (_t.attachment = _u.sent(), _t.name = "map.png", _t)
                                             ],
-                                                _p.embeds = [
+                                                _q.embeds = [
                                                     new discord_js_1.MessageEmbed()
                                                         .setImage("attachment://map.png")
                                                 ],
-                                                _p)]);
+                                                _q)]);
                                         readingPlayerPromise = this_2.readActions(120, createdChannel_1, virtualStat_1, realStat).then(function () {
                                             createdChannel_1.send({ embeds: [new discord_js_1.MessageEmbed().setTitle("Your turn has ended.")] });
                                         });
                                         reportPromises.push(readingPlayerPromise);
-                                        _t.label = 6;
+                                        _u.label = 6;
                                     case 6:
                                         //#endregion
                                         //#region AI
@@ -591,8 +585,9 @@ var Battle = /** @class */ (function () {
                         this.drawHealthArcs(roundCanvas);
                         this.drawIndexi(roundCanvas);
                         ctx.drawImage(roundCanvas, 0, 0, canvas.width, canvas.height);
-                        executedActions = this.executeActions(roundExpectedActions);
-                        return [4 /*yield*/, this.getActionArrowsCanvas(executedActions)];
+                        // execution
+                        this.executeActions(roundExpectedActions);
+                        return [4 /*yield*/, this.getActionArrowsCanvas(roundExpectedActions)];
                     case 16:
                         actualCanvas = _j.sent();
                         ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
@@ -605,7 +600,7 @@ var Battle = /** @class */ (function () {
                     case 18:
                         _loop_4 = function (i) {
                             var s = allStats[i];
-                            (0, Utility_1.HandleTokens)(s, function (p, t) {
+                            (0, Utility_1.handleTokens)(s, function (p, t) {
                                 if (p > 3) {
                                     (0, Utility_1.log)("\t\t" + s.index + ") " + t + " =" + 3);
                                     s[t] = 3;
@@ -839,7 +834,7 @@ var Battle = /** @class */ (function () {
         if (check === null) { // attack goes through
             _virtualAttacker.weaponUses[(0, Utility_1.getWeaponIndex)(weapon, _virtualAttacker)]++;
             _virtualAttacker.readiness -= _aA.readiness;
-            (0, Utility_1.HandleTokens)(_virtualAttacker, function (p, t) {
+            (0, Utility_1.handleTokens)(_virtualAttacker, function (p, t) {
                 (0, Utility_1.log)("\t\t" + _virtualAttacker.index + ") " + t + " --" + _aA[t]);
                 _virtualAttacker[t] -= _aA[t];
             });
@@ -857,7 +852,7 @@ var Battle = /** @class */ (function () {
             (0, Utility_1.log)("\t\tMoved!");
             // spending sprint to move
             if (virtualStat.moved === true) {
-                (0, Utility_1.HandleTokens)(_mA, function (p, type) {
+                (0, Utility_1.handleTokens)(_mA, function (p, type) {
                     if (type === "sprint") {
                         (0, Utility_1.log)("\t\t" + virtualStat.index + ") " + type + " --" + p);
                         virtualStat.sprint -= p;
@@ -878,12 +873,18 @@ var Battle = /** @class */ (function () {
     // action reader methods
     Battle.prototype.readActions = function (_givenSeconds, _ownerTextChannel, _vS, _rS) {
         return __awaiter(this, void 0, void 0, function () {
-            var possibleError, domain, buttonOptions, returnMessageInteractionMenus, _infoMessage, _b, _c;
+            var possibleError, tempLootMap, domain, buttonOptions, returnMessageInteractionMenus, dealWithUndoAction, _infoMessage, _b, _c;
             var _this = this;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
                         possibleError = '';
+                        tempLootMap = new Map(Array.from(this.LootMap.keys()).map(function (_k) {
+                            return [
+                                _k,
+                                true,
+                            ];
+                        }));
                         domain = this.allStats().map(function (_s) {
                             return _s.index === _vS.index ?
                                 _vS :
@@ -936,14 +937,17 @@ var Battle = /** @class */ (function () {
                                             };
                                         });
                                         coordString = (0, Utility_1.getCoordString)(_vS);
-                                        (_b = this.LootMap.get(coordString)) === null || _b === void 0 ? void 0 : _b.forEach(function (_L) {
-                                            selectMenuOptions.push({
-                                                emoji: typedef_1.EMOJI_MONEYBAG,
-                                                label: "Loot",
-                                                description: "" + _L.droppedBy.base.class,
-                                                value: "loot " + coordString
+                                        if (tempLootMap.get(coordString)) {
+                                            (_b = this.LootMap.get(coordString)) === null || _b === void 0 ? void 0 : _b.forEach(function (_L) {
+                                                selectMenuOptions.push({
+                                                    emoji: typedef_1.EMOJI_MONEYBAG,
+                                                    label: "Loot",
+                                                    description: "" + _L.droppedBy.base.class,
+                                                    value: "loot " + coordString
+                                                });
                                             });
-                                        });
+                                            tempLootMap.delete(coordString);
+                                        }
                                         // end turn option
                                         selectMenuOptions.push({
                                             emoji: typedef_1.EMOJI_TICK,
@@ -982,6 +986,30 @@ var Battle = /** @class */ (function () {
                                 }
                             });
                         }); };
+                        dealWithUndoAction = function (stat, action) {
+                            stat.sword += action.sword;
+                            stat.shield += action.shield;
+                            stat.sprint += action.sprint;
+                            stat.readiness += action.readiness;
+                            action.executed = false;
+                            switch (action.type) {
+                                case 'Move':
+                                    var moveAction = action;
+                                    if (moveAction.magnitude !== undefined) {
+                                        // if action is a free movement action
+                                        if (moveAction.sprint === 0) {
+                                            stat.moved = false;
+                                        }
+                                        // reposition
+                                        stat[moveAction.axis] += moveAction.magnitude * -1;
+                                    }
+                                    break;
+                                case 'Loot':
+                                    var lootAction = action;
+                                    tempLootMap.set((0, Utility_1.getCoordString)(lootAction), true);
+                                    break;
+                            }
+                        };
                         _c = (_b = _ownerTextChannel).send;
                         return [4 /*yield*/, returnMessageInteractionMenus()];
                     case 1: return [4 /*yield*/, _c.apply(_b, [_d.sent()])];
@@ -1069,42 +1097,13 @@ var Battle = /** @class */ (function () {
                                     }
                                     else if (((_c = code.split(" ")) === null || _c === void 0 ? void 0 : _c[0]) === "loot") {
                                         var lootCoordString = (_d = code.split(" ")) === null || _d === void 0 ? void 0 : _d[1];
-                                        var allLoot = _this.LootMap.get(lootCoordString) || null;
-                                        if (allLoot && allLoot.length > 0) {
-                                            _this.LootMap.delete(lootCoordString);
-                                            var lootEmbed = new discord_js_1.MessageEmbed({
-                                                title: "You got..."
-                                            });
-                                            var lootString = '';
-                                            // for each lootbox on the tile
-                                            for (var i = 0; i < allLoot.length; i++) {
-                                                var loot = allLoot[i];
-                                                var userData = _this.userDataCache.get(_rS.owner) || null;
-                                                // for each item in the lootbox
-                                                for (var i_2 = 0; i_2 < loot.items.length; i_2++) {
-                                                    var item = loot.items[i_2];
-                                                    userData === null || userData === void 0 ? void 0 : userData.inventory.push(item);
-                                                    var totalWorth = (0, Utility_1.roundToDecimalPlace)(item.getWorth());
-                                                    var totalWeight = (0, Utility_1.roundToDecimalPlace)(item.weight);
-                                                    var MoM = item.getMostOccupiedMaterialInfo();
-                                                    var MoM_name = (0, Utility_1.formalise)(MoM.materialName);
-                                                    var MoM_tag = (0, Utility_1.getGradeTag)(MoM);
-                                                    var MoM_price = (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(MoM), 2);
-                                                    var MoM_weight = (0, Utility_1.roundToDecimalPlace)(totalWeight * MoM.occupation, 2);
-                                                    var MeM = item.getMostExpensiveMaterialInfo();
-                                                    var MeM_name = (0, Utility_1.formalise)(MeM.materialName);
-                                                    var MeM_tag = (0, Utility_1.getGradeTag)(MeM);
-                                                    var MeM_price = (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(MeM), 2);
-                                                    var MeM_weight = (0, Utility_1.roundToDecimalPlace)(totalWeight * MeM.occupation, 2);
-                                                    lootString +=
-                                                        "__**" + item.name + "**__ $" + totalWorth + " (" + totalWeight + "\u03BC)\n                                    \t" + MoM_name + " (" + MoM_tag + ") $" + MoM_price + " (" + MoM_weight + "\u03BC)\n                                    \t" + MeM_name + " (" + MeM_tag + ") $" + MeM_price + " (" + MeM_weight + "\u03BC)\n";
-                                                }
-                                            }
-                                            lootEmbed.setDescription(lootString);
-                                            // send acquired items
-                                            _ownerTextChannel.send({
-                                                embeds: [lootEmbed]
-                                            });
+                                        if (lootCoordString) {
+                                            var c = lootCoordString.split(",");
+                                            var lootAction = (0, Utility_1.getLootAction)(_rS, {
+                                                x: parseInt(c[0]),
+                                                y: parseInt(c[1]),
+                                            }, round);
+                                            executingActions.push(lootAction);
                                         }
                                         listenToQueue();
                                     }
@@ -1143,7 +1142,7 @@ var Battle = /** @class */ (function () {
                                             possibleError = '';
                                             if (executingActions.length > 0) {
                                                 var undoAction = executingActions.pop();
-                                                (0, Utility_1.dealWithUndoAction)(_vS, undoAction);
+                                                dealWithUndoAction(_vS, undoAction);
                                                 valid = true;
                                             }
                                             break;
@@ -1366,6 +1365,45 @@ var Battle = /** @class */ (function () {
             roll: hit,
         };
     };
+    // loot
+    Battle.prototype.loot = function (_owner, _lootCoordString) {
+        var allLoot = this.LootMap.get(_lootCoordString) || null;
+        if (allLoot && allLoot.length > 0) {
+            var lootEmbed = new discord_js_1.MessageEmbed({
+                title: "You got..."
+            });
+            var lootString = '';
+            // for each lootbox on the tile
+            for (var i = 0; i < allLoot.length; i++) {
+                var loot = allLoot[i];
+                var userData = this.userDataCache.get(_owner) || null;
+                // for each item in the lootbox
+                for (var i_2 = 0; i_2 < loot.items.length; i_2++) {
+                    var item = loot.items[i_2];
+                    userData === null || userData === void 0 ? void 0 : userData.inventory.push(item);
+                    var totalWorth = (0, Utility_1.roundToDecimalPlace)(item.getWorth());
+                    var totalWeight = (0, Utility_1.roundToDecimalPlace)(item.weight);
+                    var MoM = item.getMostOccupiedMaterialInfo();
+                    var MoM_name = (0, Utility_1.formalise)(MoM.materialName);
+                    var MoM_tag = (0, Utility_1.getGradeTag)(MoM);
+                    var MoM_price = (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(MoM), 2);
+                    var MoM_weight = (0, Utility_1.roundToDecimalPlace)(totalWeight * MoM.occupation, 2);
+                    var MeM = item.getMostExpensiveMaterialInfo();
+                    var MeM_name = (0, Utility_1.formalise)(MeM.materialName);
+                    var MeM_tag = (0, Utility_1.getGradeTag)(MeM);
+                    var MeM_price = (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(MeM), 2);
+                    var MeM_weight = (0, Utility_1.roundToDecimalPlace)(totalWeight * MeM.occupation, 2);
+                    lootString +=
+                        "__**" + item.name + "**__ $" + totalWorth + " (" + totalWeight + "\u03BC)\n                                    \t" + MoM_name + " (" + MoM_tag + ") $" + MoM_price + " (" + MoM_weight + "\u03BC)\n                                    \t" + MeM_name + " (" + MeM_tag + ") $" + MeM_price + " (" + MeM_weight + "\u03BC)\n";
+                }
+            }
+            lootEmbed.setDescription(lootString);
+            this.LootMap.delete(_lootCoordString);
+            // send acquired items
+            return lootEmbed;
+        }
+        return null;
+    };
     // spawning methods
     Battle.prototype.Spawn = function (unit, coords) {
         this.setIndex(unit);
@@ -1463,19 +1501,18 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.executeActions = function (_actions) {
         (0, Utility_1.log)("Executing actions...");
-        var returning = [];
         this.greaterPriorSort(_actions);
         var executing = _actions.shift();
         while (executing) {
-            returning.push(this.executeOneAction(executing));
+            this.executeOneAction(executing);
             executing = _actions.shift();
         }
-        return returning;
     };
     Battle.prototype.executeOneAction = function (_action) {
         (0, Utility_1.log)("\tExecuting action: " + _action.type + ", " + _action.from.base.class + " => " + _action.affected.base.class);
         var mAction = _action;
         var aAction = _action;
+        var lAction = _action;
         var actionAffected = _action.affected;
         var actionFrom = _action.from;
         var round = _action.round;
@@ -1496,9 +1533,21 @@ var Battle = /** @class */ (function () {
                 this.appendReportString(actionFrom, round, attackerStatusString);
             }
         }
-        return _action.type === 'Attack' ?
-            this.executeAttackAction(aAction) :
-            this.executeMoveAction(mAction);
+        switch (_action.type) {
+            case 'Attack':
+                return this.executeAttackAction(aAction);
+            case 'Move':
+                return this.executeMoveAction(mAction);
+            case 'Loot':
+                var lootEmbed = this.loot(actionAffected.owner, (0, Utility_1.getCoordString)(lAction));
+                var user = this.userCache.get(actionAffected.owner) || null;
+                if (user && lootEmbed) {
+                    user.send({
+                        embeds: [lootEmbed]
+                    });
+                }
+                return lootEmbed;
+        }
     };
     Battle.prototype.executeSingleTargetAttackAction = function (_aA) {
         var eM = this.validateTarget(_aA);
@@ -1578,7 +1627,7 @@ var Battle = /** @class */ (function () {
         _aA.executed = true;
         _aA.from.readiness -= _aA.readiness;
         _aA.from.weaponUses[(0, Utility_1.getWeaponIndex)(_aA.weapon, _aA.from)]++;
-        (0, Utility_1.HandleTokens)(_aA.from, function (p, t) {
+        (0, Utility_1.handleTokens)(_aA.from, function (p, t) {
             (0, Utility_1.log)("\t\t" + _aA.from.index + ") " + t + " --" + _aA[t]);
             _aA.from[t] -= _aA[t];
         });
@@ -1597,7 +1646,7 @@ var Battle = /** @class */ (function () {
         var affected = _mA.affected;
         _mA.executed = true;
         affected.readiness -= _mA.readiness;
-        (0, Utility_1.HandleTokens)(affected, function (p, t) {
+        (0, Utility_1.handleTokens)(affected, function (p, t) {
             (0, Utility_1.log)("\t\t" + affected.index + ") " + t + " --" + _mA[t]);
             affected[t] -= _mA[t];
         });
@@ -2086,7 +2135,7 @@ var Battle = /** @class */ (function () {
             (0, Utility_1.drawCircle)(ctx, {
                 x: canvasCoord.x,
                 y: canvasCoord.y
-            }, this.pixelsPerTile / 2, true, healthPercentage);
+            }, (this.pixelsPerTile / 2) * 0.9, true, healthPercentage);
         }
         ctx.restore();
     };
@@ -2140,10 +2189,10 @@ var Battle = /** @class */ (function () {
             var HealthBar, ReadinessBar, explorerEmbed, green, red, num;
             return __generator(this, function (_b) {
                 HealthBar = "" + '`' + (0, Utility_1.addHPBar)(stat.base.AHP, stat.HP, 40) + '`';
-                ReadinessBar = "" + '`' + (0, Utility_1.addHPBar)(50, stat.readiness) + '`';
+                ReadinessBar = "" + '`' + (0, Utility_1.addHPBar)(Battle.MAX_READINESS, stat.readiness) + '`';
                 explorerEmbed = new discord_js_1.MessageEmbed({
                     title: HealthBar,
-                    description: "*Readiness* (" + Math.round(stat.readiness) + "/50)\n                " + ReadinessBar,
+                    description: "*Readiness* (" + Math.round(stat.readiness) + "/" + Battle.MAX_READINESS + ")\n                " + ReadinessBar,
                     fields: [
                         {
                             name: "(" + stat.sword + "/3)",
@@ -2683,7 +2732,8 @@ var Battle = /** @class */ (function () {
     Battle.prototype.getStatus = function (_stat, _type) {
         return _stat.statusEffects.filter(function (_s) { return _s.type === _type; });
     };
-    Battle.MOVE_READINESS = 10;
+    Battle.MAX_READINESS = 25;
+    Battle.MOVE_READINESS = 5;
     return Battle;
 }());
 exports.Battle = Battle;

@@ -123,7 +123,7 @@ const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "";
             if (_cR.fate !== "Miss") {
-                _action.affected.readiness -= 10;
+                _action.affected.readiness -= 3;
                 returnString += "💦 Exhaust!"
             }
             return returnString;

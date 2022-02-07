@@ -1,26 +1,34 @@
 {
     "flesh": {
-        "ppu": 0.05
+        "ppu": 0.05,
+        "Prot": 0.01
     },
     "cobalt": {
-        "ppu": 20
+        "ppu": 20,
+        "Prot": 0.2
     },
     "steel": {
-        "ppu": 10
+        "ppu": 10,
+        "Prot": 0.15
     },
     "coal": {
-        "ppu": 5
+        "ppu": 5,
+        "Prot": 0.05
     },
     "wood": {
-        "ppu": 5
+        "ppu": 5,
+        "Prot": 0.08
     },
     "boulder": {
-        "ppu": 1.5
+        "ppu": 1.5,
+        "Prot": 0.13
     },
     "marble": {
-        "ppu": 8
+        "ppu": 8,
+        "Prot": 0.11
     },
     "granite": {
-        "ppu": 1
+        "ppu": 1,
+        "Prot": 0.09
     }
 }

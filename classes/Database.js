@@ -331,7 +331,7 @@ function getIconCanvas(_stat, _drawOptions) {
                 }
                 clearTimeout(invalidURLTimeout_1);
                 var squaredSize = Math.min(image.width, image.height);
-                var radius = (squaredSize / 2) * 0.95;
+                var radius = (squaredSize / 2) * 0.9;
                 var _a = (0, Utility_1.startDrawing)(squaredSize, squaredSize), canvas = _a.canvas, ctx = _a.ctx;
                 ctx.save();
                 // draw image

@@ -1,10 +1,10 @@
 import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
-import { addHPBar, counterAxis, getAHP, getSpd, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, dealWithUndoAction, HandleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag } from "./Utility";
+import { addHPBar, counterAxis, getAHP, getSpd, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, handleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag, getLootAction } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIconCanvas, getUserWelfare } from "./Database";
 
 import fs from 'fs';
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialQualityInfo, EMOJI_MONEYBAG } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialQualityInfo, EMOJI_MONEYBAG, LootAction } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
@@ -16,7 +16,8 @@ import { InteractionEvent } from "./InteractionEvent";
 import { enemiesData } from "../jsons";
 
 export class Battle {
-    static readonly MOVE_READINESS = 10;
+    static readonly MAX_READINESS = 25;
+    static readonly MOVE_READINESS = 5;
 
     // Discord-related Information
     author: User;
@@ -123,7 +124,7 @@ export class Battle {
             for (let i = 0; i < this.tobespawnedArray.length; i++) {
                 const ambusher = this.tobespawnedArray[i];
                 if (ambusher.team === ambushingTeam) {
-                    ambusher.readiness = 50;
+                    ambusher.readiness = Battle.MAX_READINESS;
                     ambusher.sword = 3;
                     ambusher.sprint = 3;
                 }
@@ -287,23 +288,15 @@ export class Battle {
             }
 
             // limit the entity's tokens
-            HandleTokens(s, (p, t) => {
+            handleTokens(s, (p, t) => {
                 log(`\t\t${s.index}) ${t} =${clamp(p, 0, 5)}`)
                 s[t] = clamp(p, 0, 5);
             })
 
             // increment readiness
-            if (s.readiness <= 50) {
-                const Spd = getSpd(s);
-                const read = uniformRandom(Spd * 4, Spd * 4.25);
-
-                s.readiness += read;
-
-                // limit readiness to 50
-                if (s.readiness > 50) {
-                    s.readiness = 50;
-                }
-            }
+            const Spd = getSpd(s);
+            s.readiness += Spd;
+            s.readiness = clamp(s.readiness, -Battle.MAX_READINESS, Battle.MAX_READINESS);
         }
         //#endregion
 
@@ -493,10 +486,10 @@ export class Battle {
                     ctx.drawImage(roundCanvas, 0, 0, canvas.width, canvas.height);
 
                     // execution
-                    const executedActions = this.executeActions(roundExpectedActions);
+                    this.executeActions(roundExpectedActions);
 
                     // draw executed actions
-                    const actualCanvas = await this.getActionArrowsCanvas(executedActions);
+                    const actualCanvas = await this.getActionArrowsCanvas(roundExpectedActions);
                     ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
 
                     // update the final canvas
@@ -508,7 +501,7 @@ export class Battle {
             // limit token count
             for (let i = 0; i < allStats.length; i++) {
                 const s = allStats[i];
-                HandleTokens(s, (p, t) => {
+                handleTokens(s, (p, t) => {
                     if (p > 3) {
                         log(`\t\t${s.index}) ${t} =${3}`)
                         s[t] = 3;
@@ -741,7 +734,7 @@ export class Battle {
             _virtualAttacker.weaponUses[getWeaponIndex(weapon, _virtualAttacker)]++;
 
             _virtualAttacker.readiness -= _aA.readiness;
-            HandleTokens(_virtualAttacker, (p, t) => {
+            handleTokens(_virtualAttacker, (p, t) => {
                 log(`\t\t${_virtualAttacker.index}) ${t} --${_aA[t]}`)
                 _virtualAttacker[t] -= _aA[t];
             });
@@ -760,7 +753,7 @@ export class Battle {
 
             // spending sprint to move
             if (virtualStat.moved === true) {
-                HandleTokens(_mA, (p, type) => {
+                handleTokens(_mA, (p, type) => {
                     if (type === "sprint") {
                         log(`\t\t${virtualStat.index}) ${type} --${p}`)
                         virtualStat.sprint -= p;
@@ -781,6 +774,14 @@ export class Battle {
     // action reader methods
     async readActions(_givenSeconds: number, _ownerTextChannel: TextChannel, _vS: VirtualStat, _rS: Stat) {
         let possibleError: string = '';
+        const tempLootMap: Map<string, boolean> = new Map<string, boolean>(
+            Array.from(this.LootMap.keys()).map(_k => {
+                return [
+                    _k,
+                    true,
+                ]
+            })
+        );
         const domain = this.allStats().map(_s =>
             _s.index === _vS.index?
                 _vS:
@@ -832,14 +833,17 @@ export class Battle {
 
             // pick up loot option
             const coordString: string = getCoordString(_vS);
-            this.LootMap.get(coordString)?.forEach(_L => {
-                selectMenuOptions.push({
-                    emoji: EMOJI_MONEYBAG,
-                    label: "Loot",
-                    description: `${_L.droppedBy.base.class}`,
-                    value: `loot ${coordString}`
+            if (tempLootMap.get(coordString)) {
+                this.LootMap.get(coordString)?.forEach(_L => {
+                    selectMenuOptions.push({
+                        emoji: EMOJI_MONEYBAG,
+                        label: "Loot",
+                        description: `${_L.droppedBy.base.class}`,
+                        value: `loot ${coordString}`
+                    });
                 });
-            });
+                tempLootMap.delete(coordString);
+            }
 
             // end turn option
             selectMenuOptions.push({
@@ -881,6 +885,31 @@ export class Battle {
             }
 
             return m;
+        }
+        const dealWithUndoAction = (stat: Stat, action: Action) => {
+            stat.sword += action.sword;
+            stat.shield += action.shield;
+            stat.sprint += action.sprint;
+            stat.readiness += action.readiness;
+            action.executed = false;
+
+            switch (action.type) {
+                case 'Move':
+                    const moveAction: MoveAction = action as MoveAction;
+                    if (moveAction.magnitude !== undefined) {
+                        // if action is a free movement action
+                        if (moveAction.sprint === 0) {
+                            stat.moved = false;
+                        }
+                        // reposition
+                        stat[moveAction.axis] += moveAction.magnitude * -1;
+                    }
+                    break;
+                case 'Loot':
+                    const lootAction: LootAction = action as LootAction;
+                    tempLootMap.set(getCoordString(lootAction), true);
+                    break;
+            }
         }
         const _infoMessage = await _ownerTextChannel.send(await returnMessageInteractionMenus());
         // returns a Promise that resolves when the player is finished with their moves
@@ -948,51 +977,13 @@ export class Battle {
                 }
                 else if (code.split(" ")?.[0] === "loot") {
                     const lootCoordString: string = code.split(" ")?.[1];
-                    const allLoot: Array<Loot> | null = this.LootMap.get(lootCoordString) || null;
-                    if (allLoot && allLoot.length > 0) {
-                        this.LootMap.delete(lootCoordString);
-                        const lootEmbed = new MessageEmbed({
-                            title: "You got..."
-                        });
-                        let lootString = '';
-
-                        // for each lootbox on the tile
-                        for (let i = 0; i < allLoot.length; i++) {
-                            const loot: Loot = allLoot[i];
-                            const userData: UserData | null = this.userDataCache.get(_rS.owner) || null;
-
-                            // for each item in the lootbox
-                            for (let i = 0; i < loot.items.length; i++) {
-                                const item: Item = loot.items[i];
-                                userData?.inventory.push(item);
-
-                                const totalWorth: number = roundToDecimalPlace(item.getWorth());
-                                const totalWeight: number = roundToDecimalPlace(item.weight);
-
-                                const MoM: MaterialQualityInfo = item.getMostOccupiedMaterialInfo()!;
-                                const MoM_name = formalise(MoM.materialName);
-                                const MoM_tag = getGradeTag(MoM);
-                                const MoM_price = roundToDecimalPlace(item.getMaterialInfoPrice(MoM), 2);
-                                const MoM_weight = roundToDecimalPlace(totalWeight * MoM.occupation, 2);
-
-                                const MeM: MaterialQualityInfo = item.getMostExpensiveMaterialInfo()!;
-                                const MeM_name = formalise(MeM.materialName);
-                                const MeM_tag = getGradeTag(MeM);
-                                const MeM_price = roundToDecimalPlace(item.getMaterialInfoPrice(MeM), 2);
-                                const MeM_weight = roundToDecimalPlace(totalWeight * MeM.occupation, 2);
-
-                                lootString +=
-                                    `__**${item.name}**__ $${totalWorth} (${totalWeight}μ)
-                                    \t${MoM_name} (${MoM_tag}) $${MoM_price} (${MoM_weight}μ)
-                                    \t${MeM_name} (${MeM_tag}) $${MeM_price} (${MeM_weight}μ)\n`;
-                            }
-                        }
-                        lootEmbed.setDescription(lootString);
-                        
-                        // send acquired items
-                        _ownerTextChannel.send({
-                            embeds: [lootEmbed]
-                        });
+                    if (lootCoordString) {
+                        const c = lootCoordString.split(",");
+                        const lootAction: LootAction = getLootAction(_rS, {
+                            x: parseInt(c[0]),
+                            y: parseInt(c[1]),
+                        }, round);
+                        executingActions.push(lootAction);
                     }
                     listenToQueue();
                 }
@@ -1300,6 +1291,55 @@ export class Battle {
         };
     }
 
+    // loot
+    loot(_owner: OwnerID, _lootCoordString: string): MessageEmbed | null {
+        const allLoot: Array<Loot> | null = this.LootMap.get(_lootCoordString) || null;
+        if (allLoot && allLoot.length > 0) {
+            const lootEmbed = new MessageEmbed({
+                title: "You got..."
+            });
+            let lootString = '';
+
+            // for each lootbox on the tile
+            for (let i = 0; i < allLoot.length; i++) {
+                const loot: Loot = allLoot[i];
+                const userData: UserData | null = this.userDataCache.get(_owner) || null;
+
+                // for each item in the lootbox
+                for (let i = 0; i < loot.items.length; i++) {
+                    const item: Item = loot.items[i];
+                    userData?.inventory.push(item);
+
+                    const totalWorth: number = roundToDecimalPlace(item.getWorth());
+                    const totalWeight: number = roundToDecimalPlace(item.weight);
+
+                    const MoM: MaterialQualityInfo = item.getMostOccupiedMaterialInfo()!;
+                    const MoM_name = formalise(MoM.materialName);
+                    const MoM_tag = getGradeTag(MoM);
+                    const MoM_price = roundToDecimalPlace(item.getMaterialInfoPrice(MoM), 2);
+                    const MoM_weight = roundToDecimalPlace(totalWeight * MoM.occupation, 2);
+
+                    const MeM: MaterialQualityInfo = item.getMostExpensiveMaterialInfo()!;
+                    const MeM_name = formalise(MeM.materialName);
+                    const MeM_tag = getGradeTag(MeM);
+                    const MeM_price = roundToDecimalPlace(item.getMaterialInfoPrice(MeM), 2);
+                    const MeM_weight = roundToDecimalPlace(totalWeight * MeM.occupation, 2);
+
+                    lootString +=
+                        `__**${item.name}**__ $${totalWorth} (${totalWeight}μ)
+                                    \t${MoM_name} (${MoM_tag}) $${MoM_price} (${MoM_weight}μ)
+                                    \t${MeM_name} (${MeM_tag}) $${MeM_price} (${MeM_weight}μ)\n`;
+                }
+            }
+            lootEmbed.setDescription(lootString);
+
+            this.LootMap.delete(_lootCoordString);
+            // send acquired items
+            return lootEmbed;
+        }
+        return null;
+    }
+
     // spawning methods
     Spawn(unit: Stat, coords: Coordinate) {
         this.setIndex(unit);
@@ -1409,21 +1449,19 @@ export class Battle {
     executeActions(_actions: Action[]) {
         log("Executing actions...")
 
-        const returning: Action[] = [];
         this.greaterPriorSort(_actions);
 
         let executing = _actions.shift();
         while (executing) {
-            returning.push(this.executeOneAction(executing));
-            executing = _actions.shift();
+            this.executeOneAction(executing);
+            executing = _actions.shift()!;
         }
-
-        return returning;
     }
     executeOneAction(_action: Action) {
         log(`\tExecuting action: ${_action.type}, ${_action.from.base.class} => ${_action.affected.base.class}`)
         const mAction = _action as MoveAction;
         const aAction = _action as AttackAction;
+        const lAction = _action as LootAction;
 
         const actionAffected = _action.affected;
         const actionFrom = _action.from;
@@ -1449,9 +1487,21 @@ export class Battle {
             }
         }
 
-        return _action.type === 'Attack' ?
-            this.executeAttackAction(aAction) :
-            this.executeMoveAction(mAction);
+        switch (_action.type) {
+            case 'Attack':
+                return this.executeAttackAction(aAction);
+            case 'Move':
+                return this.executeMoveAction(mAction);
+            case 'Loot':
+                const lootEmbed: MessageEmbed | null = this.loot(actionAffected.owner, getCoordString(lAction));
+                const user: User | null = this.userCache.get(actionAffected.owner) || null;
+                if (user && lootEmbed) {
+                    user.send({
+                        embeds: [lootEmbed]
+                    });
+                }
+                return lootEmbed;
+        }
     }
     executeSingleTargetAttackAction(_aA: AttackAction) {
         const eM = this.validateTarget(_aA);
@@ -1536,7 +1586,7 @@ export class Battle {
         _aA.executed = true;
         _aA.from.readiness -= _aA.readiness;
         _aA.from.weaponUses[getWeaponIndex(_aA.weapon, _aA.from)]++;
-        HandleTokens(_aA.from, (p, t) => {
+        handleTokens(_aA.from, (p, t) => {
             log(`\t\t${_aA.from.index}) ${t} --${_aA[t]}`)
             _aA.from[t] -= _aA[t]
         });
@@ -1561,7 +1611,7 @@ export class Battle {
         const affected = _mA.affected;
         _mA.executed = true;
         affected.readiness -= _mA.readiness;
-        HandleTokens(affected, (p, t) => {
+        handleTokens(affected, (p, t) => {
             log(`\t\t${affected.index}) ${t} --${_mA[t]}`)
             affected[t] -= _mA[t]
         });
@@ -2004,7 +2054,7 @@ export class Battle {
                     x: canvasCoord.x,
                     y: canvasCoord.y
                 },
-                this.pixelsPerTile / 2,
+                (this.pixelsPerTile / 2) * 0.9,
                 true,
                 healthPercentage
             );
@@ -2065,11 +2115,11 @@ export class Battle {
     }
     async getFullPlayerEmbed(stat: Stat): Promise<MessageEmbed> {
         const HealthBar = `${'`'}${addHPBar(stat.base.AHP, stat.HP, 40)}${'`'}`;
-        const ReadinessBar = `${'`'}${addHPBar(50, stat.readiness)}${'`'}`;
+        const ReadinessBar = `${'`'}${addHPBar(Battle.MAX_READINESS, stat.readiness)}${'`'}`;
         const explorerEmbed = new MessageEmbed({
             title: HealthBar,
             description:
-                `*Readiness* (${Math.round(stat.readiness)}/50)
+                `*Readiness* (${Math.round(stat.readiness)}/${Battle.MAX_READINESS})
                 ${ReadinessBar}`,
             fields: [
                 {

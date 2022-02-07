@@ -206,7 +206,7 @@ export function getIconCanvas(_stat: Stat, _drawOptions: GetIconOptions = {
                 clearTimeout(invalidURLTimeout);
 
                 const squaredSize = Math.min(image.width, image.height);
-                const radius = (squaredSize / 2) * 0.95;
+                const radius = (squaredSize / 2) * 0.9;
                 const { canvas, ctx } = startDrawing(squaredSize, squaredSize);
 
                 ctx.save();

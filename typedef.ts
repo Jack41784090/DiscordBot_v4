@@ -160,7 +160,7 @@ export interface VirtualStat extends Stat {
 }
 
 // ACTIONS
-export type ActionType = 'Attack' | 'Move'
+export type ActionType = 'Attack' | 'Move' | 'Loot'
 export type Direction = 'up' | 'down' | 'left' | 'right'
 export enum NumericDirection {
     up,
@@ -188,6 +188,10 @@ export interface AttackAction extends Action {
 export interface MoveAction extends Action {
     axis: 'x' | 'y',
     magnitude: number,
+}
+export interface LootAction extends Action {
+    x: number,
+    y: number,
 }
 
 // CANVAS
