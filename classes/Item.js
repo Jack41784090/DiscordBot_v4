@@ -5,13 +5,22 @@ var jsons_1 = require("../jsons");
 var typedef_1 = require("../typedef");
 var Utility_1 = require("./Utility");
 var Item = /** @class */ (function () {
-    function Item(_elements, _maxWeight, _name) {
-        this.type = 'torch';
+    function Item(_i_elements, _maxWeight, _name) {
+        this.itemType = 'torch';
+        var elements = _maxWeight === undefined ?
+            _i_elements.materialInfo :
+            _i_elements;
+        var maxWeight = _maxWeight === undefined ?
+            _i_elements.maxWeight :
+            _maxWeight;
+        var name = _name === undefined ?
+            _i_elements.name :
+            _name;
         var newElements = [];
-        this.maxWeight = _maxWeight;
+        this.maxWeight = maxWeight;
         this.weight = 0;
         var _loop_1 = function (i) {
-            var element = _elements[i];
+            var element = elements[i];
             var name_1 = element.materialName;
             var grade, occupation = void 0;
             // is deviation
@@ -31,13 +40,13 @@ var Item = /** @class */ (function () {
                 occupation = element.occupation;
             }
             // clamp weight
-            this_1.weight += _maxWeight * occupation;
-            if (this_1.weight > _maxWeight) {
-                var reducedWeight = this_1.weight - _maxWeight;
+            this_1.weight += maxWeight * occupation;
+            if (this_1.weight > maxWeight) {
+                var reducedWeight = this_1.weight - maxWeight;
                 // log("Clamping weight...")
                 // debug("\tWeight", `${this.weight} => ${_maxWeight}`);
                 // debug("\tOccupation", `${occupation} => ${occupation - (reducedWeight / this.maxWeight)}`)
-                this_1.weight = _maxWeight;
+                this_1.weight = maxWeight;
                 occupation -= (reducedWeight / this_1.maxWeight);
             }
             // group same materials / add new material
@@ -58,15 +67,15 @@ var Item = /** @class */ (function () {
         };
         var this_1 = this;
         // log(`Creating new item... "${_name}". Max weight: ${_maxWeight}`)
-        for (var i = 0; i < _elements.length; i++) {
+        for (var i = 0; i < elements.length; i++) {
             _loop_1(i);
         }
-        this.name = _name;
+        this.name = name;
         this.materialInfo = newElements;
         // normalise weight => get type
         this.normaliseWeight();
         var _type = (0, Utility_1.getItemType)(this) || 'amalgamation';
-        this.type = _type;
+        this.itemType = _type;
     }
     Item.Generate = function (_name, _customName) {
         // log(`Generating ${_name}`)
@@ -101,7 +110,7 @@ var Item = /** @class */ (function () {
         // normalise weight
         this.normaliseWeight();
         // update item type
-        this.type = (0, Utility_1.getItemType)(this) || 'amalgamation';
+        this.itemType = (0, Utility_1.getItemType)(this) || 'amalgamation';
     };
     Item.prototype.chip = function (_pos, _removePercentage) {
         // log("chip in action... @" + `pos: ${_pos},` + ` weight: ${this.weight}`);
@@ -212,13 +221,20 @@ var Item = /** @class */ (function () {
         this.normaliseWeight();
     };
     Item.prototype.getDisplayName = function () {
-        return this.name + " " + (0, Utility_1.formalise)(jsons_1.itemData[this.type].name);
+        return this.name + " " + (0, Utility_1.formalise)(jsons_1.itemData[this.itemType].name);
+    };
+    Item.prototype.getItemType = function () {
+        this.itemType = (0, Utility_1.getItemType)(this) || 'amalgamation';
+        return this.itemType;
     };
     Item.prototype.getWeight = function (round) {
         if (round === void 0) { round = false; }
         return round ?
             (0, Utility_1.roundToDecimalPlace)(this.weight, 2) :
             this.weight;
+    };
+    Item.prototype.getMaxWeight = function () {
+        return this.maxWeight;
     };
     Item.prototype.getMaterialInfoPrice = function (_mI) {
         var occupation = _mI.occupation, grade = _mI.grade, name = _mI.materialName;
@@ -238,6 +254,12 @@ var Item = /** @class */ (function () {
         var materialWeight = _mI.occupation * this.maxWeight;
         return foramlisedName + " (" + gradeTag + ") $" + (0, Utility_1.roundToDecimalPlace)(materialPrice) + "\n`" + (0, Utility_1.addHPBar)(this.weight, materialWeight, 20) + "` [" + (0, Utility_1.roundToDecimalPlace)(materialWeight) + typedef_1.MEW + "] (" + (0, Utility_1.roundToDecimalPlace)(materialWeight / this.weight * 100) + "%)";
     };
+    Item.prototype.getMaterialInfo = function (_mN) {
+        return this.materialInfo.find(function (_mI) { return _mI.materialName === _mN; });
+    };
+    Item.prototype.getAllMaterial = function () {
+        return this.materialInfo;
+    };
     Item.prototype.getWorth = function (round) {
         if (round === void 0) { round = false; }
         var totalPrice = 0;
@@ -253,7 +275,7 @@ var Item = /** @class */ (function () {
     Item.prototype.returnObject = function () {
         return {
             name: this.name,
-            type: this.type,
+            type: this.itemType,
             materialInfo: this.materialInfo,
             weight: this.weight,
             maxWeight: this.maxWeight,

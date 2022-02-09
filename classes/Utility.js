@@ -75,13 +75,15 @@ var __read = (this && this.__read) || function (o, n) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.getItemType = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = void 0;
+exports.getForgeWeaponMinMax = exports.getItemType = exports.getInventorySelectOptions = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoord = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetSmallestInArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
+var Item_1 = require("./Item");
 var jsons_1 = require("../jsons");
+var Database_1 = require("./Database");
 // import { Dungeon } from "./Dungeon";
 function clamp(value, min, max) {
     return Math.max(Math.min(value, max), min);
@@ -183,17 +185,17 @@ function getAHP(entity, options) {
 exports.getAHP = getAHP;
 function getDamage(entity, weapon, options) {
     if (options === void 0) { options = 'WithBoth'; }
-    var damageRange = weapon.Damage;
-    var damageBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Damage : 0;
-    var damageDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Damage : 0;
+    var damageRange = weapon.damageRange;
+    var damageBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.damageRange : 0;
+    var damageDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.damageRange : 0;
     return [damageRange[0] + damageBuff - damageDebuff, damageRange[1] + damageBuff - damageDebuff];
 }
 exports.getDamage = getDamage;
 function getAcc(entity, weapon, options) {
     if (options === void 0) { options = 'WithBoth'; }
-    var acc = weapon.Acc;
-    var accBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Acc : 0;
-    var accDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Acc : 0;
+    var acc = weapon.accuracy;
+    var accBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.accuracy : 0;
+    var accDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.accuracy : 0;
     return (acc + accBuff - accDebuff) || 0;
 }
 exports.getAcc = getAcc;
@@ -207,17 +209,17 @@ function getDodge(entity, options) {
 exports.getDodge = getDodge;
 function getSpd(entity, options) {
     if (options === void 0) { options = 'WithBoth'; }
-    var spd = entity.base.Spd;
-    var spdBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Spd : 0;
-    var spdDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Spd : 0;
+    var spd = entity.base.speed;
+    var spdBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.speed : 0;
+    var spdDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.speed : 0;
     return (spd + spdBuff - spdDebuff) || 0;
 }
 exports.getSpd = getSpd;
 function getCrit(entity, weapon, options) {
     if (options === void 0) { options = 'WithBoth'; }
-    var crit = weapon.Crit;
-    var critBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Crit : 0;
-    var critDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Crit : 0;
+    var crit = weapon.criticalHit;
+    var critBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.criticalHit : 0;
+    var critDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.criticalHit : 0;
     return (crit + critBuff - critDebuff) || 0;
 }
 exports.getCrit = getCrit;
@@ -239,7 +241,7 @@ function getProt(entity, options) {
 exports.getProt = getProt;
 function findLongArm(weapons) {
     return weapons.reduce(function (lR, thisWeapon) {
-        if (thisWeapon.Range[1] > lR.Range[1])
+        if (thisWeapon.range[1] > lR.range[1])
             return thisWeapon;
         return lR;
     }, weapons[0]);
@@ -256,7 +258,7 @@ function getDistance(stat1, stat2) {
 }
 exports.getDistance = getDistance;
 function checkWithinDistance(weapon, distance) {
-    var result = weapon.Range[0] <= distance && (weapon.Range[2] || weapon.Range[1]) >= distance;
+    var result = weapon.range[0] <= distance && (weapon.range[2] || weapon.range[1]) >= distance;
     return result;
 }
 exports.checkWithinDistance = checkWithinDistance;
@@ -568,7 +570,7 @@ function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
         type: actionType,
         from: _attacker,
         affected: _victim,
-        readiness: _weapon.Readiness,
+        readiness: _weapon.readinessCost,
         sword: _weapon.sword,
         shield: _weapon.shield,
         sprint: _weapon.sprint,
@@ -582,13 +584,18 @@ function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
 exports.getAttackAction = getAttackAction;
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
-        var data, i;
+        var ud, i;
         return __generator(this, function (_a) {
-            data = jsons_1.enemiesData["Crystal Zombie"].lootInfo;
-            for (i = 0; i < 1000; i++) {
-                log(uniformRandom(Number.EPSILON, 1));
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, (0, Database_1.getUserData)("262871357455466496")];
+                case 1:
+                    ud = _a.sent();
+                    for (i = 0; i < 25; i++) {
+                        ud.inventory.push(Item_1.Item.Generate('cobalt', "Test"));
+                    }
+                    (0, Database_1.saveUserData)(ud);
+                    return [2 /*return*/];
             }
-            return [2 /*return*/];
         });
     });
 }
@@ -716,7 +723,7 @@ function getActionsTranslate(array) {
         var _a = extractActions(action), aAction = _a.aAction, mAction = _a.mAction;
         var string = action.type;
         if (action.type === 'Attack') {
-            string += " \"" + action.affected.base.class + "\" (" + action.affected.index + ") with \"" + aAction.weapon.Name + "\".";
+            string += " \"" + action.affected.base.class + "\" (" + action.affected.index + ") with \"" + aAction.weapon.abilityName + "\".";
         }
         else if (action.type === 'Move') {
             string += " " + mAction.magnitude + " " + getDirection(mAction.axis, mAction.magnitude) + ".";
@@ -735,23 +742,23 @@ function getLoadingEmbed() {
 }
 exports.getLoadingEmbed = getLoadingEmbed;
 function getWeaponEmbed(_weapon) {
-    var mWeaponDamage = _weapon.Damage;
-    var mWeaponAcc = _weapon.Acc;
-    var mWeaponRange = _weapon.Range;
-    var mWeaponReadiness = _weapon.Readiness;
+    var mWeaponDamage = _weapon.damageRange;
+    var mWeaponAcc = _weapon.accuracy;
+    var mWeaponRange = _weapon.range;
+    var mWeaponReadiness = _weapon.readinessCost;
     var embed = new discord_js_1.MessageEmbed({
-        title: _weapon.Name,
+        title: _weapon.abilityName,
         fields: [],
     });
     if (_weapon.desc) {
         embed.description = _weapon.desc;
     }
-    // friendly skill: Readiness, Range, Token Requirements
+    // friendly skill: readinessCost, range, Token Requirements
     // aggressive skill: everything
     switch (_weapon.targetting.target) {
         case typedef_1.WeaponTarget.enemy:
             var damageField = {
-                name: "Damage",
+                name: "damageRange",
                 value: mWeaponDamage[0] + " - " + mWeaponDamage[1],
                 inline: false,
             };
@@ -762,18 +769,18 @@ function getWeaponEmbed(_weapon) {
             };
             var critField = {
                 name: "Critical Chance",
-                value: "+" + _weapon.Crit + "%",
+                value: "+" + _weapon.criticalHit + "%",
                 inline: false,
             };
             embed.fields.push(damageField, accField, critField);
         case typedef_1.WeaponTarget.ally:
             var rangeField = {
-                name: "Range",
+                name: "range",
                 value: mWeaponRange[0] + " - " + mWeaponRange[1],
                 inline: false,
             };
             var readinessField = {
-                name: "Readiness",
+                name: "readinessCost",
                 value: "" + mWeaponReadiness,
                 inline: false,
             };
@@ -822,7 +829,7 @@ function dealWithAccolade(clashResult, attacker, defender) {
         if (defender.HP > 0 && defender.HP - CR_damage <= 0)
             attackerTAcco.kill++;
         // crit no
-        if (CR_fate === 'Crit')
+        if (CR_fate === 'criticalHit')
             attackerTAcco.critNo++;
         // damage dealt
         attackerTAcco.damageDealt += CR_damage;
@@ -866,6 +873,14 @@ function arrayGetLargestInArray(array, _getValue) {
     }, array[0]);
 }
 exports.arrayGetLargestInArray = arrayGetLargestInArray;
+function arrayGetSmallestInArray(array, _getValue) {
+    return array.reduce(function (smallest, c) {
+        return _getValue(smallest) > _getValue(c) ?
+            c :
+            smallest;
+    }, array[0]);
+}
+exports.arrayGetSmallestInArray = arrayGetSmallestInArray;
 function arrayRemoveItemArray(_array, _item) {
     var index = _array.indexOf(_item);
     if (index !== undefined) {
@@ -964,12 +979,12 @@ exports.getBaseEnemyStat = getBaseEnemyStat;
 function getEmptyBuff() {
     return {
         AHP: 0,
-        Damage: 0,
-        Acc: 0,
+        damageRange: 0,
+        accuracy: 0,
         Dodge: 0,
-        Crit: 0,
+        criticalHit: 0,
         Prot: 0,
-        Spd: 0,
+        speed: 0,
         lifesteal: 0,
     };
 }
@@ -1048,6 +1063,19 @@ function getCoordString(coord) {
     return coord.x + "," + coord.y;
 }
 exports.getCoordString = getCoordString;
+function getCoord(_coordString) {
+    var c = _coordString.split(",");
+    if (c.length === 2) {
+        return {
+            x: parseInt(c[0]),
+            y: parseInt(c[1]),
+        };
+    }
+    else {
+        return null;
+    }
+}
+exports.getCoord = getCoord;
 function getRandomCode(length) {
     if (length === void 0) { length = 5; }
     var codeArray = [];
@@ -1084,7 +1112,7 @@ function dealWithAction(action, attCB, movCB) {
 exports.dealWithAction = dealWithAction;
 function printAction(_action) {
     dealWithAction(_action, function (aA) {
-        log(aA.type + " || readiness=" + aA.readiness + " | affected=" + aA.affected.index + " | from=" + aA.from.index + " | weapon=" + aA.weapon.Name);
+        log(aA.type + " || readiness=" + aA.readiness + " | affected=" + aA.affected.index + " | from=" + aA.from.index + " | weapon=" + aA.weapon.abilityName);
     }, function (mA) {
         log(mA.type + " || readiness=" + mA.readiness + " | affected=" + mA.affected.index + " | from=" + mA.from.index + " | magnitude=" + mA.magnitude + " | axis=" + mA.axis);
     });
@@ -1324,10 +1352,33 @@ function getGradeTag(_mI) {
     }
 }
 exports.getGradeTag = getGradeTag;
+/** Includes the first 23 items of the inventory. First button "refresh", last button "end" */
+function getInventorySelectOptions(_inv) {
+    return [{
+            emoji: '🔄',
+            label: "Refresh",
+            description: "Update your inventory",
+            value: "refresh"
+        }].concat(_inv.map(function (_item, _i) {
+        var _a;
+        return {
+            emoji: ((_a = jsons_1.itemData[_item.getItemType()]) === null || _a === void 0 ? void 0 : _a.emoji) || typedef_1.EMOJI_WHITEB,
+            label: _item.getDisplayName() + " (" + _item.getWeight(true) + ")",
+            description: "$" + _item.getWorth(true),
+            value: "" + _i,
+        };
+    }).splice(0, 23)).concat([{
+            emoji: typedef_1.EMOJI_CROSS,
+            label: "Quit",
+            description: "",
+            value: "end",
+        }]);
+}
+exports.getInventorySelectOptions = getInventorySelectOptions;
 function getItemType(_i) {
     var e_4, _a, e_5, _d;
     // log(`Get item type for: ${_i.name}`)
-    var weight = _i.weight;
+    var weight = _i.getWeight();
     try {
         for (var _f = __values(Object.entries(jsons_1.itemData)), _g = _f.next(); !_g.done; _g = _f.next()) {
             var _j = __read(_g.value, 2), _itemName = _j[0], _data = _j[1];
@@ -1340,24 +1391,21 @@ function getItemType(_i) {
             if (min <= weight && max >= weight) {
                 /** materials qualification */
                 var passed = 0;
-                var _loop_2 = function (_materialInfo) {
-                    var material = _materialInfo.materialName;
-                    var mI = _i.materialInfo.find(function (_mI) { return _mI.materialName === material; }) ||
-                        null;
-                    // debug("\t\tTesting for", {
-                    //     name: mI?.materialName,
-                    //     occupation: mI?.occupation,
-                    // });
-                    var _p = _materialInfo.occupationDeviation, min_1 = _p.min, max_1 = _p.max;
-                    if (mI && mI.occupation >= min_1 && mI.occupation <= max_1) {
-                        // log("\t\tQualified!");
-                        passed++;
-                    }
-                };
                 try {
                     for (var _l = (e_5 = void 0, __values(qualification.materials)), _o = _l.next(); !_o.done; _o = _l.next()) {
                         var _materialInfo = _o.value;
-                        _loop_2(_materialInfo);
+                        var material = _materialInfo.materialName;
+                        var mI = _i.getMaterialInfo(material) ||
+                            null;
+                        // debug("\t\tTesting for", {
+                        //     name: mI?.materialName,
+                        //     occupation: mI?.occupation,
+                        // });
+                        var _p = _materialInfo.occupationDeviation, min_1 = _p.min, max_1 = _p.max;
+                        if (mI && mI.occupation >= min_1 && mI.occupation <= max_1) {
+                            // log("\t\tQualified!");
+                            passed++;
+                        }
                     }
                 }
                 catch (e_5_1) { e_5 = { error: e_5_1 }; }
@@ -1384,3 +1432,17 @@ function getItemType(_i) {
     return null;
 }
 exports.getItemType = getItemType;
+function getForgeWeaponMinMax(_t) {
+    var entries = Object.entries(jsons_1.forgeWeaponData);
+    var min = arrayGetSmallestInArray(entries, function (_e) {
+        return _e[1][_t][0];
+    });
+    var max = arrayGetLargestInArray(entries, function (_e) {
+        return _e[1][_t][1];
+    });
+    return {
+        min: min[1][_t][0],
+        max: max[1][_t][1],
+    };
+}
+exports.getForgeWeaponMinMax = getForgeWeaponMinMax;

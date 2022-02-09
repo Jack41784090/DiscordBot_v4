@@ -70,7 +70,7 @@ module.exports = {
                         var selectMenuOptions = [];
                         var _loop_1 = function (itemType) {
                             var itemName = itemType;
-                            var itemsInInv = updatedUserData.inventory.filter(function (_i) { return _i.type === itemName; });
+                            var itemsInInv = updatedUserData.inventory.filter(function (_i) { return _i.getItemType() === itemName; });
                             if (((_b = jsons_1.itemData[itemName]) === null || _b === void 0 ? void 0 : _b.price) > 0) {
                                 selectMenuOptions.push({
                                     emoji: ((_c = jsons_1.itemData[itemName]) === null || _c === void 0 ? void 0 : _c.emoji) || typedef_1.EMOJI_WHITEB,

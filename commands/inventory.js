@@ -38,7 +38,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var discord_js_1 = require("discord.js");
 var Utility_1 = require("../classes/Utility");
-var jsons_1 = require("../jsons");
 var typedef_1 = require("../typedef");
 var InteractionEventManager_1 = require("../classes/InteractionEventManager");
 var InteractionEvent_1 = require("../classes/InteractionEvent");
@@ -53,25 +52,7 @@ module.exports = {
             switch (_a.label) {
                 case 0:
                     returnSelectItemsMessage = function () {
-                        var selectMenuOptions = [{
-                                emoji: '🔄',
-                                label: "Refresh",
-                                description: "Update your inventory",
-                                value: "refresh"
-                            }].concat(updatedUserData.inventory.map(function (_item, _i) {
-                            var _a;
-                            return {
-                                emoji: ((_a = jsons_1.itemData[_item.type]) === null || _a === void 0 ? void 0 : _a.emoji) || typedef_1.EMOJI_WHITEB,
-                                label: _item.getDisplayName() + " (" + _item.getWeight(true) + ")",
-                                description: "$" + _item.getWorth(true),
-                                value: "" + _i,
-                            };
-                        }).splice(0, 23)).concat([{
-                                emoji: typedef_1.EMOJI_CROSS,
-                                label: "Close",
-                                description: "",
-                                value: "end",
-                            }]);
+                        var selectMenuOptions = (0, Utility_1.getInventorySelectOptions)(updatedUserData.inventory);
                         var selectMenuActionRow = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions, "select");
                         return {
                             embeds: [
@@ -94,13 +75,13 @@ module.exports = {
                             {
                                 emoji: '🪚',
                                 label: "Chip",
-                                description: "($10) Randomly chip off 20% weight (" + (0, Utility_1.roundToDecimalPlace)(_i.weight * 0.2) + typedef_1.MEW + ").",
+                                description: "($10) Randomly chip off 20% weight (" + (0, Utility_1.roundToDecimalPlace)(_i.getWeight() * 0.2) + typedef_1.MEW + ").",
                                 value: "chip",
                             },
                             {
                                 emoji: '💉',
                                 label: "Extract",
-                                description: "($50) Extract 20% weight into a new item (" + (0, Utility_1.roundToDecimalPlace)(_i.weight * 0.2) + typedef_1.MEW + ").",
+                                description: "($50) Extract 20% weight into a new item (" + (0, Utility_1.roundToDecimalPlace)(_i.getWeight() * 0.2) + typedef_1.MEW + ").",
                                 value: "extract",
                             },
                             {
@@ -110,11 +91,11 @@ module.exports = {
                             },
                         ];
                         var actionRow = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions, "manage");
-                        _i.materialInfo.sort(function (_1, _2) { return _2.occupation - _1.occupation; });
+                        _i.getAllMaterial().sort(function (_1, _2) { return _2.occupation - _1.occupation; });
                         return {
                             embeds: [
                                 new discord_js_1.MessageEmbed()
-                                    .setDescription(_i.materialInfo.map(function (_mI) { return _i.getMaterialInfoString(_mI); }).join("\n"))
+                                    .setDescription(_i.getAllMaterial().map(function (_mI) { return _i.getMaterialInfoString(_mI); }).join("\n"))
                                     .setThumbnail('https://i.imgur.com/SCT19EA.png')
                                     .setTitle(_i.getDisplayName() + " " + (0, Utility_1.roundToDecimalPlace)(_i.getWeight()) + typedef_1.MEW)
                                     .setFooter("" + updatedUserData.money, typedef_1.coinURL)
@@ -182,7 +163,7 @@ module.exports = {
                                     _b.sent();
                                     return [3 /*break*/, 9];
                                 case 3:
-                                    roll_chip = (0, Utility_1.uniformRandom)(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
+                                    roll_chip = (0, Utility_1.uniformRandom)(Number.EPSILON, (itemSelected.getWeight() / itemSelected.getMaxWeight()));
                                     itemSelected.chip(roll_chip, 0.2);
                                     itemSelected.cleanUp();
                                     return [4 /*yield*/, _itr.update(returnItemsActionMessage(itemSelected))];

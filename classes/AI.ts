@@ -1,4 +1,4 @@
-import { Action, AIFunction, AllTeams, BotType, Coordinate, MoveAction, NumericDirection, Stat, Team, VirtualStat, Weapon, WeaponAOE, WeaponTarget } from "../typedef";
+import { Action, AIFunction, AllTeams, BotType, Coordinate, MoveAction, NumericDirection, Stat, Team, VirtualStat, Ability, WeaponAOE, WeaponTarget } from "../typedef";
 import { Battle } from "./Battle";
 import { getNewObject, log, checkWithinDistance, getDistance, getAttackAction, breadthFirstSearch as breadthSearch, getCoordString, numericDirectionToDirection, directionToMagnitudeAxis, average, arrayGetRandom, debug } from "./Utility";
 
@@ -19,7 +19,7 @@ const AIFunctions = new Map<BotType, AIFunction>([
             // if found a target
             if (selectedTarget !== null) {
                 // 1. select weapon
-                const weaponSelected: Weapon = virtualStat.base.weapons[0];
+                const weaponSelected: Ability = virtualStat.base.weapons[0];
 
                 // 2. move to preferred location
                 const path: Array<Coordinate> = _bd.startPathFinding(_rS, selectedTarget, "lowest");
@@ -45,14 +45,14 @@ const AIFunctions = new Map<BotType, AIFunction>([
             log("Employing passive_supportive AI")
             const virtualStat = getNewObject(_rS);
             const allActions: Action[] = [];
-            const ability: Weapon = arrayGetRandom(virtualStat.base.weapons.filter(_w => _w.targetting.target === WeaponTarget.ally));
+            const ability: Ability = arrayGetRandom(virtualStat.base.weapons.filter(_w => _w.targetting.target === WeaponTarget.ally));
 
             // execute ally-targetting ability
             const AOE: WeaponAOE = ability.targetting.AOE;
             switch(AOE) {
                 case 'selfCircle':
                     // move to best place
-                    const blastRange = ability.Range[2];
+                    const blastRange = ability.range[2];
                     const movesAvailable = 1 + virtualStat.sprint; debug("movesAvailable", movesAvailable);
                     const domain = _bd.findEntities_radius(virtualStat, movesAvailable + blastRange, false);
 

@@ -25,7 +25,7 @@ exports.StatMaximus = {
     AHP: 100,
     Dodge: 50,
     Prot: 1,
-    Spd: 10,
+    speed: 10,
 };
 var NumericDirection;
 (function (NumericDirection) {

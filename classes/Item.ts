@@ -1,5 +1,5 @@
 import { itemData, materialData } from "../jsons";
-import { ItemType, Material, MaterialGrade, MaterialQualityInfo, MaterialSpawnQualityInfo, MEW } from "../typedef";
+import { ItemType, Material, MaterialGrade, MaterialInfo, MaterialSpawnQualityInfo, MEW } from "../typedef";
 import { addHPBar, arrayGetLargestInArray, clamp, formalise, getGradeTag, getItemType, getNewObject, arrayGetRandom, uniformRandom, roundToDecimalPlace, normalRandom, debug } from "./Utility";
 
 export class Item {
@@ -26,21 +26,33 @@ export class Item {
         return item;
     }
 
-    name: string;
-    type: ItemType = 'torch';
-    materialInfo: Array<MaterialQualityInfo>;
-    weight: number;
-    maxWeight: number;
+    private name: string;
+    private itemType: ItemType = 'torch';
+    private materialInfo: Array<MaterialInfo>;
+    private weight: number;
+    private maxWeight: number;
 
-    constructor(_elements: Array<MaterialQualityInfo | MaterialSpawnQualityInfo>, _maxWeight: number, _name: string) {
-        const newElements: Array<MaterialQualityInfo> = [];
+    constructor(_i: Item);
+    constructor(_elements: Array<MaterialInfo | MaterialSpawnQualityInfo>, _maxWeight: number, _name: string);
+    constructor(_i_elements: Item | Array<MaterialInfo | MaterialSpawnQualityInfo>, _maxWeight?: number, _name?: string) {
+        const elements = _maxWeight === undefined?
+            (_i_elements as Item).materialInfo:
+            (_i_elements as Array<MaterialInfo | MaterialSpawnQualityInfo>);
+        const maxWeight = _maxWeight === undefined?
+            (_i_elements as Item).maxWeight:
+            _maxWeight;
+        const name = _name === undefined?
+            (_i_elements as Item).name:
+            _name;
 
-        this.maxWeight = _maxWeight;
+        const newElements: Array<MaterialInfo> = [];
+
+        this.maxWeight = maxWeight;
         this.weight = 0;
 
         // log(`Creating new item... "${_name}". Max weight: ${_maxWeight}`)
-        for (let i = 0; i < _elements.length; i++) {
-            const element = _elements[i];
+        for (let i = 0; i < elements.length; i++) {
+            const element = elements[i];
             const name = element.materialName;
             let grade: MaterialGrade, occupation;
 
@@ -62,20 +74,20 @@ export class Item {
             }
 
             // clamp weight
-            this.weight += _maxWeight * occupation;
-            if (this.weight > _maxWeight) {
-                const reducedWeight = this.weight - _maxWeight;
+            this.weight += maxWeight * occupation;
+            if (this.weight > maxWeight) {
+                const reducedWeight = this.weight - maxWeight;
 
                 // log("Clamping weight...")
                 // debug("\tWeight", `${this.weight} => ${_maxWeight}`);
                 // debug("\tOccupation", `${occupation} => ${occupation - (reducedWeight / this.maxWeight)}`)
 
-                this.weight = _maxWeight;
+                this.weight = maxWeight;
                 occupation -= (reducedWeight / this.maxWeight);
             }
 
             // group same materials / add new material
-            const newMaterial: MaterialQualityInfo =
+            const newMaterial: MaterialInfo =
             newElements.find(_mI => _mI.grade === grade && _mI.materialName === name)|| {
                 materialName: name,
                 grade: grade,
@@ -94,14 +106,14 @@ export class Item {
             // log(`\tweight: ${this.weight}`);
         }
 
-        this.name = _name;
+        this.name = name;
         this.materialInfo = newElements;
 
         // normalise weight => get type
         this.normaliseWeight();
 
         const _type: ItemType = getItemType(this) || 'amalgamation';
-        this.type = _type
+        this.itemType = _type
     }
 
     print(): void {
@@ -126,7 +138,7 @@ export class Item {
         this.normaliseWeight();
 
         // update item type
-        this.type = getItemType(this) || 'amalgamation';
+        this.itemType = getItemType(this) || 'amalgamation';
     }
 
     chip(_pos: number, _removePercentage: number): void {
@@ -141,7 +153,7 @@ export class Item {
         let matindex: number = 0;
         let pos: number = 0;
         while (pos <= range[1] && matindex < this.materialInfo.length) {
-            const burningMaterial: MaterialQualityInfo = this.materialInfo[matindex];
+            const burningMaterial: MaterialInfo = this.materialInfo[matindex];
             const materialRange: [number, number] = [
                 pos,
                 pos + burningMaterial.occupation,
@@ -179,11 +191,11 @@ export class Item {
         // log(extractRange);
 
         // extracting process
-        const extractedMaterials: Array<MaterialQualityInfo> = [];
+        const extractedMaterials: Array<MaterialInfo> = [];
         let matindex: number = 0;
         let pos: number = 0;
         while (pos <= extractRange[1] && matindex < this.materialInfo.length) {
-            const material: MaterialQualityInfo = this.materialInfo[matindex];
+            const material: MaterialInfo = this.materialInfo[matindex];
             const materialRange: [number, number] = [
                 pos,
                 pos + material.occupation,
@@ -232,7 +244,7 @@ export class Item {
             const randomMaterial: Material = arrayGetRandom(Object.keys(materialData) as (keyof typeof materialData)[]);
             const randomGrade: MaterialGrade = clamp(Math.abs(Math.round(normalRandom(0, 1))), 0, 10);
             const randomOccupation: number = 10e-5;
-            const newMaterialInfo: MaterialQualityInfo = {
+            const newMaterialInfo: MaterialInfo = {
                 materialName: randomMaterial,
                 grade: randomGrade,
                 occupation: randomOccupation,
@@ -253,35 +265,47 @@ export class Item {
     }
 
     getDisplayName(): string {
-        return `${this.name} ${formalise(itemData[this.type].name)}`;
+        return `${this.name} ${formalise(itemData[this.itemType].name)}`;
     }
-
+    getItemType(): ItemType {
+        this.itemType = getItemType(this) || 'amalgamation';
+        return this.itemType;
+    }
     getWeight(round = false): number {
         return round?
             roundToDecimalPlace(this.weight, 2):
             this.weight;
     }
+    getMaxWeight(): number {
+        return this.maxWeight;
+    }
 
-    getMaterialInfoPrice(_mI: MaterialQualityInfo): number {
+    getMaterialInfoPrice(_mI: MaterialInfo): number {
         const { occupation, grade, materialName: name } = _mI;
         return this.maxWeight * occupation * materialData[name as Material].ppu * (grade * 0.5 + 1);
     }
 
-    getMostExpensiveMaterialInfo(): MaterialQualityInfo | null {
+    getMostExpensiveMaterialInfo(): MaterialInfo | null {
         return arrayGetLargestInArray(this.materialInfo, _mI => this.getMaterialInfoPrice(_mI)) || null;
     }
 
-    getMostOccupiedMaterialInfo(): MaterialQualityInfo | null {
+    getMostOccupiedMaterialInfo(): MaterialInfo | null {
         return arrayGetLargestInArray(this.materialInfo, _mI => _mI.occupation) || null;
     }
 
-    getMaterialInfoString(_mI: MaterialQualityInfo) {
+    getMaterialInfoString(_mI: MaterialInfo) {
         const gradeTag = getGradeTag(_mI);
         const foramlisedName = formalise(_mI.materialName);
         const materialPrice = this.getMaterialInfoPrice(_mI);
         const materialWeight = _mI.occupation * this.maxWeight;
 
         return `${foramlisedName} (${gradeTag}) $${roundToDecimalPlace(materialPrice)}\n\`${addHPBar(this.weight, materialWeight, 20)}\` [${roundToDecimalPlace(materialWeight)}${MEW}] (${roundToDecimalPlace(materialWeight / this.weight * 100)}%)`;
+    }
+    getMaterialInfo(_mN: Material) {
+        return this.materialInfo.find(_mI => _mI.materialName === _mN);
+    }
+    getAllMaterial(): Array<MaterialInfo> {
+        return this.materialInfo;
     }
 
     getWorth(round = false): number {
@@ -299,7 +323,7 @@ export class Item {
     returnObject() {
         return {
             name: this.name,
-            type: this.type,
+            type: this.itemType,
             materialInfo: this.materialInfo,
             weight: this.weight,
             maxWeight: this.maxWeight,

@@ -1,6 +1,6 @@
 import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageOptions, MessageSelectOptionData, MessageActionRow, SelectMenuInteraction } from "discord.js";
 import { Item } from "../classes/Item";
-import { arrayRemoveItemArray, getSelectMenuActionRow, uniformRandom, roundToDecimalPlace, setUpInteractionCollect, getLoadingEmbed } from "../classes/Utility";
+import { arrayRemoveItemArray, getSelectMenuActionRow, uniformRandom, roundToDecimalPlace, setUpInteractionCollect, getLoadingEmbed, getInventorySelectOptions } from "../classes/Utility";
 import { itemData } from "../jsons";
 import { UserData, CommandModule, EMOJI_WHITEB, EMOJI_CROSS, coinURL, EMOJI_MONEYBAG, MEW } from "../typedef";
 import { InteractionEventManager } from "../classes/InteractionEventManager";
@@ -13,24 +13,7 @@ module.exports = {
     maxArgs: 0,
     callback: async (author: User, authorUserData: UserData, content: string, channel: TextChannel, guild: Guild, args: Array<string>, message: Message, client: Client) => {
         const returnSelectItemsMessage = (): MessageOptions => {
-            const selectMenuOptions: MessageSelectOptionData[] = [{
-                emoji: '🔄',
-                label: "Refresh",
-                description: "Update your inventory",
-                value: "refresh"
-            }].concat(updatedUserData.inventory.map((_item, _i) => {
-                return {
-                    emoji: itemData[_item.type]?.emoji || EMOJI_WHITEB,
-                    label: `${_item.getDisplayName()} (${_item.getWeight(true)})`,
-                    description: `$${_item.getWorth(true)}`,
-                    value: `${_i}`,
-                };
-            }).splice(0, 23)).concat([{
-                emoji: EMOJI_CROSS,
-                label: "Close",
-                description: "",
-                value: "end",
-            }]);
+            const selectMenuOptions: MessageSelectOptionData[] = getInventorySelectOptions(updatedUserData.inventory);
             const selectMenuActionRow: MessageActionRow = getSelectMenuActionRow(selectMenuOptions, "select");
 
             return {
@@ -54,13 +37,13 @@ module.exports = {
                 {
                     emoji: '🪚',
                     label: "Chip",
-                    description: `($10) Randomly chip off 20% weight (${roundToDecimalPlace(_i.weight * 0.2)}${MEW}).`,
+                    description: `($10) Randomly chip off 20% weight (${roundToDecimalPlace(_i.getWeight() * 0.2)}${MEW}).`,
                     value: "chip",
                 },
                 {
                     emoji: '💉',
                     label: "Extract",
-                    description: `($50) Extract 20% weight into a new item (${roundToDecimalPlace(_i.weight * 0.2)}${MEW}).`,
+                    description: `($50) Extract 20% weight into a new item (${roundToDecimalPlace(_i.getWeight() * 0.2)}${MEW}).`,
                     value: "extract",
                 },
                 {
@@ -71,12 +54,12 @@ module.exports = {
             ];
             const actionRow: MessageActionRow = getSelectMenuActionRow(selectMenuOptions, "manage");
 
-            _i.materialInfo.sort((_1, _2) => _2.occupation - _1.occupation);
+            _i.getAllMaterial().sort((_1, _2) => _2.occupation - _1.occupation);
 
             return {
                 embeds: [
                     new MessageEmbed()
-                        .setDescription(_i.materialInfo.map(_mI => _i.getMaterialInfoString(_mI)).join("\n"))
+                        .setDescription(_i.getAllMaterial().map(_mI => _i.getMaterialInfoString(_mI)).join("\n"))
                         .setThumbnail('https://i.imgur.com/SCT19EA.png')
                         .setTitle(`${_i.getDisplayName()} ${roundToDecimalPlace(_i.getWeight())}${MEW}`)
                         .setFooter(`${updatedUserData.money}`, coinURL)
@@ -118,7 +101,7 @@ module.exports = {
                         await _itr.update(returnSelectItemsMessage());
                         break;
                     case "chip":
-                        const roll_chip = uniformRandom(Number.EPSILON, (itemSelected.weight / itemSelected.maxWeight));
+                        const roll_chip = uniformRandom(Number.EPSILON, (itemSelected.getWeight() / itemSelected.getMaxWeight()));
                         itemSelected.chip(roll_chip, 0.2);
                         itemSelected.cleanUp();
                         await _itr.update(returnItemsActionMessage(itemSelected));

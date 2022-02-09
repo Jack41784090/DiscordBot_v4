@@ -1,5 +1,5 @@
-import { BaseStat, Class, defaultAvatarURL, GetIconOptions, OwnerID, Settings, Stat, UserData, } from "../typedef"
-import { User } from "discord.js";
+import { BaseStat, Class, defaultAvatarURL, EMOJI_CROSS, EMOJI_WHITEB, GetIconOptions, OwnerID, Settings, Stat, UserData, } from "../typedef"
+import { MessageSelectOptionData, User } from "discord.js";
 
 import * as admin from 'firebase-admin'
 import * as serviceAccount from '../serviceAccount.json'
@@ -12,6 +12,7 @@ import { BotClient } from "..";
 import fs from 'fs';
 import { ImgurClient } from 'imgur';
 import { Item } from "./Item";
+import { itemData } from "../jsons";
 
 // firebase login
 admin.initializeApp({
@@ -73,7 +74,7 @@ export async function getUserData(id_author: string | User): Promise<UserData> {
     const defaultData: UserData = getDefaultUserData(user);
     const data: UserData = getNewObject(defaultData, fetched) as UserData;
     data.inventory = data.inventory.map(_i => {
-        return new Item(_i.materialInfo, _i.maxWeight, _i.name)
+        return new Item(_i);
     });
 
     if (fetched === null) {

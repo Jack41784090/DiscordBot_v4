@@ -4,7 +4,7 @@ import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIconCanvas, getUserWelfare } from "./Database";
 
 import fs from 'fs';
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Weapon, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialQualityInfo, EMOJI_MONEYBAG, LootAction } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Ability, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialInfo, EMOJI_MONEYBAG, LootAction } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
@@ -265,7 +265,7 @@ export class Battle {
         //#endregion
 
         //#region INCREASE ALL READINESS & TOKENS
-        log("Readiness ticking...");
+        log("readinessCost ticking...");
         for (let i = 0; i < allStats.length; i++) {
             const s = allStats[i];
 
@@ -295,8 +295,8 @@ export class Battle {
             })
 
             // increment readiness
-            const Spd = getSpd(s);
-            s.readiness += Spd;
+            const speed = getSpd(s);
+            s.readiness += speed;
             s.readiness = clamp(s.readiness, -Battle.MAX_READINESS, Battle.MAX_READINESS);
         }
         //#endregion
@@ -570,10 +570,10 @@ export class Battle {
             this.callbackOnParty((stat: Stat) => {
                 const statAcco = stat.accolades;
                 const value = `Kills: ${statAcco.kill}
-                        Damage Dealt: ${roundToDecimalPlace(statAcco.damageDealt)}
+                        damageRange Dealt: ${roundToDecimalPlace(statAcco.damageDealt)}
                         Healing Done: ${roundToDecimalPlace(statAcco.healingDone)}
-                        Damage Absorbed: ${roundToDecimalPlace(statAcco.absorbed)}
-                        Damage Taken: ${roundToDecimalPlace(statAcco.damageTaken)}
+                        damageRange Absorbed: ${roundToDecimalPlace(statAcco.absorbed)}
+                        damageRange Taken: ${roundToDecimalPlace(statAcco.damageTaken)}
                         Dodged: ${statAcco.dodged} times
                         Critical Hits: ${statAcco.critNo} times
                         Clashed ${statAcco.clashNo} times
@@ -616,8 +616,8 @@ export class Battle {
     /** Get a string showing all nearby enemies reachable by weapon */
     getAllPossibleAttacksInfo(_stat: Stat, _domain: Stat[] = this.allStats()): PossibleAttackInfo[] {
         return _stat.base.weapons.map(_w => {
-            const shortestRange = _w.Range[0];
-            const longestRange = _w.Range[1];
+            const shortestRange = _w.range[0];
+            const longestRange = _w.range[1];
             const reachableEntities = this.findEntities_radius(_stat, longestRange, shortestRange === 0, ['block'], _domain);
             const targettedEntities = reachableEntities.filter(_s => 
                 _w.targetting.target === WeaponTarget.ally?
@@ -827,7 +827,7 @@ export class Battle {
                         EMOJI_SWORD;
                     return {
                         emoji: icon,
-                        label: `${weapon.Name}`,
+                        label: `${weapon.abilityName}`,
                         description: `${target.base.class} (${target.index})`,
                         value: `${_attackInfo.attacker.index} ${getWeaponIndex(weapon, _attackInfo.attacker)} ${target.index}`,
                     }
@@ -1204,7 +1204,7 @@ export class Battle {
                 // reportString
                 returnString +=
                     `**${attackerClass}** (${attacker.index}) ⚔️ **${targetClass}** (${target.index})
-                    __*${weapon.Name}*__ ${hitRate}% (${roundToDecimalPlace(critRate)}%)
+                    __*${weapon.abilityName}*__ ${hitRate}% (${roundToDecimalPlace(critRate)}%)
                     **${CR_fate}!** -**${roundToDecimalPlace(CR_damage)}** (${roundToDecimalPlace(clashResult.u_damage)})
                     [${roundToDecimalPlace(target.HP)} => ${roundToDecimalPlace(target.HP - CR_damage)}]`
                 if (target.HP > 0 && target.HP - CR_damage <= 0) {
@@ -1231,12 +1231,12 @@ export class Battle {
             case WeaponTarget.ally:
                 if (attacker.index === target.index) {
                     returnString +=
-                        `**${attackerClass}** (${attacker.index}) Activates __*${weapon.Name}*__`;
+                        `**${attackerClass}** (${attacker.index}) Activates __*${weapon.abilityName}*__`;
                 }
                 else {
                     returnString +=
                         `**${attackerClass}** (${attacker.index}) 🛡️ **${targetClass}** (${target.index})
-                    __*${weapon.Name}*__`;
+                    __*${weapon.abilityName}*__`;
                 }
                 // returningString += abilityEffect();
                 break;
@@ -1267,7 +1267,7 @@ export class Battle {
             // crit
             if (hit <= hitChance * 0.1 + crit) {
                 u_damage = (uniformRandom(average(minDamage, maxDamage), maxDamage)) * 2;
-                fate = "Crit";
+                fate = "criticalHit";
             }
             // hit
             else {
@@ -1322,22 +1322,22 @@ export class Battle {
                     userData?.inventory.push(item);
 
                     const totalWorth: number = roundToDecimalPlace(item.getWorth());
-                    const totalWeight: number = roundToDecimalPlace(item.weight);
+                    const totalWeight: number = roundToDecimalPlace(item.getWeight());
 
-                    const MoM: MaterialQualityInfo = item.getMostOccupiedMaterialInfo()!;
+                    const MoM: MaterialInfo = item.getMostOccupiedMaterialInfo()!;
                     const MoM_name = formalise(MoM.materialName);
                     const MoM_tag = getGradeTag(MoM);
                     const MoM_price = roundToDecimalPlace(item.getMaterialInfoPrice(MoM), 2);
                     const MoM_weight = roundToDecimalPlace(totalWeight * MoM.occupation, 2);
 
-                    const MeM: MaterialQualityInfo = item.getMostExpensiveMaterialInfo()!;
+                    const MeM: MaterialInfo = item.getMostExpensiveMaterialInfo()!;
                     const MeM_name = formalise(MeM.materialName);
                     const MeM_tag = getGradeTag(MeM);
                     const MeM_price = roundToDecimalPlace(item.getMaterialInfoPrice(MeM), 2);
                     const MeM_weight = roundToDecimalPlace(totalWeight * MeM.occupation, 2);
 
                     lootString +=
-                        `__**${item.name}**__ $${totalWorth} (${totalWeight}μ)
+                        `__**${item.getDisplayName()}**__ $${totalWorth} (${totalWeight}μ)
                                     \t${MoM_name} (${MoM_tag}) $${MoM_price} (${MoM_weight}μ)
                                     \t${MeM_name} (${MeM_tag}) $${MeM_price} (${MeM_weight}μ)\n`;
                 }
@@ -1538,7 +1538,7 @@ export class Battle {
         const weapon = _aA.weapon;
         const attacker = _aA.from;
 
-        const enemiesInRadius = this.findEntities_radius(center, weapon.Range[2] || weapon.Range[1], inclusive);
+        const enemiesInRadius = this.findEntities_radius(center, weapon.range[2] || weapon.range[1], inclusive);
         let string = '';
         for (let i = 0; i < enemiesInRadius.length; i++) {
             const singleTargetAA = getAttackAction(attacker, enemiesInRadius[i], weapon, enemiesInRadius[i], _aA.round);
@@ -1906,7 +1906,7 @@ export class Battle {
                                 victim_beforeCoords;
                             const affecteds = this.findEntities_radius(
                                 getNewObject(epicenterCoord, {index: victimIndex}), // assign victim
-                                weapon.Range[2],
+                                weapon.range[2],
                                 weapon.targetting.AOE === "circle"); // if circle: damages epicenter as well
 
                             for (let i = 0; i < affecteds.length; i++) {
@@ -1922,7 +1922,7 @@ export class Battle {
                             }
 
                             // draw explosion range
-                            for (const coord of getCoordsWithinRadius(weapon.Range[2], epicenterCoord, true)) {
+                            for (const coord of getCoordsWithinRadius(weapon.range[2], epicenterCoord, true)) {
                                 this.drawSquareOnBattleCoords(ctx, coord, {
                                     r: 255,
                                     b: 0,
@@ -2107,7 +2107,7 @@ export class Battle {
         const ReadinessBar = `${'`'}${addHPBar(Battle.MAX_READINESS, stat.readiness)}${'`'}`;
         const explorerEmbed = new MessageEmbed({
             description:
-                `*Readiness* (${Math.round(stat.readiness)}/${Battle.MAX_READINESS})
+                `*readinessCost* (${Math.round(stat.readiness)}/${Battle.MAX_READINESS})
                 ${ReadinessBar}`,
             fields: [
                 {
@@ -2149,7 +2149,7 @@ export class Battle {
     findEntity_coord(_coord: Coordinate): Stat | undefined {
         return this.CSMap.get(getCoordString(_coord));
     }
-    findEntity_args(_args: Array<string>, _attacker: Stat, _weapon?: Weapon): Stat | null {
+    findEntity_args(_args: Array<string>, _attacker: Stat, _weapon?: Ability): Stat | null {
         const allStats = this.allStats();
         const ignore: Team[] = ["block"];
         const targetNotInIgnore = (c:Stat) => c.team && !ignore.includes(c.team);
@@ -2299,9 +2299,9 @@ export class Battle {
     }
 
     // validation
-    validateTarget(_attacker: Stat, _weapon: Weapon, _target: Stat): TargetingError | null;
+    validateTarget(_attacker: Stat, _weapon: Ability, _target: Stat): TargetingError | null;
     validateTarget(_aA: AttackAction, _?: null, __?: null): TargetingError | null;
-    validateTarget(_stat_aa: Stat | AttackAction, _weapon_null?: Weapon | null, _target_null?: Stat | null): TargetingError | null {
+    validateTarget(_stat_aa: Stat | AttackAction, _weapon_null?: Ability | null, _target_null?: Stat | null): TargetingError | null {
         const eM: TargetingError = {
             reason: "",
             value: null,
@@ -2318,7 +2318,7 @@ export class Battle {
         else { // is stat
             attackerStat = _stat_aa as Stat;
             targetStat = _target_null as Stat;
-            weapon = _weapon_null as Weapon;
+            weapon = _weapon_null as Ability;
         }
 
         // ~~~~~~ UNIVERSAL ~~~~~~ //
@@ -2397,14 +2397,14 @@ export class Battle {
         // only valid errors if weapon is not a self-target
         if (weapon.targetting.AOE !== "selfCircle" && weapon.targetting.AOE !== "self" && weapon.targetting.AOE !== "touch") {
             // out of range
-            if (getDistance(attackerStat, targetStat) > weapon.Range[1] || getDistance(attackerStat, targetStat) < weapon.Range[0]) {
+            if (getDistance(attackerStat, targetStat) > weapon.range[1] || getDistance(attackerStat, targetStat) < weapon.range[0]) {
                 eM.reason = "Target is too far or too close.";
                 eM.value = roundToDecimalPlace(getDistance(attackerStat, targetStat), 1);
                 return eM;
             }
 
             // invalid self-targeting
-            if (weapon.Range[0] !== 0 && targetStat.index === attackerStat.index) {
+            if (weapon.range[0] !== 0 && targetStat.index === attackerStat.index) {
                 eM.reason = "Cannot target self.";
                 return eM;
             }

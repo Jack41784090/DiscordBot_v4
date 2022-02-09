@@ -341,7 +341,7 @@ var Battle = /** @class */ (function () {
                         (0, Utility_1.debug)("   Remaining Enemies", this.totalEnemyCount);
                         //#endregion
                         //#region INCREASE ALL READINESS & TOKENS
-                        (0, Utility_1.log)("Readiness ticking...");
+                        (0, Utility_1.log)("readinessCost ticking...");
                         _loop_2 = function (i) {
                             var s = allStats[i];
                             if (s.team === 'block')
@@ -368,8 +368,8 @@ var Battle = /** @class */ (function () {
                                 s[t] = (0, Utility_1.clamp)(p, 0, 5);
                             });
                             // increment readiness
-                            var Spd = (0, Utility_1.getSpd)(s);
-                            s.readiness += Spd;
+                            var speed = (0, Utility_1.getSpd)(s);
+                            s.readiness += speed;
                             s.readiness = (0, Utility_1.clamp)(s.readiness, -Battle.MAX_READINESS, Battle.MAX_READINESS);
                         };
                         for (i = 0; i < allStats.length; i++) {
@@ -673,7 +673,7 @@ var Battle = /** @class */ (function () {
                     endEmbedFields_1 = [];
                     this.callbackOnParty(function (stat) {
                         var statAcco = stat.accolades;
-                        var value = "Kills: " + statAcco.kill + "\n                        Damage Dealt: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageDealt) + "\n                        Healing Done: " + (0, Utility_1.roundToDecimalPlace)(statAcco.healingDone) + "\n                        Damage Absorbed: " + (0, Utility_1.roundToDecimalPlace)(statAcco.absorbed) + "\n                        Damage Taken: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageTaken) + "\n                        Dodged: " + statAcco.dodged + " times\n                        Critical Hits: " + statAcco.critNo + " times\n                        Clashed " + statAcco.clashNo + " times\n                        Average Rolls: " + ((0, Utility_1.roundToDecimalPlace)(statAcco.rollAverage) || "N/A");
+                        var value = "Kills: " + statAcco.kill + "\n                        damageRange Dealt: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageDealt) + "\n                        Healing Done: " + (0, Utility_1.roundToDecimalPlace)(statAcco.healingDone) + "\n                        damageRange Absorbed: " + (0, Utility_1.roundToDecimalPlace)(statAcco.absorbed) + "\n                        damageRange Taken: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageTaken) + "\n                        Dodged: " + statAcco.dodged + " times\n                        Critical Hits: " + statAcco.critNo + " times\n                        Clashed " + statAcco.clashNo + " times\n                        Average Rolls: " + ((0, Utility_1.roundToDecimalPlace)(statAcco.rollAverage) || "N/A");
                         endEmbedFields_1.push({
                             name: stat.name + (" (" + stat.base.class + ")"),
                             value: value,
@@ -713,8 +713,8 @@ var Battle = /** @class */ (function () {
         var _this = this;
         if (_domain === void 0) { _domain = this.allStats(); }
         return _stat.base.weapons.map(function (_w) {
-            var shortestRange = _w.Range[0];
-            var longestRange = _w.Range[1];
+            var shortestRange = _w.range[0];
+            var longestRange = _w.range[1];
             var reachableEntities = _this.findEntities_radius(_stat, longestRange, shortestRange === 0, ['block'], _domain);
             var targettedEntities = reachableEntities.filter(function (_s) {
                 return _w.targetting.target === typedef_1.WeaponTarget.ally ?
@@ -932,7 +932,7 @@ var Battle = /** @class */ (function () {
                                                 typedef_1.EMOJI_SWORD;
                                             return {
                                                 emoji: icon,
-                                                label: "" + weapon.Name,
+                                                label: "" + weapon.abilityName,
                                                 description: target.base.class + " (" + target.index + ")",
                                                 value: _attackInfo.attacker.index + " " + (0, Utility_1.getWeaponIndex)(weapon, _attackInfo.attacker) + " " + target.index,
                                             };
@@ -1293,7 +1293,7 @@ var Battle = /** @class */ (function () {
                 (0, Utility_1.dealWithAccolade)(clashResult, attacker, target);
                 // reportString
                 returnString +=
-                    "**" + attackerClass + "** (" + attacker.index + ") \u2694\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + weapon.Name + "*__ " + hitRate + "% (" + (0, Utility_1.roundToDecimalPlace)(critRate) + "%)\n                    **" + CR_fate + "!** -**" + (0, Utility_1.roundToDecimalPlace)(CR_damage) + "** (" + (0, Utility_1.roundToDecimalPlace)(clashResult.u_damage) + ")\n                    [" + (0, Utility_1.roundToDecimalPlace)(target.HP) + " => " + (0, Utility_1.roundToDecimalPlace)(target.HP - CR_damage) + "]";
+                    "**" + attackerClass + "** (" + attacker.index + ") \u2694\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + weapon.abilityName + "*__ " + hitRate + "% (" + (0, Utility_1.roundToDecimalPlace)(critRate) + "%)\n                    **" + CR_fate + "!** -**" + (0, Utility_1.roundToDecimalPlace)(CR_damage) + "** (" + (0, Utility_1.roundToDecimalPlace)(clashResult.u_damage) + ")\n                    [" + (0, Utility_1.roundToDecimalPlace)(target.HP) + " => " + (0, Utility_1.roundToDecimalPlace)(target.HP - CR_damage) + "]";
                 if (target.HP > 0 && target.HP - CR_damage <= 0) {
                     returnString += "\n__**KILLING BLOW!**__";
                 }
@@ -1314,11 +1314,11 @@ var Battle = /** @class */ (function () {
             case typedef_1.WeaponTarget.ally:
                 if (attacker.index === target.index) {
                     returnString +=
-                        "**" + attackerClass + "** (" + attacker.index + ") Activates __*" + weapon.Name + "*__";
+                        "**" + attackerClass + "** (" + attacker.index + ") Activates __*" + weapon.abilityName + "*__";
                 }
                 else {
                     returnString +=
-                        "**" + attackerClass + "** (" + attacker.index + ") \uD83D\uDEE1\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + weapon.Name + "*__";
+                        "**" + attackerClass + "** (" + attacker.index + ") \uD83D\uDEE1\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + weapon.abilityName + "*__";
                 }
                 // returningString += abilityEffect();
                 break;
@@ -1345,7 +1345,7 @@ var Battle = /** @class */ (function () {
             // crit
             if (hit <= hitChance * 0.1 + crit) {
                 u_damage = ((0, Utility_1.uniformRandom)((0, Utility_1.average)(minDamage, maxDamage), maxDamage)) * 2;
-                fate = "Crit";
+                fate = "criticalHit";
             }
             // hit
             else {
@@ -1392,7 +1392,7 @@ var Battle = /** @class */ (function () {
                     var item = loot.items[i_2];
                     userData === null || userData === void 0 ? void 0 : userData.inventory.push(item);
                     var totalWorth = (0, Utility_1.roundToDecimalPlace)(item.getWorth());
-                    var totalWeight = (0, Utility_1.roundToDecimalPlace)(item.weight);
+                    var totalWeight = (0, Utility_1.roundToDecimalPlace)(item.getWeight());
                     var MoM = item.getMostOccupiedMaterialInfo();
                     var MoM_name = (0, Utility_1.formalise)(MoM.materialName);
                     var MoM_tag = (0, Utility_1.getGradeTag)(MoM);
@@ -1404,7 +1404,7 @@ var Battle = /** @class */ (function () {
                     var MeM_price = (0, Utility_1.roundToDecimalPlace)(item.getMaterialInfoPrice(MeM), 2);
                     var MeM_weight = (0, Utility_1.roundToDecimalPlace)(totalWeight * MeM.occupation, 2);
                     lootString +=
-                        "__**" + item.name + "**__ $" + totalWorth + " (" + totalWeight + "\u03BC)\n                                    \t" + MoM_name + " (" + MoM_tag + ") $" + MoM_price + " (" + MoM_weight + "\u03BC)\n                                    \t" + MeM_name + " (" + MeM_tag + ") $" + MeM_price + " (" + MeM_weight + "\u03BC)\n";
+                        "__**" + item.getDisplayName() + "**__ $" + totalWorth + " (" + totalWeight + "\u03BC)\n                                    \t" + MoM_name + " (" + MoM_tag + ") $" + MoM_price + " (" + MoM_weight + "\u03BC)\n                                    \t" + MeM_name + " (" + MeM_tag + ") $" + MeM_price + " (" + MeM_weight + "\u03BC)\n";
                 }
             }
             lootEmbed.setDescription(lootString);
@@ -1582,7 +1582,7 @@ var Battle = /** @class */ (function () {
         var center = _aA.coordinate;
         var weapon = _aA.weapon;
         var attacker = _aA.from;
-        var enemiesInRadius = this.findEntities_radius(center, weapon.Range[2] || weapon.Range[1], inclusive);
+        var enemiesInRadius = this.findEntities_radius(center, weapon.range[2] || weapon.range[1], inclusive);
         var string = '';
         for (var i = 0; i < enemiesInRadius.length; i++) {
             var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, enemiesInRadius[i], weapon, enemiesInRadius[i], _aA.round);
@@ -1821,7 +1821,7 @@ var Battle = /** @class */ (function () {
     /** Draws actions arrows based on provided actions */
     Battle.prototype.getActionArrowsCanvas = function (_actions) {
         return __awaiter(this, void 0, void 0, function () {
-            var drawAttackAction, drawMoveAction, appendGraph, actions, canvas, ctx, style, virtualCoordsMap, graph, _loop_6, i, _b, _c, _d, key, value, solidColumns, columns, columnWidth, o, widthStart, widthEnd, edgeIndex, edge, connectingAction, isXtransition, isYtransition;
+            var drawAttackAction, drawMoveAction, appendGraph, actions, canvas, ctx, style, virtualCoordsMap, graph, _loop_6, i, _b, _c, _d, coordString, arrayOfConnections, solidColumns, columns, columnWidth, columnIndex, widthStart, widthEnd, edgeIndex, edge, connectingAction, isXtransition, isYtransition;
             var e_3, _g;
             var _this = this;
             return __generator(this, function (_h) {
@@ -1981,7 +1981,7 @@ var Battle = /** @class */ (function () {
                                                                 aA.coordinate :
                                                                 victim_beforeCoords;
                                                             affecteds = this.findEntities_radius((0, Utility_1.getNewObject)(epicenterCoord, { index: victimIndex }), // assign victim
-                                                            weapon.Range[2], weapon.targetting.AOE === "circle");
+                                                            weapon.range[2], weapon.targetting.AOE === "circle");
                                                             for (i_3 = 0; i_3 < affecteds.length; i_3++) {
                                                                 af = affecteds[i_3];
                                                                 singleTarget = (0, Utility_1.getNewObject)(aA, { from: epicenterCoord, affected: af });
@@ -1993,7 +1993,7 @@ var Battle = /** @class */ (function () {
                                                             }
                                                             try {
                                                                 // draw explosion range
-                                                                for (_b = __values((0, Utility_1.getCoordsWithinRadius)(weapon.Range[2], epicenterCoord, true)), _c = _b.next(); !_c.done; _c = _b.next()) {
+                                                                for (_b = __values((0, Utility_1.getCoordsWithinRadius)(weapon.range[2], epicenterCoord, true)), _c = _b.next(); !_c.done; _c = _b.next()) {
                                                                     coord = _c.value;
                                                                     this.drawSquareOnBattleCoords(ctx, coord, {
                                                                         r: 255,
@@ -2048,31 +2048,18 @@ var Battle = /** @class */ (function () {
                     case 4:
                         try {
                             // draw arrows
-                            for (_b = __values(graph.adjGraph.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
-                                _d = __read(_c.value, 2), key = _d[0], value = _d[1];
-                                solidColumns = (0, Utility_1.clamp)(value.length, 0, 10);
+                            for (_b = __values(graph.getEntries()), _c = _b.next(); !_c.done; _c = _b.next()) {
+                                _d = __read(_c.value, 2), coordString = _d[0], arrayOfConnections = _d[1];
+                                solidColumns = (0, Utility_1.clamp)(arrayOfConnections.length, 0, 10);
                                 columns = 2 * solidColumns + 1;
                                 columnWidth = Math.floor(this.pixelsPerTile / columns);
-                                for (o = 1; o <= columns; o++) {
-                                    widthStart = (o - 1) * columnWidth;
+                                for (columnIndex = 1; columnIndex <= columns; columnIndex++) {
+                                    widthStart = (columnIndex - 1) * columnWidth;
                                     widthEnd = widthStart + columnWidth;
-                                    /**
-                                     * eg:
-                                     * columnWidth: 5
-                                     * 0th pixel =>   ||==========|| <= 5th pixel
-                                     *                [-==========-][-==========-]
-                                     *                [-==========-][-==========-]
-                                     *                [-==========-][-==========-]
-                                     *                [-==========-][-==========-]
-                                     *                [-==========-][-==========-]
-                                     *                [-==========-][-==========-]
-                                     *                [-==========-][-==========-]
-                                     *                [-==========-][-==========-]
-                                     */
                                     // is solid column
-                                    if (o % 2 === 0) {
-                                        edgeIndex = (o / 2) - 1;
-                                        edge = value[edgeIndex];
+                                    if (columnIndex % 2 === 0) {
+                                        edgeIndex = (columnIndex / 2) - 1;
+                                        edge = arrayOfConnections[edgeIndex];
                                         connectingAction = edge.weight;
                                         isXtransition = edge.from.position.x !== edge.to.position.x;
                                         isYtransition = edge.from.position.y !== edge.to.position.y;
@@ -2200,7 +2187,7 @@ var Battle = /** @class */ (function () {
             return __generator(this, function (_b) {
                 ReadinessBar = "" + '`' + (0, Utility_1.addHPBar)(Battle.MAX_READINESS, stat.readiness) + '`';
                 explorerEmbed = new discord_js_1.MessageEmbed({
-                    description: "*Readiness* (" + Math.round(stat.readiness) + "/" + Battle.MAX_READINESS + ")\n                " + ReadinessBar,
+                    description: "*readinessCost* (" + Math.round(stat.readiness) + "/" + Battle.MAX_READINESS + ")\n                " + ReadinessBar,
                     fields: [
                         {
                             name: "(" + stat.sword + "/3)",
@@ -2462,13 +2449,13 @@ var Battle = /** @class */ (function () {
         // only valid errors if weapon is not a self-target
         if (weapon.targetting.AOE !== "selfCircle" && weapon.targetting.AOE !== "self" && weapon.targetting.AOE !== "touch") {
             // out of range
-            if ((0, Utility_1.getDistance)(attackerStat, targetStat) > weapon.Range[1] || (0, Utility_1.getDistance)(attackerStat, targetStat) < weapon.Range[0]) {
+            if ((0, Utility_1.getDistance)(attackerStat, targetStat) > weapon.range[1] || (0, Utility_1.getDistance)(attackerStat, targetStat) < weapon.range[0]) {
                 eM.reason = "Target is too far or too close.";
                 eM.value = (0, Utility_1.roundToDecimalPlace)((0, Utility_1.getDistance)(attackerStat, targetStat), 1);
                 return eM;
             }
             // invalid self-targeting
-            if (weapon.Range[0] !== 0 && targetStat.index === attackerStat.index) {
+            if (weapon.range[0] !== 0 && targetStat.index === attackerStat.index) {
                 eM.reason = "Cannot target self.";
                 return eM;
             }

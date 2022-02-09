@@ -5,11 +5,11 @@ var Utility_1 = require("./Utility");
 var hNode = /** @class */ (function () {
     function hNode(_pos, _data) {
         this.data = _data;
-        this.id = "" + (0, Utility_1.uniformRandom)(0.0, 100000.5);
-        // debug("Created node with id", `${this.id} @ (${_pos.x}, ${_pos.y})`);
         this.position = {
             x: _pos.x, y: _pos.y
         };
+        this.id = (0, Utility_1.getCoordString)(this.position);
+        // debug("Created node with id", `${this.id} @ (${_pos.x}, ${_pos.y})`);
     }
     return hNode;
 }());
@@ -31,7 +31,7 @@ var hGraph = /** @class */ (function () {
     function hGraph(_directedGraph) {
         this.adjGraph = new Map();
         this.nodeList = [];
-        this.directedGraph = _directedGraph;
+        this.isDirectedGraph = _directedGraph;
     }
     hGraph.prototype.addNode = function (_arg1, _arg2) {
         var pos = _arg2 ?
@@ -81,6 +81,9 @@ var hGraph = /** @class */ (function () {
         else {
             from_edgeArray.push(edge);
         }
+    };
+    hGraph.prototype.getEntries = function () {
+        return this.adjGraph.entries();
     };
     return hGraph;
 }());

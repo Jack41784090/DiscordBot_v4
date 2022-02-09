@@ -1,5 +1,5 @@
 import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageSelectOptionData, MessageSelectMenu, MessageOptions } from "discord.js";
-import { UserData, CommandModule, Class, EMOJI_CROSS, StatMaximus, StatPrimus, WeaponTarget, EMOJI_SHIELD, EMOJI_SWORD, Weapon, EMOJI_STAR, defaultAvatarURL } from "../typedef";
+import { UserData, CommandModule, Class, EMOJI_CROSS, StatMaximus, StatPrimus, WeaponTarget, EMOJI_SHIELD, EMOJI_SWORD, Ability, EMOJI_STAR, defaultAvatarURL } from "../typedef";
 import { addHPBar, formalise, getBaseClassStat, getLoadingEmbed, getNewObject, getSelectMenuActionRow, getStat, getStatsEmbed, getWeaponEmbed, setUpInteractionCollect, startDrawing } from "../classes/Utility";
 import { getFileImage, getIconCanvas, getIconImgurLink } from "../classes/Database";
 import { Image } from "canvas";
@@ -78,14 +78,14 @@ module.exports = {
             const classChosen = getNewObject(classData[className]);
 
             // weapons
-            const arsenal = (classChosen.weapons as Weapon[]).concat((classChosen.autoWeapons as Weapon[]));
+            const arsenal = (classChosen.weapons as Ability[]).concat((classChosen.autoWeapons as Ability[]));
             const selectMenuOptions: MessageSelectOptionData[]=
                 arsenal.map((_w: any, _i: number) => {
                     return {
                         emoji: _w.targetting.target === WeaponTarget.ally ?
                             EMOJI_SHIELD :
                             EMOJI_SWORD,
-                        label: _w.Name,
+                        label: _w.abilityName,
                         value: `${_i}`,
                     }
                 }).concat([{
@@ -105,7 +105,7 @@ module.exports = {
                     if (_itr.isSelectMenu()) {
                         const weaponIndex = parseInt(_itr.values[0]);
                         const weaponChosen =
-                            classChosen.weapons[weaponIndex] as Weapon||
+                            classChosen.weapons[weaponIndex] as Ability||
                             classChosen.autoWeapons[weaponIndex % classChosen.weapons.length];
                         if (weaponChosen) {
                             await _itr.update({

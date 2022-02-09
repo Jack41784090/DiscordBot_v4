@@ -4,21 +4,21 @@
         "AHP": 35,
         "Dodge": 5,
         "Prot": 0.1,
-        "Spd": 6,
+        "speed": 6,
         "weapons": [
             {
-                "Name": "Harvest",
-                "Acc": 85,
-                "Damage": [
+                "abilityName": "Harvest",
+                "accuracy": 85,
+                "damageRange": [
                     6,
                     9
                 ],
-                "Range": [
+                "range": [
                     1,
                     1
                 ],
-                "Readiness": 15,
-                "Crit": 0,
+                "readinessCost": 15,
+                "criticalHit": 0,
                 "CritScale": 0.1,
                 "targetting": {
                     "target": "o",
@@ -36,21 +36,21 @@
         "AHP": 5,
         "Dodge": 20,
         "Prot": 0,
-        "Spd": 10,
+        "speed": 10,
         "weapons": [
             {
-                "Name": "Strangle",
-                "Acc": 100,
-                "Damage": [
+                "abilityName": "Strangle",
+                "accuracy": 100,
+                "damageRange": [
                     0,
                     1
                 ],
-                "Range": [
+                "range": [
                     1,
                     1
                 ],
-                "Readiness": 5,
-                "Crit": 15,
+                "readinessCost": 5,
+                "criticalHit": 15,
                 "CritScale": 0.1,
                 "targetting": {
                     "target": "o",
@@ -68,22 +68,22 @@
         "AHP": 25,
         "Dodge": 0,
         "Prot": 0,
-        "Spd": 10,
+        "speed": 10,
         "weapons": [
             {
-                "Name": "Absorbing Strangle",
-                "Acc": 115,
-                "Damage": [
+                "abilityName": "Absorbing Strangle",
+                "accuracy": 115,
+                "damageRange": [
                     8,
                     10
                 ],
-                "Range": [
+                "range": [
                     0,
                     1,
                     1
                 ],
-                "Readiness": 5,
-                "Crit": 0,
+                "readinessCost": 5,
+                "criticalHit": 0,
                 "CritScale": 0.1,
                 "targetting": {
                     "target": "o",
@@ -101,21 +101,21 @@
         "AHP": 15,
         "Dodge": 0,
         "Prot": 0.2,
-        "Spd": 5,
+        "speed": 5,
         "weapons": [
             {
-                "Name": "Spear Shot",
-                "Acc": 85,
-                "Damage": [
+                "abilityName": "Spear Shot",
+                "accuracy": 85,
+                "damageRange": [
                     5,
                     7
                 ],
-                "Range": [
+                "range": [
                     2,
                     3
                 ],
-                "Readiness": 15,
-                "Crit": 0,
+                "readinessCost": 15,
+                "criticalHit": 0,
                 "CritScale": 0.1,
                 "targetting": {
                     "target": "o",
@@ -123,18 +123,18 @@
                 }
             },
             {
-                "Name": "Spear",
-                "Acc": 95,
-                "Damage": [
+                "abilityName": "Spear",
+                "accuracy": 95,
+                "damageRange": [
                     7,
                     9
                 ],
-                "Range": [
+                "range": [
                     1,
                     1.5
                 ],
-                "Readiness": 15,
-                "Crit": 0,
+                "readinessCost": 15,
+                "criticalHit": 0,
                 "CritScale": 0.1,
                 "targetting": {
                     "target": "o",

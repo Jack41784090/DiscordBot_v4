@@ -16,7 +16,7 @@ module.exports = {
             const selectMenuOptions: MessageSelectOptionData[] = [];
             for (const itemType of Object.keys(itemData)) {
                 const itemName = itemType as ItemType;
-                const itemsInInv: Array<Item> = updatedUserData.inventory.filter(_i => _i.type === itemName);
+                const itemsInInv: Array<Item> = updatedUserData.inventory.filter(_i => _i.getItemType() === itemName);
                 if (itemData[itemName]?.price > 0) {
                     selectMenuOptions.push({
                         emoji: itemData[itemName]?.emoji || EMOJI_WHITEB,

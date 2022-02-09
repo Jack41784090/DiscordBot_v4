@@ -4,7 +4,7 @@
         "AHP": 1000,
         "Dodge": 0,
         "Prot": 1,
-        "Spd": 0,
+        "speed": 0,
         "maxMove": 0,
         "iconURL": "images/Crystal Zombie.png",
         "weapons": [],
@@ -17,33 +17,33 @@
         "AHP": 1,
         "Dodge": 0,
         "Prot": 0.5,
-        "Spd": 5,
+        "speed": 5,
         "maxMove": 1,
         "iconURL": "images/Crystal Zombie.png",
         "weapons": [
             {
-                "Name": "Bite",
-                "Acc": 95,
-                "Damage": [
+                "abilityName": "Bite",
+                "accuracy": 95,
+                "damageRange": [
                     10,
                     12
                 ],
-                "Range": [
+                "range": [
                     1,
                     1
                 ],
-                "Readiness": 15,
+                "readinessCost": 15,
                 "sword": 1,
                 "shield": 0,
                 "sprint": 0,
-                "Crit": 0,
-                "Spd": 1,
+                "criticalHit": 0,
+                "speed": 1,
                 "lifesteal": 0,
                 "targetting": {
                     "target": 1,
                     "AOE": "single"
                 },
-				"CD": 0,
+				"cooldown": 0,
                 "UPT": 255,
                 "desc": null
             }
@@ -243,27 +243,27 @@
         "AHP": 15,
         "Dodge": 0,
         "Prot": 0.3,
-        "Spd": 5,
+        "speed": 5,
         "maxMove": 1,
         "iconURL": "images/Barcher.png",
         "weapons": [
             {
-                "Name": "Arrow Shot",
-                "Acc": 85,
-                "Damage": [7, 8],
-                "Range": [2, 3],
-                "Readiness": 15,
+                "abilityName": "Arrow Shot",
+                "accuracy": 85,
+                "damageRange": [7, 8],
+                "range": [2, 3],
+                "readinessCost": 15,
                 "sword": 1,
                 "shield": 0,
                 "sprint": 0,
                 "lifesteal": 0,
-                "Crit": 0,
-                "Spd": 0,
+                "criticalHit": 0,
+                "speed": 0,
                 "targetting": {
                     "target": 1,
                     "AOE": "single"
                 },
-                "CD": 0,
+                "cooldown": 0,
                 "UPT": 255,
                 "desc": null
             }
@@ -282,27 +282,27 @@
         "AHP": 15,
         "Dodge": 0,
         "Prot": 0,
-        "Spd": 5,
+        "speed": 5,
         "maxMove": 1,
         "iconURL": "images/Venus1.png",
         "weapons": [
             {
-                "Name": "Embolden",
-                "Acc": 85,
-                "Damage": [0,0],
-                "Range": [0,0,1.5],
-                "Readiness": 15,
+                "abilityName": "Embolden",
+                "accuracy": 85,
+                "damageRange": [0,0],
+                "range": [0,0,1.5],
+                "readinessCost": 15,
                 "sword": 0,
                 "shield": 0,
                 "sprint": 0,
                 "lifesteal": 0,
-                "Crit": 0,
-                "Spd": 0,
+                "criticalHit": 0,
+                "speed": 0,
                 "targetting": {
                     "target": 0,
                     "AOE": "selfCircle"
                 },
-                "CD": 0,
+                "cooldown": 0,
                 "UPT": 255,
                 "desc": null
             }
@@ -321,27 +321,27 @@
         "AHP": 8,
         "Dodge": 0,
         "Prot": 0,
-        "Spd": 5,
+        "speed": 5,
         "maxMove": 1,
         "iconURL": "images/wolf.png",
         "weapons": [
             {
-                "Name": "Bite",
-                "Acc": 95,
-                "Damage": [5,6],
-                "Range": [1,1],
-                "Readiness": 15,
+                "abilityName": "Bite",
+                "accuracy": 95,
+                "damageRange": [5,6],
+                "range": [1,1],
+                "readinessCost": 15,
                 "sword": 1,
                 "shield": 0,
                 "sprint": 0,
-                "Crit": 0,
-                "Spd": 1,
+                "criticalHit": 0,
+                "speed": 1,
                 "lifesteal": 0,
                 "targetting": {
                     "target": 1,
                     "AOE": "single"
                 },
-                "CD": 0,
+                "cooldown": 0,
                 "UPT": 255,
                 "desc": null
             }

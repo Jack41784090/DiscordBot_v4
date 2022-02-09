@@ -156,7 +156,7 @@ module.exports = {
                             emoji: _w.targetting.target === typedef_1.WeaponTarget.ally ?
                                 typedef_1.EMOJI_SHIELD :
                                 typedef_1.EMOJI_SWORD,
-                            label: _w.Name,
+                            label: _w.abilityName,
                             value: "" + _i,
                         };
                     }).concat([{

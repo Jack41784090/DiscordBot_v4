@@ -64,8 +64,8 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
 
             if (value > 66) {
                 returnString += `**ENRAGED**! ( ${value}/${fullFury} )`;
-                if (affected.buffs.Damage < 5) {
-                    affected.buffs.Damage = 5;
+                if (affected.buffs.damageRange < 5) {
+                    affected.buffs.damageRange = 5;
                 }
                 if (affected.buffs.lifesteal < 0.2) {
                     affected.buffs.lifesteal = 0.2;
@@ -73,7 +73,7 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
             }
             else {
                 returnString += `Growing in rage... ( ${value}/${fullFury} )`;
-                _bd.removeBuffStatus(_statusEffect.affected, 5, "Damage");
+                _bd.removeBuffStatus(_statusEffect.affected, 5, "damageRange");
                 _bd.removeBuffStatus(_statusEffect.affected, 0.2, "lifesteal");
             }
 
@@ -87,7 +87,7 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
             let returnString = "";
 
             if (value > 0) {
-                returnString += `Damage Up! 💪 (**${roundToDecimalPlace(value)}**)`;
+                returnString += `damageRange Up! 💪 (**${roundToDecimalPlace(value)}**)`;
                 if (_sameRound_action.type === "Attack") {
                     returnString += `(x${_statusEffect.duration})`;
                     _statusEffect.duration--;

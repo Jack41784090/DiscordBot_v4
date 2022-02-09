@@ -74,7 +74,7 @@ var AIFunctions = new Map([
             switch (AOE) {
                 case 'selfCircle':
                     // move to best place
-                    var blastRange_1 = ability.Range[2];
+                    var blastRange_1 = ability.range[2];
                     var movesAvailable_1 = 1 + virtualStat.sprint;
                     (0, Utility_1.debug)("movesAvailable", movesAvailable_1);
                     var domain_1 = _bd.findEntities_radius(virtualStat, movesAvailable_1 + blastRange_1, false);

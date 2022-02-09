@@ -1,9 +1,9 @@
-import { Action, AttackAction, ClashResult, Coordinate, Direction, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, WeaponEffectFunction, WeaponName } from "../typedef";
+import { Action, AttackAction, ClashResult, Coordinate, Direction, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, WeaponEffectFunction, AbilityName } from "../typedef";
 import { Battle } from "./Battle";
 import { StatusEffect } from "./StatusEffect";
 import { clamp, directionToMagnitudeAxis, getBaseEnemyStat, getNewObject, getStat, log, numericDirectionToDirection, roundToDecimalPlace } from "./Utility";
 
-const statusEffect_effects = new Map<WeaponName, WeaponEffectFunction>([
+const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
     [
         "Obliterate",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
@@ -248,10 +248,10 @@ export class WeaponEffect {
     }
 
     activate() {
-        log(`\tActivating ${this.attackAction.weapon.Name}`);
+        log(`\tActivating ${this.attackAction.weapon.abilityName}`);
         let returnString = "";
 
-        const weaponEffect = statusEffect_effects.get(this.attackAction.weapon.Name);
+        const weaponEffect = statusEffect_effects.get(this.attackAction.weapon.abilityName);
         if (weaponEffect) {
             returnString += weaponEffect(this.attackAction, this.clashResult, this.battleData);
         }

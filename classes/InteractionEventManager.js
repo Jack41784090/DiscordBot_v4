@@ -137,6 +137,7 @@ var InteractionEventManager = /** @class */ (function () {
                                 _f['shop'] = null,
                                 _f['battle'] = null,
                                 _f['info'] = null,
+                                _f['forge'] = null,
                                 _f)])).get(_id);
                         _g.label = 3;
                     case 3:

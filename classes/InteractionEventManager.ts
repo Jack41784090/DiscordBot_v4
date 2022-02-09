@@ -12,6 +12,7 @@ interface InteractionSplit {
     'shop': InteractionEvent | null;
     'battle': InteractionEvent | null;
     'info': InteractionEvent | null;
+    'forge': InteractionEvent | null;
 }
 
 export class InteractionEventManager {
@@ -59,6 +60,7 @@ export class InteractionEventManager {
                 'shop': null,
                 'battle': null,
                 'info': null,
+                'forge': null,
             }).get(_id)!;
         const existing: InteractionEvent | null = split[_interactionEvent.interactionEventType];
         if (!existing || (existing && existing.stoppable === true)) {

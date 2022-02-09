@@ -1,27 +1,27 @@
 {
     "Reckless": {
-        "Name": "Reckless",
-        "Acc": 0,
-        "Damage": [
+        "abilityName": "Reckless",
+        "accuracy": 0,
+        "damageRange": [
             0,
             0
         ],
-        "Range": [
+        "range": [
             0,
             0
         ],
-        "Readiness": 0,
+        "readinessCost": 0,
         "sword": -1,
         "shield": 2,
         "sprint": 0,
-        "Crit": 0,
-        "Spd": 1,
+        "criticalHit": 0,
+        "speed": 1,
         "lifesteal": 0,
         "targetting": {
             "target": 0,
             "AOE": "self"
         },
-        "CD": 0,
+        "cooldown": 0,
         "UPT": 1
     }
 }

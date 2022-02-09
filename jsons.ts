@@ -6,6 +6,7 @@ import enemiesData from "./data/enemiesData.json";
 import materialData from "./data/materialData.json";
 import universalWeaponsData from "./data/universalWeaponsData.json";
 import interactionEventData from './data/interactionEventData.json';
+import forgeWeaponData from "./data/forgeWeaponData.json";
 
 export {
     itemData,
@@ -16,4 +17,5 @@ export {
     materialData,
     universalWeaponsData,
     interactionEventData,
+    forgeWeaponData,
 }

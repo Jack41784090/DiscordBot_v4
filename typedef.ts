@@ -3,7 +3,7 @@ import { Battle } from "./classes/Battle";
 import { Item } from "./classes/Item";
 import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
-import { areasData, classData, dungeonData, enemiesData, itemData, materialData, interactionEventData } from "./jsons";
+import { areasData, classData, dungeonData, enemiesData, itemData, materialData, interactionEventData, forgeWeaponData } from "./jsons";
 
 export type Round = number;
 export type Priority = number;
@@ -102,7 +102,7 @@ export const StatMaximus = {
     AHP: 100,
     Dodge: 50,
     Prot: 1,
-    Spd: 10,
+    speed: 10,
 }
 export type StatPrimus = keyof typeof StatMaximus;
 export interface SimplePlayerStat extends Coordinate {
@@ -110,15 +110,17 @@ export interface SimplePlayerStat extends Coordinate {
     team: Team,
     botType: BotType,
 }
-export interface BaseStat {
-    class: Class | EnemyClass,
+export interface MainStat {
     AHP: number,
     Dodge: number,
     Prot: number,
-    Spd: number,
+    speed: number,
+}
+export interface BaseStat extends MainStat {
+    class: Class | EnemyClass,
     maxMove: number,
-    weapons: Array<Weapon>,
-    autoWeapons: Array<Weapon>,
+    weapons: Array<Ability>,
+    autoWeapons: Array<Ability>,
     iconURL: string,
     botType: BotType,
     lootInfo: Array<LootInfo>,
@@ -182,7 +184,7 @@ export interface Action {
     sprint: number,
 }
 export interface AttackAction extends Action {
-    weapon: Weapon,
+    weapon: Ability,
     coordinate: Coordinate,
 }
 export interface MoveAction extends Action {
@@ -241,7 +243,7 @@ export interface MaterialSpawnQualityInfo {
     occupationDeviation: QualityDeviation,
     gradeDeviation: QualityDeviation,
 }
-export interface MaterialQualityInfo {
+export interface MaterialInfo {
     materialName: Material,
     occupation: number,
     grade: MaterialGrade,
@@ -300,34 +302,36 @@ export interface AIFunction {
 }
 
 // weapons
+export interface WeaponMainStat {
+    range: Array<number>,
+    accuracy: number,
+    damageRange: [number, number],
+    speed: number,
+    criticalHit: number,
+    lifesteal: number,
+}
 export enum WeaponTarget {
     ally,
     enemy,
 }
 export type WeaponAOE = "single" | "self" | "circle" | "selfCircle" | "touch" | "line"
-export interface Weapon {
-    Name: WeaponName,
-    Acc: number,
-    Damage: Array<number>,
-    Spd: number,
-    Range: Array<number>,
-    Readiness: number,
+export interface Ability extends WeaponMainStat {
+    abilityName: AbilityName,
+    readinessCost: number,
     sword: number,
     shield: number,
     sprint: number,
-    Crit: number,
-    lifesteal: number,
+    cooldown: number,
+    UPT: number,
+    desc: string | null,
     targetting: {
         target: WeaponTarget,
         AOE: WeaponAOE
     },
-    CD: number,
-    UPT: number,
-    desc: string | null,
 }
 export type UniversalWeaponName =
     "Reckless"
-export type WeaponName =
+export type AbilityName =
     // Fighter
     "Passive: Endless Labour" |
     "Obliterate"|
@@ -358,7 +362,7 @@ export interface WeaponEffectFunction {
 export interface PossibleAttackInfo {
     attacker: Stat,
     target: Stat,
-    weapon: Weapon,
+    weapon: Ability,
 }
 
 // classes
@@ -372,12 +376,12 @@ export interface GetIconOptions {
 }
 export interface Buffs {
     AHP: number,
-    Damage: number,
-    Acc: number,
+    damageRange: number,
+    accuracy: number,
     Dodge: number,
-    Crit: number,
+    criticalHit: number,
     Prot: number,
-    Spd: number,
+    speed: number,
     lifesteal: number,
 }
 export type Buff = keyof Buffs;
@@ -404,7 +408,7 @@ export interface StatusEffectFunction {
     (_statusEffect: StatusEffect, _action: Action, _bd: Battle): string;
 }
 
-export type ClashResultFate = "Miss" | "Hit" | "Crit"
+export type ClashResultFate = "Miss" | "Hit" | "criticalHit"
 
 export interface ClashResult {
     damage: number,
@@ -434,4 +438,15 @@ export type PathFindMethod = "lowest" | "highest";
 export type InteractionEventType = keyof typeof interactionEventData;
 export interface InteractionEventOptions {
     battle?: Battle
+}
+
+// FORGE
+export type ForgeWeaponPart =
+    'blade'|
+    'guard'|
+    'shaft'
+export type ForgeWeaponType = keyof typeof forgeWeaponData;
+export interface ForgeWeapon {
+    weaponType: ForgeWeaponType,
+
 }

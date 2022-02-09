@@ -232,9 +232,9 @@ var WeaponEffect = /** @class */ (function () {
         this.battleData = _bd;
     }
     WeaponEffect.prototype.activate = function () {
-        (0, Utility_1.log)("\tActivating " + this.attackAction.weapon.Name);
+        (0, Utility_1.log)("\tActivating " + this.attackAction.weapon.abilityName);
         var returnString = "";
-        var weaponEffect = statusEffect_effects.get(this.attackAction.weapon.Name);
+        var weaponEffect = statusEffect_effects.get(this.attackAction.weapon.abilityName);
         if (weaponEffect) {
             returnString += weaponEffect(this.attackAction, this.clashResult, this.battleData);
         }
