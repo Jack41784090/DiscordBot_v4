@@ -5,7 +5,7 @@
         "Dodge": 5,
         "Prot": 0.1,
         "speed": 6,
-        "weapons": [
+        "abilities": [
             {
                 "abilityName": "Harvest",
                 "accuracy": 85,
@@ -37,7 +37,7 @@
         "Dodge": 20,
         "Prot": 0,
         "speed": 10,
-        "weapons": [
+        "abilities": [
             {
                 "abilityName": "Strangle",
                 "accuracy": 100,
@@ -69,7 +69,7 @@
         "Dodge": 0,
         "Prot": 0,
         "speed": 10,
-        "weapons": [
+        "abilities": [
             {
                 "abilityName": "Absorbing Strangle",
                 "accuracy": 115,
@@ -102,7 +102,7 @@
         "Dodge": 0,
         "Prot": 0.2,
         "speed": 5,
-        "weapons": [
+        "abilities": [
             {
                 "abilityName": "Spear Shot",
                 "accuracy": 85,

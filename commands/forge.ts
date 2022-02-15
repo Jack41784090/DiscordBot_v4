@@ -84,94 +84,75 @@ module.exports = {
                 })
         }
 
-        if (args.length === 0) {
-
-        }
-        else {
-            const type = args[0].toLowerCase();
-            switch (type) {
-                case 'weapon':
-                    // ask for weapon type
-                    const weapons: Array<MessageSelectOptionData> = Object.keys(forgeWeaponData).map(_wN => {
-                        const bladeCost = forgeWeaponData[_wN as ForgeWeaponType].blade;
-                        const guardCost = forgeWeaponData[_wN as ForgeWeaponType].guard;
-                        const shaftCost = forgeWeaponData[_wN as ForgeWeaponType].shaft;
-                        return {
-                            label: formalise(_wN),
-                            value: _wN,
-                            description: `${bladeCost}${MEW}-${guardCost}${MEW}-${shaftCost}${MEW}`
-                        }
-                    });
-                    await forgeMes.edit({
-                        embeds: [
-                            new MessageEmbed()
-                                .setTitle("Select Weapon")
-                        ],
-                        components: [getSelectMenuActionRow(weapons)]
-                    });
-                    selectedWeaponType = await new Promise(resolve => {
-                        const timeout = setTimeout(() => {
-                            iem.stopInteraction(author.id, 'forge')
-                            itrC.stop();
-                            resolve(null);
-                        }, 100 * 1000);
-                        
-                        const itrC= setUpInteractionCollect(forgeMes, async _itr => {
-                            clearTimeout(timeout);
-                            if (_itr.isSelectMenu()) {
-                                const selected = _itr.values[0] as ForgeWeaponType;
-                                await _itr.update({});
-                                resolve(selected);
-                            }
-                        }, 1);
-                    });
-                    if (selectedWeaponType === null) {
-                        break;
-                    }
-
-                    // get blade
-                    const r1 = await listenFor('blade');
-                    if (r1 === null) {
-                        break;
-                    }
-                    selectedItems.push(r1);
-                    // get guard
-                    const r2 = await listenFor('guard');
-                    if (r2 === null) {
-                        break;
-                    }
-                    selectedItems.push(r2);
-                    // get shaft
-                    const r3 = await listenFor('shaft');
-                    if (r3 === null) {
-                        break;
-                    }
-                    selectedItems.push(r3);
-
-                    // confirm forge weapon
-                    setUpConfirmationInteractionCollect(forgeMes, new MessageEmbed({
-                        title: `Forge ${formalise(selectedWeaponType)}?`,
-                        fields: (selectedItems.map(_i => ({
-                            name: _i.getDisplayName(),
-                            value:
-                                _i.getAllMaterial().filter(_mi => _mi.occupation >= 0.1).map(_mi => _i.getMaterialInfoString(_mi)).join('\n'),
-                        })))
-                    }), () => {
-
-                    }, () => {
-
-                    });
-                    
-                    break;
-
-                case 'armour':
-
-                    break;
-
-                default:
-                    message.react(EMOJI_CROSS);
-                    break;
+        // ask for weapon type
+        const weapons: Array<MessageSelectOptionData> = Object.keys(forgeWeaponData).map(_wN => {
+            const bladeCost = forgeWeaponData[_wN as ForgeWeaponType].blade;
+            const guardCost = forgeWeaponData[_wN as ForgeWeaponType].guard;
+            const shaftCost = forgeWeaponData[_wN as ForgeWeaponType].shaft;
+            return {
+                label: formalise(_wN),
+                value: _wN,
+                description: `${bladeCost}${MEW}-${guardCost}${MEW}-${shaftCost}${MEW}`
             }
+        });
+        await forgeMes.edit({
+            embeds: [
+                new MessageEmbed()
+                    .setTitle("Select Weapon")
+            ],
+            components: [getSelectMenuActionRow(weapons)]
+        });
+        selectedWeaponType = await new Promise(resolve => {
+            const timeout = setTimeout(() => {
+                iem.stopInteraction(author.id, 'forge')
+                itrC.stop();
+                resolve(null);
+            }, 100 * 1000);
+
+            const itrC = setUpInteractionCollect(forgeMes, async _itr => {
+                clearTimeout(timeout);
+                if (_itr.isSelectMenu()) {
+                    const selected = _itr.values[0] as ForgeWeaponType;
+                    await _itr.update({});
+                    resolve(selected);
+                }
+            }, 1);
+        });
+        if (selectedWeaponType === null) {
+            return;
         }
+
+        // get blade
+        const r1 = await listenFor('blade');
+        if (r1 === null) {
+            return;
+        }
+        selectedItems.push(r1);
+        // get guard
+        const r2 = await listenFor('guard');
+        if (r2 === null) {
+            return;
+        }
+        selectedItems.push(r2);
+        // get shaft
+        const r3 = await listenFor('shaft');
+        if (r3 === null) {
+            return;
+        }
+        selectedItems.push(r3);
+
+        // confirm forge weapon
+        setUpConfirmationInteractionCollect(forgeMes, new MessageEmbed({
+            title: `Forge ${formalise(selectedWeaponType)}?`,
+            fields: (selectedItems.map(_i => ({
+                name: _i.getDisplayName(),
+                value:
+                    _i.getAllMaterial().filter(_mi => _mi.occupation >= 0.1).map(_mi => _i.getMaterialInfoString(_mi)).join('\n'),
+            })))
+        }), () => {
+
+        }, () => {
+
+        });
     }
 } as CommandModule;

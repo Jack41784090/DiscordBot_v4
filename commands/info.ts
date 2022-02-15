@@ -1,6 +1,6 @@
 import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageSelectOptionData, MessageSelectMenu, MessageOptions } from "discord.js";
-import { UserData, CommandModule, Class, EMOJI_CROSS, StatMaximus, StatPrimus, WeaponTarget, EMOJI_SHIELD, EMOJI_SWORD, Ability, EMOJI_STAR, defaultAvatarURL } from "../typedef";
-import { addHPBar, formalise, getBaseClassStat, getLoadingEmbed, getNewObject, getSelectMenuActionRow, getStat, getStatsEmbed, getWeaponEmbed, setUpInteractionCollect, startDrawing } from "../classes/Utility";
+import { UserData, CommandModule, Class, EMOJI_CROSS, StatMaximus, StatPrimus, AbilityTargetting, EMOJI_SHIELD, EMOJI_SWORD, Ability, EMOJI_STAR, defaultAvatarURL } from "../typedef";
+import { addHPBar, formalise, getBaseClassStat, getLoadingEmbed, getNewObject, getSelectMenuActionRow, getStat, getStatsEmbed, getAbilityEmbed, setUpInteractionCollect, startDrawing } from "../classes/Utility";
 import { getFileImage, getIconCanvas, getIconImgurLink } from "../classes/Database";
 import { Image } from "canvas";
 import { InteractionEventManager } from "../classes/InteractionEventManager";
@@ -24,7 +24,7 @@ module.exports = {
         const iconCache: Map<Class, string> = new Map<Class, string>();
         const getClassIconLink = async (className: Class) => {
             return iconCache.get(className)||
-                iconCache.set(className, await getIconImgurLink(getStat(className)) || defaultAvatarURL).get(className)!
+                iconCache.set(className, await getIconImgurLink(await getStat(className)) || defaultAvatarURL).get(className)!
         }
         const getClassEmbed = async (className: Class): Promise<MessageOptions> => {
             return {
@@ -78,11 +78,11 @@ module.exports = {
             const classChosen = getNewObject(classData[className]);
 
             // weapons
-            const arsenal = (classChosen.weapons as Ability[]).concat((classChosen.autoWeapons as Ability[]));
+            const arsenal = (classChosen.abilities as Ability[]).concat((classChosen.autoWeapons as Ability[]));
             const selectMenuOptions: MessageSelectOptionData[]=
                 arsenal.map((_w: any, _i: number) => {
                     return {
-                        emoji: _w.targetting.target === WeaponTarget.ally ?
+                        emoji: _w.targetting.target === AbilityTargetting.ally ?
                             EMOJI_SHIELD :
                             EMOJI_SWORD,
                         label: _w.abilityName,
@@ -105,11 +105,11 @@ module.exports = {
                     if (_itr.isSelectMenu()) {
                         const weaponIndex = parseInt(_itr.values[0]);
                         const weaponChosen =
-                            classChosen.weapons[weaponIndex] as Ability||
-                            classChosen.autoWeapons[weaponIndex % classChosen.weapons.length];
+                            classChosen.abilities[weaponIndex] as Ability||
+                            classChosen.autoWeapons[weaponIndex % classChosen.abilities.length];
                         if (weaponChosen) {
                             await _itr.update({
-                                embeds: [getWeaponEmbed(weaponChosen)]
+                                embeds: [getAbilityEmbed(weaponChosen)]
                             });
                         }
                         else {

@@ -194,8 +194,8 @@ export class Dungeon {
             const availableDirections = getAvailableDirections(_c, _length);
             // debug("Available", availableDirections);
 
-            const randomDirection: NumericDirection = arrayGetRandom(availableDirections);
-            if (randomDirection !== undefined) {
+            const randomDirection: NumericDirection | null = arrayGetRandom(availableDirections);
+            if (randomDirection !== null) {
                 // debug("\tChosen random direction", randomDirection);
                 return branchOut(_c, randomDirection, _length);
             }
@@ -240,7 +240,7 @@ export class Dungeon {
                     getAvailableDirections(_r.coordinate, length).length > 0
                 ));
                 if (availableRooms.length > 0) {
-                    takeRoot(arrayGetRandom(availableRooms).coordinate, length);
+                    takeRoot(arrayGetRandom(availableRooms)!.coordinate, length);
                 }
                 else {
                     log(`Failure to include all lengths @ ${i}.`)
@@ -653,7 +653,7 @@ export class Dungeon {
         for (let i = 0; i < this.rooms.length; i++) {
             const room = this.rooms[i];
             if (room.isBattleRoom) {
-                const encounterName: MapName = arrayGetRandom(this.data.encounterMaps);
+                const encounterName: MapName | null = arrayGetRandom(this.data.encounterMaps);
                 if (encounterName && areasData[encounterName]) {
                     const mapdata: MapData = getNewObject(areasData[encounterName]) as MapData;
                     await Battle.Generate(mapdata, this.leaderUser, _message, userData.party, BotClient, false)

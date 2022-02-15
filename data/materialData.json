@@ -1,34 +1,76 @@
 {
     "flesh": {
         "ppu": 0.05,
-        "Prot": 0.01
+
+        "accuracy": 0,
+        "damageRange": [],
+        "speed": 0,
+        "criticalHit": 0,
+        "lifesteal": 0,
+
+        "Prot": 0.001
     },
     "cobalt": {
         "ppu": 20,
-        "Prot": 0.2
+        "accuracy": 0,
+        "damageRange": [],
+        "speed": 0,
+        "criticalHit": 0,
+        "lifesteal": 0,
+        "Prot": 0.001
     },
     "steel": {
         "ppu": 10,
-        "Prot": 0.15
+        "accuracy": 0,
+        "damageRange": [],
+        "speed": 0,
+        "criticalHit": 0,
+        "lifesteal": 0,
+        "Prot": 0.001
     },
     "coal": {
         "ppu": 5,
-        "Prot": 0.05
+        "accuracy": 0,
+        "damageRange": [],
+        "speed": 0,
+        "criticalHit": 0,
+        "lifesteal": 0,
+        "Prot": 0.001
     },
     "wood": {
         "ppu": 5,
-        "Prot": 0.08
+        "accuracy": 0,
+        "damageRange": [],
+        "speed": 0,
+        "criticalHit": 0,
+        "lifesteal": 0,
+        "Prot": 0.001
     },
     "boulder": {
         "ppu": 1.5,
-        "Prot": 0.13
+        "accuracy": 0,
+        "damageRange": [],
+        "speed": 0,
+        "criticalHit": 0,
+        "lifesteal": 0,
+        "Prot": 0.001
     },
     "marble": {
         "ppu": 8,
-        "Prot": 0.11
+        "accuracy": 0,
+        "damageRange": [],
+        "speed": 0,
+        "criticalHit": 0,
+        "lifesteal": 0,
+        "Prot": 0.001
     },
     "granite": {
         "ppu": 1,
-        "Prot": 0.09
+        "accuracy": 0,
+        "damageRange": [],
+        "speed": 0,
+        "criticalHit": 0,
+        "lifesteal": 0,
+        "Prot": 0.001
     }
 }

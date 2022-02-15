@@ -1,10 +1,10 @@
-import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Interaction, InteractionCollector, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
-import { addHPBar, counterAxis, getAHP, getSpd, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getWeaponIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, handleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag, getLootAction } from "./Utility";
+import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Interaction, InteractionCollector, Message, MessageButtonOptions, MessageButtonStyle, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
+import { addHPBar, counterAxis, getAHP, getSpd, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getAbilityIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, handleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag, getLootAction, getForgeWeaponAttackAbility, getAttackRange, getLoadingEmbed } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIconCanvas, getUserWelfare } from "./Database";
 
 import fs from 'fs';
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Ability, WeaponTarget, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialInfo, EMOJI_MONEYBAG, LootAction } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Ability, AbilityTargetting, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialInfo, EMOJI_MONEYBAG, LootAction, ForgeWeapon, ForgeWeaponType, StringCoordinate } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
@@ -19,6 +19,33 @@ export class Battle {
     static readonly ROUND_SECONDS = 10;
     static readonly MAX_READINESS = 25;
     static readonly MOVE_READINESS = 5;
+    static readonly MOVEMENT_BUTTONOPTIONS: Array<MessageButtonOptions> = [
+        {
+            label: "UP ⬆️",
+            style: "PRIMARY" as Exclude<MessageButtonStyle, 'LINK'>,
+            customId: "up"
+        },
+        {
+            label: "DOWN ⬇️",
+            style: "SECONDARY" as Exclude<MessageButtonStyle, 'LINK'>,
+            customId: "down"
+        },
+        {
+            label: "RIGHT ➡️",
+            style: "PRIMARY" as Exclude<MessageButtonStyle, 'LINK'>,
+            customId: "right"
+        },
+        {
+            label: "LEFT ⬅️",
+            style: "SECONDARY" as Exclude<MessageButtonStyle, 'LINK'>,
+            customId: "left"
+        },
+        {
+            label: "Undo",
+            style: "SUCCESS" as Exclude<MessageButtonStyle, 'LINK'>,
+            customId: "undo"
+        },
+    ];
 
     // Discord-related Information
     author: User;
@@ -33,23 +60,23 @@ export class Battle {
     width: number;
     height: number;
     pixelsPerTile: number;
-    CSMap: Map<string, Stat>;
-    LootMap: Map<string, Array<Loot>>;
+    CSMap: Map<StringCoordinate, Stat> = new Map<StringCoordinate, Stat>();
+    LootMap: Map<StringCoordinate, Array<Loot>> = new Map<StringCoordinate, Array<Loot>>();
 
     // Round Actions Information (Resets every Round)
-    roundActionsArray: Array<Action>;
-    roundSavedCanvasMap: Map<number, Canvas>;
+    roundActionsArray: Array<Action> = [];
+    roundSavedCanvasMap: Map<number, Canvas> = new Map<number, Canvas>();
 
     // Entity-Related Information
-    tobespawnedArray: Array<Stat>;
-    totalEnemyCount: number;
-    enemyCount: number;
-    playerCount: number;
-    allIndex: Map<number, boolean>;
+    tobespawnedArray: Array<Stat> = [];
+    totalEnemyCount: number = 0;
+    enemyCount: number = 0;
+    playerCount: number = 0;
+    allIndex: Map<number, boolean> = new Map<number, boolean>();
 
     // user cache
-    userCache: Map<OwnerID, User>;
-    userDataCache: Map<OwnerID, UserData>;
+    userCache: Map<OwnerID, User> = new Map<OwnerID, User>();
+    userDataCache: Map<OwnerID, UserData> = new Map<OwnerID, UserData>();
 
     // gamemode
     pvp: boolean;
@@ -61,40 +88,24 @@ export class Battle {
         this.client = _client;
         this.guild = _message.guild as Guild;
         this.party = _party;
-        this.userDataCache = new Map<OwnerID, UserData>();
 
         this.mapData = _mapData;
         this.width = _mapData.map.width;
         this.height = _mapData.map.height;
-        this.CSMap = getMapFromCS(_mapData.map.coordStat);
-        this.LootMap = new Map<string, Array<Loot>>();
 
         this.pixelsPerTile = 50;
-
-        this.userCache = new Map<OwnerID, User>();
-
         this.pvp = _pvp;
-
-        // action strings
-        this.roundActionsArray = [];
-        this.roundSavedCanvasMap = new Map<number, Canvas>();
 
         const allStats = this.allStats(true);
 
-        // fixing spawning
-        this.tobespawnedArray = [];
-        this.totalEnemyCount = 0;
-        this.enemyCount = 0;
-        this.playerCount = 0;
-
         // fix index
-        this.allIndex = new Map<number, boolean>();
         allStats.forEach(s => {
-            if (s.index !== -1) this.allIndex.set(s.index, true);
+            if (s.index !== -1) {
+                this.allIndex.set(s.index, true);
+            }
             else {
                 s.index = this.getIndex();
                 this.allIndex.set(s.index, true);
-                log("New index for ", s.base.class, s.index);
             }
         })
     }
@@ -102,6 +113,7 @@ export class Battle {
     /** Generate a Battle but does not start it */
     static async Generate(_mapData: MapData, _author: User, _message: Message, _party: Array<OwnerID>, _client: Client, _pvp = false) {
         const battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
+        battle.CSMap = await getMapFromCS(_mapData.map.coordStat);
         return battle;
     }
 
@@ -116,9 +128,9 @@ export class Battle {
         ambush: null
     }): Promise<boolean> {
         await this.InitiateUsers();
-        this.ManageWelfare();
+        await this.ManageWelfare();
 
-        this.AddEnemies();
+        await this.InitiateEnemies();
         // ambush
         if (_options.ambush && _options.ambush !== 'block') {
             const ambushingTeam: Team = _options.ambush;
@@ -135,17 +147,19 @@ export class Battle {
         return this.StartRound();
     }
 
-    AddEnemies(): void {
+    /** Use only once: put all enemies into the spawn array */
+    async InitiateEnemies(): Promise<void> {
         // add enemies to the spawning list, only valid if battle is not pvp
         if (!this.pvp) {
             for (const [key, value] of Object.entries(this.mapData.enemiesInfo)) {
-                const Eclass = key as EnemyClass;
-                const mod = { name: `${Eclass}` };
-                const enemyBase: BaseStat = getNewObject(enemiesData[Eclass], mod) as BaseStat;
+                const data = enemiesData[key as EnemyClass];
+                const enemyBase: BaseStat = getNewObject(data, {
+                    name: data.class as EnemyClass,
+                }) as BaseStat;
                 const spawnCount = uniformRandom(value.min, value.max);
 
                 for (let i = 0; i < spawnCount; i++) {
-                    const enemyEntity: Stat = getStat(enemyBase);
+                    const enemyEntity: Stat = await getStat(enemyBase);
 
                     // randomly spawn in loot
                     enemyEntity.base.lootInfo.forEach(_LInfo => {
@@ -189,7 +203,7 @@ export class Battle {
             if (userData) {
                 this.userDataCache.set(ownerID, userData);
                 // add to spawn queue
-                const blankStat = getStat(getBaseClassStat(userData.equippedClass), ownerID);
+                const blankStat = await getStat(getBaseClassStat(userData.equippedClass), ownerID);
                 blankStat.pvp = this.pvp;
                 this.tobespawnedArray.push(blankStat);
 
@@ -206,6 +220,7 @@ export class Battle {
         }
     }
 
+    /** Scale players HP based on their welfare */
     ManageWelfare(): void {
         // check player welfare
         log("Checking welfare...")
@@ -254,7 +269,6 @@ export class Battle {
 
         log("Spawning...");
         this.SpawnOnSpawner();
-        // await saveBattle(this);
         const allStats = this.allStats();
 
         //#region COUNT LIVES
@@ -295,7 +309,7 @@ export class Battle {
             })
 
             // increment readiness
-            const speed = getSpd(s);
+            const speed = s.base.speed;
             s.readiness += speed;
             s.readiness = clamp(s.readiness, -Battle.MAX_READINESS, Battle.MAX_READINESS);
         }
@@ -613,25 +627,25 @@ export class Battle {
         return unsorted.filter(s => (!excludeBlock || s.team !== "block"));
     }
 
-    /** Get a string showing all nearby enemies reachable by weapon */
-    getAllPossibleAttacksInfo(_stat: Stat, _domain: Stat[] = this.allStats()): PossibleAttackInfo[] {
-        return _stat.base.weapons.map(_w => {
-            const shortestRange = _w.range[0];
-            const longestRange = _w.range[1];
-            const reachableEntities = this.findEntities_radius(_stat, longestRange, shortestRange === 0, ['block'], _domain);
-            const targettedEntities = reachableEntities.filter(_s => 
-                _w.targetting.target === WeaponTarget.ally?
-                    _s.team === _stat.team:
-                    _s.team !== _stat.team
-            );
+    /** Get an array showing all nearby enemies reachable by weapon */
+    getAllPossibleAttacksInfo(_stat: Stat, _domain: Array<Stat> = this.allStats()): PossibleAttackInfo[] {
+        const equippedWeapon: ForgeWeapon = _stat.equipped;
+        const abilities: Array<Ability> = _stat.base.abilities.filter(_a => 
+            (_a.type === 'null' && _a.range !== undefined)||
+            _a.type === equippedWeapon.type
+        );
 
-            return targettedEntities.map(_e => {
-                return {
-                    attacker: _stat,
-                    target: _e,
-                    weapon: _w,
-                }
-            })
+        return [getForgeWeaponAttackAbility(equippedWeapon), ...abilities].map(_a => {
+            const shortestRange = _a.range?.min || equippedWeapon.range.min;
+            const longestRange = _a.range?.max || equippedWeapon.range.max;
+            const reachableEntities = this.findEntities_radius(_stat, longestRange, shortestRange === 0, ['block'], _domain);
+            const targettedEntities = reachableEntities.filter(_s => (_s.team !== _stat.team) || _s.pvp);
+
+            return targettedEntities.map(_e => ({
+                attacker: _stat,
+                target: _e,
+                ability: _a,
+            }));
         }).flat();
     }
 
@@ -639,7 +653,7 @@ export class Battle {
     getAvailableSpacesAhead(moveAction: MoveAction): Array<Coordinate> {
         const magnitude = moveAction.magnitude;
         const axis = moveAction.axis;
-        const stat = moveAction.affected;
+        const stat = moveAction.target;
 
         const availableSeats: Array<Coordinate> = [];
         const dir = Math.sign(magnitude);
@@ -654,68 +668,67 @@ export class Battle {
         return availableSeats;
     }
 
-    sendToCommand(roomID: string, message: MessageOptions) {
-        const commandRoom = this.message.guild!.channels.cache.find(c => c.name === roomID && c.type === 'GUILD_TEXT');
-        if (commandRoom) {
-            return (commandRoom as TextChannel).send(message);
-        }
+    /** Send a message to a TextChannel in the battle's guild with id name */
+    sendToCommand(roomID: string, message: MessageOptions): Promise<Message> | null {
+        const commandRoom: TextChannel | null = this.guild.channels.cache.find(c => c.name === roomID && c.type === 'GUILD_TEXT') as TextChannel || null;
+        return commandRoom?.send(message) || null;
     }
+
+    /** Send a multi-round report embed to sendToCommand function */
     async sendReportToCommand(roomID: string, round: Round): Promise<boolean> {
         const chosenCanvas = this.roundSavedCanvasMap.get(round);
-        if (chosenCanvas) {
-            const menuOptions: MessageSelectOptionData[] = Array.from(this.roundSavedCanvasMap.keys()).map(rn => {
-                return {
-                    label: `Round ${rn}`,
-                    value: `${rn}`,
+        let promisedMsg: Message;
+        if (chosenCanvas && (promisedMsg = await this.sendToCommand(roomID, { embeds: [getLoadingEmbed()] })!)) {
+            const roundMenuSelectOption: MessageSelectOptionData[] = Array.from(this.roundSavedCanvasMap.keys()).map(rn => ({
+                label: `Round ${rn}`,
+                value: `${rn}`,
+            }));
+            const embed: MessageEmbed = new MessageEmbed({
+                title: `Round ${round}`,
+                description: "",
+                image: {
+                    url: "attachment://map.png"
                 }
             });
-            const embed = new MessageEmbed({
-                title: `Round ${round}`,
-                description: ""
-            }).setImage("attachment://map.png");
             const messageOption: MessageOptions = {
                 embeds: [embed],
-                components: [getSelectMenuActionRow(menuOptions)],
+                components: [getSelectMenuActionRow(roundMenuSelectOption)],
                 files: [{ attachment: chosenCanvas.toBuffer(), name: 'map.png' }]
             };
 
             // add description as actions done and done-to
-            const associatedStat = this.allStats(true).find(_s => _s.owner === roomID);
-            if (associatedStat && associatedStat.actionsAssociatedStrings[round] !== undefined) {
+            const associatedStat: Stat | null = this.allStats(true).find(_s => _s.owner === roomID) || null;
+            if (associatedStat?.actionsAssociatedStrings[round]) {
                 embed.description = shortenString(associatedStat.actionsAssociatedStrings[round].join('\n\n'));
             }
-
-            if (embed.description === "") {
+            else if (embed.description === "") {
                 embed.description = "*(No Actions this Round )*";
             }
-            const promisedMsg = await this.sendToCommand(roomID, messageOption);
-            if (promisedMsg) {
-                return new Promise((resolve) => {
-                    const itrCollector = setUpInteractionCollect(promisedMsg, async itr => {
-                        if (itr.isSelectMenu()) {
-                            const selectedRound = parseInt(itr.values[0]);
-                            clearTimeout(timeOut);
-                            promisedMsg.delete();
-                            resolve(this.sendReportToCommand(roomID, selectedRound));
-                        }
-                    });
 
-                    // timeout: done checking round
-                    const timeOut = setTimeout(() => {
-                        itrCollector.stop();
-                        resolve(true);
-                    }, 15 * 1000);
+            await promisedMsg.edit(messageOption);
+            return new Promise((resolve) => {
+                const itrCollector = setUpInteractionCollect(promisedMsg, async itr => {
+                    if (itr.isSelectMenu()) {
+                        const selectedRound = parseInt(itr.values[0]);
+                        clearTimeout(timeOut);
+                        promisedMsg.delete();
+                        resolve(this.sendReportToCommand(roomID, selectedRound));
+                    }
                 });
-            }
-            else {
-                return true;
-            }
+
+                // timeout: done checking round
+                const timeOut = setTimeout(() => {
+                    itrCollector.stop();
+                    resolve(true);
+                }, 15 * 1000);
+            });
         }
         return false;
     }
 
+    /** Get every action done by an entity in this round */
     getStatsRoundActions(stat: Stat): Array<Action> {
-        return this.roundActionsArray.filter(a => a.from.index === stat.index);
+        return this.roundActionsArray.filter(a => a.attacker.index === stat.index);
     }
 
     drawSquareOnBattleCoords(ctx: NodeCanvasRenderingContext2D, coord: Coordinate, rgba?: RGBA) {
@@ -726,14 +739,14 @@ export class Battle {
         ctx.fillRect(canvasCoord.x, canvasCoord.y, this.pixelsPerTile, this.pixelsPerTile);
     }
 
-    // virtual actions (actions that only change the virtualStat)
+    /** Execute an attack that will only mutate the provided stat, as the attacker's, numbers */
     executeVirtualAttack(_aA: AttackAction, _virtualAttacker: Stat) {
-        const target = _aA.affected;
-        const weapon = _aA.weapon;
-        const check: TargetingError | null = this.validateTarget(_virtualAttacker, _aA.weapon, target);
+        const { target, ability, weapon } = _aA;
+        const check: TargetingError | null = this.validateTarget(_virtualAttacker, weapon, ability, target);
 
-        if (check === null) { // attack goes through
-            _virtualAttacker.weaponUses[getWeaponIndex(weapon, _virtualAttacker)]++;
+        // attack goes through
+        if (check === null) {
+            _virtualAttacker.weaponUses[getAbilityIndex(ability, _virtualAttacker)]++;
 
             _virtualAttacker.readiness -= _aA.readiness;
             handleTokens(_virtualAttacker, (p, t) => {
@@ -741,42 +754,49 @@ export class Battle {
                 _virtualAttacker[t] -= _aA[t];
             });
         }
-        else { // attack cannot go through
+        // attack cannot go through
+        else {
             log(`Failed to target. Reason: ${check.reason} (${check.value})`);
         }
+
         return check === null;
     };
-    executeVirtualMovement (_mA: MoveAction, virtualStat: Stat): boolean {
-        log(`\tExecuting virtual movement for ${virtualStat.base.class} (${virtualStat.index}).`)
-        const check: MovingError | null = this.validateMovement(virtualStat, _mA);
+    /** Execute a movement that will only mutate the provided stat, as the mover's, numbers */
+    executeVirtualMovement (_mA: MoveAction, _virtualStat: Stat): boolean {
+        log(`\tExecuting virtual movement for ${_virtualStat.base.class} (${_virtualStat.index}).`)
+        const check: MovingError | null = this.validateMovement(_virtualStat, _mA);
 
         if (check === null) {
             log("\t\tMoved!");
 
             // spending sprint to move
-            if (virtualStat.moved === true) {
+            if (_virtualStat.moved === true) {
                 handleTokens(_mA, (p, type) => {
                     if (type === "sprint") {
-                        log(`\t\t${virtualStat.index}) ${type} --${p}`)
-                        virtualStat.sprint -= p;
+                        log(`\t\t${_virtualStat.index}) ${type} --${p}`)
+                        _virtualStat.sprint -= p;
                     }
                 });
             }
+
             // other resource drain
-            virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(_mA.magnitude);
-            virtualStat.moved = true;
-            virtualStat[_mA.axis] += _mA.magnitude;
+            _virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(_mA.magnitude);
+            _virtualStat.moved = true;
+            _virtualStat[_mA.axis] += _mA.magnitude;
         }
         else {
             log(`\t\tFailed to move. Reason: ${check.reason} (${check.value})`);
         }
+
         return check === null;
     };
 
     // action reader methods
     async readActions(_givenSeconds: number, _ownerTextChannel: TextChannel, _vS: VirtualStat, _rS: Stat) {
         let possibleError: string = '';
-        const tempLootMap: Map<string, boolean> = new Map<string, boolean>(
+
+        // Map out the current battlefield's loot boxes. Entries are deleted when looted in readAction to simulate looting.
+        const tempLootMap: Map<StringCoordinate, boolean> = new Map<StringCoordinate, boolean>(
             [...this.LootMap.keys()].map(_k => {
                 return [
                     _k,
@@ -784,57 +804,34 @@ export class Battle {
                 ]
             })
         );
+
+        // set domain, replace all occurences of this actor with its virtual stat
         const domain = this.allStats().map(_s =>
             _s.index === _vS.index?
                 _vS:
                 _s
         );
-        const buttonOptions: MessageButtonOptions[] = [
-            {
-                label: "UP ⬆️",
-                style: "PRIMARY",
-                customId: "up"
-            },
-            {
-                label: "DOWN ⬇️",
-                style: "SECONDARY",
-                customId: "down"
-            },
-            {
-                label: "RIGHT ➡️",
-                style: "PRIMARY",
-                customId: "right"
-            },
-            {
-                label: "LEFT ⬅️",
-                style: "SECONDARY",
-                customId: "left"
-            },
-            {
-                label: "Undo",
-                style: "SUCCESS",
-                customId: "undo"
-            },
-        ];
-        const returnMessageInteractionMenus = async () => {
+
+        // return MessageOptions containing the entire player-info embed
+        const returnMessageInteractionMenus = async (): Promise<MessageOptions> => {
             // all available attack options
-            const selectMenuOptions: MessageSelectOptionData[] =
+            const selectMenuOptions: Array<MessageSelectOptionData> =
                 this.getAllPossibleAttacksInfo(_vS, domain).map(_attackInfo => {
-                    const weapon = _attackInfo.weapon;
+                    const weapon = _attackInfo.ability;
                     const target = _attackInfo.target;
-                    const icon = weapon.targetting.target === WeaponTarget.ally ?
+                    const icon = weapon.targetting.target === AbilityTargetting.ally ?
                         EMOJI_SHIELD :
                         EMOJI_SWORD;
                     return {
                         emoji: icon,
                         label: `${weapon.abilityName}`,
                         description: `${target.base.class} (${target.index})`,
-                        value: `${_attackInfo.attacker.index} ${getWeaponIndex(weapon, _attackInfo.attacker)} ${target.index}`,
+                        value: `${_attackInfo.attacker.index} ${getAbilityIndex(weapon, _attackInfo.attacker)} ${target.index}`,
                     }
                 });
 
             // pick up loot option
-            const coordString: string = getCoordString(_vS);
+            const coordString: StringCoordinate = getCoordString(_vS);
             if (tempLootMap.get(coordString)) {
                 this.LootMap.get(coordString)?.forEach(_L => {
                     selectMenuOptions.push({
@@ -855,18 +852,17 @@ export class Battle {
                 value: "end"
             })
 
+            // attach interaction components
             const messagePayload: MessageOptions = {
-                components: [getButtonsActionRow(buttonOptions)],
+                components: [getButtonsActionRow(Battle.MOVEMENT_BUTTONOPTIONS)],
             }
             if (selectMenuOptions.length > 0) {
                 const selectMenuActionRow = getSelectMenuActionRow(selectMenuOptions);
                 const selectMenu = selectMenuActionRow.components[0] as MessageSelectMenu;
-                
+
                 selectMenu.placeholder = "Select an Action";
                 messagePayload.components!.push(selectMenuActionRow);
             }
-
-            // attach interaction components
             const m = await this.getFullPlayerEmbedMessageOptions(_vS);
             m.components = messagePayload.components;
 
@@ -913,58 +909,61 @@ export class Battle {
                     break;
             }
         }
-        const _infoMessage = await _ownerTextChannel.send(await returnMessageInteractionMenus());
+
+        const playerInfoMessage = await _ownerTextChannel.send(await returnMessageInteractionMenus());
+
         // returns a Promise that resolves when the player is finished with their moves
         return new Promise((resolve) => {
             let executingActions: Action[] = [];
             let listener: InteractionCollector<Interaction>;
 
             const listenToQueue = () => {
-                listener = setUpInteractionCollect(_infoMessage, async itr => {
-                    if (itr.user.id === _rS.owner) {
-                        try {
-                            if (itr.isButton()) {
-                                const valid = handleButton(itr);
-                                await itr.update(await returnMessageInteractionMenus());
-                            }
-                            else if (itr.isSelectMenu()) {
-                                const valid = handleSelectMenu(itr);
-                                await itr.update(await returnMessageInteractionMenus());
-                            }
+                listener = setUpInteractionCollect(playerInfoMessage, async itr => {
+                    try {
+                        if (itr.user.id !== _rS.owner) {
+                            listenToQueue();
+                            return;
                         }
-                        catch (_err) {
-                            console.log(_err);
+
+                        if (itr.isButton()) {
+                            const valid = handleButton(itr);
+                            await itr.update(await returnMessageInteractionMenus());
+                        }
+                        else if (itr.isSelectMenu()) {
+                            const valid = handleSelectMenu(itr);
+                            await itr.update(await returnMessageInteractionMenus());
                         }
                     }
-                    else {
-                        listenToQueue();
+                    catch (_err) {
+                        console.log(_err);
                     }
                 }, 1);
             }
             const handleSelectMenu = (_sMItr: SelectMenuInteraction): boolean => {
-                const round = executingActions.length + 1;
-                // [attacker index] [weapon index] [target index]
-                const code = _sMItr.values[0];
-                const codeSections = code.split(" ");
-                let valid = false;
+                const round: Round = executingActions.length + 1;
+                const code: string = _sMItr.values[0];
+                const codeSections: Array<string> = code.split(" ");
+                let valid: boolean = false;
 
+                // attacker-index(0) ability-index(1) target-index(2)
                 if (codeSections[0] && codeSections[1] && codeSections[2]) {
-                    const attackerIndex = parseInt(codeSections[0]);
-                    const weaponIndex = parseInt(codeSections[1]);
-                    const targetIndex = parseInt(codeSections[2]);
+                    const attackerIndex: number = parseInt(codeSections[0]);
+                    const abilityIndex: number = parseInt(codeSections[1]);
+                    const targetIndex: number = parseInt(codeSections[2]);
 
-                    const attacker = _vS.index === attackerIndex?
+                    const attacker: Stat = _vS.index === attackerIndex?
                         _vS:
-                        this.allStats().find(_s => _s.index === attackerIndex);
-                    const weapon = attacker?.base.weapons[weaponIndex];
-                    const target = this.allStats().find(_s => _s.index === targetIndex);
+                        domain.find(_s => _s.index === attackerIndex)!;
+                    const ability: Ability = attacker?.base.abilities[abilityIndex];
+                    const weapon: ForgeWeapon = attacker?.equipped || attacker?.base.arsenal[0];
+                    const target: Stat = domain.find(_s => _s.index === targetIndex)!;
 
-                    if (attacker && weapon && target) {
-                        const virtualAttackAction = getAttackAction(_vS, target, weapon, target, round);
+                    if (attacker && ability && weapon && target) {
+                        const virtualAttackAction: AttackAction = getAttackAction(_vS, target, weapon, ability, target, round);
                         valid = this.executeVirtualAttack(virtualAttackAction, _vS);
                         if (valid) {
                             possibleError = '';
-                            const realAttackAction = getAttackAction(_rS, target, weapon, target, round);
+                            const realAttackAction = getAttackAction(_rS, target, weapon, ability, target, round);
                             executingActions.push(realAttackAction);
                         }
                         else {
@@ -979,14 +978,17 @@ export class Battle {
                     resolve(void 0);
                 }
                 else if (code.split(" ")?.[0] === "loot") {
-                    const lootCoordString: string = code.split(" ")?.[1];
-                    if (lootCoordString) {
-                        const c = lootCoordString.split(",");
-                        const lootAction: LootAction = getLootAction(_rS, {
-                            x: parseInt(c[0]),
-                            y: parseInt(c[1]),
-                        }, round);
-                        executingActions.push(lootAction);
+                    const lootCoordString: StringCoordinate = code.split(" ")?.[1] as StringCoordinate;
+                    const c: Array<string> | undefined = lootCoordString?.split(",");
+                    if (c?.length === 2) {
+                        let x,y;
+                        if (Number.isInteger(x = parseInt(c[0])) && Number.isInteger(y = parseInt(c[1]))) {
+                            const lootAction: LootAction = getLootAction(_rS, {
+                                x: x,
+                                y: y,
+                            }, round);
+                            executingActions.push(lootAction);
+                        }
                     }
                     listenToQueue();
                 }
@@ -1003,7 +1005,7 @@ export class Battle {
                     case "right":
                     case "down":
                     case "left":
-                        // get moveAction based on input (blackboxed)
+                        // get moveAction based on input
                         const moveAction = getMoveAction(_vS, direction, round, 1);
 
                         // record if it is first move or not
@@ -1042,6 +1044,7 @@ export class Battle {
                 return valid;
             }
 
+            // auto end turn
             setTimeout(() => {
                 if (listener) {
                     listener.stop();
@@ -1155,7 +1158,7 @@ export class Battle {
     // clash methods
     applyClash(_cR: ClashResult, _aA: AttackAction): string {
         let returnString = '';
-        const target = _aA.affected;
+        const target = _aA.target;
         
         // weapon effects
         const weaponEffect: WeaponEffect = new WeaponEffect(_aA, _cR, this);
@@ -1182,61 +1185,61 @@ export class Battle {
         const CR_damage = clashResult.damage;
         const CR_fate = clashResult.fate;
 
-        const attacker = _aA.from;
-        const target = _aA.affected;
-        const weapon = _aA.weapon;
+        const { attacker, target, weapon, ability } = _aA;
 
         const attackerClass = attacker.base.class;
         const targetClass = target.base.class;
-        switch (weapon.targetting.target) {
+        switch (ability.targetting.target) {
             // damaging
-            case WeaponTarget.enemy:
-                const hitRate =
-                    (getAcc(attacker, weapon) - getDodge(target)) < 100?
-                        getAcc(attacker, weapon) - getDodge(target):
-                        100;
-                const critRate =
-                    (getAcc(attacker, weapon) - getDodge(target)) * 0.1 + getCrit(attacker, weapon);
+            case AbilityTargetting.enemy:
+                if (weapon) {
+                    const hitRate =
+                        (getAcc(attacker, ability) - getDodge(target)) < 100 ?
+                            getAcc(attacker, ability) - getDodge(target) :
+                            100;
+                    const critRate =
+                        (getAcc(attacker, ability) - getDodge(target)) * 0.1 + getCrit(attacker, ability);
 
-                // save accolades
-                dealWithAccolade(clashResult, attacker, target);
+                    // save accolades
+                    dealWithAccolade(clashResult, attacker, target);
 
-                // reportString
-                returnString +=
-                    `**${attackerClass}** (${attacker.index}) ⚔️ **${targetClass}** (${target.index})
-                    __*${weapon.abilityName}*__ ${hitRate}% (${roundToDecimalPlace(critRate)}%)
+                    // reportString
+                    returnString +=
+                        `**${attackerClass}** (${attacker.index}) ⚔️ **${targetClass}** (${target.index})
+                    __*${ability.abilityName}*__ ${hitRate}% (${roundToDecimalPlace(critRate)}%)
                     **${CR_fate}!** -**${roundToDecimalPlace(CR_damage)}** (${roundToDecimalPlace(clashResult.u_damage)})
                     [${roundToDecimalPlace(target.HP)} => ${roundToDecimalPlace(target.HP - CR_damage)}]`
-                if (target.HP > 0 && target.HP - CR_damage <= 0) {
-                    returnString += "\n__**KILLING BLOW!**__";
-                }
+                    if (target.HP > 0 && target.HP - CR_damage <= 0) {
+                        returnString += "\n__**KILLING BLOW!**__";
+                    }
 
-                // lifesteal
-                const LS = getLifesteal(attacker, weapon);
-                if (LS > 0) {
-                    returnString += "\n" + this.heal(attacker, CR_damage * LS);
-                }
+                    // lifesteal
+                    const LS = getLifesteal(attacker, ability);
+                    if (LS > 0) {
+                        returnString += "\n" + this.heal(attacker, CR_damage * LS);
+                    }
 
-                // search for "Labouring" status
-                const labourStatus = arrayGetLargestInArray(this.getStatus(target, "labouring"), _s => _s.value);
-                if (labourStatus) {
-                    labourStatus.value += CR_damage;
-                }
+                    // search for "Labouring" status
+                    const labourStatus = arrayGetLargestInArray(this.getStatus(target, "labouring"), _s => _s.value);
+                    if (labourStatus) {
+                        labourStatus.value += CR_damage;
+                    }
 
-                // apply damage
-                target.HP -= CR_damage;
+                    // apply damage
+                    target.HP -= CR_damage;
+                }
                 break;
 
             // non-damaging
-            case WeaponTarget.ally:
+            case AbilityTargetting.ally:
                 if (attacker.index === target.index) {
                     returnString +=
-                        `**${attackerClass}** (${attacker.index}) Activates __*${weapon.abilityName}*__`;
+                        `**${attackerClass}** (${attacker.index}) Activates __*${ability.abilityName}*__`;
                 }
                 else {
                     returnString +=
                         `**${attackerClass}** (${attacker.index}) 🛡️ **${targetClass}** (${target.index})
-                    __*${weapon.abilityName}*__`;
+                    __*${ability.abilityName}*__`;
                 }
                 // returningString += abilityEffect();
                 break;
@@ -1244,54 +1247,53 @@ export class Battle {
         return returnString;
     }
     clash(_aA: AttackAction): ClashResult {
-        log(`\tClash: ${_aA.from.base.class} => ${_aA.affected.base.class}`);
+        log(`\tClash: ${_aA.attacker.base.class} => ${_aA.target.base.class}`);
         let fate: ClashResultFate = 'Miss';
-        let damage: number, u_damage: number = 0;
+        let damage: number = 0, u_damage: number = 0;
 
-        const attacker = _aA.from;
-        const weapon = _aA.weapon;
-        const target = _aA.affected;
-
-        // define constants
-        const hitChance = getAcc(attacker, weapon) - getDodge(target);
-        const crit = getCrit(attacker, weapon);
-        const minDamage = getDamage(attacker, weapon)[0];
-        const maxDamage = getDamage(attacker, weapon)[1];
-        const prot = getProt(target);
+        const { attacker, target, weapon, ability } = _aA;
 
         // roll
         const hit = uniformRandom(1, 100);
+        if (weapon) {
+            // define constants
+            const hitChance = getAcc(attacker, ability) - getDodge(target);
+            const crit = getCrit(attacker, ability);
+            const minDamage = getDamage(attacker, ability).min;
+            const maxDamage = getDamage(attacker, ability).max;
+            const prot = getProt(target);
 
-        // see if it crits
-        if (hit <= hitChance) {
-            // crit
-            if (hit <= hitChance * 0.1 + crit) {
-                u_damage = (uniformRandom(average(minDamage, maxDamage), maxDamage)) * 2;
-                fate = "criticalHit";
+            // see if it crits
+            if (hit <= hitChance) {
+                // crit
+                if (hit <= hitChance * 0.1 + crit) {
+                    u_damage = (uniformRandom(average(minDamage, maxDamage), maxDamage)) * 2;
+                    fate = "criticalHit";
+                }
+                // hit
+                else {
+                    u_damage = uniformRandom(minDamage, maxDamage);
+                    fate = "Hit";
+                }
             }
-            // hit
-            else {
-                u_damage = uniformRandom(minDamage, maxDamage);
-                fate = "Hit";
+
+            u_damage = clamp(u_damage, 0, 1000);
+
+            // apply protections
+            damage = clamp(u_damage * (1 - (prot * target.shield / 3)), 0, 100);
+
+            // reduce damage by shielding
+            let shieldingStatus = arrayGetLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"), _item => _item.value);
+            while (damage > 0 && shieldingStatus && shieldingStatus.value > 0) {
+                const shieldValue = shieldingStatus.value;
+                log(`reduced ${shieldValue} damage!`);
+                shieldingStatus.value -= damage;
+                damage -= shieldValue;
+                if (damage < 0) {
+                    damage = 0;
+                }
+                shieldingStatus = arrayGetLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"), _item => _item.value);
             }
-        }
-
-        u_damage = clamp(u_damage, 0, 1000);
-
-        // apply protections
-        damage = clamp(u_damage * (1 - (prot * target.shield / 3)), 0, 100);
-
-        // reduce damage by shielding
-        let shieldingStatus = arrayGetLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"), _item => _item.value);
-        while (damage > 0 && shieldingStatus && shieldingStatus.value > 0) {
-            const shieldValue = shieldingStatus.value;
-            log(`reduced ${shieldValue} damage!`);
-            shieldingStatus.value -= damage;
-            damage -= shieldValue;
-            if (damage < 0) {
-                damage = 0;
-            }
-            shieldingStatus = arrayGetLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"), _item => _item.value);
         }
 
         return {
@@ -1303,7 +1305,7 @@ export class Battle {
     }
 
     // loot
-    loot(_owner: OwnerID, _lootCoordString: string): MessageEmbed | null {
+    loot(_owner: OwnerID, _lootCoordString: StringCoordinate): MessageEmbed | null {
         const allLoot: Array<Loot> | null = this.LootMap.get(_lootCoordString) || null;
         if (allLoot && allLoot.length > 0) {
             const lootEmbed = new MessageEmbed({
@@ -1396,7 +1398,7 @@ export class Battle {
     }
 
     getGreaterPrio (a: Action) {
-        return (1000 * (20 - a.round)) + (a.from.readiness - a.readiness);
+        return (1000 * (20 - a.round)) + (a.attacker.readiness - a.readiness);
     };
     greaterPriorSort(_actions: Action[]) {
         const sortedActions = _actions.sort((a, b) => this.getGreaterPrio(b) - this.getGreaterPrio(a));
@@ -1420,16 +1422,16 @@ export class Battle {
 
         const executeAuto = (_s: Stat) => {
             const attacker = _s;
-            const target = _s.index === _action.from.index?
-                _action.affected:
-                _action.from;
+            const target = _s.index === _action.attacker.index?
+                _action.target:
+                _action.attacker;
 
-            _s.base.autoWeapons.forEach(_w => {
-                const weaponTarget: WeaponTarget = _w.targetting.target;
+            _s.base.autoWeapons.forEach(_a => {
+                const weaponTarget: AbilityTargetting = _a.targetting.target;
                 const intendedVictim: Stat | null =
-                    weaponTarget === WeaponTarget.ally ?
+                    weaponTarget === AbilityTargetting.ally ?
                         // weapon is intended to target friendly units
-                        target.team === attacker.team && _w.targetting.AOE !== "self" ?
+                        target.team === attacker.team && _a.targetting.AOE !== "self" ?
                             target : // if the action is targetting a friendly unit, use the effect on them.
                             attacker : // if the action is targetting an enemy, use it on self
                         // weapon is intended to target enemies
@@ -1438,9 +1440,10 @@ export class Battle {
                             target; // if the targetted is an enemy, unleash the autoWeapon.
 
                 if (intendedVictim) {
-                    const selfActivatingAA: AttackAction = getAttackAction(attacker, intendedVictim, _w, {
-                        x: intendedVictim.x, y: intendedVictim.y
-                    }, round);
+                    const selfActivatingAA: AttackAction =
+                        getAttackAction(attacker, intendedVictim, null, _a, {
+                            x: intendedVictim.x, y: intendedVictim.y
+                        }, round);
 
                     this.executeAttackAction(selfActivatingAA);
                     // totalString.push(weaponEffect.activate());
@@ -1450,9 +1453,9 @@ export class Battle {
 
         let totalString: string[] = [];
 
-        executeAuto(_action.from);
-        if (_action.from.index !== _action.affected.index) {
-            executeAuto(_action.affected);
+        executeAuto(_action.attacker);
+        if (_action.attacker.index !== _action.target.index) {
+            executeAuto(_action.target);
         }
 
         return totalString.join("\n");
@@ -1468,13 +1471,13 @@ export class Battle {
         }
     }
     executeOneAction(_action: Action) {
-        log(`\tExecuting action: ${_action.type}, ${_action.from.base.class} => ${_action.affected.base.class}`)
+        log(`\tExecuting action: ${_action.type}, ${_action.attacker.base.class} => ${_action.target.base.class}`)
         const mAction = _action as MoveAction;
         const aAction = _action as AttackAction;
         const lAction = _action as LootAction;
 
-        const actionAffected = _action.affected;
-        const actionFrom = _action.from;
+        const actionAffected = _action.target;
+        const actionFrom = _action.attacker;
         const round = _action.round;
 
         // activate autoWeapons
@@ -1515,8 +1518,8 @@ export class Battle {
     }
     executeSingleTargetAttackAction(_aA: AttackAction) {
         const eM = this.validateTarget(_aA);
-        const attacker = _aA.from;
-        const target = _aA.affected;
+        const attacker = _aA.attacker;
+        const target = _aA.target;
         let string = '';
 
         if (eM) {
@@ -1534,40 +1537,45 @@ export class Battle {
         return string;
     };
     executeAOEAttackAction(_aA: AttackAction, inclusive = true) {
-        const center = _aA.coordinate;
-        const weapon = _aA.weapon;
-        const attacker = _aA.from;
-
-        const enemiesInRadius = this.findEntities_radius(center, weapon.range[2] || weapon.range[1], inclusive);
         let string = '';
-        for (let i = 0; i < enemiesInRadius.length; i++) {
-            const singleTargetAA = getAttackAction(attacker, enemiesInRadius[i], weapon, enemiesInRadius[i], _aA.round);
-            const SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
-            string += SAResult;
-            if (enemiesInRadius.length > 1 && i !== enemiesInRadius.length - 1) {
-                string += "\n";
+        const center = _aA.coordinate;
+        const { weapon, ability, attacker, target } = _aA;
+        const blastRadius=
+            ability.range?.max||
+            weapon?.range.max;
+
+        if (blastRadius) {
+            const enemiesInRadius = this.findEntities_radius(center, blastRadius, inclusive);
+            for (let i = 0; i < enemiesInRadius.length; i++) {
+                const singleTargetAA = getAttackAction(attacker, enemiesInRadius[i], weapon, ability, enemiesInRadius[i], _aA.round);
+                const SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
+                string += SAResult;
+                if (SAResult && enemiesInRadius.length > 1 && i !== enemiesInRadius.length - 1) {
+                    string += "\n";
+                }
             }
         }
         return string;
     };
     executeLineAttackAction(_aA: AttackAction) {
-        const target = _aA.affected;
-        const attacker = _aA.from;
+        const { attacker, target, ability, weapon, round } = _aA;
 
         const enemiesInLine = this.findEntities_inLine(attacker, target);
         let string = '';
         for (let i = 0; i < enemiesInLine.length; i++) {
-            const singleTargetAA = getAttackAction(attacker, target, _aA.weapon, enemiesInLine[i], _aA.round);
+            const singleTargetAA = getAttackAction(attacker, target, weapon, ability, enemiesInLine[i], round);
             const SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
             string += SAResult;
         }
         return string;
     };
     executeAttackAction(_aA: AttackAction): AttackAction {
+        const { attacker, target, ability, readiness, round } = _aA;
+
         let attackResult = "";
-        switch (_aA.weapon.targetting.AOE) {
+        switch (ability.targetting.AOE) {
             case "self":
-                _aA.affected = _aA.from;
+                _aA.target = _aA.attacker;
             case "single":
             case "touch":
                 attackResult = this.executeSingleTargetAttackAction(_aA);
@@ -1587,31 +1595,31 @@ export class Battle {
         }
 
         // save attack results as reportString
-        this.appendReportString(_aA.from, _aA.round, attackResult);
-        if (_aA.from.index !== _aA.affected.index) {
-            this.appendReportString(_aA.affected, _aA.round, attackResult);
+        this.appendReportString(attacker, round, attackResult);
+        if (attacker.index !== target.index) {
+            this.appendReportString(target, round, attackResult);
         }
 
         // expend resources
         _aA.executed = true;
-        _aA.from.readiness -= _aA.readiness;
-        _aA.from.weaponUses[getWeaponIndex(_aA.weapon, _aA.from)]++;
-        handleTokens(_aA.from, (p, t) => {
-            log(`\t\t${_aA.from.index}) ${t} --${_aA[t]}`)
-            _aA.from[t] -= _aA[t]
+        attacker.readiness -= readiness;
+        attacker.weaponUses[getAbilityIndex(ability, attacker)]++;
+        handleTokens(attacker, (p, t) => {
+            log(`\t\t${attacker.index}) ${t} --${_aA[t]}`)
+            attacker[t] -= _aA[t]
         });
 
         return _aA;
     }
     executeMoveAction(_mA: MoveAction): MoveAction {
-        const stat = _mA.affected;
+        const stat = _mA.target;
         const axis = _mA.axis;
 
         const possibleSeats: Array<Coordinate> = this.getAvailableSpacesAhead(_mA);
         const furthestCoord: Coordinate = arrayGetLastElement(possibleSeats);
 
         const newMagnitude: number = furthestCoord?
-            getDistance(furthestCoord, _mA.affected) * Math.sign(_mA.magnitude):
+            getDistance(furthestCoord, _mA.target) * Math.sign(_mA.magnitude):
             0;
 
         _mA.magnitude = newMagnitude;
@@ -1622,7 +1630,7 @@ export class Battle {
         
         // console.log(`${_mA.from.base.class} (${_mA.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
 
-        const affected = _mA.affected;
+        const affected = _mA.target;
         _mA.executed = true;
         affected.readiness -= _mA.readiness;
         handleTokens(affected, (p, t) => {
@@ -1738,7 +1746,7 @@ export class Battle {
 
     /** Draws actions arrows based on provided actions */
     async getActionArrowsCanvas(_actions: Action[]): Promise<Canvas> {
-        log(_actions.map(_a => `${_a.from.base.class} => ${_a.affected.base.class}`))
+        log(_actions.map(_a => `${_a.attacker.base.class} => ${_a.target.base.class}`))
         const drawAttackAction = async (_aA: AttackAction, _fromBattleCoord: Coordinate, _toBattleCoord: Coordinate, _width: number = 5, _offset: Coordinate = {
             x: 0,
             y: 0
@@ -1755,7 +1763,7 @@ export class Battle {
             ctx.strokeStyle = stringifyRGBA(normaliseRGBA(style));
 
             // draw tracing path
-            const victimWithinDistance = checkWithinDistance(_aA.weapon, getDistance(_aA.from, _aA.affected));
+            const victimWithinDistance = checkWithinDistance(_aA, getDistance(_aA.attacker, _aA.target));
             ctx.beginPath();
             ctx.strokeStyle = victimWithinDistance ?
                 "red" :
@@ -1771,7 +1779,7 @@ export class Battle {
 
             // draw hit
             if (victimWithinDistance) {
-                const hitImage = _aA.weapon.targetting.target === WeaponTarget.ally ?
+                const hitImage = _aA.ability.targetting.target === AbilityTargetting.ally ?
                     await getFileImage('./images/Shield.png') :
                     await getFileImage('./images/Hit.png');
                 const imageWidth = this.pixelsPerTile * (0.7 * _width / (this.pixelsPerTile / 3));
@@ -1879,62 +1887,66 @@ export class Battle {
         
         for (let i = 0; i < actions.length; i++) {
             const action = actions[i];
-            const attackerIndex = action.from.index;
-            const victimIndex = action.affected.index;
+            const attackerIndex = action.attacker.index;
+            const victimIndex = action.target.index;
             const victim_beforeCoords = 
                 virtualCoordsMap.get(victimIndex)||
-                virtualCoordsMap.set(victimIndex, { x: action.affected.x, y: action.affected.y }).get(victimIndex)!;
+                virtualCoordsMap.set(victimIndex, { x: action.target.x, y: action.target.y }).get(victimIndex)!;
             const attacker_beforeCoords =
                 virtualCoordsMap.get(attackerIndex) ||
-                virtualCoordsMap.set(attackerIndex, { x: action.from.x, y: action.from.y }).get(attackerIndex)!;
+                virtualCoordsMap.set(attackerIndex, { x: action.attacker.x, y: action.attacker.y }).get(attackerIndex)!;
 
             await dealWithAction(action,
                 async (aA: AttackAction) => {
-                    const weapon = aA.weapon;
-                    switch (weapon.targetting.AOE) {
-                        case "self":
-                        case "single":
-                        case "touch":
-                            appendGraph(aA, attacker_beforeCoords, victim_beforeCoords, i+1);
-                            break;
+                    const attackRange = getAttackRange(aA);
+                    if (attackRange) {
+                        const { ability } = aA;
+                        switch (ability.targetting.AOE) {
+                            case "self":
+                            case "single":
+                            case "touch":
+                                appendGraph(aA, attacker_beforeCoords, victim_beforeCoords, i + 1);
+                                break;
 
-                        case "circle":
-                        case "selfCircle":
-                            // coordinate is either 
-                            const epicenterCoord = weapon.targetting.AOE === "circle" ?
-                                aA.coordinate:
-                                victim_beforeCoords;
-                            const affecteds = this.findEntities_radius(
-                                getNewObject(epicenterCoord, {index: victimIndex}), // assign victim
-                                weapon.range[2],
-                                weapon.targetting.AOE === "circle"); // if circle: damages epicenter as well
+                            case "circle":
+                            case "selfCircle":
+                                // coordinate is either 
+                                const epicenterCoord = ability.targetting.AOE === "circle" ?
+                                    aA.coordinate :
+                                    victim_beforeCoords;
+                                const affecteds = this.findEntities_radius(
+                                    getNewObject(epicenterCoord, { index: victimIndex }), // assign victim
+                                    attackRange.radius,
+                                    ability.targetting.AOE === "circle" // if circle: damages epicenter as well
+                                );
 
-                            for (let i = 0; i < affecteds.length; i++) {
-                                const af = affecteds[i];
-                                // ** technically from "action.from", but for the sake of visual effects, the epicenter
-                                // coords will be fed instead.
-                                const singleTarget: AttackAction = getNewObject(aA, { from: epicenterCoord, affected: af });
-                                appendGraph(singleTarget, epicenterCoord, af, i+1);
-                            }
-                            if (weapon.targetting.AOE === "circle") {
-                                // show AOE throw trajectory
-                                appendGraph(aA, attacker_beforeCoords, epicenterCoord, i+1);
-                            }
+                                for (let i = 0; i < affecteds.length; i++) {
+                                    const af = affecteds[i];
+                                    // ** technically from "action.from", but for the sake of visual effects, the epicenter
+                                    // coords will be fed instead.
+                                    const singleTarget: AttackAction = getNewObject(aA, { from: epicenterCoord, affected: af });
+                                    appendGraph(singleTarget, epicenterCoord, af, i + 1);
+                                }
+                                if (ability.targetting.AOE === "circle") {
+                                    // show AOE throw trajectory
+                                    appendGraph(aA, attacker_beforeCoords, epicenterCoord, i + 1);
+                                }
 
-                            // draw explosion range
-                            for (const coord of getCoordsWithinRadius(weapon.range[2], epicenterCoord, true)) {
-                                this.drawSquareOnBattleCoords(ctx, coord, {
-                                    r: 255,
-                                    b: 0,
-                                    g: 0,
-                                    alpha: 0.3
-                                });
-                            }
-                            break;
+                                // draw explosion range
+                                for (const coord of getCoordsWithinRadius(attackRange.radius, epicenterCoord, true)) {
+                                    this.drawSquareOnBattleCoords(ctx, coord, {
+                                        r: 255,
+                                        b: 0,
+                                        g: 0,
+                                        alpha: 0.3
+                                    });
+                                }
+                                break;
 
-                        case "line":
-                            throw new Error("Line-drawing not implemented");
-                            break;
+                            case "line":
+                                throw new Error("Line-drawing not implemented");
+                                break;
+                        }
                     }
                 },
                 (mA: MoveAction) => {
@@ -2153,8 +2165,8 @@ export class Battle {
         const allStats = this.allStats();
         const ignore: Team[] = ["block"];
         const targetNotInIgnore = (c:Stat) => c.team && !ignore.includes(c.team);
-        if (_weapon && _weapon.targetting.target === WeaponTarget.enemy) ignore.push("player");
-        if (_weapon && _weapon.targetting.target === WeaponTarget.ally) ignore.push("enemy");
+        if (_weapon && _weapon.targetting.target === AbilityTargetting.enemy) ignore.push("player");
+        if (_weapon && _weapon.targetting.target === AbilityTargetting.ally) ignore.push("enemy");
 
         // 0. self target
         if (_weapon && (_weapon.targetting.AOE === "selfCircle" || _weapon.targetting.AOE === "self")) {
@@ -2299,26 +2311,28 @@ export class Battle {
     }
 
     // validation
-    validateTarget(_attacker: Stat, _weapon: Ability, _target: Stat): TargetingError | null;
-    validateTarget(_aA: AttackAction, _?: null, __?: null): TargetingError | null;
-    validateTarget(_stat_aa: Stat | AttackAction, _weapon_null?: Ability | null, _target_null?: Stat | null): TargetingError | null {
+    validateTarget(_attacker: Stat, _weapon: ForgeWeapon | null, _ability: Ability, _target: Stat): TargetingError | null;
+    validateTarget(_aA: AttackAction): TargetingError | null;
+    validateTarget(_stat_aa: Stat | AttackAction, _weapon?: ForgeWeapon | null, _ability?: Ability, _target?: Stat): TargetingError | null {
         const eM: TargetingError = {
             reason: "",
             value: null,
         };
 
-        let attackerStat, targetStat, weapon;
+        let attackerStat, targetStat, weapon, ability;
         if ((_stat_aa as Stat).index === undefined) // is aa
         {
             const aa = _stat_aa as AttackAction;
-            attackerStat = aa.from;
-            targetStat = aa.affected;
+            attackerStat = aa.attacker;
+            targetStat = aa.target;
             weapon = aa.weapon;
+            ability = aa.ability;
         }
         else { // is stat
             attackerStat = _stat_aa as Stat;
-            targetStat = _target_null as Stat;
-            weapon = _weapon_null as Ability;
+            targetStat = _target!;
+            weapon = _weapon!;
+            ability = _ability!;
         }
 
         // ~~~~~~ UNIVERSAL ~~~~~~ //
@@ -2343,7 +2357,14 @@ export class Battle {
             return eM;
         }
         // targetting a teammate without pvp on
-        if (weapon.targetting.target === WeaponTarget.enemy && weapon.targetting.AOE !== "self" && weapon.targetting.AOE !== "selfCircle" && attackerStat.team === targetStat.team && (!targetStat.pvp || !attackerStat.pvp)) {
+        if (
+            ability.targetting.target === AbilityTargetting.enemy&&
+            ability.targetting.AOE !== "self"&&
+            ability.targetting.AOE !== "selfCircle"&&
+            attackerStat.team === targetStat.team&&
+            (!targetStat.pvp || !attackerStat.pvp)
+        )
+        {
             eM.reason = "Attempted to attack a teammate without pvp on.";
             return eM;
         }
@@ -2356,29 +2377,27 @@ export class Battle {
         }
 
         // tokens
-        if (attackerStat.sword < weapon.sword) {
+        if (attackerStat.sword < ability.sword) {
             eM.reason = "Not enough Sword (🗡️) tokens.";
             eM.value = attackerStat.sword;
             return eM;
 
         }
-        if (attackerStat.shield < weapon.shield) {
+        if (attackerStat.shield < ability.shield) {
             eM.reason = "Not enough Shield (🛡️) tokens.";
             eM.value = attackerStat.shield;
             return eM;
-
         }
-        if (attackerStat.sprint < weapon.sprint) {
+        if (attackerStat.sprint < ability.sprint) {
             eM.reason = "Not enough Sprint (👢) tokens.";
             eM.value = attackerStat.sprint;
             return eM;
-
         }
 
         // weapon uses
-        if (weapon.UPT <= getWeaponUses(weapon, attackerStat)) {
-            eM.reason = `You can only use this ability ${weapon.UPT} time(s) per turn.`;
-            eM.value = getWeaponUses(weapon, attackerStat);
+        if (ability.UPT <= getWeaponUses(ability, attackerStat)) {
+            eM.reason = `You can only use this ability ${ability.UPT} time(s) per turn.`;
+            eM.value = getWeaponUses(ability, attackerStat);
             return eM;
         }
 
@@ -2395,16 +2414,20 @@ export class Battle {
         }
 
         // only valid errors if weapon is not a self-target
-        if (weapon.targetting.AOE !== "selfCircle" && weapon.targetting.AOE !== "self" && weapon.targetting.AOE !== "touch") {
+        if (
+            ability.targetting.AOE !== "selfCircle"&&
+            ability.targetting.AOE !== "self"&&
+            ability.targetting.AOE !== "touch"
+        ) {
             // out of range
-            if (getDistance(attackerStat, targetStat) > weapon.range[1] || getDistance(attackerStat, targetStat) < weapon.range[0]) {
+            if (getDistance(attackerStat, targetStat) > weapon.range.max || getDistance(attackerStat, targetStat) < weapon.range.min) {
                 eM.reason = "Target is too far or too close.";
                 eM.value = roundToDecimalPlace(getDistance(attackerStat, targetStat), 1);
                 return eM;
             }
 
             // invalid self-targeting
-            if (weapon.range[0] !== 0 && targetStat.index === attackerStat.index) {
+            if (weapon.range.min !== 0 && targetStat.index === attackerStat.index) {
                 eM.reason = "Cannot target self.";
                 return eM;
             }
@@ -2460,7 +2483,7 @@ export class Battle {
     }
 
     dropDrops(_s: Stat) {
-        const coordString: string = getCoordString(_s);
+        const coordString: StringCoordinate = getCoordString(_s);
         if (_s.drops) {
             const lootBox: Array<Loot> =
                 this.LootMap.get(coordString) ||

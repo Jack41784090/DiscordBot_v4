@@ -1,4 +1,4 @@
-import { BaseStat, Class, defaultAvatarURL, EMOJI_CROSS, EMOJI_WHITEB, GetIconOptions, OwnerID, Settings, Stat, UserData, } from "../typedef"
+import { BaseStat, Class, defaultAvatarURL, EMOJI_CROSS, EMOJI_WHITEB, ForgeWeapon, GetIconOptions, OwnerID, Settings, Stat, UserData, } from "../typedef"
 import { MessageSelectOptionData, User } from "discord.js";
 
 import * as admin from 'firebase-admin'
@@ -12,7 +12,8 @@ import { BotClient } from "..";
 import fs from 'fs';
 import { ImgurClient } from 'imgur';
 import { Item } from "./Item";
-import { itemData } from "../jsons";
+import { itemData, universalWeaponsData } from "../jsons";
+import { InteractionEventManager } from "./InteractionEventManager";
 
 // firebase login
 admin.initializeApp({
@@ -142,6 +143,9 @@ export function getDefaultUserData(_user?: User) {
         party: [id],
         settings: getDefaultSettings(),
         equippedClass: "Fighter" as Class,
+        equippedWeapon: [
+            getNewObject(universalWeaponsData.Unarmed) as ForgeWeapon
+        ],
         welfare: 1,
         inventory: [],
     };
@@ -335,4 +339,9 @@ export async function saveBattle(battle: Battle) {
             coordStat: CS,
         });
     }
+}
+
+export async function getEquippedForgeWeapon(_id: OwnerID): Promise<Array<ForgeWeapon>> {
+    const userData: UserData = InteractionEventManager.getInstance().userData(_id) || await getUserData(_id);
+    return userData.equippedWeapon;
 }

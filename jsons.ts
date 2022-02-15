@@ -4,7 +4,8 @@ import classData from "./data/classData.json";
 import dungeonData from "./data/dungeonData.json";
 import enemiesData from "./data/enemiesData.json";
 import materialData from "./data/materialData.json";
-import universalWeaponsData from "./data/universalWeaponsData.json";
+import universalAbilitiesData from "./data/universalAbilitiesData.json";
+import universalWeaponsData from "./data/universalWeaponData.json";
 import interactionEventData from './data/interactionEventData.json';
 import forgeWeaponData from "./data/forgeWeaponData.json";
 
@@ -15,6 +16,7 @@ export {
     dungeonData,
     enemiesData,
     materialData,
+    universalAbilitiesData,
     universalWeaponsData,
     interactionEventData,
     forgeWeaponData,

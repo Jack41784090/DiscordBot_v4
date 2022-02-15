@@ -3,11 +3,11 @@ import { Battle } from "./classes/Battle";
 import { Item } from "./classes/Item";
 import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
-import { areasData, classData, dungeonData, enemiesData, itemData, materialData, interactionEventData, forgeWeaponData } from "./jsons";
+import { areasData, classData, dungeonData, enemiesData, itemData, materialData, interactionEventData, forgeWeaponData, universalWeaponsData, universalAbilitiesData } from "./jsons";
 
 export type Round = number;
 export type Priority = number;
-export type StringCoordinate = string;
+export type StringCoordinate = `${number},${number}`;
 export type OwnerID = string;
 
 export const COMMAND_CALL = ";"
@@ -118,8 +118,9 @@ export interface MainStat {
 }
 export interface BaseStat extends MainStat {
     class: Class | EnemyClass,
+    arsenal: Array<ForgeWeapon>,
     maxMove: number,
-    weapons: Array<Ability>,
+    abilities: Array<Ability>,
     autoWeapons: Array<Ability>,
     iconURL: string,
     botType: BotType,
@@ -127,6 +128,8 @@ export interface BaseStat extends MainStat {
 }
 export interface Stat extends Coordinate {
     base: BaseStat,
+
+    equipped: ForgeWeapon,
 
     name: string,
 
@@ -173,8 +176,8 @@ export enum NumericDirection {
 export interface Action {
     round: Round,
     priority: Priority,
-    from: Stat,
-    affected: Stat,
+    attacker: Stat,
+    target: Stat,
     readiness: number,
     type: ActionType
     executed: boolean,
@@ -184,7 +187,8 @@ export interface Action {
     sprint: number,
 }
 export interface AttackAction extends Action {
-    weapon: Ability,
+    weapon: ForgeWeapon | null,
+    ability: Ability,
     coordinate: Coordinate,
 }
 export interface MoveAction extends Action {
@@ -275,6 +279,7 @@ export interface Settings {
 export interface UserData {
     classes: Array<Class>,
     equippedClass: Class,
+    equippedWeapon: Array<ForgeWeapon>,
     money: number,
     name: string,
     party: Array<string>,
@@ -301,36 +306,57 @@ export interface AIFunction {
     (_s: Stat, _bd: Battle): void;
 }
 
-// weapons
-export interface WeaponMainStat {
-    range: Array<number>,
-    accuracy: number,
-    damageRange: [number, number],
-    speed: number,
-    criticalHit: number,
-    lifesteal: number,
-}
-export enum WeaponTarget {
+// ABILITIES
+export enum AbilityTargetting {
     ally,
     enemy,
 }
-export type WeaponAOE = "single" | "self" | "circle" | "selfCircle" | "touch" | "line"
-export interface Ability extends WeaponMainStat {
-    abilityName: AbilityName,
+export type AbilityAOE = "single" | "self" | "circle" | "selfCircle" | "touch" | "line"
+export interface Ability {
+    // attack type
+    type: "melee" | "ranged" | "null",
+
+    // name
+    abilityName: AbilityName | UniversalAbilityName,
+    
+    // costs
     readinessCost: number,
     sword: number,
     shield: number,
     sprint: number,
+    
+    // CD and use-per-turn
     cooldown: number,
     UPT: number,
+    
+    // description
     desc: string | null,
+    
+    // scalings to weapon
+    damageScale: number,
+    speedScale: number,
+    staminaScale: number,
+    range?: {
+        min: number,
+        max: number,
+        radius: number,
+    },
+
+    // flat increases
+    bonus: {
+        damage: number,
+        accuracy: number,
+        criticalHit: number,
+        lifesteal: number,
+    }
+    
+    // targetting
     targetting: {
-        target: WeaponTarget,
-        AOE: WeaponAOE
+        target: AbilityTargetting,
+        AOE: AbilityAOE
     },
 }
-export type UniversalWeaponName =
-    "Reckless"
+export type UniversalAbilityName = keyof typeof universalAbilitiesData;
 export type AbilityName =
     // Fighter
     "Passive: Endless Labour" |
@@ -356,13 +382,44 @@ export type AbilityName =
     // Victoria
     "Slice"|
     "Angelic Blessings"
-export interface WeaponEffectFunction {
+    
+export interface AbilityEffectFunction {
     (_aA: Action, _cR: ClashResult, _bd: Battle): string;
 }
 export interface PossibleAttackInfo {
     attacker: Stat,
     target: Stat,
-    weapon: Ability,
+    ability: Ability,
+}
+export interface AttackRange {
+    min: number,
+    max: number,
+    radius: number,
+}
+export interface DamageRange {
+    min: number,
+    max: number,
+}
+
+// FORGE WEAPONS
+export type ForgeWeaponPart =
+    'blade' |
+    'guard' |
+    'shaft'
+export type ForgeWeaponType = keyof typeof forgeWeaponData;
+export interface ForgeWeapon {
+    name: string,
+    weaponType: ForgeWeaponType,
+    type: "melee" | "ranged" | "null",
+                                        // material dependent
+    range: AttackRange,                 // x
+    accuracy: number,                   // o
+    damageRange: DamageRange,           // o
+    criticalHit: number,                // o
+    lifesteal: number,                  // o
+
+    readinessCost: number,              // o
+    staminaCost: number,                // o
 }
 
 // classes
@@ -438,15 +495,4 @@ export type PathFindMethod = "lowest" | "highest";
 export type InteractionEventType = keyof typeof interactionEventData;
 export interface InteractionEventOptions {
     battle?: Battle
-}
-
-// FORGE
-export type ForgeWeaponPart =
-    'blade'|
-    'guard'|
-    'shaft'
-export type ForgeWeaponType = keyof typeof forgeWeaponData;
-export interface ForgeWeapon {
-    weaponType: ForgeWeaponType,
-
 }

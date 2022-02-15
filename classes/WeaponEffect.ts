@@ -1,14 +1,14 @@
-import { Action, AttackAction, ClashResult, Coordinate, Direction, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, WeaponEffectFunction, AbilityName } from "../typedef";
+import { Action, AttackAction, ClashResult, Coordinate, Direction, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, AbilityEffectFunction, AbilityName, UniversalAbilityName } from "../typedef";
 import { Battle } from "./Battle";
 import { StatusEffect } from "./StatusEffect";
 import { clamp, directionToMagnitudeAxis, getBaseEnemyStat, getNewObject, getStat, log, numericDirectionToDirection, roundToDecimalPlace } from "./Utility";
 
-const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
+const statusEffect_effects = new Map<AbilityName | UniversalAbilityName, AbilityEffectFunction>([
     [
         "Obliterate",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             if (_cR.fate !== "Miss" && _cR.damage > 14) {
-                _action.affected.shield--;
+                _action.target.shield--;
                 return `🪓 Shield break!`
             }
             return "";
@@ -18,12 +18,12 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         "Endure",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "";
-            const affected = _action.affected;
+            const affected = _action.target;
             const labourStatus = _bd.getStatus(affected, "labouring");
             if (labourStatus[0]) {
                 const damageTaken = labourStatus[0].value;
                 returnString += _bd.heal(affected, damageTaken * 0.33);
-                affected.statusEffects.push(new StatusEffect("protected", 2, damageTaken * 0.33, _action.from, _action.affected, _bd));
+                affected.statusEffects.push(new StatusEffect("protected", 2, damageTaken * 0.33, _action.attacker, _action.target, _bd));
                 labourStatus[0].value -= damageTaken * 0.33;
 
                 returnString += `\n__Endure__: Shielded! (**${roundToDecimalPlace(damageTaken * 0.33)}**)`;
@@ -44,7 +44,7 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
     [
         "Passive: Endless Labour",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
-            const affected = _action.from;
+            const affected = _action.attacker;
             const previousLabour = _bd.getStatus(affected, "labouring");
             if (previousLabour[0] === undefined) {
                 affected.statusEffects.push(new StatusEffect("labouring", 999, 0, affected, affected, _bd));
@@ -57,7 +57,7 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = '';
             if (_cR.fate !== "Miss") {
-                const attacker = _action.from;
+                const attacker = _action.attacker;
                 const furyStatus = _bd.getStatus(attacker, "fury")[0] || new StatusEffect("fury", 999, 0, attacker, attacker, _bd);
                 if (!attacker.statusEffects.some(_s => _s === furyStatus)) {
                     attacker.statusEffects.push(furyStatus);
@@ -65,13 +65,13 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
 
                 let addingValue = 0;
                 addingValue += _cR.damage;
-                if (_action.affected.HP - _cR.damage <= 0) {
+                if (_action.target.HP - _cR.damage <= 0) {
                     addingValue += 10;
                 }
 
                 furyStatus.value += addingValue;
                 returnString += `🔥 +${roundToDecimalPlace(addingValue)} Fury!`
-                _action.affected.statusEffects.push(new StatusEffect("bleed", 1, _cR.damage * (0.33 * furyStatus.value / 100), _action.from, _action.affected, _bd));
+                _action.target.statusEffects.push(new StatusEffect("bleed", 1, _cR.damage * (0.33 * furyStatus.value / 100), _action.attacker, _action.target, _bd));
             }
             return returnString;
         }
@@ -81,7 +81,7 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = '';
             if (_cR.fate !== "Miss") {
-                const attacker = _action.from;
+                const attacker = _action.attacker;
                 const furyStatus = _bd.getStatus(attacker, "fury")[0] || new StatusEffect("fury", 999, 0, attacker, attacker, _bd);
                 if (!attacker.statusEffects.some(_s => _s === furyStatus)) {
                     attacker.statusEffects.push(furyStatus);
@@ -89,13 +89,13 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
 
                 let addingValue = 0;
                 addingValue += _cR.damage;
-                if (_action.affected.HP - _cR.damage <= 0) {
+                if (_action.target.HP - _cR.damage <= 0) {
                     addingValue += 10;
                 }
 
                 furyStatus.value += addingValue;
                 returnString += `🔥 +${roundToDecimalPlace(addingValue)} Fury!`
-                _action.affected.statusEffects.push(new StatusEffect("bleed", 1, _cR.damage * (0.25 * furyStatus.value / 100), _action.from, _action.affected, _bd));
+                _action.target.statusEffects.push(new StatusEffect("bleed", 1, _cR.damage * (0.25 * furyStatus.value / 100), _action.attacker, _action.target, _bd));
             }
             return returnString;
         }
@@ -104,14 +104,14 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         "Passive: Unrelenting Fury",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             // initialise fury status
-            const attacker = _action.from;
+            const attacker = _action.attacker;
             const furyStatus = _bd.getStatus(attacker, "fury")[0] || new StatusEffect("fury", 999, 0, attacker, attacker, _bd);
             if (!attacker.statusEffects.some(_s => _s === furyStatus)) {
                 attacker.statusEffects.push(furyStatus);
             }
 
             // decrease fury
-            if (_action.from.base.class === _action.affected.base.class && _action.from.index === _action.affected.index) {
+            if (_action.attacker.base.class === _action.target.base.class && _action.attacker.index === _action.target.index) {
                 furyStatus.value -= 2;
             }
             furyStatus.value = clamp(furyStatus.value, 0, 100);
@@ -123,7 +123,7 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "";
             if (_cR.fate !== "Miss") {
-                _action.affected.readiness -= 3;
+                _action.target.readiness -= 3;
                 returnString += "💦 Exhaust!"
             }
             return returnString;
@@ -135,17 +135,18 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
             let returnString = "";
 
             for (let i = 0; i < 4; i++) {
-                const coord: Coordinate = getNewObject(_action.from);
+                const coord: Coordinate = getNewObject(_action.attacker);
                 const numDir: NumericDirection = i;
                 const dir: Direction = numericDirectionToDirection(numDir);
                 const magAxis = directionToMagnitudeAxis(dir);
                 
                 coord[magAxis.axis] += magAxis.magnitude;
                 if (_bd.findEntity_coord(coord) === undefined) {
-                    const wolf = getStat(getBaseEnemyStat("Diana's Wolf"));
-                    wolf.team = 'player';
-                    _bd.Spawn(wolf, coord);
-                    returnString += "🐺"
+                    getStat(getBaseEnemyStat("Diana's Wolf")).then(wolf => {
+                        wolf.team = 'player';
+                        _bd.Spawn(wolf, coord);
+                        returnString += "🐺"
+                    })
                 }
             }
 
@@ -156,7 +157,7 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         "Slay",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = '';
-            const target = _action.affected;
+            const target = _action.target;
             if (_cR.fate !== "Miss" && (target.HP / target.base.AHP) <= (1/3)) {
                 _cR.damage = _cR.damage * 1.5;
                 _cR.u_damage = _cR.u_damage * 1.5;
@@ -169,13 +170,13 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         "Attack-Order",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "+🗡️";
-            const swords = _action.from.sword;
+            const swords = _action.attacker.sword;
             if (swords > 0) {
-                _action.affected.sword++;
-                _action.from.sword--;
+                _action.target.sword++;
+                _action.attacker.sword--;
                 returnString += EMOJI_SWORD;
             }
-            _action.affected.sword++;
+            _action.target.sword++;
             return returnString;
         }
     ],
@@ -183,13 +184,13 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         "Defence-Order",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "+🛡️";
-            const shields = _action.from.shield;
+            const shields = _action.attacker.shield;
             if (shields > 0) {
-                _action.affected.shield++;
-                _action.from.shield--;
+                _action.target.shield++;
+                _action.attacker.shield--;
                 returnString += EMOJI_SHIELD;
             }
-            _action.affected.shield++;
+            _action.target.shield++;
             return returnString;
         }
     ],
@@ -197,13 +198,13 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         "Manoeuvre-Order",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "+👢";
-            const sprints = _action.from.sprint;
+            const sprints = _action.attacker.sprint;
             if (sprints > 0) {
-                _action.affected.sprint++;
-                _action.from.sprint--;
+                _action.target.sprint++;
+                _action.attacker.sprint--;
                 returnString += '👢'
             }
-            _action.affected.sprint++;
+            _action.target.sprint++;
             return returnString;
         }
     ],
@@ -211,12 +212,12 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         "Slice",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "";
-            const sprints = _action.from.sprint;
+            const sprints = _action.attacker.sprint;
             if (sprints > 0) {
                 _cR.damage += sprints;
                 _cR.u_damage += sprints;
                 returnString += ` (+${sprints})`
-                _action.from.sprint--;
+                _action.attacker.sprint--;
             }
             return returnString;
         }
@@ -225,8 +226,8 @@ const statusEffect_effects = new Map<AbilityName, WeaponEffectFunction>([
         "Angelic Blessings",
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "";
-            const attacker = _action.from;
-            const target = _action.affected;
+            const attacker = _action.attacker;
+            const target = _action.target;
             returnString += `${target.base.class} (${target.index}): ` + _bd.heal(target, 10) + " +👢";
             returnString += `\n${attacker.base.class} (${attacker.index}): ` + _bd.heal(attacker, 10) + " +👢";
             attacker.sprint++;
@@ -248,10 +249,10 @@ export class WeaponEffect {
     }
 
     activate() {
-        log(`\tActivating ${this.attackAction.weapon.abilityName}`);
+        log(`\tActivating ${this.attackAction.ability.abilityName}`);
         let returnString = "";
 
-        const weaponEffect = statusEffect_effects.get(this.attackAction.weapon.abilityName);
+        const weaponEffect = statusEffect_effects.get(this.attackAction.ability.abilityName);
         if (weaponEffect) {
             returnString += weaponEffect(this.attackAction, this.clashResult, this.battleData);
         }

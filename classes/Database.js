@@ -58,7 +58,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.saveBattle = exports.getBufferFromImage = exports.getIconImgurLink = exports.getIconCanvas = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.getUserWelfare = exports.setUserWelfare = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.saveUserData = exports.getAnyData = void 0;
+exports.getEquippedForgeWeapon = exports.saveBattle = exports.getBufferFromImage = exports.getIconImgurLink = exports.getIconCanvas = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.getUserWelfare = exports.setUserWelfare = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.saveUserData = exports.getAnyData = void 0;
 var typedef_1 = require("../typedef");
 var admin = __importStar(require("firebase-admin"));
 var serviceAccount = __importStar(require("../serviceAccount.json"));
@@ -68,6 +68,8 @@ var __1 = require("..");
 var fs_1 = __importDefault(require("fs"));
 var imgur_1 = require("imgur");
 var Item_1 = require("./Item");
+var jsons_1 = require("../jsons");
+var InteractionEventManager_1 = require("./InteractionEventManager");
 // firebase login
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -268,6 +270,9 @@ function getDefaultUserData(_user) {
         party: [id],
         settings: getDefaultSettings(),
         equippedClass: "Fighter",
+        equippedWeapon: [
+            (0, Utility_1.getNewObject)(jsons_1.universalWeaponsData.Unarmed)
+        ],
         welfare: 1,
         inventory: [],
     };
@@ -479,3 +484,23 @@ function saveBattle(battle) {
     });
 }
 exports.saveBattle = saveBattle;
+function getEquippedForgeWeapon(_id) {
+    return __awaiter(this, void 0, void 0, function () {
+        var userData, _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    _a = InteractionEventManager_1.InteractionEventManager.getInstance().userData(_id);
+                    if (_a) return [3 /*break*/, 2];
+                    return [4 /*yield*/, getUserData(_id)];
+                case 1:
+                    _a = (_b.sent());
+                    _b.label = 2;
+                case 2:
+                    userData = _a;
+                    return [2 /*return*/, userData.equippedWeapon];
+            }
+        });
+    });
+}
+exports.getEquippedForgeWeapon = getEquippedForgeWeapon;

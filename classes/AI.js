@@ -26,6 +26,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AI = void 0;
+var jsons_1 = require("../jsons");
 var typedef_1 = require("../typedef");
 var Utility_1 = require("./Utility");
 var AIFunctions = new Map([
@@ -44,17 +45,18 @@ var AIFunctions = new Map([
             // if found a target
             if (selectedTarget !== null) {
                 // 1. select weapon
-                var weaponSelected = virtualStat.base.weapons[0];
+                var weaponSelected = virtualStat.base.arsenal[0] || jsons_1.universalWeaponsData.Unarmed;
+                var abilitySelected = virtualStat.base.abilities[0];
                 // 2. move to preferred location
                 var path = _bd.startPathFinding(_rS, selectedTarget, "lowest");
                 var moveActionArray = _bd.getMoveActionListFromCoordArray(_rS, path);
                 var fullActions = _bd.normaliseMoveActions(moveActionArray, virtualStat);
                 // 3. attack with selected weapon
-                if ((0, Utility_1.checkWithinDistance)(weaponSelected, (0, Utility_1.getDistance)(virtualStat, selectedTarget))) {
-                    var attackAction = (0, Utility_1.getAttackAction)(virtualStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length + 1);
-                    var valid = _bd.executeVirtualAttack(attackAction, virtualStat);
+                var virtualAA = (0, Utility_1.getAttackAction)(virtualStat, selectedTarget, weaponSelected, abilitySelected, selectedTarget, fullActions.length + 1);
+                if ((0, Utility_1.checkWithinDistance)(virtualAA, (0, Utility_1.getDistance)(virtualStat, selectedTarget))) {
+                    var valid = _bd.executeVirtualAttack(virtualAA, virtualStat);
                     if (valid) {
-                        fullActions.push((0, Utility_1.getAttackAction)(_rS, selectedTarget, weaponSelected, selectedTarget, fullActions.length + 1));
+                        fullActions.push((0, Utility_1.getAttackAction)(_rS, selectedTarget, weaponSelected, abilitySelected, selectedTarget, fullActions.length + 1));
                     }
                 }
                 (_a = _bd.roundActionsArray).push.apply(_a, __spreadArray([], __read(fullActions), false));
@@ -65,16 +67,20 @@ var AIFunctions = new Map([
         typedef_1.BotType.passive_supportive,
         function (_rS, _bd) {
             var _a;
+            var _b;
             (0, Utility_1.log)("Employing passive_supportive AI");
             var virtualStat = (0, Utility_1.getNewObject)(_rS);
             var allActions = [];
-            var ability = (0, Utility_1.arrayGetRandom)(virtualStat.base.weapons.filter(function (_w) { return _w.targetting.target === typedef_1.WeaponTarget.ally; }));
+            var weaponSelected = virtualStat.base.arsenal[0] || jsons_1.universalWeaponsData.Unarmed;
+            var ability = (0, Utility_1.arrayGetRandom)(virtualStat.base.abilities.filter(function (_w) { return _w.targetting.target === typedef_1.AbilityTargetting.ally; }));
+            if (ability === null)
+                return;
             // execute ally-targetting ability
             var AOE = ability.targetting.AOE;
             switch (AOE) {
                 case 'selfCircle':
                     // move to best place
-                    var blastRange_1 = ability.range[2];
+                    var blastRange_1 = ((_b = ability.range) === null || _b === void 0 ? void 0 : _b.max) || weaponSelected.range.radius;
                     var movesAvailable_1 = 1 + virtualStat.sprint;
                     (0, Utility_1.debug)("movesAvailable", movesAvailable_1);
                     var domain_1 = _bd.findEntities_radius(virtualStat, movesAvailable_1 + blastRange_1, false);

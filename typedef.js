@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WeaponTarget = exports.BotType = exports.AllTeams = exports.MaterialGrade = exports.NumericDirection = exports.StatMaximus = exports.defaultAvatarURL = exports.coinURL = exports.deathQuotes = exports.preludeQuotes = exports.MEW = exports.EMOJI_MONEYBAG = exports.EMOJI_SPRINT = exports.EMOJI_SWORD = exports.EMOJI_SHIELD = exports.EMOJI_BROWNB = exports.EMOJI_BLACKB = exports.EMOJI_WHITEB = exports.EMOJI_STAR = exports.EMOJI_CROSS = exports.EMOJI_TICK = exports.COMMAND_CALL = void 0;
+exports.AbilityTargetting = exports.BotType = exports.AllTeams = exports.MaterialGrade = exports.NumericDirection = exports.StatMaximus = exports.defaultAvatarURL = exports.coinURL = exports.deathQuotes = exports.preludeQuotes = exports.MEW = exports.EMOJI_MONEYBAG = exports.EMOJI_SPRINT = exports.EMOJI_SWORD = exports.EMOJI_SHIELD = exports.EMOJI_BROWNB = exports.EMOJI_BLACKB = exports.EMOJI_WHITEB = exports.EMOJI_STAR = exports.EMOJI_CROSS = exports.EMOJI_TICK = exports.COMMAND_CALL = void 0;
 exports.COMMAND_CALL = ";";
 // EMOJIS
 exports.EMOJI_TICK = '✅';
@@ -59,9 +59,9 @@ var BotType;
     BotType[BotType["approach_attack"] = 1] = "approach_attack";
     BotType[BotType["passive_supportive"] = 2] = "passive_supportive";
 })(BotType = exports.BotType || (exports.BotType = {}));
-// weapons
-var WeaponTarget;
-(function (WeaponTarget) {
-    WeaponTarget[WeaponTarget["ally"] = 0] = "ally";
-    WeaponTarget[WeaponTarget["enemy"] = 1] = "enemy";
-})(WeaponTarget = exports.WeaponTarget || (exports.WeaponTarget = {}));
+// ABILITIES
+var AbilityTargetting;
+(function (AbilityTargetting) {
+    AbilityTargetting[AbilityTargetting["ally"] = 0] = "ally";
+    AbilityTargetting[AbilityTargetting["enemy"] = 1] = "enemy";
+})(AbilityTargetting = exports.AbilityTargetting || (exports.AbilityTargetting = {}));

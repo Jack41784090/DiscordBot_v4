@@ -131,10 +131,10 @@ var Item = /** @class */ (function () {
             pos += this.materialInfo[matindex].occupation;
             matindex++;
             // log(`\t@ ${burningMaterial.materialName}: ${materialRange}`);
-            //     range[0] [IIIIIIII] range[1]
+            //     range.min [IIIIIIII] range.max
             // matr[0] [||||||||] matr[1]
             var condition1 = (range[0] >= materialRange[0] && range[0] < materialRange[1]);
-            // range[0] [IIIIIIII] range[1]
+            // range.min [IIIIIIII] range.max
             //      matr[0] [||||||||] matr[1]
             var condition2 = (range[1] >= materialRange[0] && range[0] < materialRange[1]);
             if (condition1 || condition2) {

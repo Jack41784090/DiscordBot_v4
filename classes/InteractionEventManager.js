@@ -76,6 +76,10 @@ var InteractionEventManager = /** @class */ (function () {
         }
         return this.instance;
     };
+    InteractionEventManager.prototype.userData = function (_id) {
+        var _a;
+        return ((_a = this.user_interaction_map.get(_id)) === null || _a === void 0 ? void 0 : _a.userData) || null;
+    };
     InteractionEventManager.prototype.registerInteraction = function (_id, _interactionEvent, _userData) {
         return __awaiter(this, void 0, void 0, function () {
             var split, _a, _b, _c, _d, _e, existing;

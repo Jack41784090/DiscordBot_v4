@@ -163,10 +163,10 @@ export class Item {
 
             // log(`\t@ ${burningMaterial.materialName}: ${materialRange}`);
 
-            //     range[0] [IIIIIIII] range[1]
+            //     range.min [IIIIIIII] range.max
             // matr[0] [||||||||] matr[1]
             const condition1 = (range[0] >= materialRange[0] && range[0] < materialRange[1]);
-            // range[0] [IIIIIIII] range[1]
+            // range.min [IIIIIIII] range.max
             //      matr[0] [||||||||] matr[1]
             const condition2 = (range[1] >= materialRange[0] && range[0] < materialRange[1]);
             if (condition1 || condition2) {
@@ -241,7 +241,7 @@ export class Item {
     }
     fillJunk(_untilWeight: number) {
         while (this.weight < _untilWeight) {
-            const randomMaterial: Material = arrayGetRandom(Object.keys(materialData) as (keyof typeof materialData)[]);
+            const randomMaterial: Material = arrayGetRandom(Object.keys(materialData) as (keyof typeof materialData)[])!;
             const randomGrade: MaterialGrade = clamp(Math.abs(Math.round(normalRandom(0, 1))), 0, 10);
             const randomOccupation: number = 10e-5;
             const newMaterialInfo: MaterialInfo = {

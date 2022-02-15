@@ -93,39 +93,40 @@ var jsons_1 = require("../jsons");
 var Battle = /** @class */ (function () {
     function Battle(_mapData, _author, _message, _client, _pvp, _party) {
         var _this = this;
+        this.CSMap = new Map();
+        this.LootMap = new Map();
+        // Round Actions Information (Resets every Round)
+        this.roundActionsArray = [];
+        this.roundSavedCanvasMap = new Map();
+        // Entity-Related Information
+        this.tobespawnedArray = [];
+        this.totalEnemyCount = 0;
+        this.enemyCount = 0;
+        this.playerCount = 0;
+        this.allIndex = new Map();
+        // user cache
+        this.userCache = new Map();
+        this.userDataCache = new Map();
         this.author = _author;
         this.message = _message;
         this.channel = _message.channel;
         this.client = _client;
         this.guild = _message.guild;
         this.party = _party;
-        this.userDataCache = new Map();
         this.mapData = _mapData;
         this.width = _mapData.map.width;
         this.height = _mapData.map.height;
-        this.CSMap = (0, Utility_1.getMapFromCS)(_mapData.map.coordStat);
-        this.LootMap = new Map();
         this.pixelsPerTile = 50;
-        this.userCache = new Map();
         this.pvp = _pvp;
-        // action strings
-        this.roundActionsArray = [];
-        this.roundSavedCanvasMap = new Map();
         var allStats = this.allStats(true);
-        // fixing spawning
-        this.tobespawnedArray = [];
-        this.totalEnemyCount = 0;
-        this.enemyCount = 0;
-        this.playerCount = 0;
         // fix index
-        this.allIndex = new Map();
         allStats.forEach(function (s) {
-            if (s.index !== -1)
+            if (s.index !== -1) {
                 _this.allIndex.set(s.index, true);
+            }
             else {
                 s.index = _this.getIndex();
                 _this.allIndex.set(s.index, true);
-                (0, Utility_1.log)("New index for ", s.base.class, s.index);
             }
         });
     }
@@ -133,10 +134,17 @@ var Battle = /** @class */ (function () {
     Battle.Generate = function (_mapData, _author, _message, _party, _client, _pvp) {
         if (_pvp === void 0) { _pvp = false; }
         return __awaiter(this, void 0, void 0, function () {
-            var battle;
-            return __generator(this, function (_b) {
-                battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
-                return [2 /*return*/, battle];
+            var battle, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        battle = new Battle(_mapData, _author, _message, _client, _pvp, _party);
+                        _b = battle;
+                        return [4 /*yield*/, (0, Utility_1.getMapFromCS)(_mapData.map.coordStat)];
+                    case 1:
+                        _b.CSMap = _c.sent();
+                        return [2 /*return*/, battle];
+                }
             });
         });
     };
@@ -168,8 +176,12 @@ var Battle = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.InitiateUsers()];
                     case 1:
                         _b.sent();
-                        this.ManageWelfare();
-                        this.AddEnemies();
+                        return [4 /*yield*/, this.ManageWelfare()];
+                    case 2:
+                        _b.sent();
+                        return [4 /*yield*/, this.InitiateEnemies()];
+                    case 3:
+                        _b.sent();
                         // ambush
                         if (_options.ambush && _options.ambush !== 'block') {
                             ambushingTeam = _options.ambush;
@@ -187,56 +199,91 @@ var Battle = /** @class */ (function () {
             });
         });
     };
-    Battle.prototype.AddEnemies = function () {
-        var e_1, _b;
-        // add enemies to the spawning list, only valid if battle is not pvp
-        if (!this.pvp) {
-            try {
-                for (var _c = __values(Object.entries(this.mapData.enemiesInfo)), _d = _c.next(); !_d.done; _d = _c.next()) {
-                    var _g = __read(_d.value, 2), key = _g[0], value = _g[1];
-                    var Eclass = key;
-                    var mod = { name: "" + Eclass };
-                    var enemyBase = (0, Utility_1.getNewObject)(jsons_1.enemiesData[Eclass], mod);
-                    var spawnCount = (0, Utility_1.uniformRandom)(value.min, value.max);
-                    var _loop_1 = function (i) {
-                        var enemyEntity = (0, Utility_1.getStat)(enemyBase);
-                        // randomly spawn in loot
-                        enemyEntity.base.lootInfo.forEach(function (_LInfo) {
-                            // roll for spawn item
-                            var roll = Math.random();
-                            if (roll < _LInfo.chance) {
-                                // initialise if haven't yet
-                                if (enemyEntity.drops === undefined) {
-                                    enemyEntity.drops = {
-                                        items: [],
-                                        money: 0,
-                                        droppedBy: enemyEntity
-                                    };
-                                }
-                                // spawn in item
-                                var _b = _LInfo.weightDeviation, min = _b.min, max = _b.max;
-                                var weight = (0, Utility_1.uniformRandom)(min + min * 0.05, max);
-                                enemyEntity.drops.items.push(new Item_1.Item(_LInfo.materials, weight, _LInfo.itemName));
-                            }
+    /** Use only once: put all enemies into the spawn array */
+    Battle.prototype.InitiateEnemies = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _b, _c, _d, key, value, data, enemyBase, spawnCount, _loop_1, this_1, i, e_1_1;
+            var e_1, _g;
+            return __generator(this, function (_h) {
+                switch (_h.label) {
+                    case 0:
+                        if (!!this.pvp) return [3 /*break*/, 10];
+                        _h.label = 1;
+                    case 1:
+                        _h.trys.push([1, 8, 9, 10]);
+                        _b = __values(Object.entries(this.mapData.enemiesInfo)), _c = _b.next();
+                        _h.label = 2;
+                    case 2:
+                        if (!!_c.done) return [3 /*break*/, 7];
+                        _d = __read(_c.value, 2), key = _d[0], value = _d[1];
+                        data = jsons_1.enemiesData[key];
+                        enemyBase = (0, Utility_1.getNewObject)(data, {
+                            name: data.class,
                         });
-                        this_1.tobespawnedArray.push(enemyEntity);
-                        this_1.totalEnemyCount++;
-                        this_1.enemyCount++;
-                    };
-                    var this_1 = this;
-                    for (var i = 0; i < spawnCount; i++) {
-                        _loop_1(i);
-                    }
+                        spawnCount = (0, Utility_1.uniformRandom)(value.min, value.max);
+                        _loop_1 = function (i) {
+                            var enemyEntity;
+                            return __generator(this, function (_j) {
+                                switch (_j.label) {
+                                    case 0: return [4 /*yield*/, (0, Utility_1.getStat)(enemyBase)];
+                                    case 1:
+                                        enemyEntity = _j.sent();
+                                        // randomly spawn in loot
+                                        enemyEntity.base.lootInfo.forEach(function (_LInfo) {
+                                            // roll for spawn item
+                                            var roll = Math.random();
+                                            if (roll < _LInfo.chance) {
+                                                // initialise if haven't yet
+                                                if (enemyEntity.drops === undefined) {
+                                                    enemyEntity.drops = {
+                                                        items: [],
+                                                        money: 0,
+                                                        droppedBy: enemyEntity
+                                                    };
+                                                }
+                                                // spawn in item
+                                                var _b = _LInfo.weightDeviation, min = _b.min, max = _b.max;
+                                                var weight = (0, Utility_1.uniformRandom)(min + min * 0.05, max);
+                                                enemyEntity.drops.items.push(new Item_1.Item(_LInfo.materials, weight, _LInfo.itemName));
+                                            }
+                                        });
+                                        this_1.tobespawnedArray.push(enemyEntity);
+                                        this_1.totalEnemyCount++;
+                                        this_1.enemyCount++;
+                                        return [2 /*return*/];
+                                }
+                            });
+                        };
+                        this_1 = this;
+                        i = 0;
+                        _h.label = 3;
+                    case 3:
+                        if (!(i < spawnCount)) return [3 /*break*/, 6];
+                        return [5 /*yield**/, _loop_1(i)];
+                    case 4:
+                        _h.sent();
+                        _h.label = 5;
+                    case 5:
+                        i++;
+                        return [3 /*break*/, 3];
+                    case 6:
+                        _c = _b.next();
+                        return [3 /*break*/, 2];
+                    case 7: return [3 /*break*/, 10];
+                    case 8:
+                        e_1_1 = _h.sent();
+                        e_1 = { error: e_1_1 };
+                        return [3 /*break*/, 10];
+                    case 9:
+                        try {
+                            if (_c && !_c.done && (_g = _b.return)) _g.call(_b);
+                        }
+                        finally { if (e_1) throw e_1.error; }
+                        return [7 /*endfinally*/];
+                    case 10: return [2 /*return*/];
                 }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (_d && !_d.done && (_b = _c.return)) _b.call(_c);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-        }
+            });
+        });
     };
     /** Initiate users by registering them into iem, add them in the battle, initiate cache. */
     Battle.prototype.InitiateUsers = function () {
@@ -249,36 +296,39 @@ var Battle = /** @class */ (function () {
                         i = 0;
                         _b.label = 1;
                     case 1:
-                        if (!(i < this.party.length)) return [3 /*break*/, 6];
+                        if (!(i < this.party.length)) return [3 /*break*/, 7];
                         ownerID = this.party[i];
                         interactEvent = new InteractionEvent_1.InteractionEvent(ownerID, this.message, 'battle');
                         return [4 /*yield*/, instance.registerInteraction(ownerID, interactEvent)];
                     case 2:
                         userData = _b.sent();
-                        if (!userData) return [3 /*break*/, 4];
+                        if (!userData) return [3 /*break*/, 5];
                         this.userDataCache.set(ownerID, userData);
-                        blankStat = (0, Utility_1.getStat)((0, Utility_1.getBaseClassStat)(userData.equippedClass), ownerID);
+                        return [4 /*yield*/, (0, Utility_1.getStat)((0, Utility_1.getBaseClassStat)(userData.equippedClass), ownerID)];
+                    case 3:
+                        blankStat = _b.sent();
                         blankStat.pvp = this.pvp;
                         this.tobespawnedArray.push(blankStat);
                         return [4 /*yield*/, __1.BotClient.users.fetch(ownerID).catch(function () { return null; })];
-                    case 3:
+                    case 4:
                         user = _b.sent();
                         if (user) {
                             this.userCache.set(ownerID, user);
                         }
-                        return [3 /*break*/, 5];
-                    case 4:
+                        return [3 /*break*/, 6];
+                    case 5:
                         this.message.channel.send("<@" + ownerID + "> is busy (most possibly already in another battle) and cannot participate.");
                         (0, Utility_1.arrayRemoveItemArray)(this.party, ownerID);
-                        _b.label = 5;
-                    case 5:
+                        _b.label = 6;
+                    case 6:
                         i++;
                         return [3 /*break*/, 1];
-                    case 6: return [2 /*return*/];
+                    case 7: return [2 /*return*/];
                 }
             });
         });
     };
+    /** Scale players HP based on their welfare */
     Battle.prototype.ManageWelfare = function () {
         var _this = this;
         var _b, _c;
@@ -368,7 +418,7 @@ var Battle = /** @class */ (function () {
                                 s[t] = (0, Utility_1.clamp)(p, 0, 5);
                             });
                             // increment readiness
-                            var speed = (0, Utility_1.getSpd)(s);
+                            var speed = s.base.speed;
                             s.readiness += speed;
                             s.readiness = (0, Utility_1.clamp)(s.readiness, -Battle.MAX_READINESS, Battle.MAX_READINESS);
                         };
@@ -708,33 +758,33 @@ var Battle = /** @class */ (function () {
         var unsorted = __spreadArray([], __read(this.CSMap.values()), false); // saved by reference (pointer), not by value. (?) (https://www.typescriptlang.org/play?#code/PTAEHUFMBsGMHsC2lQBd5oBYoCoE8AHSAZVgCcBLA1UABWgEM8BzM+AVwDsATAGiwoBnUENANQAd0gAjQRVSQAUCEmYKsTKGYUAbpGF4OY0BoadYKdJMoL+gzAzIoz3UNEiPOofEVKVqAHSKymAAmkYI7NCuqGqcANag8ABmIjQUXrFOKBJMggBcISGgoAC0oACCbvCwDKgU8JkY7p7ehCTkVDQS2E6gnPCxGcwmZqDSTgzxxWWVoASMFmgYkAAeRJTInN3ymj4d-jSCeNsMq-wuoPaOltigAKoASgAywhK7SbGQZIIz5VWCFzSeCrZagNYbChbHaxUDcCjJZLfSDbExIAgUdxkUBIursJzCFJtXydajBBCcQQ0eDSABWkFgqAAjKAALygADeoB0DGg7Eg+VALIAvgBuRQUqlJOkM1AAJjZnO5vP5goVYoljSlNPpjIAzIquTy+QLQAaNZLqTLGQAWQ3Kk2Cu0WrU0RAMAiCgCyHoAPFTKJxmPwAPLW1AAPkVnEgElAPoI-tQgeDoDDusjAAoAJTixTuggBQSQVCZgBEIZjZf4OtlTNz+Y9RZL5ZwEng1elGblDYLzdLZZwmGyndr+t7TeLA4AYhwyKPwzaG5rKVaMxUyGQmNO2IgAGoq-SKgDaATPfeN-MEOYAuuLLV3ZRut3gT4-GUya+G5V+M3rf7Kdp3sEyTwNimbuOkioAAyiiIoC+qANpwRQADUqHZpyiglCUD46oqY6oM+TDHhQwE4Wiq5djuSB7gR4bEXgNH7oegikcB2E4ZK8DuAE0DwMwmb4ay7I6sxe4NsKwQqDgzQeGQXiIGBzjAuwNBfG4ZjMOwDDMJA-CwNA6iJAwwJ6CIXhlgAoqsDCIAs+hlkk2JluADioAA5MIABysZlkEKghl8ZDvMW-B6UcqCOAorjSK+ThKTowxYPoKAIIg0LCJcGntmQ0QiAYc7zIwLBsFw3BBCUQA)
         return unsorted.filter(function (s) { return (!excludeBlock || s.team !== "block"); });
     };
-    /** Get a string showing all nearby enemies reachable by weapon */
+    /** Get an array showing all nearby enemies reachable by weapon */
     Battle.prototype.getAllPossibleAttacksInfo = function (_stat, _domain) {
         var _this = this;
         if (_domain === void 0) { _domain = this.allStats(); }
-        return _stat.base.weapons.map(function (_w) {
-            var shortestRange = _w.range[0];
-            var longestRange = _w.range[1];
+        var equippedWeapon = _stat.equipped;
+        var abilities = _stat.base.abilities.filter(function (_a) {
+            return (_a.type === 'null' && _a.range !== undefined) ||
+                _a.type === equippedWeapon.type;
+        });
+        return __spreadArray([(0, Utility_1.getForgeWeaponAttackAbility)(equippedWeapon)], __read(abilities), false).map(function (_a) {
+            var _b, _c;
+            var shortestRange = ((_b = _a.range) === null || _b === void 0 ? void 0 : _b.min) || equippedWeapon.range.min;
+            var longestRange = ((_c = _a.range) === null || _c === void 0 ? void 0 : _c.max) || equippedWeapon.range.max;
             var reachableEntities = _this.findEntities_radius(_stat, longestRange, shortestRange === 0, ['block'], _domain);
-            var targettedEntities = reachableEntities.filter(function (_s) {
-                return _w.targetting.target === typedef_1.WeaponTarget.ally ?
-                    _s.team === _stat.team :
-                    _s.team !== _stat.team;
-            });
-            return targettedEntities.map(function (_e) {
-                return {
-                    attacker: _stat,
-                    target: _e,
-                    weapon: _w,
-                };
-            });
+            var targettedEntities = reachableEntities.filter(function (_s) { return (_s.team !== _stat.team) || _s.pvp; });
+            return targettedEntities.map(function (_e) { return ({
+                attacker: _stat,
+                target: _e,
+                ability: _a,
+            }); });
         }).flat();
     };
     /** Return an array of coordinates that are not occupied currently, based on the moveAction magnitude and direction */
     Battle.prototype.getAvailableSpacesAhead = function (moveAction) {
         var magnitude = moveAction.magnitude;
         var axis = moveAction.axis;
-        var stat = moveAction.affected;
+        var stat = moveAction.target;
         var availableSeats = [];
         var dir = Math.sign(magnitude);
         for (var i = 1; i <= Math.abs(magnitude); i++) {
@@ -747,78 +797,81 @@ var Battle = /** @class */ (function () {
         }
         return availableSeats;
     };
+    /** Send a message to a TextChannel in the battle's guild with id name */
     Battle.prototype.sendToCommand = function (roomID, message) {
-        var commandRoom = this.message.guild.channels.cache.find(function (c) { return c.name === roomID && c.type === 'GUILD_TEXT'; });
-        if (commandRoom) {
-            return commandRoom.send(message);
-        }
+        var commandRoom = this.guild.channels.cache.find(function (c) { return c.name === roomID && c.type === 'GUILD_TEXT'; }) || null;
+        return (commandRoom === null || commandRoom === void 0 ? void 0 : commandRoom.send(message)) || null;
     };
+    /** Send a multi-round report embed to sendToCommand function */
     Battle.prototype.sendReportToCommand = function (roomID, round) {
         return __awaiter(this, void 0, void 0, function () {
-            var chosenCanvas, menuOptions, embed, messageOption, associatedStat, promisedMsg_1;
+            var chosenCanvas, promisedMsg, _b, roundMenuSelectOption, embed, messageOption, associatedStat;
             var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         chosenCanvas = this.roundSavedCanvasMap.get(round);
-                        if (!chosenCanvas) return [3 /*break*/, 2];
-                        menuOptions = Array.from(this.roundSavedCanvasMap.keys()).map(function (rn) {
-                            return {
-                                label: "Round " + rn,
-                                value: "" + rn,
-                            };
-                        });
+                        _b = chosenCanvas;
+                        if (!_b) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.sendToCommand(roomID, { embeds: [(0, Utility_1.getLoadingEmbed)()] })];
+                    case 1:
+                        _b = (promisedMsg = _c.sent());
+                        _c.label = 2;
+                    case 2:
+                        if (!_b) return [3 /*break*/, 4];
+                        roundMenuSelectOption = Array.from(this.roundSavedCanvasMap.keys()).map(function (rn) { return ({
+                            label: "Round " + rn,
+                            value: "" + rn,
+                        }); });
                         embed = new discord_js_1.MessageEmbed({
                             title: "Round " + round,
-                            description: ""
-                        }).setImage("attachment://map.png");
+                            description: "",
+                            image: {
+                                url: "attachment://map.png"
+                            }
+                        });
                         messageOption = {
                             embeds: [embed],
-                            components: [(0, Utility_1.getSelectMenuActionRow)(menuOptions)],
+                            components: [(0, Utility_1.getSelectMenuActionRow)(roundMenuSelectOption)],
                             files: [{ attachment: chosenCanvas.toBuffer(), name: 'map.png' }]
                         };
-                        associatedStat = this.allStats(true).find(function (_s) { return _s.owner === roomID; });
-                        if (associatedStat && associatedStat.actionsAssociatedStrings[round] !== undefined) {
+                        associatedStat = this.allStats(true).find(function (_s) { return _s.owner === roomID; }) || null;
+                        if (associatedStat === null || associatedStat === void 0 ? void 0 : associatedStat.actionsAssociatedStrings[round]) {
                             embed.description = (0, Utility_1.shortenString)(associatedStat.actionsAssociatedStrings[round].join('\n\n'));
                         }
-                        if (embed.description === "") {
+                        else if (embed.description === "") {
                             embed.description = "*(No Actions this Round )*";
                         }
-                        return [4 /*yield*/, this.sendToCommand(roomID, messageOption)];
-                    case 1:
-                        promisedMsg_1 = _b.sent();
-                        if (promisedMsg_1) {
-                            return [2 /*return*/, new Promise(function (resolve) {
-                                    var itrCollector = (0, Utility_1.setUpInteractionCollect)(promisedMsg_1, function (itr) { return __awaiter(_this, void 0, void 0, function () {
-                                        var selectedRound;
-                                        return __generator(this, function (_b) {
-                                            if (itr.isSelectMenu()) {
-                                                selectedRound = parseInt(itr.values[0]);
-                                                clearTimeout(timeOut);
-                                                promisedMsg_1.delete();
-                                                resolve(this.sendReportToCommand(roomID, selectedRound));
-                                            }
-                                            return [2 /*return*/];
-                                        });
-                                    }); });
-                                    // timeout: done checking round
-                                    var timeOut = setTimeout(function () {
-                                        itrCollector.stop();
-                                        resolve(true);
-                                    }, 15 * 1000);
-                                })];
-                        }
-                        else {
-                            return [2 /*return*/, true];
-                        }
-                        _b.label = 2;
-                    case 2: return [2 /*return*/, false];
+                        return [4 /*yield*/, promisedMsg.edit(messageOption)];
+                    case 3:
+                        _c.sent();
+                        return [2 /*return*/, new Promise(function (resolve) {
+                                var itrCollector = (0, Utility_1.setUpInteractionCollect)(promisedMsg, function (itr) { return __awaiter(_this, void 0, void 0, function () {
+                                    var selectedRound;
+                                    return __generator(this, function (_b) {
+                                        if (itr.isSelectMenu()) {
+                                            selectedRound = parseInt(itr.values[0]);
+                                            clearTimeout(timeOut);
+                                            promisedMsg.delete();
+                                            resolve(this.sendReportToCommand(roomID, selectedRound));
+                                        }
+                                        return [2 /*return*/];
+                                    });
+                                }); });
+                                // timeout: done checking round
+                                var timeOut = setTimeout(function () {
+                                    itrCollector.stop();
+                                    resolve(true);
+                                }, 15 * 1000);
+                            })];
+                    case 4: return [2 /*return*/, false];
                 }
             });
         });
     };
+    /** Get every action done by an entity in this round */
     Battle.prototype.getStatsRoundActions = function (stat) {
-        return this.roundActionsArray.filter(function (a) { return a.from.index === stat.index; });
+        return this.roundActionsArray.filter(function (a) { return a.attacker.index === stat.index; });
     };
     Battle.prototype.drawSquareOnBattleCoords = function (ctx, coord, rgba) {
         var canvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(coord, this.pixelsPerTile, this.height, false);
@@ -827,43 +880,45 @@ var Battle = /** @class */ (function () {
         }
         ctx.fillRect(canvasCoord.x, canvasCoord.y, this.pixelsPerTile, this.pixelsPerTile);
     };
-    // virtual actions (actions that only change the virtualStat)
+    /** Execute an attack that will only mutate the provided stat, as the attacker's, numbers */
     Battle.prototype.executeVirtualAttack = function (_aA, _virtualAttacker) {
-        var target = _aA.affected;
-        var weapon = _aA.weapon;
-        var check = this.validateTarget(_virtualAttacker, _aA.weapon, target);
-        if (check === null) { // attack goes through
-            _virtualAttacker.weaponUses[(0, Utility_1.getWeaponIndex)(weapon, _virtualAttacker)]++;
+        var target = _aA.target, ability = _aA.ability, weapon = _aA.weapon;
+        var check = this.validateTarget(_virtualAttacker, weapon, ability, target);
+        // attack goes through
+        if (check === null) {
+            _virtualAttacker.weaponUses[(0, Utility_1.getAbilityIndex)(ability, _virtualAttacker)]++;
             _virtualAttacker.readiness -= _aA.readiness;
             (0, Utility_1.handleTokens)(_virtualAttacker, function (p, t) {
                 (0, Utility_1.log)("\t\t" + _virtualAttacker.index + ") " + t + " --" + _aA[t]);
                 _virtualAttacker[t] -= _aA[t];
             });
         }
-        else { // attack cannot go through
+        // attack cannot go through
+        else {
             (0, Utility_1.log)("Failed to target. Reason: " + check.reason + " (" + check.value + ")");
         }
         return check === null;
     };
     ;
-    Battle.prototype.executeVirtualMovement = function (_mA, virtualStat) {
-        (0, Utility_1.log)("\tExecuting virtual movement for " + virtualStat.base.class + " (" + virtualStat.index + ").");
-        var check = this.validateMovement(virtualStat, _mA);
+    /** Execute a movement that will only mutate the provided stat, as the mover's, numbers */
+    Battle.prototype.executeVirtualMovement = function (_mA, _virtualStat) {
+        (0, Utility_1.log)("\tExecuting virtual movement for " + _virtualStat.base.class + " (" + _virtualStat.index + ").");
+        var check = this.validateMovement(_virtualStat, _mA);
         if (check === null) {
             (0, Utility_1.log)("\t\tMoved!");
             // spending sprint to move
-            if (virtualStat.moved === true) {
+            if (_virtualStat.moved === true) {
                 (0, Utility_1.handleTokens)(_mA, function (p, type) {
                     if (type === "sprint") {
-                        (0, Utility_1.log)("\t\t" + virtualStat.index + ") " + type + " --" + p);
-                        virtualStat.sprint -= p;
+                        (0, Utility_1.log)("\t\t" + _virtualStat.index + ") " + type + " --" + p);
+                        _virtualStat.sprint -= p;
                     }
                 });
             }
             // other resource drain
-            virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(_mA.magnitude);
-            virtualStat.moved = true;
-            virtualStat[_mA.axis] += _mA.magnitude;
+            _virtualStat.readiness -= Battle.MOVE_READINESS * Math.abs(_mA.magnitude);
+            _virtualStat.moved = true;
+            _virtualStat[_mA.axis] += _mA.magnitude;
         }
         else {
             (0, Utility_1.log)("\t\tFailed to move. Reason: " + check.reason + " (" + check.value + ")");
@@ -874,7 +929,7 @@ var Battle = /** @class */ (function () {
     // action reader methods
     Battle.prototype.readActions = function (_givenSeconds, _ownerTextChannel, _vS, _rS) {
         return __awaiter(this, void 0, void 0, function () {
-            var possibleError, tempLootMap, domain, buttonOptions, returnMessageInteractionMenus, dealWithUndoAction, _infoMessage, _b, _c;
+            var possibleError, tempLootMap, domain, returnMessageInteractionMenus, dealWithUndoAction, playerInfoMessage, _b, _c;
             var _this = this;
             return __generator(this, function (_d) {
                 switch (_d.label) {
@@ -891,33 +946,6 @@ var Battle = /** @class */ (function () {
                                 _vS :
                                 _s;
                         });
-                        buttonOptions = [
-                            {
-                                label: "UP ⬆️",
-                                style: "PRIMARY",
-                                customId: "up"
-                            },
-                            {
-                                label: "DOWN ⬇️",
-                                style: "SECONDARY",
-                                customId: "down"
-                            },
-                            {
-                                label: "RIGHT ➡️",
-                                style: "PRIMARY",
-                                customId: "right"
-                            },
-                            {
-                                label: "LEFT ⬅️",
-                                style: "SECONDARY",
-                                customId: "left"
-                            },
-                            {
-                                label: "Undo",
-                                style: "SUCCESS",
-                                customId: "undo"
-                            },
-                        ];
                         returnMessageInteractionMenus = function () { return __awaiter(_this, void 0, void 0, function () {
                             var selectMenuOptions, coordString, messagePayload, selectMenuActionRow, selectMenu, m, errorField;
                             var _b, _c, _d;
@@ -925,16 +953,16 @@ var Battle = /** @class */ (function () {
                                 switch (_g.label) {
                                     case 0:
                                         selectMenuOptions = this.getAllPossibleAttacksInfo(_vS, domain).map(function (_attackInfo) {
-                                            var weapon = _attackInfo.weapon;
+                                            var weapon = _attackInfo.ability;
                                             var target = _attackInfo.target;
-                                            var icon = weapon.targetting.target === typedef_1.WeaponTarget.ally ?
+                                            var icon = weapon.targetting.target === typedef_1.AbilityTargetting.ally ?
                                                 typedef_1.EMOJI_SHIELD :
                                                 typedef_1.EMOJI_SWORD;
                                             return {
                                                 emoji: icon,
                                                 label: "" + weapon.abilityName,
                                                 description: target.base.class + " (" + target.index + ")",
-                                                value: _attackInfo.attacker.index + " " + (0, Utility_1.getWeaponIndex)(weapon, _attackInfo.attacker) + " " + target.index,
+                                                value: _attackInfo.attacker.index + " " + (0, Utility_1.getAbilityIndex)(weapon, _attackInfo.attacker) + " " + target.index,
                                             };
                                         });
                                         coordString = (0, Utility_1.getCoordString)(_vS);
@@ -957,7 +985,7 @@ var Battle = /** @class */ (function () {
                                             value: "end"
                                         });
                                         messagePayload = {
-                                            components: [(0, Utility_1.getButtonsActionRow)(buttonOptions)],
+                                            components: [(0, Utility_1.getButtonsActionRow)(Battle.MOVEMENT_BUTTONOPTIONS)],
                                         };
                                         if (selectMenuOptions.length > 0) {
                                             selectMenuActionRow = (0, Utility_1.getSelectMenuActionRow)(selectMenuOptions);
@@ -1015,48 +1043,45 @@ var Battle = /** @class */ (function () {
                         return [4 /*yield*/, returnMessageInteractionMenus()];
                     case 1: return [4 /*yield*/, _c.apply(_b, [_d.sent()])];
                     case 2:
-                        _infoMessage = _d.sent();
+                        playerInfoMessage = _d.sent();
                         // returns a Promise that resolves when the player is finished with their moves
                         return [2 /*return*/, new Promise(function (resolve) {
                                 var executingActions = [];
                                 var listener;
                                 var listenToQueue = function () {
-                                    listener = (0, Utility_1.setUpInteractionCollect)(_infoMessage, function (itr) { return __awaiter(_this, void 0, void 0, function () {
+                                    listener = (0, Utility_1.setUpInteractionCollect)(playerInfoMessage, function (itr) { return __awaiter(_this, void 0, void 0, function () {
                                         var valid, _b, _c, valid, _d, _g, _err_1;
                                         return __generator(this, function (_h) {
                                             switch (_h.label) {
                                                 case 0:
-                                                    if (!(itr.user.id === _rS.owner)) return [3 /*break*/, 10];
-                                                    _h.label = 1;
-                                                case 1:
-                                                    _h.trys.push([1, 8, , 9]);
-                                                    if (!itr.isButton()) return [3 /*break*/, 4];
+                                                    _h.trys.push([0, 7, , 8]);
+                                                    if (itr.user.id !== _rS.owner) {
+                                                        listenToQueue();
+                                                        return [2 /*return*/];
+                                                    }
+                                                    if (!itr.isButton()) return [3 /*break*/, 3];
                                                     valid = handleButton(itr);
                                                     _c = (_b = itr).update;
                                                     return [4 /*yield*/, returnMessageInteractionMenus()];
-                                                case 2: return [4 /*yield*/, _c.apply(_b, [_h.sent()])];
-                                                case 3:
+                                                case 1: return [4 /*yield*/, _c.apply(_b, [_h.sent()])];
+                                                case 2:
                                                     _h.sent();
-                                                    return [3 /*break*/, 7];
-                                                case 4:
-                                                    if (!itr.isSelectMenu()) return [3 /*break*/, 7];
+                                                    return [3 /*break*/, 6];
+                                                case 3:
+                                                    if (!itr.isSelectMenu()) return [3 /*break*/, 6];
                                                     valid = handleSelectMenu(itr);
                                                     _g = (_d = itr).update;
                                                     return [4 /*yield*/, returnMessageInteractionMenus()];
-                                                case 5: return [4 /*yield*/, _g.apply(_d, [_h.sent()])];
-                                                case 6:
+                                                case 4: return [4 /*yield*/, _g.apply(_d, [_h.sent()])];
+                                                case 5:
                                                     _h.sent();
-                                                    _h.label = 7;
-                                                case 7: return [3 /*break*/, 9];
-                                                case 8:
+                                                    _h.label = 6;
+                                                case 6: return [3 /*break*/, 8];
+                                                case 7:
                                                     _err_1 = _h.sent();
                                                     console.log(_err_1);
-                                                    return [3 /*break*/, 9];
-                                                case 9: return [3 /*break*/, 11];
-                                                case 10:
-                                                    listenToQueue();
-                                                    _h.label = 11;
-                                                case 11: return [2 /*return*/];
+                                                    return [3 /*break*/, 8];
+                                                case 8: return [2 /*return*/];
                                             }
                                         });
                                     }); }, 1);
@@ -1065,25 +1090,26 @@ var Battle = /** @class */ (function () {
                                     var _b;
                                     var _c, _d;
                                     var round = executingActions.length + 1;
-                                    // [attacker index] [weapon index] [target index]
                                     var code = _sMItr.values[0];
                                     var codeSections = code.split(" ");
                                     var valid = false;
+                                    // attacker-index(0) ability-index(1) target-index(2)
                                     if (codeSections[0] && codeSections[1] && codeSections[2]) {
                                         var attackerIndex_1 = parseInt(codeSections[0]);
-                                        var weaponIndex = parseInt(codeSections[1]);
+                                        var abilityIndex = parseInt(codeSections[1]);
                                         var targetIndex_1 = parseInt(codeSections[2]);
                                         var attacker = _vS.index === attackerIndex_1 ?
                                             _vS :
-                                            _this.allStats().find(function (_s) { return _s.index === attackerIndex_1; });
-                                        var weapon = attacker === null || attacker === void 0 ? void 0 : attacker.base.weapons[weaponIndex];
-                                        var target = _this.allStats().find(function (_s) { return _s.index === targetIndex_1; });
-                                        if (attacker && weapon && target) {
-                                            var virtualAttackAction = (0, Utility_1.getAttackAction)(_vS, target, weapon, target, round);
+                                            domain.find(function (_s) { return _s.index === attackerIndex_1; });
+                                        var ability = attacker === null || attacker === void 0 ? void 0 : attacker.base.abilities[abilityIndex];
+                                        var weapon = (attacker === null || attacker === void 0 ? void 0 : attacker.equipped) || (attacker === null || attacker === void 0 ? void 0 : attacker.base.arsenal[0]);
+                                        var target = domain.find(function (_s) { return _s.index === targetIndex_1; });
+                                        if (attacker && ability && weapon && target) {
+                                            var virtualAttackAction = (0, Utility_1.getAttackAction)(_vS, target, weapon, ability, target, round);
                                             valid = _this.executeVirtualAttack(virtualAttackAction, _vS);
                                             if (valid) {
                                                 possibleError = '';
-                                                var realAttackAction = (0, Utility_1.getAttackAction)(_rS, target, weapon, target, round);
+                                                var realAttackAction = (0, Utility_1.getAttackAction)(_rS, target, weapon, ability, target, round);
                                                 executingActions.push(realAttackAction);
                                             }
                                             else {
@@ -1099,13 +1125,16 @@ var Battle = /** @class */ (function () {
                                     }
                                     else if (((_c = code.split(" ")) === null || _c === void 0 ? void 0 : _c[0]) === "loot") {
                                         var lootCoordString = (_d = code.split(" ")) === null || _d === void 0 ? void 0 : _d[1];
-                                        if (lootCoordString) {
-                                            var c = lootCoordString.split(",");
-                                            var lootAction = (0, Utility_1.getLootAction)(_rS, {
-                                                x: parseInt(c[0]),
-                                                y: parseInt(c[1]),
-                                            }, round);
-                                            executingActions.push(lootAction);
+                                        var c = lootCoordString === null || lootCoordString === void 0 ? void 0 : lootCoordString.split(",");
+                                        if ((c === null || c === void 0 ? void 0 : c.length) === 2) {
+                                            var x = void 0, y = void 0;
+                                            if (Number.isInteger(x = parseInt(c[0])) && Number.isInteger(y = parseInt(c[1]))) {
+                                                var lootAction = (0, Utility_1.getLootAction)(_rS, {
+                                                    x: x,
+                                                    y: y,
+                                                }, round);
+                                                executingActions.push(lootAction);
+                                            }
                                         }
                                         listenToQueue();
                                     }
@@ -1120,7 +1149,7 @@ var Battle = /** @class */ (function () {
                                         case "right":
                                         case "down":
                                         case "left":
-                                            // get moveAction based on input (blackboxed)
+                                            // get moveAction based on input
                                             var moveAction = (0, Utility_1.getMoveAction)(_vS, direction, round, 1);
                                             // record if it is first move or not
                                             var isFirstMove = !_vS.moved;
@@ -1152,6 +1181,7 @@ var Battle = /** @class */ (function () {
                                     listenToQueue();
                                     return valid;
                                 };
+                                // auto end turn
                                 setTimeout(function () {
                                     var _b;
                                     if (listener) {
@@ -1257,7 +1287,7 @@ var Battle = /** @class */ (function () {
     // clash methods
     Battle.prototype.applyClash = function (_cR, _aA) {
         var returnString = '';
-        var target = _aA.affected;
+        var target = _aA.target;
         // weapon effects
         var weaponEffect = new WeaponEffect_1.WeaponEffect(_aA, _cR, this);
         var activationString = weaponEffect.activate();
@@ -1277,48 +1307,48 @@ var Battle = /** @class */ (function () {
         var returnString = '';
         var CR_damage = clashResult.damage;
         var CR_fate = clashResult.fate;
-        var attacker = _aA.from;
-        var target = _aA.affected;
-        var weapon = _aA.weapon;
+        var attacker = _aA.attacker, target = _aA.target, weapon = _aA.weapon, ability = _aA.ability;
         var attackerClass = attacker.base.class;
         var targetClass = target.base.class;
-        switch (weapon.targetting.target) {
+        switch (ability.targetting.target) {
             // damaging
-            case typedef_1.WeaponTarget.enemy:
-                var hitRate = ((0, Utility_1.getAcc)(attacker, weapon) - (0, Utility_1.getDodge)(target)) < 100 ?
-                    (0, Utility_1.getAcc)(attacker, weapon) - (0, Utility_1.getDodge)(target) :
-                    100;
-                var critRate = ((0, Utility_1.getAcc)(attacker, weapon) - (0, Utility_1.getDodge)(target)) * 0.1 + (0, Utility_1.getCrit)(attacker, weapon);
-                // save accolades
-                (0, Utility_1.dealWithAccolade)(clashResult, attacker, target);
-                // reportString
-                returnString +=
-                    "**" + attackerClass + "** (" + attacker.index + ") \u2694\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + weapon.abilityName + "*__ " + hitRate + "% (" + (0, Utility_1.roundToDecimalPlace)(critRate) + "%)\n                    **" + CR_fate + "!** -**" + (0, Utility_1.roundToDecimalPlace)(CR_damage) + "** (" + (0, Utility_1.roundToDecimalPlace)(clashResult.u_damage) + ")\n                    [" + (0, Utility_1.roundToDecimalPlace)(target.HP) + " => " + (0, Utility_1.roundToDecimalPlace)(target.HP - CR_damage) + "]";
-                if (target.HP > 0 && target.HP - CR_damage <= 0) {
-                    returnString += "\n__**KILLING BLOW!**__";
+            case typedef_1.AbilityTargetting.enemy:
+                if (weapon) {
+                    var hitRate = ((0, Utility_1.getAcc)(attacker, ability) - (0, Utility_1.getDodge)(target)) < 100 ?
+                        (0, Utility_1.getAcc)(attacker, ability) - (0, Utility_1.getDodge)(target) :
+                        100;
+                    var critRate = ((0, Utility_1.getAcc)(attacker, ability) - (0, Utility_1.getDodge)(target)) * 0.1 + (0, Utility_1.getCrit)(attacker, ability);
+                    // save accolades
+                    (0, Utility_1.dealWithAccolade)(clashResult, attacker, target);
+                    // reportString
+                    returnString +=
+                        "**" + attackerClass + "** (" + attacker.index + ") \u2694\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + ability.abilityName + "*__ " + hitRate + "% (" + (0, Utility_1.roundToDecimalPlace)(critRate) + "%)\n                    **" + CR_fate + "!** -**" + (0, Utility_1.roundToDecimalPlace)(CR_damage) + "** (" + (0, Utility_1.roundToDecimalPlace)(clashResult.u_damage) + ")\n                    [" + (0, Utility_1.roundToDecimalPlace)(target.HP) + " => " + (0, Utility_1.roundToDecimalPlace)(target.HP - CR_damage) + "]";
+                    if (target.HP > 0 && target.HP - CR_damage <= 0) {
+                        returnString += "\n__**KILLING BLOW!**__";
+                    }
+                    // lifesteal
+                    var LS = (0, Utility_1.getLifesteal)(attacker, ability);
+                    if (LS > 0) {
+                        returnString += "\n" + this.heal(attacker, CR_damage * LS);
+                    }
+                    // search for "Labouring" status
+                    var labourStatus = (0, Utility_1.arrayGetLargestInArray)(this.getStatus(target, "labouring"), function (_s) { return _s.value; });
+                    if (labourStatus) {
+                        labourStatus.value += CR_damage;
+                    }
+                    // apply damage
+                    target.HP -= CR_damage;
                 }
-                // lifesteal
-                var LS = (0, Utility_1.getLifesteal)(attacker, weapon);
-                if (LS > 0) {
-                    returnString += "\n" + this.heal(attacker, CR_damage * LS);
-                }
-                // search for "Labouring" status
-                var labourStatus = (0, Utility_1.arrayGetLargestInArray)(this.getStatus(target, "labouring"), function (_s) { return _s.value; });
-                if (labourStatus) {
-                    labourStatus.value += CR_damage;
-                }
-                // apply damage
-                target.HP -= CR_damage;
                 break;
             // non-damaging
-            case typedef_1.WeaponTarget.ally:
+            case typedef_1.AbilityTargetting.ally:
                 if (attacker.index === target.index) {
                     returnString +=
-                        "**" + attackerClass + "** (" + attacker.index + ") Activates __*" + weapon.abilityName + "*__";
+                        "**" + attackerClass + "** (" + attacker.index + ") Activates __*" + ability.abilityName + "*__";
                 }
                 else {
                     returnString +=
-                        "**" + attackerClass + "** (" + attacker.index + ") \uD83D\uDEE1\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + weapon.abilityName + "*__";
+                        "**" + attackerClass + "** (" + attacker.index + ") \uD83D\uDEE1\uFE0F **" + targetClass + "** (" + target.index + ")\n                    __*" + ability.abilityName + "*__";
                 }
                 // returningString += abilityEffect();
                 break;
@@ -1326,47 +1356,47 @@ var Battle = /** @class */ (function () {
         return returnString;
     };
     Battle.prototype.clash = function (_aA) {
-        (0, Utility_1.log)("\tClash: " + _aA.from.base.class + " => " + _aA.affected.base.class);
+        (0, Utility_1.log)("\tClash: " + _aA.attacker.base.class + " => " + _aA.target.base.class);
         var fate = 'Miss';
-        var damage, u_damage = 0;
-        var attacker = _aA.from;
-        var weapon = _aA.weapon;
-        var target = _aA.affected;
-        // define constants
-        var hitChance = (0, Utility_1.getAcc)(attacker, weapon) - (0, Utility_1.getDodge)(target);
-        var crit = (0, Utility_1.getCrit)(attacker, weapon);
-        var minDamage = (0, Utility_1.getDamage)(attacker, weapon)[0];
-        var maxDamage = (0, Utility_1.getDamage)(attacker, weapon)[1];
-        var prot = (0, Utility_1.getProt)(target);
+        var damage = 0, u_damage = 0;
+        var attacker = _aA.attacker, target = _aA.target, weapon = _aA.weapon, ability = _aA.ability;
         // roll
         var hit = (0, Utility_1.uniformRandom)(1, 100);
-        // see if it crits
-        if (hit <= hitChance) {
-            // crit
-            if (hit <= hitChance * 0.1 + crit) {
-                u_damage = ((0, Utility_1.uniformRandom)((0, Utility_1.average)(minDamage, maxDamage), maxDamage)) * 2;
-                fate = "criticalHit";
+        if (weapon) {
+            // define constants
+            var hitChance = (0, Utility_1.getAcc)(attacker, ability) - (0, Utility_1.getDodge)(target);
+            var crit = (0, Utility_1.getCrit)(attacker, ability);
+            var minDamage = (0, Utility_1.getDamage)(attacker, ability).min;
+            var maxDamage = (0, Utility_1.getDamage)(attacker, ability).max;
+            var prot = (0, Utility_1.getProt)(target);
+            // see if it crits
+            if (hit <= hitChance) {
+                // crit
+                if (hit <= hitChance * 0.1 + crit) {
+                    u_damage = ((0, Utility_1.uniformRandom)((0, Utility_1.average)(minDamage, maxDamage), maxDamage)) * 2;
+                    fate = "criticalHit";
+                }
+                // hit
+                else {
+                    u_damage = (0, Utility_1.uniformRandom)(minDamage, maxDamage);
+                    fate = "Hit";
+                }
             }
-            // hit
-            else {
-                u_damage = (0, Utility_1.uniformRandom)(minDamage, maxDamage);
-                fate = "Hit";
+            u_damage = (0, Utility_1.clamp)(u_damage, 0, 1000);
+            // apply protections
+            damage = (0, Utility_1.clamp)(u_damage * (1 - (prot * target.shield / 3)), 0, 100);
+            // reduce damage by shielding
+            var shieldingStatus = (0, Utility_1.arrayGetLargestInArray)(target.statusEffects.filter(function (_status) { return _status.type === "protected"; }), function (_item) { return _item.value; });
+            while (damage > 0 && shieldingStatus && shieldingStatus.value > 0) {
+                var shieldValue = shieldingStatus.value;
+                (0, Utility_1.log)("reduced " + shieldValue + " damage!");
+                shieldingStatus.value -= damage;
+                damage -= shieldValue;
+                if (damage < 0) {
+                    damage = 0;
+                }
+                shieldingStatus = (0, Utility_1.arrayGetLargestInArray)(target.statusEffects.filter(function (_status) { return _status.type === "protected"; }), function (_item) { return _item.value; });
             }
-        }
-        u_damage = (0, Utility_1.clamp)(u_damage, 0, 1000);
-        // apply protections
-        damage = (0, Utility_1.clamp)(u_damage * (1 - (prot * target.shield / 3)), 0, 100);
-        // reduce damage by shielding
-        var shieldingStatus = (0, Utility_1.arrayGetLargestInArray)(target.statusEffects.filter(function (_status) { return _status.type === "protected"; }), function (_item) { return _item.value; });
-        while (damage > 0 && shieldingStatus && shieldingStatus.value > 0) {
-            var shieldValue = shieldingStatus.value;
-            (0, Utility_1.log)("reduced " + shieldValue + " damage!");
-            shieldingStatus.value -= damage;
-            damage -= shieldValue;
-            if (damage < 0) {
-                damage = 0;
-            }
-            shieldingStatus = (0, Utility_1.arrayGetLargestInArray)(target.statusEffects.filter(function (_status) { return _status.type === "protected"; }), function (_item) { return _item.value; });
         }
         return {
             damage: damage,
@@ -1455,7 +1485,7 @@ var Battle = /** @class */ (function () {
         }
     };
     Battle.prototype.getGreaterPrio = function (a) {
-        return (1000 * (20 - a.round)) + (a.from.readiness - a.readiness);
+        return (1000 * (20 - a.round)) + (a.attacker.readiness - a.readiness);
     };
     ;
     Battle.prototype.greaterPriorSort = function (_actions) {
@@ -1479,14 +1509,14 @@ var Battle = /** @class */ (function () {
         var round = _action.round;
         var executeAuto = function (_s) {
             var attacker = _s;
-            var target = _s.index === _action.from.index ?
-                _action.affected :
-                _action.from;
-            _s.base.autoWeapons.forEach(function (_w) {
-                var weaponTarget = _w.targetting.target;
-                var intendedVictim = weaponTarget === typedef_1.WeaponTarget.ally ?
+            var target = _s.index === _action.attacker.index ?
+                _action.target :
+                _action.attacker;
+            _s.base.autoWeapons.forEach(function (_a) {
+                var weaponTarget = _a.targetting.target;
+                var intendedVictim = weaponTarget === typedef_1.AbilityTargetting.ally ?
                     // weapon is intended to target friendly units
-                    target.team === attacker.team && _w.targetting.AOE !== "self" ?
+                    target.team === attacker.team && _a.targetting.AOE !== "self" ?
                         target : // if the action is targetting a friendly unit, use the effect on them.
                         attacker : // if the action is targetting an enemy, use it on self
                     // weapon is intended to target enemies
@@ -1494,7 +1524,7 @@ var Battle = /** @class */ (function () {
                         null : // the targetted unit is friendly, ignore the autoWeapon.
                         target; // if the targetted is an enemy, unleash the autoWeapon.
                 if (intendedVictim) {
-                    var selfActivatingAA = (0, Utility_1.getAttackAction)(attacker, intendedVictim, _w, {
+                    var selfActivatingAA = (0, Utility_1.getAttackAction)(attacker, intendedVictim, null, _a, {
                         x: intendedVictim.x, y: intendedVictim.y
                     }, round);
                     _this.executeAttackAction(selfActivatingAA);
@@ -1503,9 +1533,9 @@ var Battle = /** @class */ (function () {
             });
         };
         var totalString = [];
-        executeAuto(_action.from);
-        if (_action.from.index !== _action.affected.index) {
-            executeAuto(_action.affected);
+        executeAuto(_action.attacker);
+        if (_action.attacker.index !== _action.target.index) {
+            executeAuto(_action.target);
         }
         return totalString.join("\n");
     };
@@ -1518,12 +1548,12 @@ var Battle = /** @class */ (function () {
         }
     };
     Battle.prototype.executeOneAction = function (_action) {
-        (0, Utility_1.log)("\tExecuting action: " + _action.type + ", " + _action.from.base.class + " => " + _action.affected.base.class);
+        (0, Utility_1.log)("\tExecuting action: " + _action.type + ", " + _action.attacker.base.class + " => " + _action.target.base.class);
         var mAction = _action;
         var aAction = _action;
         var lAction = _action;
-        var actionAffected = _action.affected;
-        var actionFrom = _action.from;
+        var actionAffected = _action.target;
+        var actionFrom = _action.attacker;
         var round = _action.round;
         // activate autoWeapons
         var autoWeaponReportString = this.executeAutoWeapons(_action);
@@ -1560,8 +1590,8 @@ var Battle = /** @class */ (function () {
     };
     Battle.prototype.executeSingleTargetAttackAction = function (_aA) {
         var eM = this.validateTarget(_aA);
-        var attacker = _aA.from;
-        var target = _aA.affected;
+        var attacker = _aA.attacker;
+        var target = _aA.target;
         var string = '';
         if (eM) {
             (0, Utility_1.log)("\t" + attacker.base.class + " failed to attack " + target.base.class + ". Reason: " + eM.reason);
@@ -1578,30 +1608,33 @@ var Battle = /** @class */ (function () {
     };
     ;
     Battle.prototype.executeAOEAttackAction = function (_aA, inclusive) {
+        var _b;
         if (inclusive === void 0) { inclusive = true; }
-        var center = _aA.coordinate;
-        var weapon = _aA.weapon;
-        var attacker = _aA.from;
-        var enemiesInRadius = this.findEntities_radius(center, weapon.range[2] || weapon.range[1], inclusive);
         var string = '';
-        for (var i = 0; i < enemiesInRadius.length; i++) {
-            var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, enemiesInRadius[i], weapon, enemiesInRadius[i], _aA.round);
-            var SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
-            string += SAResult;
-            if (enemiesInRadius.length > 1 && i !== enemiesInRadius.length - 1) {
-                string += "\n";
+        var center = _aA.coordinate;
+        var weapon = _aA.weapon, ability = _aA.ability, attacker = _aA.attacker, target = _aA.target;
+        var blastRadius = ((_b = ability.range) === null || _b === void 0 ? void 0 : _b.max) ||
+            (weapon === null || weapon === void 0 ? void 0 : weapon.range.max);
+        if (blastRadius) {
+            var enemiesInRadius = this.findEntities_radius(center, blastRadius, inclusive);
+            for (var i = 0; i < enemiesInRadius.length; i++) {
+                var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, enemiesInRadius[i], weapon, ability, enemiesInRadius[i], _aA.round);
+                var SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
+                string += SAResult;
+                if (enemiesInRadius.length > 1 && i !== enemiesInRadius.length - 1) {
+                    string += "\n";
+                }
             }
         }
         return string;
     };
     ;
     Battle.prototype.executeLineAttackAction = function (_aA) {
-        var target = _aA.affected;
-        var attacker = _aA.from;
+        var attacker = _aA.attacker, target = _aA.target, ability = _aA.ability, weapon = _aA.weapon, round = _aA.round;
         var enemiesInLine = this.findEntities_inLine(attacker, target);
         var string = '';
         for (var i = 0; i < enemiesInLine.length; i++) {
-            var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, target, _aA.weapon, enemiesInLine[i], _aA.round);
+            var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, target, weapon, ability, enemiesInLine[i], round);
             var SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
             string += SAResult;
         }
@@ -1609,10 +1642,11 @@ var Battle = /** @class */ (function () {
     };
     ;
     Battle.prototype.executeAttackAction = function (_aA) {
+        var attacker = _aA.attacker, target = _aA.target, ability = _aA.ability, readiness = _aA.readiness, round = _aA.round;
         var attackResult = "";
-        switch (_aA.weapon.targetting.AOE) {
+        switch (ability.targetting.AOE) {
             case "self":
-                _aA.affected = _aA.from;
+                _aA.target = _aA.attacker;
             case "single":
             case "touch":
                 attackResult = this.executeSingleTargetAttackAction(_aA);
@@ -1628,34 +1662,34 @@ var Battle = /** @class */ (function () {
                 break;
         }
         // save attack results as reportString
-        this.appendReportString(_aA.from, _aA.round, attackResult);
-        if (_aA.from.index !== _aA.affected.index) {
-            this.appendReportString(_aA.affected, _aA.round, attackResult);
+        this.appendReportString(attacker, round, attackResult);
+        if (attacker.index !== target.index) {
+            this.appendReportString(target, round, attackResult);
         }
         // expend resources
         _aA.executed = true;
-        _aA.from.readiness -= _aA.readiness;
-        _aA.from.weaponUses[(0, Utility_1.getWeaponIndex)(_aA.weapon, _aA.from)]++;
-        (0, Utility_1.handleTokens)(_aA.from, function (p, t) {
-            (0, Utility_1.log)("\t\t" + _aA.from.index + ") " + t + " --" + _aA[t]);
-            _aA.from[t] -= _aA[t];
+        attacker.readiness -= readiness;
+        attacker.weaponUses[(0, Utility_1.getAbilityIndex)(ability, attacker)]++;
+        (0, Utility_1.handleTokens)(attacker, function (p, t) {
+            (0, Utility_1.log)("\t\t" + attacker.index + ") " + t + " --" + _aA[t]);
+            attacker[t] -= _aA[t];
         });
         return _aA;
     };
     Battle.prototype.executeMoveAction = function (_mA) {
-        var stat = _mA.affected;
+        var stat = _mA.target;
         var axis = _mA.axis;
         var possibleSeats = this.getAvailableSpacesAhead(_mA);
         var furthestCoord = (0, Utility_1.arrayGetLastElement)(possibleSeats);
         var newMagnitude = furthestCoord ?
-            (0, Utility_1.getDistance)(furthestCoord, _mA.affected) * Math.sign(_mA.magnitude) :
+            (0, Utility_1.getDistance)(furthestCoord, _mA.target) * Math.sign(_mA.magnitude) :
             0;
         _mA.magnitude = newMagnitude;
         this.CSMap.delete((0, Utility_1.getCoordString)(stat));
         stat[axis] += newMagnitude;
         this.CSMap = this.CSMap.set((0, Utility_1.getCoordString)(stat), stat);
         // console.log(`${_mA.from.base.class} (${_mA.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
-        var affected = _mA.affected;
+        var affected = _mA.target;
         _mA.executed = true;
         affected.readiness -= _mA.readiness;
         (0, Utility_1.handleTokens)(affected, function (p, t) {
@@ -1827,7 +1861,7 @@ var Battle = /** @class */ (function () {
             return __generator(this, function (_h) {
                 switch (_h.label) {
                     case 0:
-                        (0, Utility_1.log)(_actions.map(function (_a) { return _a.from.base.class + " => " + _a.affected.base.class; }));
+                        (0, Utility_1.log)(_actions.map(function (_a) { return _a.attacker.base.class + " => " + _a.target.base.class; }));
                         drawAttackAction = function (_aA, _fromBattleCoord, _toBattleCoord, _width, _offset) {
                             if (_width === void 0) { _width = 5; }
                             if (_offset === void 0) { _offset = {
@@ -1847,7 +1881,7 @@ var Battle = /** @class */ (function () {
                                             style.g = 0;
                                             style.b = 0;
                                             ctx.strokeStyle = (0, Utility_1.stringifyRGBA)((0, Utility_1.normaliseRGBA)(style));
-                                            victimWithinDistance = (0, Utility_1.checkWithinDistance)(_aA.weapon, (0, Utility_1.getDistance)(_aA.from, _aA.affected));
+                                            victimWithinDistance = (0, Utility_1.checkWithinDistance)(_aA, (0, Utility_1.getDistance)(_aA.attacker, _aA.target));
                                             ctx.beginPath();
                                             ctx.strokeStyle = victimWithinDistance ?
                                                 "red" :
@@ -1860,7 +1894,7 @@ var Battle = /** @class */ (function () {
                                             ctx.stroke();
                                             ctx.closePath();
                                             if (!victimWithinDistance) return [3 /*break*/, 5];
-                                            if (!(_aA.weapon.targetting.target === typedef_1.WeaponTarget.ally)) return [3 /*break*/, 2];
+                                            if (!(_aA.ability.targetting.target === typedef_1.AbilityTargetting.ally)) return [3 /*break*/, 2];
                                             return [4 /*yield*/, (0, Database_1.getFileImage)('./images/Shield.png')];
                                         case 1:
                                             _b = _c.sent();
@@ -1958,62 +1992,66 @@ var Battle = /** @class */ (function () {
                                 switch (_j.label) {
                                     case 0:
                                         action = actions[i];
-                                        attackerIndex = action.from.index;
-                                        victimIndex = action.affected.index;
+                                        attackerIndex = action.attacker.index;
+                                        victimIndex = action.target.index;
                                         victim_beforeCoords = virtualCoordsMap.get(victimIndex) ||
-                                            virtualCoordsMap.set(victimIndex, { x: action.affected.x, y: action.affected.y }).get(victimIndex);
+                                            virtualCoordsMap.set(victimIndex, { x: action.target.x, y: action.target.y }).get(victimIndex);
                                         attacker_beforeCoords = virtualCoordsMap.get(attackerIndex) ||
-                                            virtualCoordsMap.set(attackerIndex, { x: action.from.x, y: action.from.y }).get(attackerIndex);
+                                            virtualCoordsMap.set(attackerIndex, { x: action.attacker.x, y: action.attacker.y }).get(attackerIndex);
                                         return [4 /*yield*/, (0, Utility_1.dealWithAction)(action, function (aA) { return __awaiter(_this, void 0, void 0, function () {
-                                                var weapon, epicenterCoord, affecteds, i_3, af, singleTarget, _b, _c, coord;
+                                                var attackRange, ability, epicenterCoord, affecteds, i_3, af, singleTarget, _b, _c, coord;
                                                 var e_4, _d;
                                                 return __generator(this, function (_g) {
-                                                    weapon = aA.weapon;
-                                                    switch (weapon.targetting.AOE) {
-                                                        case "self":
-                                                        case "single":
-                                                        case "touch":
-                                                            appendGraph(aA, attacker_beforeCoords, victim_beforeCoords, i + 1);
-                                                            break;
-                                                        case "circle":
-                                                        case "selfCircle":
-                                                            epicenterCoord = weapon.targetting.AOE === "circle" ?
-                                                                aA.coordinate :
-                                                                victim_beforeCoords;
-                                                            affecteds = this.findEntities_radius((0, Utility_1.getNewObject)(epicenterCoord, { index: victimIndex }), // assign victim
-                                                            weapon.range[2], weapon.targetting.AOE === "circle");
-                                                            for (i_3 = 0; i_3 < affecteds.length; i_3++) {
-                                                                af = affecteds[i_3];
-                                                                singleTarget = (0, Utility_1.getNewObject)(aA, { from: epicenterCoord, affected: af });
-                                                                appendGraph(singleTarget, epicenterCoord, af, i_3 + 1);
-                                                            }
-                                                            if (weapon.targetting.AOE === "circle") {
-                                                                // show AOE throw trajectory
-                                                                appendGraph(aA, attacker_beforeCoords, epicenterCoord, i + 1);
-                                                            }
-                                                            try {
-                                                                // draw explosion range
-                                                                for (_b = __values((0, Utility_1.getCoordsWithinRadius)(weapon.range[2], epicenterCoord, true)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                                                                    coord = _c.value;
-                                                                    this.drawSquareOnBattleCoords(ctx, coord, {
-                                                                        r: 255,
-                                                                        b: 0,
-                                                                        g: 0,
-                                                                        alpha: 0.3
-                                                                    });
+                                                    attackRange = (0, Utility_1.getAttackRange)(aA);
+                                                    if (attackRange) {
+                                                        ability = aA.ability;
+                                                        switch (ability.targetting.AOE) {
+                                                            case "self":
+                                                            case "single":
+                                                            case "touch":
+                                                                appendGraph(aA, attacker_beforeCoords, victim_beforeCoords, i + 1);
+                                                                break;
+                                                            case "circle":
+                                                            case "selfCircle":
+                                                                epicenterCoord = ability.targetting.AOE === "circle" ?
+                                                                    aA.coordinate :
+                                                                    victim_beforeCoords;
+                                                                affecteds = this.findEntities_radius((0, Utility_1.getNewObject)(epicenterCoord, { index: victimIndex }), // assign victim
+                                                                attackRange.radius, ability.targetting.AOE === "circle" // if circle: damages epicenter as well
+                                                                );
+                                                                for (i_3 = 0; i_3 < affecteds.length; i_3++) {
+                                                                    af = affecteds[i_3];
+                                                                    singleTarget = (0, Utility_1.getNewObject)(aA, { from: epicenterCoord, affected: af });
+                                                                    appendGraph(singleTarget, epicenterCoord, af, i_3 + 1);
                                                                 }
-                                                            }
-                                                            catch (e_4_1) { e_4 = { error: e_4_1 }; }
-                                                            finally {
+                                                                if (ability.targetting.AOE === "circle") {
+                                                                    // show AOE throw trajectory
+                                                                    appendGraph(aA, attacker_beforeCoords, epicenterCoord, i + 1);
+                                                                }
                                                                 try {
-                                                                    if (_c && !_c.done && (_d = _b.return)) _d.call(_b);
+                                                                    // draw explosion range
+                                                                    for (_b = __values((0, Utility_1.getCoordsWithinRadius)(attackRange.radius, epicenterCoord, true)), _c = _b.next(); !_c.done; _c = _b.next()) {
+                                                                        coord = _c.value;
+                                                                        this.drawSquareOnBattleCoords(ctx, coord, {
+                                                                            r: 255,
+                                                                            b: 0,
+                                                                            g: 0,
+                                                                            alpha: 0.3
+                                                                        });
+                                                                    }
                                                                 }
-                                                                finally { if (e_4) throw e_4.error; }
-                                                            }
-                                                            break;
-                                                        case "line":
-                                                            throw new Error("Line-drawing not implemented");
-                                                            break;
+                                                                catch (e_4_1) { e_4 = { error: e_4_1 }; }
+                                                                finally {
+                                                                    try {
+                                                                        if (_c && !_c.done && (_d = _b.return)) _d.call(_b);
+                                                                    }
+                                                                    finally { if (e_4) throw e_4.error; }
+                                                                }
+                                                                break;
+                                                            case "line":
+                                                                throw new Error("Line-drawing not implemented");
+                                                                break;
+                                                        }
                                                     }
                                                     return [2 /*return*/];
                                                 });
@@ -2231,9 +2269,9 @@ var Battle = /** @class */ (function () {
         var allStats = this.allStats();
         var ignore = ["block"];
         var targetNotInIgnore = function (c) { return c.team && !ignore.includes(c.team); };
-        if (_weapon && _weapon.targetting.target === typedef_1.WeaponTarget.enemy)
+        if (_weapon && _weapon.targetting.target === typedef_1.AbilityTargetting.enemy)
             ignore.push("player");
-        if (_weapon && _weapon.targetting.target === typedef_1.WeaponTarget.ally)
+        if (_weapon && _weapon.targetting.target === typedef_1.AbilityTargetting.ally)
             ignore.push("enemy");
         // 0. self target
         if (_weapon && (_weapon.targetting.AOE === "selfCircle" || _weapon.targetting.AOE === "self")) {
@@ -2364,23 +2402,25 @@ var Battle = /** @class */ (function () {
     Battle.prototype.removeEntity = function (_stat) {
         this.CSMap.delete((0, Utility_1.getCoordString)(_stat));
     };
-    Battle.prototype.validateTarget = function (_stat_aa, _weapon_null, _target_null) {
+    Battle.prototype.validateTarget = function (_stat_aa, _weapon, _ability, _target) {
         var eM = {
             reason: "",
             value: null,
         };
-        var attackerStat, targetStat, weapon;
+        var attackerStat, targetStat, weapon, ability;
         if (_stat_aa.index === undefined) // is aa
          {
             var aa = _stat_aa;
-            attackerStat = aa.from;
-            targetStat = aa.affected;
+            attackerStat = aa.attacker;
+            targetStat = aa.target;
             weapon = aa.weapon;
+            ability = aa.ability;
         }
         else { // is stat
             attackerStat = _stat_aa;
-            targetStat = _target_null;
-            weapon = _weapon_null;
+            targetStat = _target;
+            weapon = _weapon;
+            ability = _ability;
         }
         // ~~~~~~ UNIVERSAL ~~~~~~ //
         // undefined target
@@ -2404,7 +2444,11 @@ var Battle = /** @class */ (function () {
             return eM;
         }
         // targetting a teammate without pvp on
-        if (weapon.targetting.target === typedef_1.WeaponTarget.enemy && weapon.targetting.AOE !== "self" && weapon.targetting.AOE !== "selfCircle" && attackerStat.team === targetStat.team && (!targetStat.pvp || !attackerStat.pvp)) {
+        if (ability.targetting.target === typedef_1.AbilityTargetting.enemy &&
+            ability.targetting.AOE !== "self" &&
+            ability.targetting.AOE !== "selfCircle" &&
+            attackerStat.team === targetStat.team &&
+            (!targetStat.pvp || !attackerStat.pvp)) {
             eM.reason = "Attempted to attack a teammate without pvp on.";
             return eM;
         }
@@ -2415,25 +2459,25 @@ var Battle = /** @class */ (function () {
             return eM;
         }
         // tokens
-        if (attackerStat.sword < weapon.sword) {
+        if (attackerStat.sword < ability.sword) {
             eM.reason = "Not enough Sword (🗡️) tokens.";
             eM.value = attackerStat.sword;
             return eM;
         }
-        if (attackerStat.shield < weapon.shield) {
+        if (attackerStat.shield < ability.shield) {
             eM.reason = "Not enough Shield (🛡️) tokens.";
             eM.value = attackerStat.shield;
             return eM;
         }
-        if (attackerStat.sprint < weapon.sprint) {
+        if (attackerStat.sprint < ability.sprint) {
             eM.reason = "Not enough Sprint (👢) tokens.";
             eM.value = attackerStat.sprint;
             return eM;
         }
         // weapon uses
-        if (weapon.UPT <= (0, Utility_1.getWeaponUses)(weapon, attackerStat)) {
-            eM.reason = "You can only use this ability " + weapon.UPT + " time(s) per turn.";
-            eM.value = (0, Utility_1.getWeaponUses)(weapon, attackerStat);
+        if (ability.UPT <= (0, Utility_1.getWeaponUses)(ability, attackerStat)) {
+            eM.reason = "You can only use this ability " + ability.UPT + " time(s) per turn.";
+            eM.value = (0, Utility_1.getWeaponUses)(ability, attackerStat);
             return eM;
         }
         // weird stats
@@ -2447,15 +2491,17 @@ var Battle = /** @class */ (function () {
             return eM;
         }
         // only valid errors if weapon is not a self-target
-        if (weapon.targetting.AOE !== "selfCircle" && weapon.targetting.AOE !== "self" && weapon.targetting.AOE !== "touch") {
+        if (ability.targetting.AOE !== "selfCircle" &&
+            ability.targetting.AOE !== "self" &&
+            ability.targetting.AOE !== "touch") {
             // out of range
-            if ((0, Utility_1.getDistance)(attackerStat, targetStat) > weapon.range[1] || (0, Utility_1.getDistance)(attackerStat, targetStat) < weapon.range[0]) {
+            if ((0, Utility_1.getDistance)(attackerStat, targetStat) > weapon.range.max || (0, Utility_1.getDistance)(attackerStat, targetStat) < weapon.range.min) {
                 eM.reason = "Target is too far or too close.";
                 eM.value = (0, Utility_1.roundToDecimalPlace)((0, Utility_1.getDistance)(attackerStat, targetStat), 1);
                 return eM;
             }
             // invalid self-targeting
-            if (weapon.range[0] !== 0 && targetStat.index === attackerStat.index) {
+            if (weapon.range.min !== 0 && targetStat.index === attackerStat.index) {
                 eM.reason = "Cannot target self.";
                 return eM;
             }
@@ -2730,6 +2776,33 @@ var Battle = /** @class */ (function () {
     Battle.ROUND_SECONDS = 10;
     Battle.MAX_READINESS = 25;
     Battle.MOVE_READINESS = 5;
+    Battle.MOVEMENT_BUTTONOPTIONS = [
+        {
+            label: "UP ⬆️",
+            style: "PRIMARY",
+            customId: "up"
+        },
+        {
+            label: "DOWN ⬇️",
+            style: "SECONDARY",
+            customId: "down"
+        },
+        {
+            label: "RIGHT ➡️",
+            style: "PRIMARY",
+            customId: "right"
+        },
+        {
+            label: "LEFT ⬅️",
+            style: "SECONDARY",
+            customId: "left"
+        },
+        {
+            label: "Undo",
+            style: "SUCCESS",
+            customId: "undo"
+        },
+    ];
     return Battle;
 }());
 exports.Battle = Battle;

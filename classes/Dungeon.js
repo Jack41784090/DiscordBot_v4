@@ -177,7 +177,7 @@ var Dungeon = /** @class */ (function () {
             var availableDirections = getAvailableDirections(_c, _length);
             // debug("Available", availableDirections);
             var randomDirection = (0, Utility_1.arrayGetRandom)(availableDirections);
-            if (randomDirection !== undefined) {
+            if (randomDirection !== null) {
                 // debug("\tChosen random direction", randomDirection);
                 return branchOut(_c, randomDirection, _length);
             }

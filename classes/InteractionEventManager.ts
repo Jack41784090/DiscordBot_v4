@@ -31,6 +31,10 @@ export class InteractionEventManager {
         this.user_interaction_map = new Map<OwnerID, InteractionSplit>();
     }
 
+    userData(_id: OwnerID): UserData | null {
+        return this.user_interaction_map.get(_id)?.userData || null;
+    }
+
     async registerInteraction(_id: OwnerID, _interactionEvent: InteractionEvent, _userData?: UserData): Promise<UserData | null> {
         const split: InteractionSplit =
             this.user_interaction_map.get(_id)||

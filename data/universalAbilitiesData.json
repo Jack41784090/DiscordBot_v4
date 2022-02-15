@@ -1,0 +1,72 @@
+{
+    "Reckless": {
+        "abilityName": "Reckless",
+        "accuracy": 0,
+        "damageRange": {
+            "min": 0,
+            "max": 0
+        },
+        "range": {
+            "min": 0,
+            "max": 0,
+            "radius": 0
+        },
+        "readinessCost": 0,
+        "sword": -1,
+        "shield": 2,
+        "sprint": 0,
+        "targetting": {
+            "target": 0,
+            "AOE": "self"
+        },
+        "cooldown": 0,
+        "UPT": 1,
+
+        "type": "null",
+        "desc": null,
+        "damageScale": 0,
+        "speedScale": 1,
+        "staminaScale": 1,
+        "bonus": {
+            "damage": 0,
+            "accuracy": 0,
+            "lifesteal": 0,
+            "criticalHit": 0
+        }
+    },
+    "Attack": {
+        "abilityName": "Attack",
+        "accuracy": 0,
+        "damageRange": {
+            "min": 0,
+            "max": 0
+        },
+        "range": {
+            "min": 1,
+            "max": 1,
+            "radius": 1
+        },
+        "readinessCost": 0,
+        "sword": -1,
+        "shield": 2,
+        "sprint": 0,
+        "targetting": {
+            "target": 0,
+            "AOE": "self"
+        },
+        "cooldown": 0,
+        "UPT": 1,
+
+        "type": "null",
+        "desc": null,
+        "damageScale": 1,
+        "speedScale": 1,
+        "staminaScale": 1,
+        "bonus": {
+            "damage": 0,
+            "accuracy": 0,
+            "lifesteal": 0,
+            "criticalHit": 0
+        }
+    }
+}

@@ -48,19 +48,19 @@ module.exports = {
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var forgeMes, iem, event, updatedUserData, selectedWeaponType, selectedItems, selectOptionsCache, getForgeMesOptions, listenFor, type, _a, weapons, r1, r2, r3;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var forgeMes, iem, event, updatedUserData, selectedWeaponType, selectedItems, selectOptionsCache, getForgeMesOptions, listenFor, weapons, r1, r2, r3;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0: return [4 /*yield*/, channel.send({
                         embeds: [(0, Utility_1.getLoadingEmbed)()]
                     })];
                 case 1:
-                    forgeMes = _b.sent();
+                    forgeMes = _a.sent();
                     iem = InteractionEventManager_1.InteractionEventManager.getInstance();
                     event = new InteractionEvent_1.InteractionEvent(author.id, forgeMes, 'forge');
                     return [4 /*yield*/, iem.registerInteraction(author.id, event, authorUserData)];
                 case 2:
-                    updatedUserData = (_b.sent());
+                    updatedUserData = (_a.sent());
                     selectedItems = [];
                     selectOptionsCache = new Map();
                     getForgeMesOptions = function (_t) {
@@ -77,7 +77,7 @@ module.exports = {
                                     .setTitle("Select material for the " + (0, Utility_1.formalise)(_t))
                                     .setFields(selectedItems.map(function (_i) { return ({
                                     name: _i.getDisplayName(),
-                                    value: _i.getAllMaterial().map(function (_mi) { return _i.getMaterialInfoString(_mi); }).join('\n'),
+                                    value: _i.getAllMaterial().filter(function (_mi) { return _mi.occupation >= 0.1; }).map(function (_mi) { return _i.getMaterialInfoString(_mi); }).join('\n'),
                                 }); }))
                             ],
                             components: [(0, Utility_1.getSelectMenuActionRow)(selectMenuOptions)]
@@ -131,17 +131,6 @@ module.exports = {
                                 })];
                         });
                     }); };
-                    if (!(args.length === 0)) return [3 /*break*/, 3];
-                    return [3 /*break*/, 12];
-                case 3:
-                    type = args[0].toLowerCase();
-                    _a = type;
-                    switch (_a) {
-                        case 'weapon': return [3 /*break*/, 4];
-                        case 'armour': return [3 /*break*/, 10];
-                    }
-                    return [3 /*break*/, 11];
-                case 4:
                     weapons = Object.keys(jsons_1.forgeWeaponData).map(function (_wN) {
                         var bladeCost = jsons_1.forgeWeaponData[_wN].blade;
                         var guardCost = jsons_1.forgeWeaponData[_wN].guard;
@@ -159,8 +148,8 @@ module.exports = {
                             ],
                             components: [(0, Utility_1.getSelectMenuActionRow)(weapons)]
                         })];
-                case 5:
-                    _b.sent();
+                case 3:
+                    _a.sent();
                     return [4 /*yield*/, new Promise(function (resolve) {
                             var timeout = setTimeout(function () {
                                 iem.stopInteraction(author.id, 'forge');
@@ -185,38 +174,43 @@ module.exports = {
                                 });
                             }); }, 1);
                         })];
-                case 6:
-                    selectedWeaponType = _b.sent();
+                case 4:
+                    selectedWeaponType = _a.sent();
                     if (selectedWeaponType === null) {
-                        return [3 /*break*/, 12];
+                        return [2 /*return*/];
                     }
                     return [4 /*yield*/, listenFor('blade')];
-                case 7:
-                    r1 = _b.sent();
+                case 5:
+                    r1 = _a.sent();
                     if (r1 === null) {
-                        return [3 /*break*/, 12];
+                        return [2 /*return*/];
                     }
                     selectedItems.push(r1);
                     return [4 /*yield*/, listenFor('guard')];
-                case 8:
-                    r2 = _b.sent();
+                case 6:
+                    r2 = _a.sent();
                     if (r2 === null) {
-                        return [3 /*break*/, 12];
+                        return [2 /*return*/];
                     }
                     selectedItems.push(r2);
                     return [4 /*yield*/, listenFor('shaft')];
-                case 9:
-                    r3 = _b.sent();
+                case 7:
+                    r3 = _a.sent();
                     if (r3 === null) {
-                        return [3 /*break*/, 12];
+                        return [2 /*return*/];
                     }
                     selectedItems.push(r3);
-                    return [3 /*break*/, 12];
-                case 10: return [3 /*break*/, 12];
-                case 11:
-                    message.react(typedef_1.EMOJI_CROSS);
-                    return [3 /*break*/, 12];
-                case 12: return [2 /*return*/];
+                    // confirm forge weapon
+                    (0, Utility_1.setUpConfirmationInteractionCollect)(forgeMes, new discord_js_1.MessageEmbed({
+                        title: "Forge " + (0, Utility_1.formalise)(selectedWeaponType) + "?",
+                        fields: (selectedItems.map(function (_i) { return ({
+                            name: _i.getDisplayName(),
+                            value: _i.getAllMaterial().filter(function (_mi) { return _mi.occupation >= 0.1; }).map(function (_mi) { return _i.getMaterialInfoString(_mi); }).join('\n'),
+                        }); }))
+                    }), function () {
+                    }, function () {
+                    });
+                    return [2 /*return*/];
             }
         });
     }); }

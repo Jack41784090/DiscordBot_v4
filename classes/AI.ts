@@ -1,4 +1,5 @@
-import { Action, AIFunction, AllTeams, BotType, Coordinate, MoveAction, NumericDirection, Stat, Team, VirtualStat, Ability, WeaponAOE, WeaponTarget } from "../typedef";
+import { universalWeaponsData } from "../jsons";
+import { Action, AIFunction, AllTeams, BotType, Coordinate, MoveAction, NumericDirection, Stat, Team, VirtualStat, Ability, AbilityAOE, AbilityTargetting, ForgeWeapon, AttackAction } from "../typedef";
 import { Battle } from "./Battle";
 import { getNewObject, log, checkWithinDistance, getDistance, getAttackAction, breadthFirstSearch as breadthSearch, getCoordString, numericDirectionToDirection, directionToMagnitudeAxis, average, arrayGetRandom, debug } from "./Utility";
 
@@ -19,7 +20,8 @@ const AIFunctions = new Map<BotType, AIFunction>([
             // if found a target
             if (selectedTarget !== null) {
                 // 1. select weapon
-                const weaponSelected: Ability = virtualStat.base.weapons[0];
+                const weaponSelected: ForgeWeapon = virtualStat.base.arsenal[0] || universalWeaponsData.Unarmed as ForgeWeapon;
+                const abilitySelected: Ability = virtualStat.base.abilities[0];
 
                 // 2. move to preferred location
                 const path: Array<Coordinate> = _bd.startPathFinding(_rS, selectedTarget, "lowest");
@@ -27,11 +29,11 @@ const AIFunctions = new Map<BotType, AIFunction>([
                 const fullActions: Array<Action> = _bd.normaliseMoveActions(moveActionArray, virtualStat);
 
                 // 3. attack with selected weapon
-                if (checkWithinDistance(weaponSelected, getDistance(virtualStat, selectedTarget))) {
-                    const attackAction = getAttackAction(virtualStat, selectedTarget, weaponSelected, selectedTarget, fullActions.length + 1);
-                    const valid = _bd.executeVirtualAttack(attackAction, virtualStat);
+                const virtualAA: AttackAction = getAttackAction(virtualStat, selectedTarget, weaponSelected, abilitySelected, selectedTarget, fullActions.length + 1);
+                if (checkWithinDistance(virtualAA, getDistance(virtualStat, selectedTarget))) {
+                    const valid = _bd.executeVirtualAttack(virtualAA, virtualStat);
                     if (valid) {
-                        fullActions.push(getAttackAction(_rS, selectedTarget, weaponSelected, selectedTarget, fullActions.length + 1));
+                        fullActions.push(getAttackAction(_rS, selectedTarget, weaponSelected, abilitySelected, selectedTarget, fullActions.length + 1));
                     }
                 }
 
@@ -45,14 +47,16 @@ const AIFunctions = new Map<BotType, AIFunction>([
             log("Employing passive_supportive AI")
             const virtualStat = getNewObject(_rS);
             const allActions: Action[] = [];
-            const ability: Ability = arrayGetRandom(virtualStat.base.weapons.filter(_w => _w.targetting.target === WeaponTarget.ally));
+            const weaponSelected: ForgeWeapon = virtualStat.base.arsenal[0] || universalWeaponsData.Unarmed as ForgeWeapon;
+            const ability: Ability | null = arrayGetRandom(virtualStat.base.abilities.filter(_w => _w.targetting.target === AbilityTargetting.ally));
+            if (ability === null) return;
 
             // execute ally-targetting ability
-            const AOE: WeaponAOE = ability.targetting.AOE;
+            const AOE: AbilityAOE = ability.targetting.AOE;
             switch(AOE) {
                 case 'selfCircle':
                     // move to best place
-                    const blastRange = ability.range[2];
+                    const blastRange = ability.range?.max || weaponSelected.range.radius;
                     const movesAvailable = 1 + virtualStat.sprint; debug("movesAvailable", movesAvailable);
                     const domain = _bd.findEntities_radius(virtualStat, movesAvailable + blastRange, false);
 

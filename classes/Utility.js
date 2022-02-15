@@ -74,8 +74,8 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getProt = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getDodge = exports.getAcc = exports.getDamage = exports.getAHP = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.getForgeWeaponMinMax = exports.getItemType = exports.getInventorySelectOptions = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoord = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getWeaponIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetSmallestInArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getWeaponEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = void 0;
+exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpConfirmationInteractionCollect = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getAttackRange = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getLifesteal = exports.getCrit = exports.getSpd = exports.getAcc = exports.getDamage = exports.getProt = exports.getDodge = exports.getAHP = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
+exports.getForgeWeaponAttackAbility = exports.getForgeWeaponMinMax = exports.getItemType = exports.getInventorySelectOptions = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoord = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getAbilityIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetSmallestInArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getAbilityEmbed = exports.getLoadingEmbed = exports.getActionsTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var __1 = require("..");
@@ -107,8 +107,8 @@ function stringifyRGBA(rgba) {
 exports.stringifyRGBA = stringifyRGBA;
 function log() {
     var any = [];
-    for (var _a = 0; _a < arguments.length; _a++) {
-        any[_a] = arguments[_a];
+    for (var _d = 0; _d < arguments.length; _d++) {
+        any[_d] = arguments[_d];
     }
     any.forEach(function (any) { return console.log(any); });
 }
@@ -152,8 +152,8 @@ function uniformRandom(num1, num2) {
 exports.uniformRandom = uniformRandom;
 function average() {
     var nums = [];
-    for (var _a = 0; _a < arguments.length; _a++) {
-        nums[_a] = arguments[_a];
+    for (var _d = 0; _d < arguments.length; _d++) {
+        nums[_d] = arguments[_d];
     }
     var total = 0;
     for (var i = 0; i < nums.length; i++) {
@@ -175,76 +175,102 @@ function normalRandom(_mean, _standardDeviation) {
 }
 exports.normalRandom = normalRandom;
 // get battle stats
-function getAHP(entity, options) {
-    if (options === void 0) { options = 'WithBoth'; }
-    var AHP = entity.base.AHP;
-    var AHPBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.AHP : 0;
-    var AHPDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.AHP : 0;
+// when attacked
+function getAHP(_attacker, _options) {
+    if (_options === void 0) { _options = 'WithBoth'; }
+    var AHP = _attacker.base.AHP;
+    var AHPBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.AHP : 0;
+    var AHPDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.AHP : 0;
     return (AHP + AHPBuff - AHPDebuff) || 0;
 }
 exports.getAHP = getAHP;
-function getDamage(entity, weapon, options) {
-    if (options === void 0) { options = 'WithBoth'; }
-    var damageRange = weapon.damageRange;
-    var damageBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.damageRange : 0;
-    var damageDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.damageRange : 0;
-    return [damageRange[0] + damageBuff - damageDebuff, damageRange[1] + damageBuff - damageDebuff];
-}
-exports.getDamage = getDamage;
-function getAcc(entity, weapon, options) {
-    if (options === void 0) { options = 'WithBoth'; }
-    var acc = weapon.accuracy;
-    var accBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.accuracy : 0;
-    var accDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.accuracy : 0;
-    return (acc + accBuff - accDebuff) || 0;
-}
-exports.getAcc = getAcc;
-function getDodge(entity, options) {
-    if (options === void 0) { options = 'WithBoth'; }
-    var dodge = entity.base.Dodge;
-    var dodgeBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Dodge : 0;
-    var dodgeDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Dodge : 0;
+function getDodge(_attacker, _options) {
+    if (_options === void 0) { _options = 'WithBoth'; }
+    var dodge = _attacker.base.Dodge;
+    var dodgeBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.Dodge : 0;
+    var dodgeDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.Dodge : 0;
     return (dodge + dodgeBuff - dodgeDebuff) || 0;
 }
 exports.getDodge = getDodge;
-function getSpd(entity, options) {
+function getProt(_defender, options) {
     if (options === void 0) { options = 'WithBoth'; }
-    var spd = entity.base.speed;
-    var spdBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.speed : 0;
-    var spdDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.speed : 0;
-    return (spd + spdBuff - spdDebuff) || 0;
-}
-exports.getSpd = getSpd;
-function getCrit(entity, weapon, options) {
-    if (options === void 0) { options = 'WithBoth'; }
-    var crit = weapon.criticalHit;
-    var critBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.criticalHit : 0;
-    var critDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.criticalHit : 0;
-    return (crit + critBuff - critDebuff) || 0;
-}
-exports.getCrit = getCrit;
-function getLifesteal(entity, weapon, options) {
-    if (options === void 0) { options = 'WithBoth'; }
-    var ls = weapon.lifesteal;
-    var lsBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.lifesteal : 0;
-    var lsDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.lifesteal : 0;
-    return (ls + lsBuff - lsDebuff) || 0;
-}
-exports.getLifesteal = getLifesteal;
-function getProt(entity, options) {
-    if (options === void 0) { options = 'WithBoth'; }
-    var prot = entity.base.Prot;
-    var protBuff = (options === 'WithBuff' || options === 'WithBoth') ? entity.buffs.Prot : 0;
-    var protDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? entity.debuffs.Prot : 0;
+    var equippedWeapon = _defender.equipped;
+    var prot = _defender.base.Prot;
+    var protBuff = (options === 'WithBuff' || options === 'WithBoth') ? _defender.buffs.Prot : 0;
+    var protDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? _defender.debuffs.Prot : 0;
     return (prot + protBuff - protDebuff) || 0;
 }
 exports.getProt = getProt;
-function findLongArm(weapons) {
-    return weapons.reduce(function (lR, thisWeapon) {
-        if (thisWeapon.range[1] > lR.range[1])
+// when attacking
+function getDamage(_attacker, _ability, _options) {
+    if (_options === void 0) { _options = 'WithBoth'; }
+    var _fw = _attacker.equipped;
+    var damageRange = _fw.damageRange;
+    var damageBuff = (_options === 'WithBuff' || _options === 'WithBoth') ?
+        _attacker.buffs.damageRange : 0;
+    var damageDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ?
+        _attacker.debuffs.damageRange : 0;
+    var abilityScaling = _ability.damageScale;
+    return {
+        min: (damageRange.min * abilityScaling) + _ability.bonus.damage + damageBuff - damageDebuff,
+        max: (damageRange.max * abilityScaling) + _ability.bonus.damage + damageBuff - damageDebuff,
+    };
+}
+exports.getDamage = getDamage;
+function getAcc(_attacker, _ability, options) {
+    if (options === void 0) { options = 'WithBoth'; }
+    var _fw = _attacker.equipped;
+    var acc = _fw.accuracy;
+    var accBuff = (options === 'WithBuff' || options === 'WithBoth') ? _attacker.buffs.accuracy : 0;
+    var accDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? _attacker.debuffs.accuracy : 0;
+    return (acc + _ability.bonus.accuracy + accBuff - accDebuff) || 0;
+}
+exports.getAcc = getAcc;
+function getSpd(_attacker, _ability, _options) {
+    if (_options === void 0) { _options = 'WithBoth'; }
+    var spd = _attacker.base.speed;
+    var spdBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.speed : 0;
+    var spdDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.speed : 0;
+    return (spd + spdBuff - spdDebuff) * _ability.speedScale || 0;
+}
+exports.getSpd = getSpd;
+function getCrit(_attacker, _ability, _options) {
+    if (_options === void 0) { _options = 'WithBoth'; }
+    var weapon = _attacker.equipped;
+    var crit = weapon.criticalHit;
+    var critBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.criticalHit : 0;
+    var critDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.criticalHit : 0;
+    return (crit + critBuff + _ability.bonus.criticalHit - critDebuff) || 0;
+}
+exports.getCrit = getCrit;
+function getLifesteal(_attacker, _ability, _options) {
+    if (_options === void 0) { _options = 'WithBoth'; }
+    var weapon = _attacker.equipped;
+    var ls = weapon.lifesteal;
+    var lsBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.lifesteal : 0;
+    var lsDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.lifesteal : 0;
+    return (ls + _ability.bonus.lifesteal + lsBuff - lsDebuff) || 0;
+}
+exports.getLifesteal = getLifesteal;
+function findLongArm(_stat) {
+    var abilities = _stat.base.abilities.map(function (_a) {
+        if (_a.range) {
+            return _a;
+        }
+        else {
+            return getNewObject(_a, {
+                range: _stat.equipped.range
+            });
+        }
+    });
+    return abilities.reduce(function (lR, thisWeapon) {
+        if (thisWeapon.range && (lR === null || thisWeapon.range.max > lR.range.max)) {
             return thisWeapon;
-        return lR;
-    }, weapons[0]);
+        }
+        else {
+            return lR;
+        }
+    }, null);
 }
 exports.findLongArm = findLongArm;
 function findEqualCoordinate(_c, __c) {
@@ -257,8 +283,21 @@ function getDistance(stat1, stat2) {
     return Math.sqrt((xDif) * (xDif) + (yDif) * (yDif));
 }
 exports.getDistance = getDistance;
-function checkWithinDistance(weapon, distance) {
-    var result = weapon.range[0] <= distance && (weapon.range[2] || weapon.range[1]) >= distance;
+function getAttackRange(_aA) {
+    var _d;
+    return ((_d = _aA.weapon) === null || _d === void 0 ? void 0 : _d.range) || _aA.ability.range || null;
+}
+exports.getAttackRange = getAttackRange;
+function checkWithinDistance(_aA, distance) {
+    var _d;
+    var hasWeapon = _aA.weapon !== null;
+    var abilityRange = (_d = _aA.ability) === null || _d === void 0 ? void 0 : _d.range;
+    var range = hasWeapon && !abilityRange ?
+        _aA.weapon.range :
+        abilityRange;
+    var result = range ?
+        range.min <= distance && (range.radius || range.max) >= distance :
+        false;
     return result;
 }
 exports.checkWithinDistance = checkWithinDistance;
@@ -436,8 +475,8 @@ function getMoveAction(_stat, args2, _round, args4) {
     var moveAction = {
         executed: false,
         type: movetype,
-        from: _stat,
-        affected: _stat,
+        attacker: _stat,
+        target: _stat,
         readiness: 0,
         sword: 0,
         shield: 0,
@@ -473,8 +512,8 @@ function getLootAction(_stat, _c, _round) {
         y: _c.y,
         round: _round,
         priority: 0,
-        from: _stat,
-        affected: _stat,
+        attacker: _stat,
+        target: _stat,
         readiness: 0,
         type: 'Loot',
         executed: false,
@@ -563,20 +602,21 @@ function directionToMagnitudeAxis(_direction) {
     };
 }
 exports.directionToMagnitudeAxis = directionToMagnitudeAxis;
-function getAttackAction(_attacker, _victim, _weapon, _coord, _round) {
+function getAttackAction(_attacker, _victim, _weapon, _ability, _coord, _round) {
     var actionType = "Attack";
     var attackAction = {
         executed: false,
         type: actionType,
-        from: _attacker,
-        affected: _victim,
-        readiness: _weapon.readinessCost,
-        sword: _weapon.sword,
-        shield: _weapon.shield,
-        sprint: _weapon.sprint,
+        attacker: _attacker,
+        target: _victim,
+        readiness: _ability.readinessCost,
+        sword: _ability.sword,
+        shield: _ability.shield,
+        sprint: _ability.sprint,
         round: _round,
         priority: 4178,
         weapon: _weapon,
+        ability: _ability,
         coordinate: _coord
     };
     return attackAction;
@@ -585,11 +625,11 @@ exports.getAttackAction = getAttackAction;
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
         var ud, i;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0: return [4 /*yield*/, (0, Database_1.getUserData)("262871357455466496")];
                 case 1:
-                    ud = _a.sent();
+                    ud = _d.sent();
                     for (i = 0; i < 25; i++) {
                         ud.inventory.push(Item_1.Item.Generate('cobalt', "Test"));
                     }
@@ -619,11 +659,56 @@ function findReferenceAngle(_angle) {
 exports.findReferenceAngle = findReferenceAngle;
 function setUpInteractionCollect(msg, cb, collectCount) {
     if (collectCount === void 0) { collectCount = 1; }
-    var interCollectr = new discord_js_1.InteractionCollector(__1.BotClient, { message: msg, max: collectCount });
-    interCollectr.on('collect', cb);
-    return interCollectr;
+    var interCollector = new discord_js_1.InteractionCollector(__1.BotClient, { message: msg, max: collectCount });
+    interCollector.on('collect', cb);
+    return interCollector;
 }
 exports.setUpInteractionCollect = setUpInteractionCollect;
+function setUpConfirmationInteractionCollect(_editMsg, _embed, _yesCB, _noCB) {
+    return __awaiter(this, void 0, void 0, function () {
+        var yesNoCollector, buttonsOptions;
+        var _this = this;
+        return __generator(this, function (_d) {
+            yesNoCollector = new discord_js_1.InteractionCollector(__1.BotClient, { message: _editMsg, max: 1 });
+            buttonsOptions = [
+                {
+                    emoji: typedef_1.EMOJI_TICK,
+                    label: "Yes",
+                    style: "SUCCESS",
+                    customId: "yes"
+                },
+                {
+                    emoji: typedef_1.EMOJI_CROSS,
+                    label: "No",
+                    style: "DANGER",
+                    customId: "no"
+                }
+            ];
+            yesNoCollector.on('collect', function (_itr) { return __awaiter(_this, void 0, void 0, function () {
+                var selected;
+                return __generator(this, function (_d) {
+                    if (_itr.isButton()) {
+                        selected = _itr.customId;
+                        switch (selected) {
+                            case 'yes':
+                                _yesCB();
+                                break;
+                            case 'no':
+                                _noCB();
+                                break;
+                        }
+                    }
+                    return [2 /*return*/];
+                });
+            }); });
+            return [2 /*return*/, _editMsg.edit({
+                    embeds: [_embed],
+                    components: [getButtonsActionRow(buttonsOptions)],
+                })];
+        });
+    });
+}
+exports.setUpConfirmationInteractionCollect = setUpConfirmationInteractionCollect;
 function getSelectMenuActionRow(options, customID) {
     var menu = new discord_js_1.MessageSelectMenu({
         options: options,
@@ -648,15 +733,15 @@ exports.getButtonsActionRow = getButtonsActionRow;
 function clearChannel(channel, afterMessage) {
     return __awaiter(this, void 0, void 0, function () {
         var options;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
                     options = {
                         after: afterMessage.id
                     };
                     return [4 /*yield*/, channel.messages.fetch(options)
                             .then(function (messages) {
-                            var e_1, _a;
+                            var e_1, _d;
                             var _loop_1 = function (m) {
                                 m.delete().catch(function () {
                                     if (m.deletable)
@@ -665,20 +750,20 @@ function clearChannel(channel, afterMessage) {
                             };
                             try {
                                 for (var messages_1 = __values(messages), messages_1_1 = messages_1.next(); !messages_1_1.done; messages_1_1 = messages_1.next()) {
-                                    var _d = __read(messages_1_1.value, 2), m = _d[1];
+                                    var _f = __read(messages_1_1.value, 2), m = _f[1];
                                     _loop_1(m);
                                 }
                             }
                             catch (e_1_1) { e_1 = { error: e_1_1 }; }
                             finally {
                                 try {
-                                    if (messages_1_1 && !messages_1_1.done && (_a = messages_1.return)) _a.call(messages_1);
+                                    if (messages_1_1 && !messages_1_1.done && (_d = messages_1.return)) _d.call(messages_1);
                                 }
                                 finally { if (e_1) throw e_1.error; }
                             }
                         })];
                 case 1:
-                    _a.sent();
+                    _d.sent();
                     return [2 /*return*/];
             }
         });
@@ -688,13 +773,13 @@ exports.clearChannel = clearChannel;
 function sendToSandbox(mo) {
     return __awaiter(this, void 0, void 0, function () {
         var channel;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0: return [4 /*yield*/, __1.BotClient.channels.fetch("882231564715560991").then(function (c) { return c; })];
                 case 1:
-                    channel = _a.sent();
+                    channel = _d.sent();
                     return [4 /*yield*/, channel.send(mo)];
-                case 2: return [2 /*return*/, _a.sent()];
+                case 2: return [2 /*return*/, _d.sent()];
             }
         });
     });
@@ -720,10 +805,10 @@ function getActionsTranslate(array) {
     var translatedArray = [];
     for (var i = 0; i < array.length; i++) {
         var action = array[i];
-        var _a = extractActions(action), aAction = _a.aAction, mAction = _a.mAction;
+        var _d = extractActions(action), aAction = _d.aAction, mAction = _d.mAction;
         var string = action.type;
         if (action.type === 'Attack') {
-            string += " \"" + action.affected.base.class + "\" (" + action.affected.index + ") with \"" + aAction.weapon.abilityName + "\".";
+            string += " \"" + action.target.base.class + "\" (" + action.target.index + ") with \"" + aAction.ability.abilityName + "\".";
         }
         else if (action.type === 'Move') {
             string += " " + mAction.magnitude + " " + getDirection(mAction.axis, mAction.magnitude) + ".";
@@ -741,52 +826,51 @@ function getLoadingEmbed() {
     return loadingEmbed;
 }
 exports.getLoadingEmbed = getLoadingEmbed;
-function getWeaponEmbed(_weapon) {
-    var mWeaponDamage = _weapon.damageRange;
-    var mWeaponAcc = _weapon.accuracy;
-    var mWeaponRange = _weapon.range;
-    var mWeaponReadiness = _weapon.readinessCost;
+function getAbilityEmbed(_ability) {
+    var damageScale = _ability.damageScale, staminaScale = _ability.staminaScale, readinessCost = _ability.readinessCost, speedScale = _ability.speedScale, range = _ability.range;
     var embed = new discord_js_1.MessageEmbed({
-        title: _weapon.abilityName,
+        title: _ability.abilityName,
         fields: [],
     });
-    if (_weapon.desc) {
-        embed.description = _weapon.desc;
+    if (_ability.desc) {
+        embed.description = _ability.desc;
     }
     // friendly skill: readinessCost, range, Token Requirements
     // aggressive skill: everything
-    switch (_weapon.targetting.target) {
-        case typedef_1.WeaponTarget.enemy:
+    switch (_ability.targetting.target) {
+        case typedef_1.AbilityTargetting.enemy:
             var damageField = {
-                name: "damageRange",
-                value: mWeaponDamage[0] + " - " + mWeaponDamage[1],
+                name: "Damage Scaling",
+                value: "x" + damageScale * 100 + "%",
                 inline: false,
             };
-            var accField = {
-                name: "Accuracy",
-                value: "" + mWeaponAcc,
+            var staminaCostField = {
+                name: "Stamina Cost Scaling",
+                value: "x" + staminaScale,
                 inline: false,
             };
-            var critField = {
-                name: "Critical Chance",
-                value: "+" + _weapon.criticalHit + "%",
+            var speedField = {
+                name: "Speed Scaling",
+                value: "x" + speedScale,
                 inline: false,
             };
-            embed.fields.push(damageField, accField, critField);
-        case typedef_1.WeaponTarget.ally:
+            embed.fields.push(damageField, staminaCostField, speedField);
+        case typedef_1.AbilityTargetting.ally:
             var rangeField = {
                 name: "range",
-                value: mWeaponRange[0] + " - " + mWeaponRange[1],
+                value: range ?
+                    range.min + " - " + range.max :
+                    "( *Weapon Dependent* )",
                 inline: false,
             };
             var readinessField = {
                 name: "readinessCost",
-                value: "" + mWeaponReadiness,
+                value: "" + readinessCost,
                 inline: false,
             };
             var tokensField = {
                 name: "Tokens",
-                value: "" + typedef_1.EMOJI_SWORD.repeat(_weapon.sword) + typedef_1.EMOJI_SHIELD.repeat(_weapon.shield) + typedef_1.EMOJI_SPRINT.repeat(_weapon.sprint) || "(no token requirement)",
+                value: "" + typedef_1.EMOJI_SWORD.repeat(_ability.sword) + typedef_1.EMOJI_SHIELD.repeat(_ability.shield) + typedef_1.EMOJI_SPRINT.repeat(_ability.sprint) || "(no token requirement)",
                 inline: false,
             };
             embed.fields.push(rangeField, readinessField, tokensField);
@@ -794,7 +878,7 @@ function getWeaponEmbed(_weapon) {
     }
     return embed;
 }
-exports.getWeaponEmbed = getWeaponEmbed;
+exports.getAbilityEmbed = getAbilityEmbed;
 function getStatsEmbed(_class) {
     var embed = new discord_js_1.MessageEmbed();
     var classChosen = getNewObject(jsons_1.classData[_class]);
@@ -890,57 +974,92 @@ function arrayRemoveItemArray(_array, _item) {
 }
 exports.arrayRemoveItemArray = arrayRemoveItemArray;
 function arrayGetRandom(array) {
-    return array[uniformRandom(0, array.length - 1)];
+    return array[uniformRandom(0, array.length - 1)] === undefined ?
+        null :
+        array[uniformRandom(0, array.length - 1)];
 }
 exports.arrayGetRandom = arrayGetRandom;
-function getWeaponUses(weapon, owner) {
-    return owner.weaponUses[getWeaponIndex(weapon, owner)];
+function getWeaponUses(ability, owner) {
+    return owner.weaponUses[getAbilityIndex(ability, owner)];
 }
 exports.getWeaponUses = getWeaponUses;
 function printCSMap(map) {
     log("===================================");
     map.forEach(function (v, k) {
-        var _a = { x: k.split(',')[0], y: k.split(',')[1] }, x = _a.x, y = _a.y;
+        var _d = { x: k.split(',')[0], y: k.split(',')[1] }, x = _d.x, y = _d.y;
         log(x + ", " + y + "     |      " + v.base.class);
     });
     log("===================================");
 }
 exports.printCSMap = printCSMap;
 function getMapFromCS(coordStat) {
-    var e_2, _a, e_3, _d;
-    var mapReturn = new Map();
-    try {
-        for (var _f = __values(Object.values(coordStat)), _g = _f.next(); !_g.done; _g = _f.next()) {
-            var yStat = _g.value;
-            try {
-                for (var _j = (e_3 = void 0, __values(Object.values(yStat))), _k = _j.next(); !_k.done; _k = _j.next()) {
-                    var stat = _k.value;
-                    mapReturn.set(getCoordString(stat), getStat(stat));
-                }
+    return __awaiter(this, void 0, void 0, function () {
+        var mapReturn, _d, _f, yStat, _g, _j, stat, _k, _l, _o, e_2_1, e_3_1;
+        var e_3, _p, e_2, _r;
+        return __generator(this, function (_u) {
+            switch (_u.label) {
+                case 0:
+                    mapReturn = new Map();
+                    _u.label = 1;
+                case 1:
+                    _u.trys.push([1, 12, 13, 14]);
+                    _d = __values(Object.values(coordStat)), _f = _d.next();
+                    _u.label = 2;
+                case 2:
+                    if (!!_f.done) return [3 /*break*/, 11];
+                    yStat = _f.value;
+                    _u.label = 3;
+                case 3:
+                    _u.trys.push([3, 8, 9, 10]);
+                    _g = (e_2 = void 0, __values(Object.values(yStat))), _j = _g.next();
+                    _u.label = 4;
+                case 4:
+                    if (!!_j.done) return [3 /*break*/, 7];
+                    stat = _j.value;
+                    _l = (_k = mapReturn).set;
+                    _o = [getCoordString(stat)];
+                    return [4 /*yield*/, getStat(stat)];
+                case 5:
+                    _l.apply(_k, _o.concat([_u.sent()]));
+                    _u.label = 6;
+                case 6:
+                    _j = _g.next();
+                    return [3 /*break*/, 4];
+                case 7: return [3 /*break*/, 10];
+                case 8:
+                    e_2_1 = _u.sent();
+                    e_2 = { error: e_2_1 };
+                    return [3 /*break*/, 10];
+                case 9:
+                    try {
+                        if (_j && !_j.done && (_r = _g.return)) _r.call(_g);
+                    }
+                    finally { if (e_2) throw e_2.error; }
+                    return [7 /*endfinally*/];
+                case 10:
+                    _f = _d.next();
+                    return [3 /*break*/, 2];
+                case 11: return [3 /*break*/, 14];
+                case 12:
+                    e_3_1 = _u.sent();
+                    e_3 = { error: e_3_1 };
+                    return [3 /*break*/, 14];
+                case 13:
+                    try {
+                        if (_f && !_f.done && (_p = _d.return)) _p.call(_d);
+                    }
+                    finally { if (e_3) throw e_3.error; }
+                    return [7 /*endfinally*/];
+                case 14: return [2 /*return*/, mapReturn];
             }
-            catch (e_3_1) { e_3 = { error: e_3_1 }; }
-            finally {
-                try {
-                    if (_k && !_k.done && (_d = _j.return)) _d.call(_j);
-                }
-                finally { if (e_3) throw e_3.error; }
-            }
-        }
-    }
-    catch (e_2_1) { e_2 = { error: e_2_1 }; }
-    finally {
-        try {
-            if (_g && !_g.done && (_a = _f.return)) _a.call(_f);
-        }
-        finally { if (e_2) throw e_2.error; }
-    }
-    return mapReturn;
+        });
+    });
 }
 exports.getMapFromCS = getMapFromCS;
 function getCSFromMap(map) {
     var CSreturn = {};
     map.forEach(function (_stat, _coordString) {
-        var _a = { x: _coordString.split(',')[0], y: _coordString.split(',')[1] }, x = _a.x, y = _a.y;
+        var _d = { x: _coordString.split(',')[0], y: _coordString.split(',')[1] }, x = _d.x, y = _d.y;
         if (CSreturn[x] === undefined) {
             CSreturn[x] = {};
         }
@@ -964,10 +1083,10 @@ function getEmptyAccolade() {
     };
 }
 exports.getEmptyAccolade = getEmptyAccolade;
-function getWeaponIndex(weapon, stat) {
-    return stat.base.weapons.indexOf(weapon);
+function getAbilityIndex(ability, stat) {
+    return stat.base.abilities.indexOf(ability);
 }
-exports.getWeaponIndex = getWeaponIndex;
+exports.getAbilityIndex = getAbilityIndex;
 function getBaseClassStat(className) {
     return getNewObject(jsons_1.classData[className]);
 }
@@ -991,72 +1110,88 @@ function getEmptyBuff() {
 exports.getEmptyBuff = getEmptyBuff;
 function getStat(_arg0, _owner) {
     if (_owner === void 0) { _owner = ''; }
-    var _a = (function () {
-        var _b, _s;
-        if (typeof _arg0 === 'string') {
-            var _c = _arg0;
-            _b = getBaseClassStat(_c);
-            _s = {
-                class: _c,
-                team: jsons_1.classData[_c] ?
-                    'player' :
-                    'enemy',
-                botType: typedef_1.BotType.naught,
-                x: 0,
-                y: 0,
-            };
-        }
-        else {
-            _b = 'team' in _arg0 ?
-                getNewObject(jsons_1.classData[_arg0.class], _arg0) :
-                _arg0;
-            _s = _arg0;
-        }
-        return {
-            base: _b,
-            ss: _s,
-        };
-    })(), base = _a.base, ss = _a.ss;
-    // add universal weapons
-    for (var i = 0; i < Object.keys(jsons_1.universalWeaponsData).length; i++) {
-        var universalWeaponName = Object.keys(jsons_1.universalWeaponsData)[i];
-        var uniWeapon = getNewObject(jsons_1.universalWeaponsData[universalWeaponName]);
-        base.weapons.push(uniWeapon);
-    }
-    var endStat = {
-        base: base,
-        index: -1,
-        name: "" + base.class,
-        weaponUses: [],
-        actionsAssociatedStrings: {},
-        statusEffects: [],
-        HP: base.AHP,
-        readiness: 0,
-        moved: false,
-        sword: 0,
-        shield: 0,
-        sprint: 0,
-        owner: _owner,
-        username: _owner,
-        team: ss.team === undefined ?
-            _owner ?
-                "player" :
-                "enemy" :
-            ss.team,
-        botType: ss.botType || (_owner ?
-            typedef_1.BotType.naught :
-            typedef_1.BotType.approach_attack),
-        accolades: getEmptyAccolade(),
-        buffs: getEmptyBuff(),
-        debuffs: getEmptyBuff(),
-        x: ss.x,
-        y: ss.y,
-        pvp: false,
-    };
-    for (var i = 0; i < base.weapons.length; i++) {
-        endStat.weaponUses.push(0);
-    }
-    return endStat;
+    return __awaiter(this, void 0, void 0, function () {
+        var _d, base, ss, i, universalWeaponName, uniWeapon, _f, endStat, i;
+        return __generator(this, function (_g) {
+            switch (_g.label) {
+                case 0:
+                    _d = (function () {
+                        var _b, _s;
+                        if (typeof _arg0 === 'string') {
+                            var _c = _arg0;
+                            _b = getBaseClassStat(_c);
+                            _s = {
+                                class: _c,
+                                team: jsons_1.classData[_c] ?
+                                    'player' :
+                                    'enemy',
+                                botType: typedef_1.BotType.naught,
+                                x: 0,
+                                y: 0,
+                            };
+                        }
+                        else {
+                            _b = 'team' in _arg0 ?
+                                getNewObject(jsons_1.classData[_arg0.class], _arg0) :
+                                _arg0;
+                            _s = _arg0;
+                        }
+                        return {
+                            base: _b,
+                            ss: _s,
+                        };
+                    })(), base = _d.base, ss = _d.ss;
+                    // add universal weapons
+                    for (i = 0; i < Object.keys(jsons_1.universalAbilitiesData).length; i++) {
+                        universalWeaponName = Object.keys(jsons_1.universalAbilitiesData)[i];
+                        uniWeapon = getNewObject(jsons_1.universalAbilitiesData[universalWeaponName]);
+                        base.abilities.push(uniWeapon);
+                    }
+                    if (!_owner) return [3 /*break*/, 2];
+                    _f = base;
+                    return [4 /*yield*/, (0, Database_1.getEquippedForgeWeapon)(_owner)];
+                case 1:
+                    _f.arsenal = _g.sent();
+                    _g.label = 2;
+                case 2:
+                    endStat = {
+                        base: base,
+                        index: -1,
+                        equipped: base.arsenal[0] || getNewObject(jsons_1.universalWeaponsData.Unarmed),
+                        name: "" + base.class,
+                        weaponUses: [],
+                        actionsAssociatedStrings: {},
+                        statusEffects: [],
+                        HP: base.AHP,
+                        readiness: 0,
+                        moved: false,
+                        sword: 0,
+                        shield: 0,
+                        sprint: 0,
+                        owner: _owner,
+                        username: _owner,
+                        team: ss.team === undefined ?
+                            _owner ?
+                                "player" :
+                                "enemy" :
+                            ss.team,
+                        botType: ss.botType || (_owner ?
+                            typedef_1.BotType.naught :
+                            typedef_1.BotType.approach_attack),
+                        accolades: getEmptyAccolade(),
+                        buffs: getEmptyBuff(),
+                        debuffs: getEmptyBuff(),
+                        x: ss.x,
+                        y: ss.y,
+                        pvp: false,
+                    };
+                    for (i = 0; i < base.abilities.length; i++) {
+                        endStat.weaponUses.push(0);
+                    }
+                    return [2 /*return*/, endStat];
+            }
+        });
+    });
 }
 exports.getStat = getStat;
 function getCoordString(coord) {
@@ -1088,22 +1223,22 @@ exports.getRandomCode = getRandomCode;
 function dealWithAction(action, attCB, movCB) {
     return __awaiter(this, void 0, void 0, function () {
         var moveAction, attackAction;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
                     moveAction = action;
                     attackAction = action;
                     if (!(moveAction.type === 'Move')) return [3 /*break*/, 2];
                     return [4 /*yield*/, movCB(moveAction)];
                 case 1:
-                    _a.sent();
+                    _d.sent();
                     return [3 /*break*/, 4];
                 case 2:
                     if (!(attackAction.type === 'Attack')) return [3 /*break*/, 4];
                     return [4 /*yield*/, attCB(attackAction)];
                 case 3:
-                    _a.sent();
-                    _a.label = 4;
+                    _d.sent();
+                    _d.label = 4;
                 case 4: return [2 /*return*/];
             }
         });
@@ -1112,9 +1247,9 @@ function dealWithAction(action, attCB, movCB) {
 exports.dealWithAction = dealWithAction;
 function printAction(_action) {
     dealWithAction(_action, function (aA) {
-        log(aA.type + " || readiness=" + aA.readiness + " | affected=" + aA.affected.index + " | from=" + aA.from.index + " | weapon=" + aA.weapon.abilityName);
+        log(aA.type + " || readiness=" + aA.readiness + " | affected=" + aA.target.index + " | from=" + aA.attacker.index + " | ability=" + aA.ability.abilityName);
     }, function (mA) {
-        log(mA.type + " || readiness=" + mA.readiness + " | affected=" + mA.affected.index + " | from=" + mA.from.index + " | magnitude=" + mA.magnitude + " | axis=" + mA.axis);
+        log(mA.type + " || readiness=" + mA.readiness + " | affected=" + mA.target.index + " | from=" + mA.attacker.index + " | magnitude=" + mA.magnitude + " | axis=" + mA.axis);
     });
 }
 exports.printAction = printAction;
@@ -1203,29 +1338,29 @@ function drawCircle(_ctx, _canvasCoord, _radius, _stroke, _percentage) {
 exports.drawCircle = drawCircle;
 function sendInvitation(_user_id, _from, channel) {
     return __awaiter(this, void 0, void 0, function () {
-        var inviterUser, _a, user, _d;
+        var inviterUser, _d, user, _f;
         var _this = this;
-        return __generator(this, function (_f) {
-            switch (_f.label) {
+        return __generator(this, function (_g) {
+            switch (_g.label) {
                 case 0:
                     if (!_from.avatar) return [3 /*break*/, 1];
-                    _a = _from;
+                    _d = _from;
                     return [3 /*break*/, 3];
                 case 1: return [4 /*yield*/, __1.BotClient.users.fetch(_from).then(function (u) { return u; }).catch(function () { return undefined; })];
                 case 2:
-                    _a = _f.sent();
-                    _f.label = 3;
+                    _d = _g.sent();
+                    _g.label = 3;
                 case 3:
-                    inviterUser = _a;
+                    inviterUser = _d;
                     if (!_user_id.avatar) return [3 /*break*/, 4];
-                    _d = _user_id;
+                    _f = _user_id;
                     return [3 /*break*/, 6];
                 case 4: return [4 /*yield*/, __1.BotClient.users.fetch(_user_id).then(function (u) { return u; }).catch(function () { return undefined; })];
                 case 5:
-                    _d = _f.sent();
-                    _f.label = 6;
+                    _f = _g.sent();
+                    _g.label = 6;
                 case 6:
-                    user = _d;
+                    user = _f;
                     return [2 /*return*/, new Promise(function (resolve) {
                             if (user && inviterUser) {
                                 var buttonOptions = [
@@ -1257,8 +1392,8 @@ function sendInvitation(_user_id, _from, channel) {
                                     .then(function (_m) {
                                     var buttonInteractionCollection = setUpInteractionCollect(_m, function (itr) { return __awaiter(_this, void 0, void 0, function () {
                                         var selectedButton;
-                                        return __generator(this, function (_a) {
-                                            switch (_a.label) {
+                                        return __generator(this, function (_d) {
+                                            switch (_d.label) {
                                                 case 0:
                                                     if (!(itr.isButton() && itr.user.id === user.id)) return [3 /*break*/, 2];
                                                     clearTimeout(timeOut);
@@ -1276,8 +1411,8 @@ function sendInvitation(_user_id, _from, channel) {
                                                                 "Declined."
                                                         })];
                                                 case 1:
-                                                    _a.sent();
-                                                    _a.label = 2;
+                                                    _d.sent();
+                                                    _d.label = 2;
                                                 case 2: return [2 /*return*/];
                                             }
                                         });
@@ -1360,9 +1495,9 @@ function getInventorySelectOptions(_inv) {
             description: "Update your inventory",
             value: "refresh"
         }].concat(_inv.map(function (_item, _i) {
-        var _a;
+        var _d;
         return {
-            emoji: ((_a = jsons_1.itemData[_item.getItemType()]) === null || _a === void 0 ? void 0 : _a.emoji) || typedef_1.EMOJI_WHITEB,
+            emoji: ((_d = jsons_1.itemData[_item.getItemType()]) === null || _d === void 0 ? void 0 : _d.emoji) || typedef_1.EMOJI_WHITEB,
             label: _item.getDisplayName() + " (" + _item.getWeight(true) + ")",
             description: "$" + _item.getWorth(true),
             value: "" + _i,
@@ -1376,24 +1511,24 @@ function getInventorySelectOptions(_inv) {
 }
 exports.getInventorySelectOptions = getInventorySelectOptions;
 function getItemType(_i) {
-    var e_4, _a, e_5, _d;
+    var e_4, _d, e_5, _f;
     // log(`Get item type for: ${_i.name}`)
     var weight = _i.getWeight();
     try {
-        for (var _f = __values(Object.entries(jsons_1.itemData)), _g = _f.next(); !_g.done; _g = _f.next()) {
-            var _j = __read(_g.value, 2), _itemName = _j[0], _data = _j[1];
+        for (var _g = __values(Object.entries(jsons_1.itemData)), _j = _g.next(); !_j.done; _j = _g.next()) {
+            var _k = __read(_j.value, 2), _itemName = _k[0], _data = _k[1];
             // debug("Qualifying for", _itemName);
             var itemName = _itemName;
             var data = _data;
             var qualification = data.qualification;
             /** weight qualification */
-            var _k = qualification.weightDeviation, min = _k.min, max = _k.max;
+            var _l = qualification.weightDeviation, min = _l.min, max = _l.max;
             if (min <= weight && max >= weight) {
                 /** materials qualification */
                 var passed = 0;
                 try {
-                    for (var _l = (e_5 = void 0, __values(qualification.materials)), _o = _l.next(); !_o.done; _o = _l.next()) {
-                        var _materialInfo = _o.value;
+                    for (var _o = (e_5 = void 0, __values(qualification.materials)), _p = _o.next(); !_p.done; _p = _o.next()) {
+                        var _materialInfo = _p.value;
                         var material = _materialInfo.materialName;
                         var mI = _i.getMaterialInfo(material) ||
                             null;
@@ -1401,7 +1536,7 @@ function getItemType(_i) {
                         //     name: mI?.materialName,
                         //     occupation: mI?.occupation,
                         // });
-                        var _p = _materialInfo.occupationDeviation, min_1 = _p.min, max_1 = _p.max;
+                        var _r = _materialInfo.occupationDeviation, min_1 = _r.min, max_1 = _r.max;
                         if (mI && mI.occupation >= min_1 && mI.occupation <= max_1) {
                             // log("\t\tQualified!");
                             passed++;
@@ -1411,7 +1546,7 @@ function getItemType(_i) {
                 catch (e_5_1) { e_5 = { error: e_5_1 }; }
                 finally {
                     try {
-                        if (_o && !_o.done && (_d = _l.return)) _d.call(_l);
+                        if (_p && !_p.done && (_f = _o.return)) _f.call(_o);
                     }
                     finally { if (e_5) throw e_5.error; }
                 }
@@ -1425,7 +1560,7 @@ function getItemType(_i) {
     catch (e_4_1) { e_4 = { error: e_4_1 }; }
     finally {
         try {
-            if (_g && !_g.done && (_a = _f.return)) _a.call(_f);
+            if (_j && !_j.done && (_d = _g.return)) _d.call(_g);
         }
         finally { if (e_4) throw e_4.error; }
     }
@@ -1446,3 +1581,30 @@ function getForgeWeaponMinMax(_t) {
     };
 }
 exports.getForgeWeaponMinMax = getForgeWeaponMinMax;
+function getForgeWeaponAttackAbility(_fw) {
+    return {
+        type: 'melee',
+        abilityName: "Attack",
+        sword: 0,
+        shield: 0,
+        sprint: 0,
+        readinessCost: _fw.readinessCost,
+        speedScale: 1,
+        damageScale: 1,
+        staminaScale: 1,
+        cooldown: 0,
+        UPT: 10,
+        desc: null,
+        targetting: {
+            target: typedef_1.AbilityTargetting.enemy,
+            AOE: 'single',
+        },
+        bonus: {
+            damage: 0,
+            accuracy: 0,
+            lifesteal: 0,
+            criticalHit: 0,
+        }
+    };
+}
+exports.getForgeWeaponAttackAbility = getForgeWeaponAttackAbility;

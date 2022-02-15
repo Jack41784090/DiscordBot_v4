@@ -61,19 +61,21 @@ module.exports = {
                     iem.registerInteraction(author.id, iE);
                     iconCache = new Map();
                     getClassIconLink = function (className) { return __awaiter(void 0, void 0, void 0, function () {
-                        var _a, _b, _c, _d;
-                        return __generator(this, function (_e) {
-                            switch (_e.label) {
+                        var _a, _b, _c, _d, _e;
+                        return __generator(this, function (_f) {
+                            switch (_f.label) {
                                 case 0:
                                     _a = iconCache.get(className);
-                                    if (_a) return [3 /*break*/, 2];
+                                    if (_a) return [3 /*break*/, 3];
                                     _c = (_b = iconCache).set;
                                     _d = [className];
-                                    return [4 /*yield*/, (0, Database_1.getIconImgurLink)((0, Utility_1.getStat)(className))];
-                                case 1:
-                                    _a = _c.apply(_b, _d.concat([(_e.sent()) || typedef_1.defaultAvatarURL])).get(className);
-                                    _e.label = 2;
-                                case 2: return [2 /*return*/, _a];
+                                    _e = Database_1.getIconImgurLink;
+                                    return [4 /*yield*/, (0, Utility_1.getStat)(className)];
+                                case 1: return [4 /*yield*/, _e.apply(void 0, [_f.sent()])];
+                                case 2:
+                                    _a = _c.apply(_b, _d.concat([(_f.sent()) || typedef_1.defaultAvatarURL])).get(className);
+                                    _f.label = 3;
+                                case 3: return [2 /*return*/, _a];
                             }
                         });
                     }); };
@@ -150,10 +152,10 @@ module.exports = {
                 case 5:
                     className_1 = (0, Utility_1.formalise)(args[0]);
                     classChosen_1 = (0, Utility_1.getNewObject)(jsons_1.classData[className_1]);
-                    arsenal = classChosen_1.weapons.concat(classChosen_1.autoWeapons);
+                    arsenal = classChosen_1.abilities.concat(classChosen_1.autoWeapons);
                     selectMenuOptions = arsenal.map(function (_w, _i) {
                         return {
-                            emoji: _w.targetting.target === typedef_1.WeaponTarget.ally ?
+                            emoji: _w.targetting.target === typedef_1.AbilityTargetting.ally ?
                                 typedef_1.EMOJI_SHIELD :
                                 typedef_1.EMOJI_SWORD,
                             label: _w.abilityName,
@@ -181,11 +183,11 @@ module.exports = {
                                     _e.trys.push([0, 6, , 7]);
                                     if (!_itr.isSelectMenu()) return [3 /*break*/, 5];
                                     weaponIndex = parseInt(_itr.values[0]);
-                                    weaponChosen = classChosen_1.weapons[weaponIndex] ||
-                                        classChosen_1.autoWeapons[weaponIndex % classChosen_1.weapons.length];
+                                    weaponChosen = classChosen_1.abilities[weaponIndex] ||
+                                        classChosen_1.autoWeapons[weaponIndex % classChosen_1.abilities.length];
                                     if (!weaponChosen) return [3 /*break*/, 2];
                                     return [4 /*yield*/, _itr.update({
-                                            embeds: [(0, Utility_1.getWeaponEmbed)(weaponChosen)]
+                                            embeds: [(0, Utility_1.getAbilityEmbed)(weaponChosen)]
                                         })];
                                 case 1:
                                     _e.sent();
