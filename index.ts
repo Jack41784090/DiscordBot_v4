@@ -55,7 +55,7 @@ BotClient.on('ready', async () => {
     console.log("Ready.");
     importCommands();
     // quickEmbark();
-    // Test();
+    Test();
 });
 
 BotClient.on('messageCreate', async m => {

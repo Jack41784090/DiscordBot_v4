@@ -1,8 +1,8 @@
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
-import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions, MessageSelectOptionData } from "discord.js";
+import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions, MessageSelectOptionData, ButtonInteraction } from "discord.js";
 
 import { BotClient } from "..";
-import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Round, Stat, Ability, AbilityAOE, AbilityTargetting, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialInfo, MaterialGrade, UserData, Material, MaterialSpawnQualityInfo, LootAction, EMOJI_CROSS, EMOJI_WHITEB, ForgeWeaponPart, EMOJI_TICK, ForgeWeapon, DamageRange } from "../typedef";
+import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Stat, Ability, AbilityAOE, AbilityTargetting, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialInfo, MaterialGrade, UserData, Material, MaterialSpawnQualityInfo, LootAction, EMOJI_CROSS, EMOJI_WHITEB, ForgeWeaponPart, EMOJI_TICK, ForgeWeapon, DamageRange, EMOJI_MONEYBAG, ForgeWeaponType } from "../typedef";
 import { Battle } from "./Battle";
 import { Item } from "./Item";
 import { areasData, enemiesData, classData, itemData, universalAbilitiesData, forgeWeaponData, universalWeaponsData } from "../jsons";
@@ -140,11 +140,11 @@ export function getAcc(_attacker: Stat, _ability: Ability, options: GetBuffOptio
     const accDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? _attacker.debuffs.accuracy : 0;
     return (acc + _ability.bonus.accuracy + accBuff - accDebuff) || 0;
 }
-export function getSpd(_attacker: Stat, _ability: Ability, _options: GetBuffOption = 'WithBoth'): number {
+export function getExecutionSpeed(_attacker: Stat, _ability: { speedScale: number }, _options: GetBuffOption = 'WithBoth'): number {
     const spd = _attacker.base.speed;
     const spdBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.speed : 0;
     const spdDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.speed : 0;
-    return (spd + spdBuff - spdDebuff) * _ability.speedScale || 0;
+    return (_attacker.readiness + spd + spdBuff - spdDebuff) * _ability.speedScale || 0;
 }
 export function getCrit(_attacker: Stat, _ability: Ability, _options: GetBuffOption = 'WithBoth'): number {
     const weapon = _attacker.equipped;
@@ -409,14 +409,13 @@ export function getMoveAction(_stat: Stat, args2: string | number, _round: numbe
         type: movetype,
         attacker: _stat,
         target: _stat,
-        readiness: 0,
+        readinessCost: 0,
 
         sword: 0,
         shield: 0,
         sprint: Number(_stat.moved),
 
-        round: _round,
-        priority: 4178,
+        priority: getExecutionSpeed(_stat, { speedScale: 1 }),
 
         axis: 'x',
         magnitude: 0,
@@ -435,23 +434,22 @@ export function getMoveAction(_stat: Stat, args2: string | number, _round: numbe
     else if (args2_isMagnitude) {
         const moveMagnitude: number = args2 as number;
         const axis: "x" | "y" = args4 as "x" | "y";
-        moveAction.readiness = Battle.MOVE_READINESS * Math.abs(moveMagnitude);
+        moveAction.readinessCost = Battle.MOVE_READINESS * Math.abs(moveMagnitude);
         moveAction.axis = axis;
         moveAction.magnitude = moveMagnitude;
     }
-    moveAction.readiness = Math.abs(moveAction.magnitude * Battle.MOVE_READINESS);
+    moveAction.readinessCost = Math.abs(moveAction.magnitude * Battle.MOVE_READINESS);
     return moveAction;
 }
 
-export function getLootAction(_stat: Stat, _c: Coordinate, _round: Round): LootAction {
+export function getLootAction(_stat: Stat, _c: Coordinate): LootAction {
     return {
         x: _c.x,
         y: _c.y,
-        round: _round,
-        priority: 0,
+        priority: getExecutionSpeed(_stat, { speedScale: 1 }),
         attacker: _stat,
         target: _stat,
-        readiness: 0,
+        readinessCost: 0,
         type: 'Loot',
         executed: false,
         sword: 0,
@@ -540,7 +538,7 @@ export function directionToMagnitudeAxis(_direction: Direction | NumericDirectio
     };
 }
 
-export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: ForgeWeapon | null, _ability: Ability, _coord: Coordinate, _round: Round): AttackAction {
+export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: ForgeWeapon | null, _ability: Ability, _coord: Coordinate): AttackAction {
     const actionType: ActionType = "Attack";
     const attackAction: AttackAction = {
         executed: false,
@@ -548,14 +546,13 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: ForgeWe
         type: actionType,
         attacker: _attacker,
         target: _victim,
-        readiness: _ability.readinessCost,
+        readinessCost: _ability.readinessCost,
 
         sword: _ability.sword,
         shield: _ability.shield,
         sprint: _ability.sprint,
 
-        round: _round,
-        priority: 4178,
+        priority: getExecutionSpeed(_attacker, _ability),
 
         weapon: _weapon,
         ability: _ability,
@@ -566,10 +563,29 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: ForgeWe
 
 export async function Test() {
     const ud = await getUserData("262871357455466496");
-    for (let i = 0; i < 25; i++) {
-        ud.inventory.push(Item.Generate('cobalt', "Test"));
-    }
-    saveUserData(ud);
+    // for (let i = 0; i < 25; i++) {
+    //     ud.inventory.push(Item.Generate('cobalt', "Test"));
+    // }
+    // saveUserData(ud);
+    // for (let i = 0; i < 25; i++) {
+    //     let i, ii, iii;
+    //     i = arrayGetRandom(ud.inventory)!
+    //     ii = arrayGetRandom(ud.inventory)!
+    //     while (i === ii) {
+    //         ii = arrayGetRandom(ud.inventory)!;
+    //     }
+    //     iii = arrayGetRandom(ud.inventory)!;
+    //     while (i === iii || ii === iii) {
+    //         iii = arrayGetRandom(ud.inventory)!
+    //     }
+    //     const forged = Item.Forge(
+    //         i,
+    //         ii,
+    //         iii,
+    //         'dagger'
+    //     );
+    //     log(forged);
+    // }
 }
 
 export function findReferenceAngle(_angle: number): number {
@@ -594,7 +610,12 @@ export function setUpInteractionCollect(msg: Message, cb: (itr: Interaction) => 
     interCollector.on('collect', cb);
     return interCollector;
 }
-export async function setUpConfirmationInteractionCollect(_editMsg: Message, _embed: MessageEmbed, _yesCB: () => void, _noCB: () => void) {
+export async function setUpConfirmationInteractionCollect(
+    _editMsg: Message,
+    _embed: MessageEmbed,
+    _yesCB: (_itr: ButtonInteraction) => void,
+    _noCB: (_itr: ButtonInteraction) => void
+) {
     const yesNoCollector = new InteractionCollector(BotClient, { message: _editMsg, max: 1 });
     const buttonsOptions: Array<MessageButtonOptions> = [
         {
@@ -615,11 +636,11 @@ export async function setUpConfirmationInteractionCollect(_editMsg: Message, _em
             const selected = _itr.customId;
             switch (selected) {
                 case 'yes':
-                    _yesCB();
+                    _yesCB(_itr);
                     break;
                 
                 case 'no':
-                    _noCB();
+                    _noCB(_itr);
                     break;
             }
         }
@@ -683,25 +704,31 @@ export function getWithSign(number: number) {
     return getConditionalTexts("+", number > 0) + getConditionalTexts("-", number < 0) + `${Math.abs(number)}`;
 }
 
-export function getActionsTranslate(array: Array<Action>) {
-    const translatedArray: string[] = [];
-    for (let i = 0; i < array.length; i++) {
-        const action = array[i];
-        const { aAction, mAction } = extractActions(action);
-        
-        let string: string = action.type;
+export function getActionTranslate(_action: Action) {
+    const { aAction, mAction } = extractActions(_action);
 
-        if (action.type === 'Attack') {
-            string += ` "${action.target.base.class}" (${action.target.index}) with "${aAction.ability.abilityName}".`;
-        }
-        else if (action.type === 'Move') {
-            string += ` ${mAction.magnitude} ${getDirection(mAction.axis, mAction.magnitude)}.`
-        }
+    let string: string = '';
+    const { attacker, target, ability } = aAction;
+    switch (_action.type) {
+        case 'Attack':
+            string +=
+                `${EMOJI_SWORD} ${attacker.base.class} (${attacker.index}) uses __${ability.abilityName}__ on ${target.base.class} (${target.index}).`;
+            break;
 
-        translatedArray.push(string);
+        case 'Move':
+            string +=
+                `${EMOJI_SPRINT} ${attacker.base.class} (${attacker.index}) moves ${getDirection(mAction.axis, mAction.magnitude)}.`
+            break;
+
+        case 'Loot':
+            string +=
+                `${EMOJI_MONEYBAG} ${attacker.base.class} (${attacker.index}) loots.`
+            break;
     }
 
-    return translatedArray;
+    string += ` [🌬️${_action.priority}]`
+
+    return string;
 }
 
 export function getLoadingEmbed() {
@@ -987,7 +1014,6 @@ export async function getStat(_arg0: Class | SimplePlayerStat | BaseStat, _owner
         name: `${base.class}`,
 
         weaponUses: [],
-        actionsAssociatedStrings: {},
         statusEffects: [],
 
         HP: base.AHP,
@@ -1064,10 +1090,10 @@ export async function dealWithAction(action: Action, attCB: ((aa: AttackAction) 
 export function printAction(_action: Action) {
     dealWithAction(_action,
         (aA) => {
-            log(`${aA.type} || readiness=${aA.readiness} | affected=${aA.target.index} | from=${aA.attacker.index} | ability=${aA.ability.abilityName}`)
+            log(`${aA.type} || readiness=${aA.readinessCost} | affected=${aA.target.index} | from=${aA.attacker.index} | ability=${aA.ability.abilityName}`)
         },
         (mA) => {
-            log(`${mA.type} || readiness=${mA.readiness} | affected=${mA.target.index} | from=${mA.attacker.index} | magnitude=${mA.magnitude} | axis=${mA.axis}`)
+            log(`${mA.type} || readiness=${mA.readinessCost} | affected=${mA.target.index} | from=${mA.attacker.index} | magnitude=${mA.magnitude} | axis=${mA.axis}`)
         }
     );
 }
@@ -1367,6 +1393,24 @@ export function getItemType(_i: Item): ItemType | null {
         }
     }
     return null;
+}
+export function getForgeWeaponType(_bladeWeight: number, _guardWeight: number, _shaftWeight: number) {
+    let type: ForgeWeaponType | null = null;
+    
+    const array = Object.keys(forgeWeaponData);
+    for (let i = 0; i < array.length; i++) {
+        const fwn = array[i] as ForgeWeaponType;
+        const data = forgeWeaponData[fwn];
+
+        if ((data.blade[0] <= _bladeWeight && _bladeWeight <= data.blade[1]) &&
+            (data.guard[0] <= _guardWeight && _guardWeight <= data.guard[1]) &&
+            (data.shaft[0] <= _shaftWeight && _shaftWeight <= data.shaft[1])) {
+            type = fwn;
+            break;
+        }
+    }
+
+    return type;
 }
 
 export function getForgeWeaponMinMax(_t: ForgeWeaponPart): {

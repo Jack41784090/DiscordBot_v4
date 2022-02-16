@@ -97,7 +97,6 @@ var Battle = /** @class */ (function () {
         this.LootMap = new Map();
         // Round Actions Information (Resets every Round)
         this.roundActionsArray = [];
-        this.roundSavedCanvasMap = new Map();
         // Entity-Related Information
         this.tobespawnedArray = [];
         this.totalEnemyCount = 0;
@@ -365,7 +364,7 @@ var Battle = /** @class */ (function () {
     Battle.prototype.StartRound = function () {
         var _b, _c, _d;
         return __awaiter(this, void 0, void 0, function () {
-            var i, spawning, allStats, _loop_2, i, existingCategory, commandCategory, _g, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_3, this_2, allStats_1, allStats_1_1, realStat, e_2_1, priorityActionMap, i, act, actionListThisRound, latestAction, latestRound, i, roundExpectedActions, canvas, ctx, roundCanvas, actualCanvas, _loop_4, i, allPromise, players;
+            var i, spawning, allStats, _loop_2, i, existingCategory, commandCategory, _g, existingPermissions_everyone, currentMapDataURL, reportPromises, _loop_3, this_2, allStats_1, allStats_1_1, realStat, e_2_1, canvas, ctx, roundCanvas, executedActions, actualCanvas, _loop_4, i, allPromise, players;
             var e_2, _h;
             var _this = this;
             return __generator(this, function (_j) {
@@ -374,7 +373,6 @@ var Battle = /** @class */ (function () {
                         (0, Utility_1.log)("======= New Round =======");
                         // resetting action list and round current maps
                         this.roundActionsArray = [];
-                        this.roundSavedCanvasMap.clear();
                         // SPAWNING
                         (0, Utility_1.log)("Currently waiting to be spawned...");
                         for (i = 0; i < this.tobespawnedArray.length; i++) {
@@ -398,19 +396,19 @@ var Battle = /** @class */ (function () {
                                 return "continue";
                             // randomly assign tokens
                             for (var i_1 = 0; i_1 < 2; i_1++) {
-                                var token = (0, Utility_1.uniformRandom)(0, 2);
-                                (0, Utility_1.log)("\t" + s.base.class + " (" + s.index + ") got " + token);
-                                switch (token) {
-                                    case 0:
-                                        s.sword++;
-                                        break;
-                                    case 1:
-                                        s.shield++;
-                                        break;
-                                    case 2:
-                                        s.sprint++;
-                                        break;
-                                }
+                                // const token = uniformRandom(0, 2);
+                                // log(`\t${s.base.class} (${s.index}) got ${token}`)
+                                // switch (token) {
+                                //     case 0:
+                                //         s.sword++;
+                                //         break;
+                                //     case 1:
+                                //         s.shield++;
+                                //         break;
+                                //     case 2:
+                                s.sprint++;
+                                //         break;
+                                // }
                             }
                             // limit the entity's tokens
                             (0, Utility_1.handleTokens)(s, function (p, t) {
@@ -472,8 +470,6 @@ var Battle = /** @class */ (function () {
                                         realStat.weaponUses = realStat.weaponUses.map(function (_wU) { return 0; });
                                         // reset moved
                                         realStat.moved = false;
-                                        // reset associatedStrings
-                                        realStat.actionsAssociatedStrings = {};
                                         if (!(realStat.botType === typedef_1.BotType.naught && realStat.owner)) return [3 /*break*/, 6];
                                         (0, Utility_1.log)("Player: " + realStat.base.class + " (" + realStat.index + ")");
                                         _l = this_2.userCache.get(realStat.owner);
@@ -603,52 +599,19 @@ var Battle = /** @class */ (function () {
                         //#region WAIT FOR PLAYER INPUTS
                         _j.sent();
                         (0, Utility_1.log)("Players are all ready!");
-                        priorityActionMap = new Map();
-                        for (i = 0; i < this.roundActionsArray.length; i++) {
-                            act = this.roundActionsArray[i];
-                            actionListThisRound = priorityActionMap.get(act.round);
-                            if (actionListThisRound)
-                                actionListThisRound.push(act);
-                            else
-                                priorityActionMap.set(act.round, [act]);
-                        }
-                        latestAction = (0, Utility_1.arrayGetLargestInArray)(this.roundActionsArray, function (_a) { return _a.round; });
-                        if (!latestAction) return [3 /*break*/, 19];
-                        latestRound = latestAction.round;
-                        i = 0;
-                        _j.label = 14;
-                    case 14:
-                        if (!(i <= latestRound)) return [3 /*break*/, 18];
-                        roundExpectedActions = priorityActionMap.get(i);
-                        (0, Utility_1.debug)("roundea " + i, roundExpectedActions);
-                        if (!roundExpectedActions) return [3 /*break*/, 17];
-                        this.greaterPriorSort(roundExpectedActions);
-                        canvas = this.roundSavedCanvasMap.get(i);
-                        if (!canvas) {
-                            canvas = new canvas_1.Canvas(this.width * this.pixelsPerTile, this.height * this.pixelsPerTile);
-                            if (canvas)
-                                this.roundSavedCanvasMap.set(i, canvas);
-                        }
+                        canvas = new canvas_1.Canvas(this.width * this.pixelsPerTile, this.height * this.pixelsPerTile);
                         ctx = canvas.getContext("2d");
                         return [4 /*yield*/, this.getNewCanvasMap()];
-                    case 15:
+                    case 14:
                         roundCanvas = _j.sent();
                         this.drawHealthArcs(roundCanvas);
                         this.drawIndexi(roundCanvas);
                         ctx.drawImage(roundCanvas, 0, 0, canvas.width, canvas.height);
-                        // execution
-                        this.executeActions(roundExpectedActions);
-                        return [4 /*yield*/, this.getActionArrowsCanvas(roundExpectedActions)];
-                    case 16:
+                        executedActions = this.executeActions();
+                        return [4 /*yield*/, this.getActionArrowsCanvas(executedActions)];
+                    case 15:
                         actualCanvas = _j.sent();
                         ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
-                        // update the final canvas
-                        this.roundSavedCanvasMap.set(i, canvas);
-                        _j.label = 17;
-                    case 17:
-                        i++;
-                        return [3 /*break*/, 14];
-                    case 18:
                         _loop_4 = function (i) {
                             var s = allStats[i];
                             (0, Utility_1.handleTokens)(s, function (p, t) {
@@ -663,21 +626,15 @@ var Battle = /** @class */ (function () {
                         for (i = 0; i < allStats.length; i++) {
                             _loop_4(i);
                         }
-                        _j.label = 19;
-                    case 19:
                         //#region REPORT ACTIONS
                         (0, Utility_1.log)("Reporting...");
                         allPromise = [];
                         players = allStats.filter(function (s) { return s.botType === typedef_1.BotType.naught; });
                         players.forEach(function (stat) { return __awaiter(_this, void 0, void 0, function () {
-                            var allRounds, greatestRoundNumber, commandRoomReport;
+                            var commandRoomReport;
                             return __generator(this, function (_b) {
-                                allRounds = Array.from(this.roundSavedCanvasMap.keys());
-                                greatestRoundNumber = (0, Utility_1.arrayGetLargestInArray)(allRounds, function (_) { return _; });
-                                if (greatestRoundNumber) {
-                                    commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
-                                    allPromise.push(commandRoomReport);
-                                }
+                                commandRoomReport = this.sendReportToCommand(stat.owner, canvas, executedActions);
+                                allPromise.push(commandRoomReport);
                                 return [2 /*return*/];
                             });
                         }); });
@@ -688,7 +645,7 @@ var Battle = /** @class */ (function () {
                                     resolve(void 0);
                                 }, 150 * 1000);
                             })];
-                    case 20:
+                    case 16:
                         // wait for all players to finish reading the reports
                         _j.sent();
                         (0, Utility_1.log)("Reporting phase finished.");
@@ -803,68 +760,109 @@ var Battle = /** @class */ (function () {
         return (commandRoom === null || commandRoom === void 0 ? void 0 : commandRoom.send(message)) || null;
     };
     /** Send a multi-round report embed to sendToCommand function */
-    Battle.prototype.sendReportToCommand = function (roomID, round) {
+    Battle.prototype.sendReportToCommand = function (roomID, chosenCanvas, reportedActions) {
         return __awaiter(this, void 0, void 0, function () {
-            var chosenCanvas, promisedMsg, _b, roundMenuSelectOption, embed, messageOption, associatedStat;
+            var promisedMsg, getEmbed_1, domain, filterSelectOption, messageOption;
             var _this = this;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0:
-                        chosenCanvas = this.roundSavedCanvasMap.get(round);
-                        _b = chosenCanvas;
-                        if (!_b) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.sendToCommand(roomID, { embeds: [(0, Utility_1.getLoadingEmbed)()] })];
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, this.sendToCommand(roomID, { embeds: [(0, Utility_1.getLoadingEmbed)()] })];
                     case 1:
-                        _b = (promisedMsg = _c.sent());
-                        _c.label = 2;
-                    case 2:
-                        if (!_b) return [3 /*break*/, 4];
-                        roundMenuSelectOption = Array.from(this.roundSavedCanvasMap.keys()).map(function (rn) { return ({
-                            label: "Round " + rn,
-                            value: "" + rn,
-                        }); });
-                        embed = new discord_js_1.MessageEmbed({
-                            title: "Round " + round,
+                        if (!(promisedMsg = _b.sent())) return [3 /*break*/, 3];
+                        getEmbed_1 = function (_) {
+                            var e = new discord_js_1.MessageEmbed({
+                                description: "",
+                                image: {
+                                    url: "attachment://map.png"
+                                }
+                            });
+                            return _ === 'all' ?
+                                e.setDescription(reportedActions
+                                    .map(function (_a) { return (0, Utility_1.getActionTranslate)(_a); })
+                                    .join("\n") ||
+                                    "( *No Actions* )") :
+                                e.setDescription(reportedActions
+                                    .filter(function (_a) {
+                                    return _a.target.index === _ ||
+                                        _a.attacker.index === _;
+                                })
+                                    .map(function (_a) { return (0, Utility_1.getActionTranslate)(_a); })
+                                    .join("\n") ||
+                                    "( *No Actions* )");
+                        };
+                        domain = this.allStats(true);
+                        filterSelectOption = domain.map(function (_s) { return ({
+                            label: _s.base.class + " (" + _s.index + ")",
+                            description: "Show only actions from " + _s.base.class + " (" + _s.index + ")",
+                            value: "" + _s.index,
+                        }); }).concat({
+                            label: "Show all actions",
                             description: "",
-                            image: {
-                                url: "attachment://map.png"
-                            }
+                            value: "all"
                         });
                         messageOption = {
-                            embeds: [embed],
-                            components: [(0, Utility_1.getSelectMenuActionRow)(roundMenuSelectOption)],
+                            embeds: [getEmbed_1('all')],
+                            components: [(0, Utility_1.getSelectMenuActionRow)(filterSelectOption)],
                             files: [{ attachment: chosenCanvas.toBuffer(), name: 'map.png' }]
                         };
-                        associatedStat = this.allStats(true).find(function (_s) { return _s.owner === roomID; }) || null;
-                        if (associatedStat === null || associatedStat === void 0 ? void 0 : associatedStat.actionsAssociatedStrings[round]) {
-                            embed.description = (0, Utility_1.shortenString)(associatedStat.actionsAssociatedStrings[round].join('\n\n'));
-                        }
-                        else if (embed.description === "") {
-                            embed.description = "*(No Actions this Round )*";
-                        }
                         return [4 /*yield*/, promisedMsg.edit(messageOption)];
-                    case 3:
-                        _c.sent();
+                    case 2:
+                        _b.sent();
                         return [2 /*return*/, new Promise(function (resolve) {
-                                var itrCollector = (0, Utility_1.setUpInteractionCollect)(promisedMsg, function (itr) { return __awaiter(_this, void 0, void 0, function () {
-                                    var selectedRound;
-                                    return __generator(this, function (_b) {
-                                        if (itr.isSelectMenu()) {
-                                            selectedRound = parseInt(itr.values[0]);
-                                            clearTimeout(timeOut);
-                                            promisedMsg.delete();
-                                            resolve(this.sendReportToCommand(roomID, selectedRound));
-                                        }
-                                        return [2 /*return*/];
-                                    });
-                                }); });
-                                // timeout: done checking round
-                                var timeOut = setTimeout(function () {
+                                var timeOut, itrCollector;
+                                var hardReset = setTimeout(function () {
                                     itrCollector.stop();
                                     resolve(true);
-                                }, 15 * 1000);
+                                }, 150 * 1000);
+                                var resetTimeout = function () {
+                                    clearTimeout(timeOut);
+                                    timeOut = setTimeout(function () {
+                                        itrCollector.stop();
+                                        resolve(true);
+                                        clearTimeout(hardReset);
+                                    }, 15 * 1000);
+                                };
+                                var collect = function () {
+                                    resetTimeout();
+                                    return (0, Utility_1.setUpInteractionCollect)(promisedMsg, function (itr) { return __awaiter(_this, void 0, void 0, function () {
+                                        var selected, _b, selectedIndex;
+                                        return __generator(this, function (_c) {
+                                            switch (_c.label) {
+                                                case 0:
+                                                    if (!itr.isSelectMenu()) return [3 /*break*/, 6];
+                                                    selected = itr.values[0];
+                                                    _b = selected;
+                                                    switch (_b) {
+                                                        case "all": return [3 /*break*/, 1];
+                                                    }
+                                                    return [3 /*break*/, 3];
+                                                case 1:
+                                                    itrCollector = collect();
+                                                    return [4 /*yield*/, itr.update({
+                                                            embeds: [getEmbed_1('all')]
+                                                        })];
+                                                case 2:
+                                                    _c.sent();
+                                                    return [3 /*break*/, 6];
+                                                case 3:
+                                                    selectedIndex = parseInt(selected);
+                                                    if (!Number.isInteger(selectedIndex)) return [3 /*break*/, 5];
+                                                    itrCollector = collect();
+                                                    return [4 /*yield*/, itr.update({
+                                                            embeds: [getEmbed_1(selectedIndex)]
+                                                        })];
+                                                case 4:
+                                                    _c.sent();
+                                                    _c.label = 5;
+                                                case 5: return [3 /*break*/, 6];
+                                                case 6: return [2 /*return*/];
+                                            }
+                                        });
+                                    }); });
+                                };
+                                itrCollector = collect();
                             })];
-                    case 4: return [2 /*return*/, false];
+                    case 3: return [2 /*return*/, false];
                 }
             });
         });
@@ -887,7 +885,7 @@ var Battle = /** @class */ (function () {
         // attack goes through
         if (check === null) {
             _virtualAttacker.weaponUses[(0, Utility_1.getAbilityIndex)(ability, _virtualAttacker)]++;
-            _virtualAttacker.readiness -= _aA.readiness;
+            _virtualAttacker.readiness -= _aA.readinessCost;
             (0, Utility_1.handleTokens)(_virtualAttacker, function (p, t) {
                 (0, Utility_1.log)("\t\t" + _virtualAttacker.index + ") " + t + " --" + _aA[t]);
                 _virtualAttacker[t] -= _aA[t];
@@ -1019,7 +1017,7 @@ var Battle = /** @class */ (function () {
                             stat.sword += action.sword;
                             stat.shield += action.shield;
                             stat.sprint += action.sprint;
-                            stat.readiness += action.readiness;
+                            stat.readiness += action.readinessCost;
                             action.executed = false;
                             switch (action.type) {
                                 case 'Move':
@@ -1089,7 +1087,6 @@ var Battle = /** @class */ (function () {
                                 var handleSelectMenu = function (_sMItr) {
                                     var _b;
                                     var _c, _d;
-                                    var round = executingActions.length + 1;
                                     var code = _sMItr.values[0];
                                     var codeSections = code.split(" ");
                                     var valid = false;
@@ -1105,11 +1102,11 @@ var Battle = /** @class */ (function () {
                                         var weapon = (attacker === null || attacker === void 0 ? void 0 : attacker.equipped) || (attacker === null || attacker === void 0 ? void 0 : attacker.base.arsenal[0]);
                                         var target = domain.find(function (_s) { return _s.index === targetIndex_1; });
                                         if (attacker && ability && weapon && target) {
-                                            var virtualAttackAction = (0, Utility_1.getAttackAction)(_vS, target, weapon, ability, target, round);
+                                            var virtualAttackAction = (0, Utility_1.getAttackAction)(_vS, target, weapon, ability, target);
                                             valid = _this.executeVirtualAttack(virtualAttackAction, _vS);
                                             if (valid) {
                                                 possibleError = '';
-                                                var realAttackAction = (0, Utility_1.getAttackAction)(_rS, target, weapon, ability, target, round);
+                                                var realAttackAction = (0, Utility_1.getAttackAction)(_rS, target, weapon, ability, target);
                                                 executingActions.push(realAttackAction);
                                             }
                                             else {
@@ -1132,7 +1129,7 @@ var Battle = /** @class */ (function () {
                                                 var lootAction = (0, Utility_1.getLootAction)(_rS, {
                                                     x: x,
                                                     y: y,
-                                                }, round);
+                                                });
                                                 executingActions.push(lootAction);
                                             }
                                         }
@@ -1272,9 +1269,9 @@ var Battle = /** @class */ (function () {
                         returnString += "\n";
                     }
                     // notify the inflicter
-                    if (status_1.from.index !== status_1.affected.index) {
-                        this.appendReportString(status_1.from, _currentRoundAction.round, "__" + status_1.affected.base.class + "__ (" + status_1.affected.index + ")\n" + statusString);
-                    }
+                    // if (status.from.index !== status.affected.index) {
+                    //     this.appendReportString(status.from, _currentRoundAction.round, `__${status.affected.base.class}__ (${status.affected.index})\n` + statusString);
+                    // }
                 }
             }
             else {
@@ -1484,29 +1481,29 @@ var Battle = /** @class */ (function () {
             this.tobespawnedArray.push(failedToSpawn[i]);
         }
     };
-    Battle.prototype.getGreaterPrio = function (a) {
-        return (1000 * (20 - a.round)) + (a.attacker.readiness - a.readiness);
+    Battle.prototype.getNextAction = function () {
+        var sortedActions = this.roundActionsArray.sort(function (_a1, _a2) {
+            var _b, _c;
+            _a2.priority = (0, Utility_1.getExecutionSpeed)(_a2.attacker, ((_b = (0, Utility_1.extractActions)(_a2).aAction) === null || _b === void 0 ? void 0 : _b.ability) || { speedScale: 1 });
+            _a1.priority = (0, Utility_1.getExecutionSpeed)(_a1.attacker, ((_c = (0, Utility_1.extractActions)(_a1).aAction) === null || _c === void 0 ? void 0 : _c.ability) || { speedScale: 1 });
+            return _a2.priority - _a1.priority;
+        });
+        return sortedActions.shift() || null;
     };
-    ;
-    Battle.prototype.greaterPriorSort = function (_actions) {
-        var _this = this;
-        var sortedActions = _actions.sort(function (a, b) { return _this.getGreaterPrio(b) - _this.getGreaterPrio(a); });
-        return sortedActions;
-    };
-    Battle.prototype.appendReportString = function (_stat, _round, _string) {
-        var associatedStringArray = _stat.actionsAssociatedStrings;
-        if (associatedStringArray[_round] === undefined) {
-            associatedStringArray[_round] = [];
-        }
-        if (_string) {
-            (0, Utility_1.log)("\t\t\tAppending \"" + _string.replace("\n", "\\n") + "\" to (" + _stat.index + ")");
-            associatedStringArray[_round].push(_string);
-        }
+    Battle.prototype.appendReportString = function (_stat, _string) {
+        // const associatedStringArray = _stat.actionsAssociatedStrings;
+        // if (associatedStringArray[_round] === undefined) {
+        //     associatedStringArray[_round] = [];
+        // }
+        // if (_string) {
+        //     log(`\t\t\tAppending "${_string.replace("\n", "\\n")}" to (${_stat.index})`)
+        //     associatedStringArray[_round].push(_string);
+        // }
     };
     // actions
     Battle.prototype.executeAutoWeapons = function (_action) {
+        // const round = _action.round;
         var _this = this;
-        var round = _action.round;
         var executeAuto = function (_s) {
             var attacker = _s;
             var target = _s.index === _action.attacker.index ?
@@ -1526,7 +1523,7 @@ var Battle = /** @class */ (function () {
                 if (intendedVictim) {
                     var selfActivatingAA = (0, Utility_1.getAttackAction)(attacker, intendedVictim, null, _a, {
                         x: intendedVictim.x, y: intendedVictim.y
-                    }, round);
+                    });
                     _this.executeAttackAction(selfActivatingAA);
                     // totalString.push(weaponEffect.activate());
                 }
@@ -1539,13 +1536,16 @@ var Battle = /** @class */ (function () {
         }
         return totalString.join("\n");
     };
-    Battle.prototype.executeActions = function (_actions) {
+    Battle.prototype.executeActions = function () {
         (0, Utility_1.log)("Executing actions...");
-        this.greaterPriorSort(_actions);
-        for (var i = 0; i < _actions.length; i++) {
-            var executing = _actions[i];
+        var executedActions = [];
+        var executing = this.getNextAction();
+        while (executing) {
             this.executeOneAction(executing);
+            executedActions.push(executing);
+            executing = this.getNextAction();
         }
+        return executedActions;
     };
     Battle.prototype.executeOneAction = function (_action) {
         (0, Utility_1.log)("\tExecuting action: " + _action.type + ", " + _action.attacker.base.class + " => " + _action.target.base.class);
@@ -1554,23 +1554,22 @@ var Battle = /** @class */ (function () {
         var lAction = _action;
         var actionAffected = _action.target;
         var actionFrom = _action.attacker;
-        var round = _action.round;
         // activate autoWeapons
         var autoWeaponReportString = this.executeAutoWeapons(_action);
-        this.appendReportString(actionAffected, round, autoWeaponReportString);
-        this.appendReportString(actionFrom, round, autoWeaponReportString);
+        // this.appendReportString(actionAffected, round, autoWeaponReportString);
+        // this.appendReportString(actionFrom, round, autoWeaponReportString);
         // apply statuses for target, then report to target
         var affectedStatusString = this.tickStatuses(actionAffected, _action);
-        if (affectedStatusString) {
-            this.appendReportString(actionAffected, round, affectedStatusString);
-        }
+        // if (affectedStatusString) {
+        //     this.appendReportString(actionAffected, round, affectedStatusString);
+        // }
         // if the action is not self-targetting...
         if (actionAffected.index !== actionFrom.index) {
             // apply statuses for attacker, then report to attacker
             var attackerStatusString = this.tickStatuses(actionFrom, _action);
-            if (attackerStatusString) {
-                this.appendReportString(actionFrom, round, attackerStatusString);
-            }
+            // if (attackerStatusString) {
+            //     this.appendReportString(actionFrom, round, attackerStatusString);
+            // }
         }
         switch (_action.type) {
             case 'Attack':
@@ -1618,10 +1617,10 @@ var Battle = /** @class */ (function () {
         if (blastRadius) {
             var enemiesInRadius = this.findEntities_radius(center, blastRadius, inclusive);
             for (var i = 0; i < enemiesInRadius.length; i++) {
-                var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, enemiesInRadius[i], weapon, ability, enemiesInRadius[i], _aA.round);
+                var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, enemiesInRadius[i], weapon, ability, enemiesInRadius[i]);
                 var SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
                 string += SAResult;
-                if (enemiesInRadius.length > 1 && i !== enemiesInRadius.length - 1) {
+                if (SAResult && enemiesInRadius.length > 1 && i !== enemiesInRadius.length - 1) {
                     string += "\n";
                 }
             }
@@ -1630,11 +1629,11 @@ var Battle = /** @class */ (function () {
     };
     ;
     Battle.prototype.executeLineAttackAction = function (_aA) {
-        var attacker = _aA.attacker, target = _aA.target, ability = _aA.ability, weapon = _aA.weapon, round = _aA.round;
+        var attacker = _aA.attacker, target = _aA.target, ability = _aA.ability, weapon = _aA.weapon;
         var enemiesInLine = this.findEntities_inLine(attacker, target);
         var string = '';
         for (var i = 0; i < enemiesInLine.length; i++) {
-            var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, target, weapon, ability, enemiesInLine[i], round);
+            var singleTargetAA = (0, Utility_1.getAttackAction)(attacker, target, weapon, ability, enemiesInLine[i]);
             var SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
             string += SAResult;
         }
@@ -1642,7 +1641,7 @@ var Battle = /** @class */ (function () {
     };
     ;
     Battle.prototype.executeAttackAction = function (_aA) {
-        var attacker = _aA.attacker, target = _aA.target, ability = _aA.ability, readiness = _aA.readiness, round = _aA.round;
+        var attacker = _aA.attacker, target = _aA.target, ability = _aA.ability, readiness = _aA.readinessCost;
         var attackResult = "";
         switch (ability.targetting.AOE) {
             case "self":
@@ -1662,10 +1661,10 @@ var Battle = /** @class */ (function () {
                 break;
         }
         // save attack results as reportString
-        this.appendReportString(attacker, round, attackResult);
-        if (attacker.index !== target.index) {
-            this.appendReportString(target, round, attackResult);
-        }
+        // this.appendReportString(attacker, round, attackResult);
+        // if (attacker.index !== target.index) {
+        //     this.appendReportString(target, round, attackResult);
+        // }
         // expend resources
         _aA.executed = true;
         attacker.readiness -= readiness;
@@ -1691,7 +1690,7 @@ var Battle = /** @class */ (function () {
         // console.log(`${_mA.from.base.class} (${_mA.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
         var affected = _mA.target;
         _mA.executed = true;
-        affected.readiness -= _mA.readiness;
+        affected.readiness -= _mA.readinessCost;
         (0, Utility_1.handleTokens)(affected, function (p, t) {
             (0, Utility_1.log)("\t\t" + affected.index + ") " + t + " --" + _mA[t]);
             affected[t] -= _mA[t];
@@ -1861,7 +1860,6 @@ var Battle = /** @class */ (function () {
             return __generator(this, function (_h) {
                 switch (_h.label) {
                     case 0:
-                        (0, Utility_1.log)(_actions.map(function (_a) { return _a.attacker.base.class + " => " + _a.target.base.class; }));
                         drawAttackAction = function (_aA, _fromBattleCoord, _toBattleCoord, _width, _offset) {
                             if (_width === void 0) { _width = 5; }
                             if (_offset === void 0) { _offset = {
@@ -1970,10 +1968,11 @@ var Battle = /** @class */ (function () {
                             var toNode = new hGraphTheory_1.hNode(to, _iVal);
                             graph.connectNodes(fromNode, toNode, action);
                         };
-                        actions = _actions.map(function (_a, _index) {
-                            _a.priority = _index + 1;
-                            return _a;
-                        });
+                        actions = _actions.map(function (_a, i) {
+                            return (0, Utility_1.getNewObject)(_a, {
+                                priority: i
+                            });
+                        }).reverse();
                         canvas = new canvas_1.Canvas(this.width * 50, this.height * 50);
                         ctx = canvas.getContext("2d");
                         style = {

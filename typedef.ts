@@ -5,8 +5,6 @@ import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
 import { areasData, classData, dungeonData, enemiesData, itemData, materialData, interactionEventData, forgeWeaponData, universalWeaponsData, universalAbilitiesData } from "./jsons";
 
-export type Round = number;
-export type Priority = number;
 export type StringCoordinate = `${number},${number}`;
 export type OwnerID = string;
 
@@ -136,7 +134,6 @@ export interface Stat extends Coordinate {
     index: number,
 
     weaponUses: number[],
-    actionsAssociatedStrings: { [key: number]: string[] },
     statusEffects: StatusEffect[],
     moved: boolean,
 
@@ -174,14 +171,14 @@ export enum NumericDirection {
     left,
 }
 export interface Action {
-    round: Round,
-    priority: Priority,
+    type: ActionType,
+
     attacker: Stat,
     target: Stat,
-    readiness: number,
-    type: ActionType
     executed: boolean,
 
+    priority: number,
+    readinessCost: number,
     sword: number,
     shield: number,
     sprint: number,
@@ -314,7 +311,7 @@ export enum AbilityTargetting {
 export type AbilityAOE = "single" | "self" | "circle" | "selfCircle" | "touch" | "line"
 export interface Ability {
     // attack type
-    type: "melee" | "ranged" | "null",
+    type: ForgeWeaponRange,
 
     // name
     abilityName: AbilityName | UniversalAbilityName,
@@ -358,6 +355,9 @@ export interface Ability {
 }
 export type UniversalAbilityName = keyof typeof universalAbilitiesData;
 export type AbilityName =
+    // normal attack
+    "Attack" |
+
     // Fighter
     "Passive: Endless Labour" |
     "Obliterate"|
@@ -406,11 +406,12 @@ export type ForgeWeaponPart =
     'blade' |
     'guard' |
     'shaft'
+export type ForgeWeaponRange = "melee" | "ranged" | "null";
 export type ForgeWeaponType = keyof typeof forgeWeaponData;
+export interface ForgeWeaponItem extends ForgeWeapon, Item {}
 export interface ForgeWeapon {
-    name: string,
     weaponType: ForgeWeaponType,
-    type: "melee" | "ranged" | "null",
+    type: ForgeWeaponRange,
                                         // material dependent
     range: AttackRange,                 // x
     accuracy: number,                   // o

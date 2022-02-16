@@ -1,4 +1,29 @@
 "use strict";
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Item = void 0;
 var jsons_1 = require("../jsons");
@@ -92,6 +117,65 @@ var Item = /** @class */ (function () {
         item.fillJunk(min);
         // log(item);
         return item;
+    };
+    Item.Forge = function (_blade, _guard, _shaft, _type) {
+        var bladeWeight = _blade.getWeight();
+        var guardWeight = _guard.getWeight();
+        var shaftWeight = _shaft.getWeight();
+        var totalWeight = bladeWeight + guardWeight + shaftWeight;
+        var materials = __spreadArray(__spreadArray(__spreadArray([], __read(_blade.getAllMaterial().map(function (_mi) {
+            return (0, Utility_1.getNewObject)(_mi, { occupation: _mi.occupation * (bladeWeight / totalWeight) });
+        })), false), __read(_guard.getAllMaterial().map(function (_mi) {
+            return (0, Utility_1.getNewObject)(_mi, { occupation: _mi.occupation * (guardWeight / totalWeight) });
+        })), false), __read(_shaft.getAllMaterial().map(function (_mi) {
+            return (0, Utility_1.getNewObject)(_mi, { occupation: _mi.occupation * (shaftWeight / totalWeight) });
+        })), false);
+        var item = new Item(materials, totalWeight, _type);
+        var get = function (_part, _require) {
+            switch (_part) {
+                case 'blade':
+                    return _blade.getAllMaterial().reduce(function (_tt, _m) {
+                        return _tt + _m.occupation * bladeWeight * Math.pow(1.1, _m.grade) * jsons_1.materialData[_m.materialName][_require];
+                    }, 0);
+                case 'shaft':
+                    return _shaft.getAllMaterial().reduce(function (_tt, _m) {
+                        return _tt + _m.occupation * shaftWeight * Math.pow(1.1, _m.grade) * jsons_1.materialData[_m.materialName][_require];
+                    }, 0);
+                case 'guard':
+                    return _shaft.getAllMaterial().reduce(function (_tt, _m) {
+                        return _tt + _m.occupation * guardWeight * Math.pow(1.1, _m.grade) * jsons_1.materialData[_m.materialName][_require];
+                    }, 0);
+            }
+        };
+        var weaponData = jsons_1.forgeWeaponData[_type];
+        var fw = {
+            weaponType: _type,
+            type: weaponData.type,
+            range: weaponData.range,
+            // (blade: x0.8, shaft: x1.5) * weaponType accScale
+            accuracy: 50 + get('blade', 'accuracy') * 0.8 + get('shaft', 'accuracy') * 1.5,
+            // (blade: x1.5, shaft: x0.8) * weaponType damageScale
+            damageRange: {
+                min: _blade.getAllMaterial().reduce(function (_tt, _m) {
+                    return _tt + _m.occupation * bladeWeight * Math.pow(1.1, _m.grade) * jsons_1.materialData[_m.materialName].damageRange[0];
+                }, 0),
+                max: _blade.getAllMaterial().reduce(function (_tt, _m) {
+                    return _tt + _m.occupation * bladeWeight * Math.pow(1.1, _m.grade) * jsons_1.materialData[_m.materialName].damageRange[1];
+                }, 0),
+            },
+            // (blade: x1.2, shaft: x1.2) * weaponType criticalHitScale
+            criticalHit: 0 + get('blade', 'criticalHit') * 1.2 + get('shaft', 'criticalHit') * 1.2,
+            // blade: x1.0
+            lifesteal: get('blade', 'lifesteal'),
+            // speed
+            // totalweight * weaponType speedscaling
+            readinessCost: (get('blade', 'speed') + get('guard', 'speed') + get('shaft', 'speed')) *
+                jsons_1.forgeWeaponData[_type].spdScale,
+            // weight
+            // totalweight 
+            staminaCost: totalWeight,
+        };
+        return Object.assign(item, fw);
     };
     Item.prototype.print = function () {
         var realWeight = 0;

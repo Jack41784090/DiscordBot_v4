@@ -1,10 +1,10 @@
 import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Interaction, InteractionCollector, Message, MessageButtonOptions, MessageButtonStyle, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
-import { addHPBar, counterAxis, getAHP, getSpd, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getAbilityIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, handleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag, getLootAction, getForgeWeaponAttackAbility, getAttackRange, getLoadingEmbed } from "./Utility";
+import { addHPBar, counterAxis, getAHP, getExecutionSpeed, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getAbilityIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, handleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag, getLootAction, getForgeWeaponAttackAbility, getAttackRange, getLoadingEmbed, getActionTranslate, extractActions } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIconCanvas, getUserWelfare } from "./Database";
 
 import fs from 'fs';
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, Round, RGBA, Stat, TargetingError, Team, Vector2, Ability, AbilityTargetting, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialInfo, EMOJI_MONEYBAG, LootAction, ForgeWeapon, ForgeWeaponType, StringCoordinate } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, RGBA, Stat, TargetingError, Team, Vector2, Ability, AbilityTargetting, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialInfo, EMOJI_MONEYBAG, LootAction, ForgeWeapon, ForgeWeaponType, StringCoordinate } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
 import { WeaponEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
@@ -65,7 +65,6 @@ export class Battle {
 
     // Round Actions Information (Resets every Round)
     roundActionsArray: Array<Action> = [];
-    roundSavedCanvasMap: Map<number, Canvas> = new Map<number, Canvas>();
 
     // Entity-Related Information
     tobespawnedArray: Array<Stat> = [];
@@ -258,7 +257,6 @@ export class Battle {
 
         // resetting action list and round current maps
         this.roundActionsArray = [];
-        this.roundSavedCanvasMap.clear();
 
         // SPAWNING
         log("Currently waiting to be spawned...")
@@ -287,19 +285,19 @@ export class Battle {
 
             // randomly assign tokens
             for (let i = 0; i < 2; i++) {
-                const token = uniformRandom(0, 2);
-                log(`\t${s.base.class} (${s.index}) got ${token}`)
-                switch (token) {
-                    case 0:
-                        s.sword++;
-                        break;
-                    case 1:
-                        s.shield++;
-                        break;
-                    case 2:
+                // const token = uniformRandom(0, 2);
+                // log(`\t${s.base.class} (${s.index}) got ${token}`)
+                // switch (token) {
+                //     case 0:
+                //         s.sword++;
+                //         break;
+                //     case 1:
+                //         s.shield++;
+                //         break;
+                //     case 2:
                         s.sprint++;
-                        break;
-                }
+                //         break;
+                // }
             }
 
             // limit the entity's tokens
@@ -362,8 +360,6 @@ export class Battle {
             realStat.weaponUses = realStat.weaponUses.map(_wU => 0);
             // reset moved
             realStat.moved = false;
-            // reset associatedStrings
-            realStat.actionsAssociatedStrings = {};
 
             //#region PLAYER CONTROL
             if (realStat.botType === BotType.naught && realStat.owner) {
@@ -465,65 +461,34 @@ export class Battle {
 
         //#region EXECUTING ACTIONS
 
-        // sort actions in priority using map
-        const priorityActionMap = new Map<Round, Action[]>();
-        for (let i = 0; i < this.roundActionsArray.length; i++) {
-            const act: Action = this.roundActionsArray[i];
-            const actionListThisRound: Action[] | undefined = priorityActionMap.get(act.round);
+        // execute every move from lowest priority to highest
+        // draw the base tiles and characters (before executing actions)
+        const canvas = new Canvas(this.width * this.pixelsPerTile, this.height * this.pixelsPerTile);
 
-            if (actionListThisRound)
-                actionListThisRound.push(act);
-            else
-                priorityActionMap.set(act.round, [act]);
-        }
+        const ctx = canvas.getContext("2d");
+        const roundCanvas: Canvas = await this.getNewCanvasMap();
+        this.drawHealthArcs(roundCanvas);
+        this.drawIndexi(roundCanvas);
+        ctx.drawImage(roundCanvas, 0, 0, canvas.width, canvas.height);
 
-        // find the latest action's priority
-        const latestAction = arrayGetLargestInArray(this.roundActionsArray, _a => _a.round);
-        if (latestAction) {
-            const latestRound: Round = latestAction.round;
+        // execution
+        const executedActions: Array<Action> = this.executeActions();
 
-            // execute every move from lowest priority to highest
-            for (let i = 0; i <= latestRound; i++) {
-                const roundExpectedActions: Action[] | undefined = priorityActionMap.get(i);
-                debug(`roundea ${i}`, roundExpectedActions);
-                if (roundExpectedActions) {
-                    this.greaterPriorSort(roundExpectedActions);
+        // draw executed actions
+        const actualCanvas: Canvas = await this.getActionArrowsCanvas(executedActions);
+        ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
 
-                    // draw the base tiles and characters (before executing actions)
-                    let canvas = this.roundSavedCanvasMap.get(i);
-                    if (!canvas) {
-                        canvas = new Canvas(this.width * this.pixelsPerTile, this.height * this.pixelsPerTile);
-                        if (canvas) this.roundSavedCanvasMap.set(i, canvas);
-                    }
-                    const ctx = canvas.getContext("2d");
-                    const roundCanvas = await this.getNewCanvasMap();
-                    this.drawHealthArcs(roundCanvas);
-                    this.drawIndexi(roundCanvas);
-                    ctx.drawImage(roundCanvas, 0, 0, canvas.width, canvas.height);
+        //#endregion
 
-                    // execution
-                    this.executeActions(roundExpectedActions);
-
-                    // draw executed actions
-                    const actualCanvas = await this.getActionArrowsCanvas(roundExpectedActions);
-                    ctx.drawImage(actualCanvas, 0, 0, canvas.width, canvas.height);
-
-                    // update the final canvas
-                    this.roundSavedCanvasMap.set(i, canvas);
+        // limit token count
+        for (let i = 0; i < allStats.length; i++) {
+            const s = allStats[i];
+            handleTokens(s, (p, t) => {
+                if (p > 3) {
+                    log(`\t\t${s.index}) ${t} =${3}`)
+                    s[t] = 3;
                 }
-            }
-            //#endregion
-
-            // limit token count
-            for (let i = 0; i < allStats.length; i++) {
-                const s = allStats[i];
-                handleTokens(s, (p, t) => {
-                    if (p > 3) {
-                        log(`\t\t${s.index}) ${t} =${3}`)
-                        s[t] = 3;
-                    }
-                });
-            }
+            });
         }
 
         //#region REPORT ACTIONS
@@ -533,12 +498,8 @@ export class Battle {
         // for each player, send an embed of actions completed of the player.
         const players = allStats.filter(s => s.botType === BotType.naught);
         players.forEach(async stat => {
-            const allRounds: Round[] = Array.from(this.roundSavedCanvasMap.keys());
-            const greatestRoundNumber: Round | undefined = arrayGetLargestInArray(allRounds, _ => _);
-            if (greatestRoundNumber) {
-                const commandRoomReport = this.sendReportToCommand(stat.owner, greatestRoundNumber);
-                allPromise.push(commandRoomReport);
-            }
+            const commandRoomReport = this.sendReportToCommand(stat.owner, canvas, executedActions);
+            allPromise.push(commandRoomReport);
         });
 
         // wait for all players to finish reading the reports
@@ -675,52 +636,93 @@ export class Battle {
     }
 
     /** Send a multi-round report embed to sendToCommand function */
-    async sendReportToCommand(roomID: string, round: Round): Promise<boolean> {
-        const chosenCanvas = this.roundSavedCanvasMap.get(round);
+    async sendReportToCommand(roomID: string, chosenCanvas: Canvas, reportedActions: Array<Action>): Promise<boolean> {
         let promisedMsg: Message;
-        if (chosenCanvas && (promisedMsg = await this.sendToCommand(roomID, { embeds: [getLoadingEmbed()] })!)) {
-            const roundMenuSelectOption: MessageSelectOptionData[] = Array.from(this.roundSavedCanvasMap.keys()).map(rn => ({
-                label: `Round ${rn}`,
-                value: `${rn}`,
-            }));
-            const embed: MessageEmbed = new MessageEmbed({
-                title: `Round ${round}`,
-                description: "",
-                image: {
-                    url: "attachment://map.png"
-                }
-            });
+        if (promisedMsg = await this.sendToCommand(roomID, { embeds: [getLoadingEmbed()] })!) {
+            const getEmbed = (_: 'all' | number) => {
+                const e = new MessageEmbed({
+                    description: "",
+                    image: {
+                        url: "attachment://map.png"
+                    }
+                });
+                return _ === 'all' ?
+                    e.setDescription(
+                        reportedActions
+                            .map(_a => getActionTranslate(_a))
+                            .join("\n") ||
+                        "( *No Actions* )") :
+                    e.setDescription(
+                        reportedActions
+                            .filter(_a =>
+                                _a.target.index === _ ||
+                                _a.attacker.index === _
+                            )
+                            .map(_a => getActionTranslate(_a))
+                            .join("\n") ||
+                        "( *No Actions* )");
+
+            }
+            const domain = this.allStats(true);
+            const filterSelectOption: MessageSelectOptionData[]=
+                domain.map(_s => ({
+                    label: `${_s.base.class} (${_s.index})`,
+                    description: `Show only actions from ${_s.base.class} (${_s.index})`,
+                    value: `${_s.index}`,
+                })).concat({
+                    label: "Show all actions",
+                    description: ``,
+                    value: `all`
+                });
             const messageOption: MessageOptions = {
-                embeds: [embed],
-                components: [getSelectMenuActionRow(roundMenuSelectOption)],
+                embeds: [getEmbed('all')],
+                components: [getSelectMenuActionRow(filterSelectOption)],
                 files: [{ attachment: chosenCanvas.toBuffer(), name: 'map.png' }]
             };
 
-            // add description as actions done and done-to
-            const associatedStat: Stat | null = this.allStats(true).find(_s => _s.owner === roomID) || null;
-            if (associatedStat?.actionsAssociatedStrings[round]) {
-                embed.description = shortenString(associatedStat.actionsAssociatedStrings[round].join('\n\n'));
-            }
-            else if (embed.description === "") {
-                embed.description = "*(No Actions this Round )*";
-            }
-
             await promisedMsg.edit(messageOption);
             return new Promise((resolve) => {
-                const itrCollector = setUpInteractionCollect(promisedMsg, async itr => {
-                    if (itr.isSelectMenu()) {
-                        const selectedRound = parseInt(itr.values[0]);
-                        clearTimeout(timeOut);
-                        promisedMsg.delete();
-                        resolve(this.sendReportToCommand(roomID, selectedRound));
-                    }
-                });
-
-                // timeout: done checking round
-                const timeOut = setTimeout(() => {
+                let timeOut: NodeJS.Timeout, itrCollector: InteractionCollector<Interaction>;
+                const hardReset = setTimeout(() => {
                     itrCollector.stop();
                     resolve(true);
-                }, 15 * 1000);
+                }, 150 * 1000);
+                const resetTimeout = () => {
+                    clearTimeout(timeOut);
+                    timeOut = setTimeout(() => {
+                        itrCollector.stop();
+                        resolve(true);
+                        clearTimeout(hardReset);
+                    }, 15 * 1000);
+                }
+                const collect = () => {
+                    resetTimeout();
+                    return setUpInteractionCollect(promisedMsg, async itr => {
+                        if (itr.isSelectMenu()) {
+                            const selected = itr.values[0]; // index or "all"
+                            switch (selected) {
+                                case "all":
+                                    itrCollector = collect();
+                                    await itr.update({
+                                        embeds: [getEmbed('all')]
+                                    })
+                                    break;
+
+                                default:
+                                    const selectedIndex = parseInt(selected);
+                                    if (Number.isInteger(selectedIndex)) {
+                                        itrCollector = collect();
+                                        await itr.update({
+                                            embeds: [getEmbed(selectedIndex)]
+                                        })
+                                    }
+                                    break;
+                            }
+                        }
+                    });
+                }
+
+                itrCollector = collect();
             });
         }
         return false;
@@ -748,7 +750,7 @@ export class Battle {
         if (check === null) {
             _virtualAttacker.weaponUses[getAbilityIndex(ability, _virtualAttacker)]++;
 
-            _virtualAttacker.readiness -= _aA.readiness;
+            _virtualAttacker.readiness -= _aA.readinessCost;
             handleTokens(_virtualAttacker, (p, t) => {
                 log(`\t\t${_virtualAttacker.index}) ${t} --${_aA[t]}`)
                 _virtualAttacker[t] -= _aA[t];
@@ -888,7 +890,7 @@ export class Battle {
             stat.sword += action.sword;
             stat.shield += action.shield;
             stat.sprint += action.sprint;
-            stat.readiness += action.readiness;
+            stat.readiness += action.readinessCost;
             action.executed = false;
 
             switch (action.type) {
@@ -940,7 +942,6 @@ export class Battle {
                 }, 1);
             }
             const handleSelectMenu = (_sMItr: SelectMenuInteraction): boolean => {
-                const round: Round = executingActions.length + 1;
                 const code: string = _sMItr.values[0];
                 const codeSections: Array<string> = code.split(" ");
                 let valid: boolean = false;
@@ -959,11 +960,11 @@ export class Battle {
                     const target: Stat = domain.find(_s => _s.index === targetIndex)!;
 
                     if (attacker && ability && weapon && target) {
-                        const virtualAttackAction: AttackAction = getAttackAction(_vS, target, weapon, ability, target, round);
+                        const virtualAttackAction: AttackAction = getAttackAction(_vS, target, weapon, ability, target);
                         valid = this.executeVirtualAttack(virtualAttackAction, _vS);
                         if (valid) {
                             possibleError = '';
-                            const realAttackAction = getAttackAction(_rS, target, weapon, ability, target, round);
+                            const realAttackAction = getAttackAction(_rS, target, weapon, ability, target);
                             executingActions.push(realAttackAction);
                         }
                         else {
@@ -986,7 +987,7 @@ export class Battle {
                             const lootAction: LootAction = getLootAction(_rS, {
                                 x: x,
                                 y: y,
-                            }, round);
+                            });
                             executingActions.push(lootAction);
                         }
                     }
@@ -1141,9 +1142,9 @@ export class Battle {
                     }
 
                     // notify the inflicter
-                    if (status.from.index !== status.affected.index) {
-                        this.appendReportString(status.from, _currentRoundAction.round, `__${status.affected.base.class}__ (${status.affected.index})\n` + statusString);
-                    }
+                    // if (status.from.index !== status.affected.index) {
+                    //     this.appendReportString(status.from, _currentRoundAction.round, `__${status.affected.base.class}__ (${status.affected.index})\n` + statusString);
+                    // }
                 }
             }
             else {
@@ -1396,29 +1397,30 @@ export class Battle {
             this.tobespawnedArray.push(failedToSpawn[i]);
         }
     }
-
-    getGreaterPrio (a: Action) {
-        return (1000 * (20 - a.round)) + (a.attacker.readiness - a.readiness);
-    };
-    greaterPriorSort(_actions: Action[]) {
-        const sortedActions = _actions.sort((a, b) => this.getGreaterPrio(b) - this.getGreaterPrio(a));
-        return sortedActions;
+    
+    getNextAction(): Action | null {
+        const sortedActions = this.roundActionsArray.sort((_a1, _a2) => {
+            _a2.priority = getExecutionSpeed(_a2.attacker, extractActions(_a2).aAction?.ability || { speedScale: 1 })
+            _a1.priority = getExecutionSpeed(_a1.attacker, extractActions(_a1).aAction?.ability || { speedScale: 1 })
+            return _a2.priority - _a1.priority;
+        });
+        return sortedActions.shift() || null;
     }
 
-    appendReportString(_stat: Stat, _round: Round, _string: string) {
-        const associatedStringArray = _stat.actionsAssociatedStrings;
-        if (associatedStringArray[_round] === undefined) {
-            associatedStringArray[_round] = [];
-        }
-        if (_string) {
-            log(`\t\t\tAppending "${_string.replace("\n", "\\n")}" to (${_stat.index})`)
-            associatedStringArray[_round].push(_string);
-        }
+    appendReportString(_stat: Stat, _string: string) {
+        // const associatedStringArray = _stat.actionsAssociatedStrings;
+        // if (associatedStringArray[_round] === undefined) {
+        //     associatedStringArray[_round] = [];
+        // }
+        // if (_string) {
+        //     log(`\t\t\tAppending "${_string.replace("\n", "\\n")}" to (${_stat.index})`)
+        //     associatedStringArray[_round].push(_string);
+        // }
     }
 
     // actions
     executeAutoWeapons(_action: Action): string {
-        const round = _action.round;
+        // const round = _action.round;
 
         const executeAuto = (_s: Stat) => {
             const attacker = _s;
@@ -1443,7 +1445,7 @@ export class Battle {
                     const selfActivatingAA: AttackAction =
                         getAttackAction(attacker, intendedVictim, null, _a, {
                             x: intendedVictim.x, y: intendedVictim.y
-                        }, round);
+                        });
 
                     this.executeAttackAction(selfActivatingAA);
                     // totalString.push(weaponEffect.activate());
@@ -1460,15 +1462,18 @@ export class Battle {
 
         return totalString.join("\n");
     }
-    executeActions(_actions: Action[]) {
+    executeActions() {
         log("Executing actions...")
 
-        this.greaterPriorSort(_actions);
-
-        for (let i = 0; i < _actions.length; i++) {
-            const executing = _actions[i];
+        const executedActions: Array<Action> = [];
+        let executing = this.getNextAction()
+        while (executing) {
             this.executeOneAction(executing);
+            executedActions.push(executing);
+            executing = this.getNextAction();
         }
+
+        return executedActions;
     }
     executeOneAction(_action: Action) {
         log(`\tExecuting action: ${_action.type}, ${_action.attacker.base.class} => ${_action.target.base.class}`)
@@ -1478,26 +1483,25 @@ export class Battle {
 
         const actionAffected = _action.target;
         const actionFrom = _action.attacker;
-        const round = _action.round;
 
         // activate autoWeapons
         let autoWeaponReportString = this.executeAutoWeapons(_action);
-        this.appendReportString(actionAffected, round, autoWeaponReportString);
-        this.appendReportString(actionFrom, round, autoWeaponReportString);
+        // this.appendReportString(actionAffected, round, autoWeaponReportString);
+        // this.appendReportString(actionFrom, round, autoWeaponReportString);
 
         // apply statuses for target, then report to target
         const affectedStatusString = this.tickStatuses(actionAffected, _action);
-        if (affectedStatusString) {
-            this.appendReportString(actionAffected, round, affectedStatusString);
-        }
+        // if (affectedStatusString) {
+        //     this.appendReportString(actionAffected, round, affectedStatusString);
+        // }
 
         // if the action is not self-targetting...
         if (actionAffected.index !== actionFrom.index) {
             // apply statuses for attacker, then report to attacker
             const attackerStatusString = this.tickStatuses(actionFrom, _action);
-            if (attackerStatusString) {
-                this.appendReportString(actionFrom, round, attackerStatusString);
-            }
+            // if (attackerStatusString) {
+            //     this.appendReportString(actionFrom, round, attackerStatusString);
+            // }
         }
 
         switch (_action.type) {
@@ -1547,7 +1551,7 @@ export class Battle {
         if (blastRadius) {
             const enemiesInRadius = this.findEntities_radius(center, blastRadius, inclusive);
             for (let i = 0; i < enemiesInRadius.length; i++) {
-                const singleTargetAA = getAttackAction(attacker, enemiesInRadius[i], weapon, ability, enemiesInRadius[i], _aA.round);
+                const singleTargetAA = getAttackAction(attacker, enemiesInRadius[i], weapon, ability, enemiesInRadius[i]);
                 const SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
                 string += SAResult;
                 if (SAResult && enemiesInRadius.length > 1 && i !== enemiesInRadius.length - 1) {
@@ -1558,19 +1562,19 @@ export class Battle {
         return string;
     };
     executeLineAttackAction(_aA: AttackAction) {
-        const { attacker, target, ability, weapon, round } = _aA;
+        const { attacker, target, ability, weapon } = _aA;
 
         const enemiesInLine = this.findEntities_inLine(attacker, target);
         let string = '';
         for (let i = 0; i < enemiesInLine.length; i++) {
-            const singleTargetAA = getAttackAction(attacker, target, weapon, ability, enemiesInLine[i], round);
+            const singleTargetAA = getAttackAction(attacker, target, weapon, ability, enemiesInLine[i]);
             const SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
             string += SAResult;
         }
         return string;
     };
     executeAttackAction(_aA: AttackAction): AttackAction {
-        const { attacker, target, ability, readiness, round } = _aA;
+        const { attacker, target, ability, readinessCost: readiness } = _aA;
 
         let attackResult = "";
         switch (ability.targetting.AOE) {
@@ -1595,10 +1599,10 @@ export class Battle {
         }
 
         // save attack results as reportString
-        this.appendReportString(attacker, round, attackResult);
-        if (attacker.index !== target.index) {
-            this.appendReportString(target, round, attackResult);
-        }
+        // this.appendReportString(attacker, round, attackResult);
+        // if (attacker.index !== target.index) {
+        //     this.appendReportString(target, round, attackResult);
+        // }
 
         // expend resources
         _aA.executed = true;
@@ -1632,7 +1636,7 @@ export class Battle {
 
         const affected = _mA.target;
         _mA.executed = true;
-        affected.readiness -= _mA.readiness;
+        affected.readiness -= _mA.readinessCost;
         handleTokens(affected, (p, t) => {
             log(`\t\t${affected.index}) ${t} --${_mA[t]}`)
             affected[t] -= _mA[t]
@@ -1746,7 +1750,6 @@ export class Battle {
 
     /** Draws actions arrows based on provided actions */
     async getActionArrowsCanvas(_actions: Action[]): Promise<Canvas> {
-        log(_actions.map(_a => `${_a.attacker.base.class} => ${_a.target.base.class}`))
         const drawAttackAction = async (_aA: AttackAction, _fromBattleCoord: Coordinate, _toBattleCoord: Coordinate, _width: number = 5, _offset: Coordinate = {
             x: 0,
             y: 0
@@ -1866,10 +1869,12 @@ export class Battle {
             const toNode = new hNode<number>(to, _iVal);
             graph.connectNodes(fromNode, toNode, action);
         }
-        const actions = _actions.map((_a: Action, _index: number) => {
-            _a.priority = _index + 1;
-            return _a;
-        });
+        const actions =
+            _actions.map((_a, i) => {
+                return getNewObject(_a, {
+                    priority: i
+                });
+            }).reverse();
         const canvas = new Canvas(this.width * 50, this.height * 50);
         const ctx = canvas.getContext("2d");
         const style: RGBA = {

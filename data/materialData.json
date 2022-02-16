@@ -2,6 +2,48 @@
     "flesh": {
         "ppu": 0.05,
 
+        "accuracy": 0.05,
+        "damageRange": [
+            0.05,
+            0.06
+        ],
+        "speed": 0.005,
+        "criticalHit": 0.05,
+        "lifesteal": 0.05,
+
+        "Prot": 0.001
+    },
+    "cobalt": {
+        "ppu": 20,
+
+        "accuracy": 1.5,
+        "damageRange": [
+            0.6,
+            0.7
+        ],
+        "speed": 0.15,
+        "criticalHit": 0,
+        "lifesteal": 0,
+
+        "Prot": 0.001
+    },
+    "steel": {
+        "ppu": 10,
+
+        "accuracy": 1.65,
+        "damageRange": [
+            0.45,
+            0.5
+        ],
+        "speed": 0.1,
+        "criticalHit": 0.03,
+        "lifesteal": 0,
+
+        "Prot": 0.001
+    },
+    "coal": {
+        "ppu": 5,
+
         "accuracy": 0,
         "damageRange": [],
         "speed": 0,
@@ -10,67 +52,51 @@
 
         "Prot": 0.001
     },
-    "cobalt": {
-        "ppu": 20,
-        "accuracy": 0,
-        "damageRange": [],
-        "speed": 0,
-        "criticalHit": 0,
-        "lifesteal": 0,
-        "Prot": 0.001
-    },
-    "steel": {
-        "ppu": 10,
-        "accuracy": 0,
-        "damageRange": [],
-        "speed": 0,
-        "criticalHit": 0,
-        "lifesteal": 0,
-        "Prot": 0.001
-    },
-    "coal": {
-        "ppu": 5,
-        "accuracy": 0,
-        "damageRange": [],
-        "speed": 0,
-        "criticalHit": 0,
-        "lifesteal": 0,
-        "Prot": 0.001
-    },
     "wood": {
         "ppu": 5,
-        "accuracy": 0,
-        "damageRange": [],
-        "speed": 0,
-        "criticalHit": 0,
+
+        "accuracy": 2,
+        "damageRange": [
+            0.1,
+            0.2
+        ],
+        "speed": 0.05,
+        "criticalHit": 0.015,
         "lifesteal": 0,
+
         "Prot": 0.001
     },
     "boulder": {
         "ppu": 1.5,
+
         "accuracy": 0,
         "damageRange": [],
         "speed": 0,
         "criticalHit": 0,
         "lifesteal": 0,
+
         "Prot": 0.001
     },
     "marble": {
         "ppu": 8,
+
         "accuracy": 0,
         "damageRange": [],
         "speed": 0,
         "criticalHit": 0,
         "lifesteal": 0,
+
         "Prot": 0.001
     },
     "granite": {
         "ppu": 1,
+
         "accuracy": 0,
         "damageRange": [],
         "speed": 0,
         "criticalHit": 0,
         "lifesteal": 0,
+
         "Prot": 0.001
     }
 }

@@ -10,10 +10,11 @@
             "max": 1,
             "radius": 1
         },
+
         "damageScale": 0.8,
-        "critScale": 1.0,
-        "accScale": 1.0,
-        "spdScale": 1.0
+        "critScale": 2.0,
+        "accScale": 1.5,
+        "spdScale": 1.5
     },
     "armsword": {
         "type": "melee",
@@ -26,9 +27,9 @@
             "max": 1.5,
             "radius": 1.5
         },
-        "damageScale": 0.8,
+        "damageScale": 1.0,
         "critScale": 1.0,
-        "accScale": 1.0,
+        "accScale": 1.25,
         "spdScale": 1.0
     },
     "greatsword": {
@@ -42,7 +43,7 @@
             "max": 2,
             "radius": 2
         },
-        "damageScale": 0.8,
+        "damageScale": 1.0,
         "critScale": 1.0,
         "accScale": 1.0,
         "spdScale": 1.0

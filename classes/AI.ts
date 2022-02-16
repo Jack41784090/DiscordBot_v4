@@ -29,11 +29,11 @@ const AIFunctions = new Map<BotType, AIFunction>([
                 const fullActions: Array<Action> = _bd.normaliseMoveActions(moveActionArray, virtualStat);
 
                 // 3. attack with selected weapon
-                const virtualAA: AttackAction = getAttackAction(virtualStat, selectedTarget, weaponSelected, abilitySelected, selectedTarget, fullActions.length + 1);
+                const virtualAA: AttackAction = getAttackAction(virtualStat, selectedTarget, weaponSelected, abilitySelected, selectedTarget);
                 if (checkWithinDistance(virtualAA, getDistance(virtualStat, selectedTarget))) {
                     const valid = _bd.executeVirtualAttack(virtualAA, virtualStat);
                     if (valid) {
-                        fullActions.push(getAttackAction(_rS, selectedTarget, weaponSelected, abilitySelected, selectedTarget, fullActions.length + 1));
+                        fullActions.push(getAttackAction(_rS, selectedTarget, weaponSelected, abilitySelected, selectedTarget));
                     }
                 }
 

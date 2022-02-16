@@ -52,11 +52,11 @@ var AIFunctions = new Map([
                 var moveActionArray = _bd.getMoveActionListFromCoordArray(_rS, path);
                 var fullActions = _bd.normaliseMoveActions(moveActionArray, virtualStat);
                 // 3. attack with selected weapon
-                var virtualAA = (0, Utility_1.getAttackAction)(virtualStat, selectedTarget, weaponSelected, abilitySelected, selectedTarget, fullActions.length + 1);
+                var virtualAA = (0, Utility_1.getAttackAction)(virtualStat, selectedTarget, weaponSelected, abilitySelected, selectedTarget);
                 if ((0, Utility_1.checkWithinDistance)(virtualAA, (0, Utility_1.getDistance)(virtualStat, selectedTarget))) {
                     var valid = _bd.executeVirtualAttack(virtualAA, virtualStat);
                     if (valid) {
-                        fullActions.push((0, Utility_1.getAttackAction)(_rS, selectedTarget, weaponSelected, abilitySelected, selectedTarget, fullActions.length + 1));
+                        fullActions.push((0, Utility_1.getAttackAction)(_rS, selectedTarget, weaponSelected, abilitySelected, selectedTarget));
                     }
                 }
                 (_a = _bd.roundActionsArray).push.apply(_a, __spreadArray([], __read(fullActions), false));

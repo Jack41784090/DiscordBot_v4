@@ -1,6 +1,6 @@
-import { itemData, materialData } from "../jsons";
-import { ItemType, Material, MaterialGrade, MaterialInfo, MaterialSpawnQualityInfo, MEW } from "../typedef";
-import { addHPBar, arrayGetLargestInArray, clamp, formalise, getGradeTag, getItemType, getNewObject, arrayGetRandom, uniformRandom, roundToDecimalPlace, normalRandom, debug } from "./Utility";
+import { forgeWeaponData, itemData, materialData } from "../jsons";
+import { ForgeWeapon, ForgeWeaponItem, ForgeWeaponPart, ForgeWeaponRange, ForgeWeaponType, ItemType, Material, MaterialGrade, MaterialInfo, MaterialSpawnQualityInfo, MEW } from "../typedef";
+import { addHPBar, arrayGetLargestInArray, clamp, formalise, getGradeTag, getItemType, getNewObject, arrayGetRandom, uniformRandom, roundToDecimalPlace, normalRandom, debug, getForgeWeaponType } from "./Utility";
 
 export class Item {
     static Generate(_name: ItemType, _customName: string): Item {
@@ -24,6 +24,77 @@ export class Item {
         // log(item);
 
         return item;
+    }
+    static Forge(_blade: Item, _guard: Item, _shaft: Item, _type: ForgeWeaponType): ForgeWeaponItem {
+        const bladeWeight: number = _blade.getWeight();
+        const guardWeight: number = _guard.getWeight();
+        const shaftWeight: number = _shaft.getWeight();
+        const totalWeight: number =
+            bladeWeight + guardWeight + shaftWeight;
+        const materials: Array<MaterialInfo> = [
+            ..._blade.getAllMaterial().map(_mi =>
+                getNewObject(_mi, { occupation: _mi.occupation * (bladeWeight / totalWeight) })),
+            ..._guard.getAllMaterial().map(_mi =>
+                getNewObject(_mi, { occupation: _mi.occupation * (guardWeight / totalWeight) })),
+            ..._shaft.getAllMaterial().map(_mi =>
+                getNewObject(_mi, { occupation: _mi.occupation * (shaftWeight / totalWeight) })),
+        ]
+        const item: Item = new Item(
+            materials,
+            totalWeight,
+            _type
+        );
+        const get = (_part: ForgeWeaponPart, _require: Exclude<keyof typeof materialData.boulder, 'damageRange'>): number => {
+            switch (_part) {
+                case 'blade':
+                    return _blade.getAllMaterial().reduce((_tt, _m) => {
+                        return _tt + _m.occupation * bladeWeight * Math.pow(1.1, _m.grade) * materialData[_m.materialName][_require];
+                    }, 0);
+                case 'shaft':
+                    return _shaft.getAllMaterial().reduce((_tt, _m) => {
+                        return _tt + _m.occupation * shaftWeight * Math.pow(1.1, _m.grade) *  materialData[_m.materialName][_require];
+                    }, 0);
+                case 'guard':
+                    return _shaft.getAllMaterial().reduce((_tt, _m) => {
+                        return _tt + _m.occupation * guardWeight * Math.pow(1.1, _m.grade) *  materialData[_m.materialName][_require];
+                    }, 0);
+            }
+        }
+        const weaponData = forgeWeaponData[_type];
+        const fw: ForgeWeapon = {
+            weaponType: _type,
+            type: weaponData.type as ForgeWeaponRange,
+
+            range: weaponData.range,
+
+            // (blade: x0.8, shaft: x1.5) * weaponType accScale
+            accuracy: (50 + get('blade', 'accuracy') * 0.8 + get('shaft', 'accuracy') * 1.5) * weaponData.accScale,
+            // (blade: x1.5, shaft: x0.8) * weaponType damageScale
+            damageRange: {
+                min: _blade.getAllMaterial().reduce((_tt, _m) => {
+                    return _tt + _m.occupation * bladeWeight * Math.pow(1.1, _m.grade) * materialData[_m.materialName].damageRange[0];
+                }, 0) * weaponData.damageScale,
+                max: _blade.getAllMaterial().reduce((_tt, _m) => {
+                    return _tt + _m.occupation * bladeWeight * Math.pow(1.1, _m.grade) * materialData[_m.materialName].damageRange[1];
+                }, 0) * weaponData.damageScale,
+            },
+            // (blade: x1.2, shaft: x1.2) * weaponType criticalHitScale
+            criticalHit: (0 + get('blade', 'criticalHit') * 1.2 + get('shaft', 'criticalHit') * 1.2) * weaponData.critScale,
+            // blade: x1.0
+            lifesteal: get('blade', 'lifesteal'),
+
+            // speed
+            // totalweight * weaponType speedscaling
+            readinessCost:
+                (get('blade', 'speed') + get('guard', 'speed') + get('shaft', 'speed'))*
+                    forgeWeaponData[_type].spdScale,
+            // weight
+            // totalweight 
+            staminaCost:
+                totalWeight,
+        };
+
+        return Object.assign(item, fw);
     }
 
     private name: string;

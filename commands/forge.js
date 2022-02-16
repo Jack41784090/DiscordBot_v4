@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var discord_js_1 = require("discord.js");
 var InteractionEvent_1 = require("../classes/InteractionEvent");
 var InteractionEventManager_1 = require("../classes/InteractionEventManager");
+var Item_1 = require("../classes/Item");
 var Utility_1 = require("../classes/Utility");
 var jsons_1 = require("../jsons");
 var typedef_1 = require("../typedef");
@@ -70,14 +71,17 @@ module.exports = {
                                 var w = _i.getWeight();
                                 return range[0] <= w && w <= range[1];
                             })).get(_t);
-                        var selectMenuOptions = (0, Utility_1.getInventorySelectOptions)(pickedItems);
+                        var selectMenuOptions = (0, Utility_1.getInventorySelectOptions)(pickedItems.filter(function (_i) { return !selectedItems.includes(_i); }));
                         return {
                             embeds: [
                                 new discord_js_1.MessageEmbed()
                                     .setTitle("Select material for the " + (0, Utility_1.formalise)(_t))
                                     .setFields(selectedItems.map(function (_i) { return ({
                                     name: _i.getDisplayName(),
-                                    value: _i.getAllMaterial().filter(function (_mi) { return _mi.occupation >= 0.1; }).map(function (_mi) { return _i.getMaterialInfoString(_mi); }).join('\n'),
+                                    value: _i.getAllMaterial()
+                                        .filter(function (_mi) { return _mi.occupation >= 0.1; })
+                                        .map(function (_mi) { return _i.getMaterialInfoString(_mi); })
+                                        .join('\n'),
                                 }); }))
                             ],
                             components: [(0, Utility_1.getSelectMenuActionRow)(selectMenuOptions)]
@@ -205,10 +209,19 @@ module.exports = {
                         title: "Forge " + (0, Utility_1.formalise)(selectedWeaponType) + "?",
                         fields: (selectedItems.map(function (_i) { return ({
                             name: _i.getDisplayName(),
-                            value: _i.getAllMaterial().filter(function (_mi) { return _mi.occupation >= 0.1; }).map(function (_mi) { return _i.getMaterialInfoString(_mi); }).join('\n'),
+                            value: _i.getAllMaterial()
+                                .filter(function (_mi) { return _mi.occupation >= 0.1; })
+                                .map(function (_mi) { return _i.getMaterialInfoString(_mi); })
+                                .join('\n'),
                         }); }))
-                    }), function () {
-                    }, function () {
+                    }), 
+                    // yes, forge!
+                    function () {
+                        var forged = Item_1.Item.Forge(r1, r2, r3, selectedWeaponType);
+                        (0, Utility_1.log)(forged);
+                    }, 
+                    // no, don't forge!
+                    function () {
                     });
                     return [2 /*return*/];
             }

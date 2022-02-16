@@ -4,7 +4,7 @@ import { InteractionEventManager } from "../classes/InteractionEventManager";
 import { Item } from "../classes/Item";
 import { formalise, getForgeWeaponMinMax, getInventorySelectOptions, getLoadingEmbed, getNewObject, getSelectMenuActionRow, log, setUpConfirmationInteractionCollect, setUpInteractionCollect, Test } from "../classes/Utility";
 import { forgeWeaponData, itemData } from "../jsons";
-import { UserData, CommandModule, EMOJI_CROSS, MaterialInfo, EMOJI_WHITEB, ForgeWeaponPart, ForgeWeaponType, MEW } from "../typedef";
+import { UserData, CommandModule, EMOJI_CROSS, MaterialInfo, EMOJI_WHITEB, ForgeWeaponPart, ForgeWeaponType, MEW, ForgeWeaponItem } from "../typedef";
 
 module.exports = {
     commands: ['forge'],
@@ -34,7 +34,7 @@ module.exports = {
                     const w = _i.getWeight();
                     return range[0] <= w && w <= range[1];
                 })).get(_t)!;
-            const selectMenuOptions = getInventorySelectOptions(pickedItems);
+            const selectMenuOptions = getInventorySelectOptions(pickedItems.filter(_i => !selectedItems.includes(_i)));
             return {
                 embeds: [
                     new MessageEmbed()
@@ -42,7 +42,10 @@ module.exports = {
                         .setFields(selectedItems.map(_i => ({
                             name: _i.getDisplayName(),
                             value: 
-                                _i.getAllMaterial().filter(_mi => _mi.occupation >= 0.1).map(_mi => _i.getMaterialInfoString(_mi)).join('\n'),
+                                _i.getAllMaterial()
+                                    .filter(_mi => _mi.occupation >= 0.1)
+                                    .map(_mi => _i.getMaterialInfoString(_mi))
+                                    .join('\n'),
                         })))
                 ],
                 components: [getSelectMenuActionRow(selectMenuOptions)]
@@ -145,13 +148,22 @@ module.exports = {
         setUpConfirmationInteractionCollect(forgeMes, new MessageEmbed({
             title: `Forge ${formalise(selectedWeaponType)}?`,
             fields: (selectedItems.map(_i => ({
-                name: _i.getDisplayName(),
+                name:
+                    _i.getDisplayName(),
                 value:
-                    _i.getAllMaterial().filter(_mi => _mi.occupation >= 0.1).map(_mi => _i.getMaterialInfoString(_mi)).join('\n'),
+                    _i.getAllMaterial()
+                        .filter(_mi => _mi.occupation >= 0.1)
+                        .map(_mi => _i.getMaterialInfoString(_mi))
+                        .join('\n'),
             })))
-        }), () => {
-
-        }, () => {
+        }),
+        // yes, forge!
+        () => {
+            const forged: ForgeWeaponItem = Item.Forge(r1, r2, r3, selectedWeaponType!);
+            log(forged);
+        },
+        // no, don't forge!
+        () => {
 
         });
     }
