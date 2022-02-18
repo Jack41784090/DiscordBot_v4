@@ -4,9 +4,9 @@ import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIconCanvas, getUserWelfare } from "./Database";
 
 import fs from 'fs';
-import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, RGBA, Stat, TargetingError, Team, Vector2, Ability, AbilityTargetting, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialInfo, EMOJI_MONEYBAG, LootAction, ForgeWeapon, ForgeWeaponType, StringCoordinate } from "../typedef";
+import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, RGBA, Stat, TargetingError, Team, Vector2, Ability, AbilityTargetting, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialInfo, EMOJI_MONEYBAG, LootAction, ForgeWeaponObject, ForgeWeaponType, StringCoordinate, BattleToken } from "../typedef";
 import { hGraph, hNode } from "./hGraphTheory";
-import { WeaponEffect } from "./WeaponEffect";
+import { AbilityEffect } from "./WeaponEffect";
 import { StatusEffect } from "./StatusEffect";
 import { AI } from "./AI";
 import { BotClient } from "..";
@@ -16,7 +16,7 @@ import { InteractionEvent } from "./InteractionEvent";
 import { enemiesData } from "../jsons";
 
 export class Battle {
-    static readonly ROUND_SECONDS = 10;
+    static readonly ROUND_SECONDS = 100;
     static readonly MAX_READINESS = 25;
     static readonly MOVE_READINESS = 5;
     static readonly MOVEMENT_BUTTONOPTIONS: Array<MessageButtonOptions> = [
@@ -230,8 +230,8 @@ export class Battle {
                 const welfare = this.userDataCache.get(player.owner)?.welfare;
                 debug(`\t${player.base.class}`, welfare);
                 if (welfare) {
-                    log(`\t${player.HP} => ${player.base.AHP * clamp(welfare, 0, 1)}`)
-                    player.HP = player.base.AHP * clamp(welfare, 0, 1);
+                    log(`\t${player.HP} => ${player.base.maxHP * clamp(welfare, 0, 1)}`)
+                    player.HP = player.base.maxHP * clamp(welfare, 0, 1);
                 }
                 else {
                     this.author.send({
@@ -285,31 +285,29 @@ export class Battle {
 
             // randomly assign tokens
             for (let i = 0; i < 2; i++) {
-                // const token = uniformRandom(0, 2);
-                // log(`\t${s.base.class} (${s.index}) got ${token}`)
-                // switch (token) {
-                //     case 0:
-                //         s.sword++;
-                //         break;
-                //     case 1:
-                //         s.shield++;
-                //         break;
-                //     case 2:
+                const token: BattleToken =
+                    uniformRandom(0, 2);
+                switch (token) {
+                    case BattleToken.sword:
+                        s.sword++;
+                        break;
+                    case BattleToken.shield:
+                        s.shield++;
+                        break;
+                    case BattleToken.sprint:
                         s.sprint++;
-                //         break;
-                // }
+                        break;
+                }
             }
-
-            // limit the entity's tokens
-            handleTokens(s, (p, t) => {
-                log(`\t\t${s.index}) ${t} =${clamp(p, 0, 5)}`)
-                s[t] = clamp(p, 0, 5);
-            })
 
             // increment readiness
             const speed = s.base.speed;
             s.readiness += speed;
             s.readiness = clamp(s.readiness, -Battle.MAX_READINESS, Battle.MAX_READINESS);
+
+            // restore stamina
+            s.stamina += s.base.maxStamina * 0.1;
+            s.stamina = clamp(s.stamina, 0, s.base.maxStamina);
         }
         //#endregion
 
@@ -380,12 +378,10 @@ export class Battle {
                 if (user === null) continue;
 
                 // get a copy of stat (main reference in player control) from the CSMap
-                const virtualStat: VirtualStat = getNewObject(realStat,
-                    {
-                        username: user.username,
-                        virtual: true
-                    }
-                ) as VirtualStat;
+                const virtualStat: VirtualStat = getNewObject(realStat, {
+                    username: user.username,
+                    virtual: true
+                }) as VirtualStat;
                 virtualStat.weaponUses = realStat.weaponUses.map(_ => _);
 
                 // creating channel
@@ -534,7 +530,7 @@ export class Battle {
 
                 const userData = this.userDataCache.get(id);
                 if (userData) {
-                    userData.welfare = clamp(stat.HP / stat.base.AHP, 0, 1);
+                    userData.welfare = clamp(stat.HP / stat.base.maxHP, 0, 1);
                 }
 
                 InteractionEventManager.getInstance().stopInteraction(id, 'battle');
@@ -590,17 +586,28 @@ export class Battle {
 
     /** Get an array showing all nearby enemies reachable by weapon */
     getAllPossibleAttacksInfo(_stat: Stat, _domain: Array<Stat> = this.allStats()): PossibleAttackInfo[] {
-        const equippedWeapon: ForgeWeapon = _stat.equipped;
+        const equippedWeapon: ForgeWeaponObject = _stat.equipped;
         const abilities: Array<Ability> = _stat.base.abilities.filter(_a => 
             (_a.type === 'null' && _a.range !== undefined)||
-            _a.type === equippedWeapon.type
+            _a.type === equippedWeapon.attackType
         );
 
-        return [getForgeWeaponAttackAbility(equippedWeapon), ...abilities].map(_a => {
-            const shortestRange = _a.range?.min || equippedWeapon.range.min;
-            const longestRange = _a.range?.max || equippedWeapon.range.max;
-            const reachableEntities = this.findEntities_radius(_stat, longestRange, shortestRange === 0, ['block'], _domain);
-            const targettedEntities = reachableEntities.filter(_s => (_s.team !== _stat.team) || _s.pvp);
+        return abilities.map(_a => {
+            const shortestRange: number = Number.isInteger(_a.range?.min)?
+                (_a.range!.min):
+                equippedWeapon.range.min;
+            const longestRange: number = Number.isInteger(_a.range?.max)?
+                (_a.range!.max):
+                equippedWeapon.range.max;
+            const reachableEntities: Array<Stat> =
+                this.findEntities_radius(_stat, longestRange, shortestRange === 0, ['block'], _domain);
+            
+            const targettedEntities: Array<Stat> =
+                reachableEntities.filter(_s => {
+                    return _a.targetting.target === AbilityTargetting.ally?
+                        _s.team === _stat.team:
+                        ((_s.team !== _stat.team) || _s.pvp);
+                });
 
             return targettedEntities.map(_e => ({
                 attacker: _stat,
@@ -816,19 +823,20 @@ export class Battle {
 
         // return MessageOptions containing the entire player-info embed
         const returnMessageInteractionMenus = async (): Promise<MessageOptions> => {
-            // all available attack options
+            // available attack options
             const selectMenuOptions: Array<MessageSelectOptionData> =
                 this.getAllPossibleAttacksInfo(_vS, domain).map(_attackInfo => {
-                    const weapon = _attackInfo.ability;
-                    const target = _attackInfo.target;
-                    const icon = weapon.targetting.target === AbilityTargetting.ally ?
+                    const { ability, attacker, target } = _attackInfo;
+                    const icon = ability.targetting.target === AbilityTargetting.ally ?
                         EMOJI_SHIELD :
                         EMOJI_SWORD;
+
+                    log(attacker.base.abilities, ability, getAbilityIndex(ability, attacker));
                     return {
                         emoji: icon,
-                        label: `${weapon.abilityName}`,
+                        label: `${ability.abilityName}`,
                         description: `${target.base.class} (${target.index})`,
-                        value: `${_attackInfo.attacker.index} ${getAbilityIndex(weapon, _attackInfo.attacker)} ${target.index}`,
+                        value: `${attacker.index} ${getAbilityIndex(ability, attacker)} ${target.index}`,
                     }
                 });
 
@@ -956,8 +964,10 @@ export class Battle {
                         _vS:
                         domain.find(_s => _s.index === attackerIndex)!;
                     const ability: Ability = attacker?.base.abilities[abilityIndex];
-                    const weapon: ForgeWeapon = attacker?.equipped || attacker?.base.arsenal[0];
+                    const weapon: ForgeWeaponObject = attacker?.equipped || attacker?.base.arsenal[0];
                     const target: Stat = domain.find(_s => _s.index === targetIndex)!;
+
+                    debug("ability", ability);
 
                     if (attacker && ability && weapon && target) {
                         const virtualAttackAction: AttackAction = getAttackAction(_vS, target, weapon, ability, target);
@@ -1108,14 +1118,11 @@ export class Battle {
         return this.width > coord.x && this.height > coord.y && coord.x >= 0 && coord.y >= 0;
     }
 
-    tickStatuses(_s: Stat, _currentRoundAction: Action): string {
+    tickStatuses(_s: Stat, _currentRoundAction: Action): void {
         log(`\tTick status for ${_s.base.class} (${_s.index})...`);
-
-        let returnString = '';
         const statuses = _s.statusEffects; debug(`\t(${_s.index}) statuses`, statuses.map(_se => _se.type))
 
         for (let i = 0; i < statuses.length; i++) {
-            log(`Loop ${i}`);
             const status = statuses[i];
             // make sure status is affecting the right entity and entity is still alive
             if (status.affected.index === _s.index && status.affected.HP > 0) {
@@ -1129,23 +1136,6 @@ export class Battle {
                     this.removeStatus(status);
                     i--;
                 }
-                else {
-                    // status header (first time only)
-                    if (!returnString) {
-                        returnString += `__${_s.base.class}__ (${_s.index})\n`
-                    }
-
-                    // status report
-                    returnString += statusString;
-                    if (i !== statuses.length - 1) {
-                        returnString += "\n";
-                    }
-
-                    // notify the inflicter
-                    // if (status.from.index !== status.affected.index) {
-                    //     this.appendReportString(status.from, _currentRoundAction.round, `__${status.affected.base.class}__ (${status.affected.index})\n` + statusString);
-                    // }
-                }
             }
             else {
                 debug("status.affected.index === _s.index", status.affected.index === _s.index);
@@ -1153,99 +1143,56 @@ export class Battle {
             }
             
         }
-        return returnString;
     }
 
     // clash methods
-    applyClash(_cR: ClashResult, _aA: AttackAction): string {
-        let returnString = '';
-        const target = _aA.target;
+    applyClash(_aA: AttackAction, _cR: ClashResult): void {
+        const { attacker, target, ability, weapon, } = _aA;
+        let { damage } = _cR;
         
-        // weapon effects
-        const weaponEffect: WeaponEffect = new WeaponEffect(_aA, _cR, this);
-        const activationString = weaponEffect.activate();
+        // activate weapon effects
+        const Effect: AbilityEffect = new AbilityEffect(_aA, _cR, this);
+        _aA.abilityEffectString = Effect.activate();
 
         // reduce shield token
         if (_cR.fate !== "Miss" && target.shield > 0) {
             target.shield--;
         }
 
-        // apply basic weapon damage
-        returnString += this.applyClashDamage(_aA, _cR);
+        if (ability.targetting.target === AbilityTargetting.enemy) {
+            if (weapon) {
+                // reduce damage by shielding
+                let shieldingStatus = arrayGetLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"), _item => _item.value);
+                while (damage > 0 && shieldingStatus && shieldingStatus.value > 0) {
+                    const shieldValue = shieldingStatus.value;
+                    log(`reduced ${shieldValue} damage!`);
+                    shieldingStatus.value -= damage;
+                    damage -= shieldValue;
+                    if (damage < 0) {
+                        damage = 0;
+                    }
+                    shieldingStatus = arrayGetLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"), _item => _item.value);
+                }
 
-        // attach weapon effects string
-        if (activationString) {
-            returnString += activationString + "\n";
+                // search for "Labouring" status
+                const labourStatus = arrayGetLargestInArray(this.getStatus(target, "labouring"), _s => _s.value);
+                if (labourStatus) {
+                    labourStatus.value += damage;
+                }
+
+                // lifesteal
+                const LS = getLifesteal(attacker, ability);
+                if (LS > 0) {
+                    this.heal(attacker, damage * LS);
+                }
+
+                // apply damage
+                target.HP -= damage;
+
+                // save accolades
+                dealWithAccolade(_cR, attacker, target);
+            }
         }
-
-        return returnString;
-    }
-    applyClashDamage(_aA: AttackAction, clashResult: ClashResult): string {
-        let returnString = '';
-
-        const CR_damage = clashResult.damage;
-        const CR_fate = clashResult.fate;
-
-        const { attacker, target, weapon, ability } = _aA;
-
-        const attackerClass = attacker.base.class;
-        const targetClass = target.base.class;
-        switch (ability.targetting.target) {
-            // damaging
-            case AbilityTargetting.enemy:
-                if (weapon) {
-                    const hitRate =
-                        (getAcc(attacker, ability) - getDodge(target)) < 100 ?
-                            getAcc(attacker, ability) - getDodge(target) :
-                            100;
-                    const critRate =
-                        (getAcc(attacker, ability) - getDodge(target)) * 0.1 + getCrit(attacker, ability);
-
-                    // save accolades
-                    dealWithAccolade(clashResult, attacker, target);
-
-                    // reportString
-                    returnString +=
-                        `**${attackerClass}** (${attacker.index}) ⚔️ **${targetClass}** (${target.index})
-                    __*${ability.abilityName}*__ ${hitRate}% (${roundToDecimalPlace(critRate)}%)
-                    **${CR_fate}!** -**${roundToDecimalPlace(CR_damage)}** (${roundToDecimalPlace(clashResult.u_damage)})
-                    [${roundToDecimalPlace(target.HP)} => ${roundToDecimalPlace(target.HP - CR_damage)}]`
-                    if (target.HP > 0 && target.HP - CR_damage <= 0) {
-                        returnString += "\n__**KILLING BLOW!**__";
-                    }
-
-                    // lifesteal
-                    const LS = getLifesteal(attacker, ability);
-                    if (LS > 0) {
-                        returnString += "\n" + this.heal(attacker, CR_damage * LS);
-                    }
-
-                    // search for "Labouring" status
-                    const labourStatus = arrayGetLargestInArray(this.getStatus(target, "labouring"), _s => _s.value);
-                    if (labourStatus) {
-                        labourStatus.value += CR_damage;
-                    }
-
-                    // apply damage
-                    target.HP -= CR_damage;
-                }
-                break;
-
-            // non-damaging
-            case AbilityTargetting.ally:
-                if (attacker.index === target.index) {
-                    returnString +=
-                        `**${attackerClass}** (${attacker.index}) Activates __*${ability.abilityName}*__`;
-                }
-                else {
-                    returnString +=
-                        `**${attackerClass}** (${attacker.index}) 🛡️ **${targetClass}** (${target.index})
-                    __*${ability.abilityName}*__`;
-                }
-                // returningString += abilityEffect();
-                break;
-        }
-        return returnString;
     }
     clash(_aA: AttackAction): ClashResult {
         log(`\tClash: ${_aA.attacker.base.class} => ${_aA.target.base.class}`);
@@ -1282,19 +1229,6 @@ export class Battle {
 
             // apply protections
             damage = clamp(u_damage * (1 - (prot * target.shield / 3)), 0, 100);
-
-            // reduce damage by shielding
-            let shieldingStatus = arrayGetLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"), _item => _item.value);
-            while (damage > 0 && shieldingStatus && shieldingStatus.value > 0) {
-                const shieldValue = shieldingStatus.value;
-                log(`reduced ${shieldValue} damage!`);
-                shieldingStatus.value -= damage;
-                damage -= shieldValue;
-                if (damage < 0) {
-                    damage = 0;
-                }
-                shieldingStatus = arrayGetLargestInArray(target.statusEffects.filter(_status => _status.type === "protected"), _item => _item.value);
-            }
         }
 
         return {
@@ -1477,9 +1411,7 @@ export class Battle {
     }
     executeOneAction(_action: Action) {
         log(`\tExecuting action: ${_action.type}, ${_action.attacker.base.class} => ${_action.target.base.class}`)
-        const mAction = _action as MoveAction;
-        const aAction = _action as AttackAction;
-        const lAction = _action as LootAction;
+        const { aAction, mAction, lAction } = extractActions(_action);
 
         const actionAffected = _action.target;
         const actionFrom = _action.attacker;
@@ -1520,27 +1452,27 @@ export class Battle {
                 return lootEmbed;
         }
     }
-    executeSingleTargetAttackAction(_aA: AttackAction) {
-        const eM = this.validateTarget(_aA);
-        const attacker = _aA.attacker;
-        const target = _aA.target;
-        let string = '';
+    executeSingleTargetAttackAction(_aA: AttackAction): void {
+        const eM: TargetingError | null = this.validateTarget(_aA);
+        const { attacker, target } = _aA;
 
         if (eM) {
-            log(`\t${attacker.base.class} failed to attack ${target.base.class}. Reason: ${eM.reason}`);
-            string =
-                `**${attacker.base.class}** (${attacker.index}) failed to attack **${target.base.class}** (${target.index}). Reason: ${eM.reason}`;
+            _aA.clashResult = {
+                damage: 0,
+                u_damage: 0,
+                fate: 'Miss',
+                roll: -1,
+                error: eM,
+            }
         }
         else {
             // valid attack
             const clashResult: ClashResult = this.clash(_aA);
-            const clashAfterMathString: string = this.applyClash(clashResult, _aA);
-            string = clashAfterMathString;
+            this.applyClash(_aA, clashResult);
+            _aA.clashResult = clashResult;
         }
-
-        return string;
     };
-    executeAOEAttackAction(_aA: AttackAction, inclusive = true) {
+    executeAOEAttackAction(_aA: AttackAction, inclusive = true): void {
         let string = '';
         const center = _aA.coordinate;
         const { weapon, ability, attacker, target } = _aA;
@@ -1554,12 +1486,11 @@ export class Battle {
                 const singleTargetAA = getAttackAction(attacker, enemiesInRadius[i], weapon, ability, enemiesInRadius[i]);
                 const SAResult = this.executeSingleTargetAttackAction(singleTargetAA);
                 string += SAResult;
-                if (SAResult && enemiesInRadius.length > 1 && i !== enemiesInRadius.length - 1) {
-                    string += "\n";
-                }
+                // if (SAResult && enemiesInRadius.length > 1 && i !== enemiesInRadius.length - 1) {
+                //     string += "\n";
+                // }
             }
         }
-        return string;
     };
     executeLineAttackAction(_aA: AttackAction) {
         const { attacker, target, ability, weapon } = _aA;
@@ -1574,27 +1505,26 @@ export class Battle {
         return string;
     };
     executeAttackAction(_aA: AttackAction): AttackAction {
-        const { attacker, target, ability, readinessCost: readiness } = _aA;
+        const { attacker, target, weapon, ability, readinessCost: readiness } = _aA;
 
-        let attackResult = "";
         switch (ability.targetting.AOE) {
             case "self":
                 _aA.target = _aA.attacker;
             case "single":
             case "touch":
-                attackResult = this.executeSingleTargetAttackAction(_aA);
+                this.executeSingleTargetAttackAction(_aA);
                 break;
 
             case "circle":
-                attackResult = this.executeAOEAttackAction(_aA, true);
+                this.executeAOEAttackAction(_aA, true);
                 break;
 
             case "selfCircle":
-                attackResult = this.executeAOEAttackAction(_aA, false);
+                this.executeAOEAttackAction(_aA, false);
                 break;
 
             case "line":
-                attackResult = this.executeLineAttackAction(_aA);
+                this.executeLineAttackAction(_aA);
                 break;
         }
 
@@ -1607,6 +1537,7 @@ export class Battle {
         // expend resources
         _aA.executed = true;
         attacker.readiness -= readiness;
+        attacker.stamina -= (weapon?.staminaCost || 0) * ability.staminaScale;
         attacker.weaponUses[getAbilityIndex(ability, attacker)]++;
         handleTokens(attacker, (p, t) => {
             log(`\t\t${attacker.index}) ${t} --${_aA[t]}`)
@@ -1644,18 +1575,12 @@ export class Battle {
 
         return _mA;
     }
-    heal(_healedStat: Stat, _val: number): string {
-        const beforeHP = roundToDecimalPlace(_healedStat.HP);
+    heal(_healedStat: Stat, _val: number): void {
         if (_healedStat.HP > 0) {
-            _healedStat.HP += _val;
-            if (_healedStat.HP > getAHP(_healedStat)) _healedStat.HP = getAHP(_healedStat);
+            const healed: number = clamp(_val, 0, _healedStat.base.maxHP - _healedStat.HP);
+            _healedStat.HP += healed;
+            _healedStat.accolades.healingDone += healed;
         }
-        const afterHP = roundToDecimalPlace(_healedStat.HP);
-
-        _healedStat.accolades.healingDone += (afterHP - beforeHP);
-        return beforeHP !== afterHP?
-            `✚ ${beforeHP} => ${afterHP}`:
-            '';
     }
 
     /** Draws the base map and character icons. Does not contain health arcs or indexi */
@@ -2047,7 +1972,7 @@ export class Battle {
             const stat = allStats[i];
 
             // attach health arc
-            const healthPercentage = clamp(stat.HP / stat.base.AHP, 0, 1);
+            const healthPercentage = clamp(stat.HP / stat.base.maxHP, 0, 1);
             ctx.strokeStyle = stringifyRGBA({
                 r: 255 * Number(stat.team === "enemy"),
                 g: 255 * Number(stat.team === "player"),
@@ -2122,10 +2047,15 @@ export class Battle {
     }
     async getFullPlayerEmbed(stat: Stat): Promise<MessageEmbed> {
         const ReadinessBar = `${'`'}${addHPBar(Battle.MAX_READINESS, stat.readiness)}${'`'}`;
+        const staminaBar = `${'`'}${
+            addHPBar(stat.base.maxStamina, stat.stamina, Math.round(stat.base.maxStamina / 4))
+        }${'`'}`;
         const explorerEmbed = new MessageEmbed({
             description:
-                `*readinessCost* (${Math.round(stat.readiness)}/${Battle.MAX_READINESS})
-                ${ReadinessBar}`,
+                `*Readiness* (${Math.round(stat.readiness)}/${Battle.MAX_READINESS})
+                ${ReadinessBar}
+                *Stamina* (${Math.round(stat.stamina)}/${stat.base.maxStamina})
+                ${staminaBar}`,
             fields: [
                 {
                     name: `(${stat.sword}/3)`,
@@ -2283,10 +2213,10 @@ export class Battle {
         const ignored = (c: Stat) => c.team && _ignoring.includes(c.team);
         const stat = _stat as (Stat | any);
         const isStat = stat.index !== undefined;
-        const entities = _domain.filter(s =>
-            (s.index !== stat.index || (isStat && _includeSelf)) &&
-            !ignored(s) &&
-            Math.sqrt(Math.pow((s.x - stat.x), 2) + Math.pow((s.y - stat.y), 2)) <= _r
+        const entities = _domain.filter(_s =>
+            (_s.index !== stat.index || (isStat && _includeSelf)) &&
+            !ignored(_s) &&
+            Math.sqrt(Math.pow((_s.x - stat.x), 2) + Math.pow((_s.y - stat.y), 2)) <= _r
         );
         
         return entities;
@@ -2316,9 +2246,9 @@ export class Battle {
     }
 
     // validation
-    validateTarget(_attacker: Stat, _weapon: ForgeWeapon | null, _ability: Ability, _target: Stat): TargetingError | null;
+    validateTarget(_attacker: Stat, _weapon: ForgeWeaponObject | null, _ability: Ability, _target: Stat): TargetingError | null;
     validateTarget(_aA: AttackAction): TargetingError | null;
-    validateTarget(_stat_aa: Stat | AttackAction, _weapon?: ForgeWeapon | null, _ability?: Ability, _target?: Stat): TargetingError | null {
+    validateTarget(_stat_aa: Stat | AttackAction, _weapon?: ForgeWeaponObject | null, _ability?: Ability, _target?: Stat): TargetingError | null {
         const eM: TargetingError = {
             reason: "",
             value: null,
@@ -2407,7 +2337,7 @@ export class Battle {
         }
 
         // weird stats
-        if (targetStat.team !== "block" && (targetStat.base.Prot === undefined || targetStat.HP === undefined)) {
+        if (targetStat.team !== "block" && (targetStat.base.protection === undefined || targetStat.HP === undefined)) {
             eM.reason = `Target "${targetStat.base.class}" cannot be attacked.`;
             return eM;
         }

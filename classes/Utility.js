@@ -75,7 +75,7 @@ var __read = (this && this.__read) || function (o, n) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpConfirmationInteractionCollect = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getAttackRange = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getLifesteal = exports.getCrit = exports.getExecutionSpeed = exports.getAcc = exports.getDamage = exports.getProt = exports.getDodge = exports.getAHP = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.getForgeWeaponAttackAbility = exports.getForgeWeaponMinMax = exports.getForgeWeaponType = exports.getItemType = exports.getInventorySelectOptions = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoord = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getAbilityIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetSmallestInArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getAbilityEmbed = exports.getLoadingEmbed = exports.getActionTranslate = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = void 0;
+exports.getForgeWeaponAttackAbility = exports.getForgeWeaponMinMax = exports.getForgeWeaponType = exports.getItemType = exports.getInventorySelectOptions = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoord = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getAbilityIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetSmallestInArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getAbilityEmbed = exports.getForgeWeaponEmbed = exports.getLoadingEmbed = exports.getActionTranslate = exports.getClashCommentary = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var __1 = require("..");
@@ -177,26 +177,26 @@ exports.normalRandom = normalRandom;
 // when attacked
 function getAHP(_attacker, _options) {
     if (_options === void 0) { _options = 'WithBoth'; }
-    var AHP = _attacker.base.AHP;
-    var AHPBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.AHP : 0;
-    var AHPDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.AHP : 0;
-    return (AHP + AHPBuff - AHPDebuff) || 0;
+    var maxHP = _attacker.base.maxHP;
+    var AHPBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.maxHP : 0;
+    var AHPDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.maxHP : 0;
+    return (maxHP + AHPBuff - AHPDebuff) || 0;
 }
 exports.getAHP = getAHP;
 function getDodge(_attacker, _options) {
     if (_options === void 0) { _options = 'WithBoth'; }
-    var dodge = _attacker.base.Dodge;
-    var dodgeBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.Dodge : 0;
-    var dodgeDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.Dodge : 0;
+    var dodge = _attacker.base.dodge;
+    var dodgeBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.dodge : 0;
+    var dodgeDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.dodge : 0;
     return (dodge + dodgeBuff - dodgeDebuff) || 0;
 }
 exports.getDodge = getDodge;
 function getProt(_defender, options) {
     if (options === void 0) { options = 'WithBoth'; }
     var equippedWeapon = _defender.equipped;
-    var prot = _defender.base.Prot;
-    var protBuff = (options === 'WithBuff' || options === 'WithBoth') ? _defender.buffs.Prot : 0;
-    var protDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? _defender.debuffs.Prot : 0;
+    var prot = _defender.base.protection;
+    var protBuff = (options === 'WithBuff' || options === 'WithBoth') ? _defender.buffs.protection : 0;
+    var protDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? _defender.debuffs.protection : 0;
     return (prot + protBuff - protDebuff) || 0;
 }
 exports.getProt = getProt;
@@ -683,10 +683,10 @@ function setUpConfirmationInteractionCollect(_editMsg, _embed, _yesCB, _noCB) {
                         selected = _itr.customId;
                         switch (selected) {
                             case 'yes':
-                                _yesCB();
+                                _yesCB(_itr);
                                 break;
                             case 'no':
-                                _noCB();
+                                _noCB(_itr);
                                 break;
                         }
                     }
@@ -780,7 +780,8 @@ exports.sendToSandbox = sendToSandbox;
 function extractActions(action) {
     var aAction = action;
     var mAction = action;
-    return { aAction: aAction, mAction: mAction };
+    var lAction = action;
+    return { aAction: aAction, mAction: mAction, lAction: lAction };
 }
 exports.extractActions = extractActions;
 function getConditionalTexts(text, condition) {
@@ -793,6 +794,44 @@ function getWithSign(number) {
     return getConditionalTexts("+", number > 0) + getConditionalTexts("-", number < 0) + ("" + Math.abs(number));
 }
 exports.getWithSign = getWithSign;
+function getClashCommentary(_aA) {
+    var returnString = '';
+    if (_aA.clashResult) {
+        var attacker = _aA.attacker, target = _aA.target, ability = _aA.ability;
+        var _d = _aA.clashResult, fate = _d.fate, damage = _d.damage, u_damage = _d.u_damage;
+        // weapon effect string
+        returnString += _aA.abilityEffectString || '';
+        // main chunk
+        switch (ability.targetting.target) {
+            case typedef_1.AbilityTargetting.enemy:
+                var accDodge = (getAcc(attacker, ability) - getDodge(target));
+                var hitRate = accDodge < 100 ?
+                    roundToDecimalPlace(accDodge) :
+                    100;
+                var critRate = roundToDecimalPlace(accDodge * 0.1 + getCrit(attacker, ability));
+                returnString +=
+                    "__**" + ability.abilityName + "**__ " + hitRate + "% [" + critRate + "%]\n                **" + fate + "!** -**" + roundToDecimalPlace(damage) + "** (" + roundToDecimalPlace(u_damage) + ") [" + roundToDecimalPlace(target.HP) + " => " + roundToDecimalPlace(target.HP - damage) + "]";
+                if (target.HP > 0 && target.HP - damage <= 0) {
+                    returnString += "\n__**KILLING BLOW!**__";
+                }
+                break;
+            case typedef_1.AbilityTargetting.ally:
+                if (attacker.index === target.index) {
+                    returnString +=
+                        "**" + attacker.base.class + "** (" + attacker.index + ") Activates __*" + ability.abilityName + "*__";
+                }
+                else {
+                    returnString +=
+                        "**" + attacker.base.class + "** (" + attacker.index + ") \uD83D\uDEE1\uFE0F **" + target.base.class + "** (" + target.index + ")\n                    __*" + ability.abilityName + "*__";
+                }
+                break;
+        }
+        // healing
+        // ...
+    }
+    return returnString;
+}
+exports.getClashCommentary = getClashCommentary;
 function getActionTranslate(_action) {
     var _d = extractActions(_action), aAction = _d.aAction, mAction = _d.mAction;
     var string = '';
@@ -801,6 +840,7 @@ function getActionTranslate(_action) {
         case 'Attack':
             string +=
                 typedef_1.EMOJI_SWORD + " " + attacker.base.class + " (" + attacker.index + ") uses __" + ability.abilityName + "__ on " + target.base.class + " (" + target.index + ").";
+            string += "\n" + getClashCommentary(aAction);
             break;
         case 'Move':
             string +=
@@ -823,6 +863,9 @@ function getLoadingEmbed() {
     return loadingEmbed;
 }
 exports.getLoadingEmbed = getLoadingEmbed;
+function getForgeWeaponEmbed(_fw) {
+}
+exports.getForgeWeaponEmbed = getForgeWeaponEmbed;
 function getAbilityEmbed(_ability) {
     var damageScale = _ability.damageScale, staminaScale = _ability.staminaScale, readinessCost = _ability.readinessCost, speedScale = _ability.speedScale, range = _ability.range;
     var embed = new discord_js_1.MessageEmbed({
@@ -1094,12 +1137,12 @@ function getBaseEnemyStat(enemyClassName) {
 exports.getBaseEnemyStat = getBaseEnemyStat;
 function getEmptyBuff() {
     return {
-        AHP: 0,
+        maxHP: 0,
         damageRange: 0,
         accuracy: 0,
-        Dodge: 0,
+        dodge: 0,
         criticalHit: 0,
-        Prot: 0,
+        protection: 0,
         speed: 0,
         lifesteal: 0,
     };
@@ -1108,7 +1151,7 @@ exports.getEmptyBuff = getEmptyBuff;
 function getStat(_arg0, _owner) {
     if (_owner === void 0) { _owner = ''; }
     return __awaiter(this, void 0, void 0, function () {
-        var _d, base, ss, i, universalWeaponName, uniWeapon, _f, endStat, i;
+        var _d, base, ss, i, universalWeaponName, uniWeapon, _f, i, fw, weaponUses, i;
         return __generator(this, function (_g) {
             switch (_g.label) {
                 case 0:
@@ -1151,40 +1194,46 @@ function getStat(_arg0, _owner) {
                     _f.arsenal = _g.sent();
                     _g.label = 2;
                 case 2:
-                    endStat = {
-                        base: base,
-                        index: -1,
-                        equipped: base.arsenal[0] || getNewObject(jsons_1.universalWeaponsData.Unarmed),
-                        name: "" + base.class,
-                        weaponUses: [],
-                        statusEffects: [],
-                        HP: base.AHP,
-                        readiness: 0,
-                        moved: false,
-                        sword: 0,
-                        shield: 0,
-                        sprint: 0,
-                        owner: _owner,
-                        username: _owner,
-                        team: ss.team === undefined ?
-                            _owner ?
-                                "player" :
-                                "enemy" :
-                            ss.team,
-                        botType: ss.botType || (_owner ?
-                            typedef_1.BotType.naught :
-                            typedef_1.BotType.approach_attack),
-                        accolades: getEmptyAccolade(),
-                        buffs: getEmptyBuff(),
-                        debuffs: getEmptyBuff(),
-                        x: ss.x,
-                        y: ss.y,
-                        pvp: false,
-                    };
-                    for (i = 0; i < base.abilities.length; i++) {
-                        endStat.weaponUses.push(0);
+                    // add normal attacks for arsenal weapons
+                    for (i = 0; i < base.arsenal.length; i++) {
+                        fw = base.arsenal[i];
+                        base.abilities.push(getForgeWeaponAttackAbility(fw));
                     }
-                    return [2 /*return*/, endStat];
+                    weaponUses = [];
+                    for (i = 0; i < base.abilities.length; i++) {
+                        weaponUses.push(0);
+                    }
+                    return [2 /*return*/, {
+                            base: base,
+                            index: -1,
+                            equipped: base.arsenal[0] || getNewObject(jsons_1.universalWeaponsData.Unarmed),
+                            name: "" + base.class,
+                            weaponUses: weaponUses,
+                            statusEffects: [],
+                            HP: base.maxHP,
+                            stamina: base.maxStamina,
+                            readiness: 0,
+                            moved: false,
+                            sword: 0,
+                            shield: 0,
+                            sprint: 0,
+                            owner: _owner,
+                            username: _owner,
+                            team: ss.team === undefined ?
+                                _owner ?
+                                    "player" :
+                                    "enemy" :
+                                ss.team,
+                            botType: ss.botType || (_owner ?
+                                typedef_1.BotType.naught :
+                                typedef_1.BotType.approach_attack),
+                            accolades: getEmptyAccolade(),
+                            buffs: getEmptyBuff(),
+                            debuffs: getEmptyBuff(),
+                            x: ss.x,
+                            y: ss.y,
+                            pvp: false,
+                        }];
             }
         });
     });
@@ -1601,6 +1650,7 @@ function getForgeWeaponAttackAbility(_fw) {
         shield: 0,
         sprint: 0,
         readinessCost: _fw.readinessCost,
+        staminaCost: 0,
         speedScale: 1,
         damageScale: 1,
         staminaScale: 1,

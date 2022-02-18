@@ -168,7 +168,7 @@ function getUserData(id_author) {
                     defaultData = getDefaultUserData(user);
                     data = (0, Utility_1.getNewObject)(defaultData, fetched);
                     data.inventory = data.inventory.map(function (_i) {
-                        return new Item_1.Item(_i);
+                        return Item_1.Item.Classify(_i);
                     });
                     if (!(fetched === null)) return [3 /*break*/, 6];
                     return [4 /*yield*/, createNewUser(user)];
@@ -371,7 +371,7 @@ function getIconCanvas(_stat, _drawOptions) {
                 // health arc
                 if (_drawOptions.healthArc) {
                     // attach health arc
-                    var healthPercentage = (0, Utility_1.clamp)(_stat.HP / _stat.base.AHP, 0, 1);
+                    var healthPercentage = (0, Utility_1.clamp)(_stat.HP / _stat.base.maxHP, 0, 1);
                     ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
                         r: 255 * Number(_stat.team === "enemy"),
                         g: 255 * Number(_stat.team === "player"),

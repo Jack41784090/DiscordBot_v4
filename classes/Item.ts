@@ -1,5 +1,5 @@
 import { forgeWeaponData, itemData, materialData } from "../jsons";
-import { ForgeWeapon, ForgeWeaponItem, ForgeWeaponPart, ForgeWeaponRange, ForgeWeaponType, ItemType, Material, MaterialGrade, MaterialInfo, MaterialSpawnQualityInfo, MEW } from "../typedef";
+import { ForgeWeaponObject, ForgeWeaponPart, ForgeWeaponRange, ForgeWeaponType, ItemObject, ItemType, Material, MaterialGrade, MaterialInfo, MaterialSpawnQualityInfo, MEW, DamageRange, AttackRange } from "../typedef";
 import { addHPBar, arrayGetLargestInArray, clamp, formalise, getGradeTag, getItemType, getNewObject, arrayGetRandom, uniformRandom, roundToDecimalPlace, normalRandom, debug, getForgeWeaponType } from "./Utility";
 
 export class Item {
@@ -61,9 +61,9 @@ export class Item {
             }
         }
         const weaponData = forgeWeaponData[_type];
-        const fw: ForgeWeapon = {
+        const fw: ForgeWeaponObject = {
             weaponType: _type,
-            type: weaponData.type as ForgeWeaponRange,
+            attackType: weaponData.type as ForgeWeaponRange,
 
             range: weaponData.range,
 
@@ -94,7 +94,22 @@ export class Item {
                 totalWeight,
         };
 
-        return Object.assign(item, fw);
+        return new ForgeWeaponItem(fw, item.getAllMaterial(), item.getMaxWeight(), "Forged");
+    }
+    static Classify(_i_fwi: ItemObject | ForgeWeaponObject) {
+        const wt = (_i_fwi as ForgeWeaponItem).weaponType;
+        if (wt) {
+            const fw = _i_fwi as ForgeWeaponObject & ItemObject;
+            return new ForgeWeaponItem(
+                fw,
+                fw.materialInfo,
+                fw.maxWeight,
+                fw.name,
+            )
+        }
+        else {
+            return new Item(_i_fwi as ItemObject);
+        }
     }
 
     private name: string;
@@ -103,17 +118,17 @@ export class Item {
     private weight: number;
     private maxWeight: number;
 
-    constructor(_i: Item);
+    constructor(_i: ItemObject);
     constructor(_elements: Array<MaterialInfo | MaterialSpawnQualityInfo>, _maxWeight: number, _name: string);
-    constructor(_i_elements: Item | Array<MaterialInfo | MaterialSpawnQualityInfo>, _maxWeight?: number, _name?: string) {
+    constructor(_i_elements: ItemObject | Array<MaterialInfo | MaterialSpawnQualityInfo>, _maxWeight?: number, _name?: string) {
         const elements = _maxWeight === undefined?
-            (_i_elements as Item).materialInfo:
+            (_i_elements as ItemObject).materialInfo:
             (_i_elements as Array<MaterialInfo | MaterialSpawnQualityInfo>);
         const maxWeight = _maxWeight === undefined?
-            (_i_elements as Item).maxWeight:
+            (_i_elements as ItemObject).maxWeight:
             _maxWeight;
         const name = _name === undefined?
-            (_i_elements as Item).name:
+            (_i_elements as ItemObject).name:
             _name;
 
         const newElements: Array<MaterialInfo> = [];
@@ -335,6 +350,9 @@ export class Item {
         this.normaliseWeight();
     }
 
+    getName(): string {
+        return this.name;
+    }
     getDisplayName(): string {
         return `${this.name} ${formalise(itemData[this.itemType].name)}`;
     }
@@ -391,14 +409,14 @@ export class Item {
             totalPrice;
     }
 
-    returnObject() {
+    returnObject(): ItemObject | ForgeWeaponObject {
         return {
             name: this.name,
             type: this.itemType,
             materialInfo: this.materialInfo,
             weight: this.weight,
             maxWeight: this.maxWeight,
-        };
+        }
     }
 
     normaliseWeight() {
@@ -408,5 +426,49 @@ export class Item {
             });
         });
         this.maxWeight = this.weight;
+    }
+}
+export class ForgeWeaponItem extends Item {
+    weaponType: ForgeWeaponType
+    attackType: ForgeWeaponRange
+    range: AttackRange
+    accuracy: number
+    damageRange: DamageRange
+    criticalHit: number
+    lifesteal: number
+    readinessCost: number
+    staminaCost: number
+
+    constructor(_fw: ForgeWeaponObject, _elements: Array<MaterialInfo | MaterialSpawnQualityInfo>, _maxWeight: number, _name: string) {
+        super(_elements, _maxWeight, _name);
+        this.weaponType = _fw.weaponType;
+        this.attackType = _fw.attackType;
+        this.range = _fw.range;
+        this.accuracy = _fw.accuracy;
+        this.damageRange = _fw.damageRange;
+        this.criticalHit = _fw.criticalHit;
+        this.lifesteal = _fw.lifesteal;
+        this.readinessCost = _fw.readinessCost;
+        this.staminaCost = _fw.staminaCost;
+    }
+
+    override returnObject(): ItemObject | (ForgeWeaponObject & ItemObject) {
+        return {
+            name: this.getName(),
+            type: this.getItemType(),
+            materialInfo: this.getAllMaterial(),
+            weight: this.getWeight(),
+            maxWeight: this.getMaxWeight(),
+
+            weaponType: this.weaponType,
+            attackType: this.attackType,
+            range: this.range,
+            accuracy: this.accuracy,
+            damageRange: this.damageRange,
+            criticalHit: this.criticalHit,
+            lifesteal: this.lifesteal,
+            readinessCost: this.readinessCost,
+            staminaCost: this.staminaCost,
+        }
     }
 }

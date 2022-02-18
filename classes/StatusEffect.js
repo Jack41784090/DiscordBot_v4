@@ -26,7 +26,7 @@ var statusEffect_effects = new Map([
     [
         "protected",
         function (_statusEffect, _sameRound_action, _bd) {
-            var value = (0, Utility_1.clamp)(_statusEffect.value, 0, _statusEffect.affected.base.AHP);
+            var value = (0, Utility_1.clamp)(_statusEffect.value, 0, _statusEffect.affected.base.maxHP);
             _statusEffect.value = value;
             var returnString = "";
             if (value > 0) {
@@ -106,14 +106,12 @@ var StatusEffect = /** @class */ (function () {
         var statusEffect = statusEffect_effects.get(this.type);
         if (this.duration > 0 && statusEffect) {
             (0, Utility_1.log)("\t\t\tSuccessful execution!");
-            statusResult = statusEffect(this, _action, this.battleData);
+            statusEffect(this, _action, this.battleData);
         }
         else {
             (0, Utility_1.log)("\t\t\tFailed to execute. Removing.");
         }
         return statusResult;
-    };
-    StatusEffect.prototype.exit = function (_action) {
     };
     return StatusEffect;
 }());

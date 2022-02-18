@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AbilityTargetting = exports.BotType = exports.AllTeams = exports.MaterialGrade = exports.NumericDirection = exports.StatMaximus = exports.defaultAvatarURL = exports.coinURL = exports.deathQuotes = exports.preludeQuotes = exports.MEW = exports.EMOJI_MONEYBAG = exports.EMOJI_SPRINT = exports.EMOJI_SWORD = exports.EMOJI_SHIELD = exports.EMOJI_BROWNB = exports.EMOJI_BLACKB = exports.EMOJI_WHITEB = exports.EMOJI_STAR = exports.EMOJI_CROSS = exports.EMOJI_TICK = exports.COMMAND_CALL = void 0;
+exports.AbilityTargetting = exports.BotType = exports.AllTeams = exports.BattleToken = exports.MaterialGrade = exports.NumericDirection = exports.StatMaximus = exports.defaultAvatarURL = exports.coinURL = exports.deathQuotes = exports.preludeQuotes = exports.MEW = exports.EMOJI_MONEYBAG = exports.EMOJI_SPRINT = exports.EMOJI_SWORD = exports.EMOJI_SHIELD = exports.EMOJI_BROWNB = exports.EMOJI_BLACKB = exports.EMOJI_WHITEB = exports.EMOJI_STAR = exports.EMOJI_CROSS = exports.EMOJI_TICK = exports.COMMAND_CALL = void 0;
 exports.COMMAND_CALL = ";";
 // EMOJIS
 exports.EMOJI_TICK = '✅';
@@ -22,9 +22,9 @@ exports.coinURL = 'https://i.imgur.com/NK84zBg.png';
 exports.defaultAvatarURL = "https://cdn.discordapp.com/embed/avatars/0.png";
 // STATISTICAL
 exports.StatMaximus = {
-    AHP: 100,
-    Dodge: 50,
-    Prot: 1,
+    maxHP: 100,
+    dodge: 50,
+    protection: 1,
     speed: 10,
 };
 var NumericDirection;
@@ -48,6 +48,12 @@ var MaterialGrade;
     MaterialGrade[MaterialGrade["legendary"] = 9] = "legendary";
     MaterialGrade[MaterialGrade["god"] = 10] = "god";
 })(MaterialGrade = exports.MaterialGrade || (exports.MaterialGrade = {}));
+var BattleToken;
+(function (BattleToken) {
+    BattleToken[BattleToken["sword"] = 0] = "sword";
+    BattleToken[BattleToken["shield"] = 1] = "shield";
+    BattleToken[BattleToken["sprint"] = 2] = "sprint";
+})(BattleToken = exports.BattleToken || (exports.BattleToken = {}));
 exports.AllTeams = [
     'block',
     'player',

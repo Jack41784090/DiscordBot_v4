@@ -36,6 +36,7 @@ export class InteractionEventManager {
     }
 
     async registerInteraction(_id: OwnerID, _interactionEvent: InteractionEvent, _userData?: UserData): Promise<UserData | null> {
+        log(`Registering event (${_id}): ${_interactionEvent.interactionEventType}`);
         const split: InteractionSplit =
             this.user_interaction_map.get(_id)||
             this.user_interaction_map.set(_id, {
@@ -59,7 +60,7 @@ export class InteractionEventManager {
                         clearInterval(interactionSplit.timer);
                         this.user_interaction_map.delete(_id);
                     }
-                }, 1000),
+                }, 2000),
                 'inventory': null,
                 'shop': null,
                 'battle': null,
@@ -68,8 +69,7 @@ export class InteractionEventManager {
             }).get(_id)!;
         const existing: InteractionEvent | null = split[_interactionEvent.interactionEventType];
         if (!existing || (existing && existing.stoppable === true)) {
-            this.stopInteraction(_id, _interactionEvent.interactionEventType);
-            split[_interactionEvent.interactionEventType] = _interactionEvent;
+            this.stopInteraction(_id, _interactionEvent.interactionEventType, _interactionEvent);
             return split.userData;
         }
         else {
@@ -77,11 +77,12 @@ export class InteractionEventManager {
         }
     }
 
-    stopInteraction(_userID: OwnerID, _eventType: InteractionEventType) {
+    stopInteraction(_userID: OwnerID, _eventType: InteractionEventType, _replaceEvent?: InteractionEvent) {
+        log(`Stopping event (${_userID}): ${_eventType}`);
         const interaction = this.user_interaction_map.get(_userID);
         if (interaction) {
             interaction[_eventType]?.stop();
-            interaction[_eventType] = null;
+            interaction[_eventType] = _replaceEvent || null;
         }
     }
 }

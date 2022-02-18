@@ -11,7 +11,7 @@
         "criticalHit": 0.05,
         "lifesteal": 0.05,
 
-        "Prot": 0.001
+        "protection": 0.001
     },
     "cobalt": {
         "ppu": 20,
@@ -25,7 +25,7 @@
         "criticalHit": 0,
         "lifesteal": 0,
 
-        "Prot": 0.001
+        "protection": 0.001
     },
     "steel": {
         "ppu": 10,
@@ -39,7 +39,7 @@
         "criticalHit": 0.03,
         "lifesteal": 0,
 
-        "Prot": 0.001
+        "protection": 0.001
     },
     "coal": {
         "ppu": 5,
@@ -50,7 +50,7 @@
         "criticalHit": 0,
         "lifesteal": 0,
 
-        "Prot": 0.001
+        "protection": 0.001
     },
     "wood": {
         "ppu": 5,
@@ -64,7 +64,7 @@
         "criticalHit": 0.015,
         "lifesteal": 0,
 
-        "Prot": 0.001
+        "protection": 0.001
     },
     "boulder": {
         "ppu": 1.5,
@@ -75,7 +75,7 @@
         "criticalHit": 0,
         "lifesteal": 0,
 
-        "Prot": 0.001
+        "protection": 0.001
     },
     "marble": {
         "ppu": 8,
@@ -86,7 +86,7 @@
         "criticalHit": 0,
         "lifesteal": 0,
 
-        "Prot": 0.001
+        "protection": 0.001
     },
     "granite": {
         "ppu": 1,
@@ -97,6 +97,6 @@
         "criticalHit": 0,
         "lifesteal": 0,
 
-        "Prot": 0.001
+        "protection": 0.001
     }
 }

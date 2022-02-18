@@ -48,7 +48,7 @@ module.exports = {
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var mes, iem, iE, iconCache, getClassIconLink, getClassEmbed, selectMenuOptions, actionrow_1, selectMenu, _a, _b, _c, _d, interactionCollector, className_1, classChosen_1, arsenal, selectMenuOptions, weaponSelectActionRow_1, _e, _f, _g, _h, interactionCollector;
+        var mes, iem, iE, iconCache, getClassIconLink, getClassEmbed, selectMenuOptions, actionrow_1, selectMenu, _a, _b, _c, _d, collect_1, className_1, classChosen_1, arsenal, selectMenuOptions, weaponSelectActionRow_1, _e, _f, _g, _h, collect_2;
         return __generator(this, function (_j) {
             switch (_j.label) {
                 case 0: return [4 /*yield*/, message.reply({
@@ -58,7 +58,9 @@ module.exports = {
                     mes = _j.sent();
                     iem = InteractionEventManager_1.InteractionEventManager.getInstance();
                     iE = new InteractionEvent_1.InteractionEvent(author.id, mes, 'info');
-                    iem.registerInteraction(author.id, iE);
+                    return [4 /*yield*/, iem.registerInteraction(author.id, iE, authorUserData)];
+                case 2:
+                    _j.sent();
                     iconCache = new Map();
                     getClassIconLink = function (className) { return __awaiter(void 0, void 0, void 0, function () {
                         var _a, _b, _c, _d, _e;
@@ -96,7 +98,7 @@ module.exports = {
                             }
                         });
                     }); };
-                    if (!(args[0] === undefined)) return [3 /*break*/, 4];
+                    if (!(args[0] === undefined)) return [3 /*break*/, 5];
                     selectMenuOptions = Object.keys(jsons_1.classData)
                         .map(function (_className) { return ({
                         label: _className,
@@ -108,48 +110,51 @@ module.exports = {
                     _b = (_a = mes).edit;
                     _d = (_c = Object).assign;
                     return [4 /*yield*/, getClassEmbed('Fighter')];
-                case 2: return [4 /*yield*/, _b.apply(_a, [_d.apply(_c, [_j.sent(), {
+                case 3: return [4 /*yield*/, _b.apply(_a, [_d.apply(_c, [_j.sent(), {
                                 components: [actionrow_1]
                             }])])];
-                case 3:
-                    _j.sent();
-                    interactionCollector = (0, Utility_1.setUpInteractionCollect)(mes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
-                        var classChosen, _a, _b, _c, _d, _err_1;
-                        return __generator(this, function (_e) {
-                            switch (_e.label) {
-                                case 0:
-                                    _e.trys.push([0, 4, , 5]);
-                                    if (!_itr.isSelectMenu()) return [3 /*break*/, 3];
-                                    classChosen = _itr.values[0];
-                                    _b = (_a = _itr).update;
-                                    _d = (_c = Object).assign;
-                                    return [4 /*yield*/, getClassEmbed(classChosen)];
-                                case 1: return [4 /*yield*/, _b.apply(_a, [_d.apply(_c, [_e.sent(), {
-                                                components: [actionrow_1]
-                                            }])])];
-                                case 2:
-                                    _e.sent();
-                                    _e.label = 3;
-                                case 3: return [3 /*break*/, 5];
-                                case 4:
-                                    _err_1 = _e.sent();
-                                    console.error(_err_1);
-                                    return [3 /*break*/, 5];
-                                case 5: return [2 /*return*/];
-                            }
-                        });
-                    }); }, 10);
-                    interactionCollector.on('end', function () {
-                        iem.stopInteraction(author.id, 'info');
-                    });
-                    return [3 /*break*/, 8];
                 case 4:
-                    if (!(jsons_1.classData[args[0]] === undefined)) return [3 /*break*/, 5];
+                    _j.sent();
+                    collect_1 = function () {
+                        (0, Utility_1.setUpInteractionCollect)(mes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
+                            var classChosen, _a, _b, _c, _d, _err_1;
+                            return __generator(this, function (_e) {
+                                switch (_e.label) {
+                                    case 0:
+                                        _e.trys.push([0, 4, , 5]);
+                                        if (!_itr.isSelectMenu()) return [3 /*break*/, 3];
+                                        classChosen = _itr.values[0];
+                                        _b = (_a = _itr).update;
+                                        _d = (_c = Object).assign;
+                                        return [4 /*yield*/, getClassEmbed(classChosen)];
+                                    case 1: return [4 /*yield*/, _b.apply(_a, [_d.apply(_c, [_e.sent(), {
+                                                    components: [actionrow_1]
+                                                }])])];
+                                    case 2:
+                                        _e.sent();
+                                        collect_1();
+                                        _e.label = 3;
+                                    case 3: return [3 /*break*/, 5];
+                                    case 4:
+                                        _err_1 = _e.sent();
+                                        console.error(_err_1);
+                                        iem.stopInteraction(author.id, 'info');
+                                        return [3 /*break*/, 5];
+                                    case 5: return [2 /*return*/];
+                                }
+                            });
+                        }); }, 1);
+                    };
+                    collect_1();
+                    return [3 /*break*/, 9];
+                case 5:
+                    if (!(jsons_1.classData[args[0]] === undefined)) return [3 /*break*/, 6];
                     message.react(typedef_1.EMOJI_CROSS)
                         .catch(function (_err) { return console.log; });
+                    (0, Utility_1.log)("dne stop");
                     iem.stopInteraction(author.id, 'info');
-                    return [3 /*break*/, 8];
-                case 5:
+                    return [3 /*break*/, 9];
+                case 6:
                     className_1 = (0, Utility_1.formalise)(args[0]);
                     classChosen_1 = (0, Utility_1.getNewObject)(jsons_1.classData[className_1]);
                     arsenal = classChosen_1.abilities.concat(classChosen_1.autoWeapons);
@@ -170,53 +175,57 @@ module.exports = {
                     _f = (_e = mes).edit;
                     _h = (_g = Object).assign;
                     return [4 /*yield*/, getClassEmbed(className_1)];
-                case 6: return [4 /*yield*/, _f.apply(_e, [_h.apply(_g, [_j.sent(), {
+                case 7: return [4 /*yield*/, _f.apply(_e, [_h.apply(_g, [_j.sent(), {
                                 components: [weaponSelectActionRow_1],
                             }])])];
-                case 7:
+                case 8:
                     _j.sent();
-                    interactionCollector = (0, Utility_1.setUpInteractionCollect)(mes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
-                        var weaponIndex, weaponChosen, _a, _b, _c, _d, _err_2;
-                        return __generator(this, function (_e) {
-                            switch (_e.label) {
-                                case 0:
-                                    _e.trys.push([0, 6, , 7]);
-                                    if (!_itr.isSelectMenu()) return [3 /*break*/, 5];
-                                    weaponIndex = parseInt(_itr.values[0]);
-                                    weaponChosen = classChosen_1.abilities[weaponIndex] ||
-                                        classChosen_1.autoWeapons[weaponIndex % classChosen_1.abilities.length];
-                                    if (!weaponChosen) return [3 /*break*/, 2];
-                                    return [4 /*yield*/, _itr.update({
-                                            embeds: [(0, Utility_1.getAbilityEmbed)(weaponChosen)]
-                                        })];
-                                case 1:
-                                    _e.sent();
-                                    return [3 /*break*/, 5];
-                                case 2:
-                                    _b = (_a = _itr).update;
-                                    _d = (_c = Object).assign;
-                                    return [4 /*yield*/, getClassEmbed(className_1)];
-                                case 3: return [4 /*yield*/, _b.apply(_a, [_d.apply(_c, [_e.sent(), {
-                                                components: [weaponSelectActionRow_1],
-                                            }])])];
-                                case 4:
-                                    _e.sent();
-                                    _e.label = 5;
-                                case 5: return [3 /*break*/, 7];
-                                case 6:
-                                    _err_2 = _e.sent();
-                                    console.log(_err_2);
-                                    iem.stopInteraction(author.id, 'info');
-                                    return [3 /*break*/, 7];
-                                case 7: return [2 /*return*/];
-                            }
-                        });
-                    }); }, 10);
-                    interactionCollector.on('end', function () {
-                        iem.stopInteraction(author.id, 'info');
-                    });
-                    _j.label = 8;
-                case 8: return [2 /*return*/];
+                    collect_2 = function () {
+                        (0, Utility_1.setUpInteractionCollect)(mes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
+                            var weaponIndex, weaponChosen, _a, _b, _c, _d, _err_2;
+                            return __generator(this, function (_e) {
+                                switch (_e.label) {
+                                    case 0:
+                                        _e.trys.push([0, 7, , 8]);
+                                        if (!_itr.isSelectMenu()) return [3 /*break*/, 6];
+                                        weaponIndex = parseInt(_itr.values[0]);
+                                        weaponChosen = classChosen_1.abilities[weaponIndex] ||
+                                            classChosen_1.autoWeapons[weaponIndex % classChosen_1.abilities.length];
+                                        if (!weaponChosen) return [3 /*break*/, 2];
+                                        return [4 /*yield*/, _itr.update({
+                                                embeds: [(0, Utility_1.getAbilityEmbed)(weaponChosen)]
+                                            })];
+                                    case 1:
+                                        _e.sent();
+                                        return [3 /*break*/, 5];
+                                    case 2:
+                                        _b = (_a = _itr).update;
+                                        _d = (_c = Object).assign;
+                                        return [4 /*yield*/, getClassEmbed(className_1)];
+                                    case 3: return [4 /*yield*/, _b.apply(_a, [_d.apply(_c, [_e.sent(), {
+                                                    components: [weaponSelectActionRow_1],
+                                                }])])];
+                                    case 4:
+                                        _e.sent();
+                                        _e.label = 5;
+                                    case 5:
+                                        collect_2();
+                                        _e.label = 6;
+                                    case 6: return [3 /*break*/, 8];
+                                    case 7:
+                                        _err_2 = _e.sent();
+                                        console.log(_err_2);
+                                        (0, Utility_1.log)("error stop");
+                                        iem.stopInteraction(author.id, 'info');
+                                        return [3 /*break*/, 8];
+                                    case 8: return [2 /*return*/];
+                                }
+                            });
+                        }); }, 1);
+                    };
+                    collect_2();
+                    _j.label = 9;
+                case 9: return [2 /*return*/];
             }
         });
     }); }

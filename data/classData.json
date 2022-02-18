@@ -2,9 +2,10 @@
 	"Fighter": {
 		"class": "Fighter",
 		"arsenal": [],
-		"AHP": 70,
-		"Dodge": 10,
-		"Prot": 0.3,
+		"maxHP": 70,
+		"maxStamina": 200,
+		"dodge": 10,
+		"protection": 0.3,
 		"speed": 5.5,
 		"maxMove": 1,
 		"iconURL": "images/class/fighter_default.png",
@@ -13,7 +14,8 @@
 				"type": "melee",
 
 				"abilityName": "Obliterate",
-				
+
+				"staminaCost": 0,
 				"readinessCost": 5,
 				"sword": 1,
 				"shield": 0,
@@ -43,8 +45,10 @@
 				"type": "null",
 
 				"abilityName": "Endure",
-
+				
+				"staminaCost": 0,
 				"readinessCost": 20,
+				
 				"sword": 0,
 				"shield": 2,
 				"sprint": 0,
@@ -81,7 +85,9 @@
 
 				"abilityName": "Passive: Endless Labour",
 
+				"staminaCost": 0,
 				"readinessCost": 0,
+
 				"sword": 0,
 				"shield": 0,
 				"sprint": 0,
@@ -118,9 +124,10 @@
 	"Executioner": {
 		"class": "Executioner",
 		"arsenal": [],
-		"AHP": 55,
-		"Dodge": 10,
-		"Prot": 0.45,
+		"maxHP": 55,
+		"maxStamina": 185,
+		"dodge": 10,
+		"protection": 0.45,
 		"speed": 6.5,
 		"maxMove": 1,
 		"iconURL": "images/class/executioner_default.png",
@@ -129,8 +136,10 @@
 				"type": "melee",
 
 				"abilityName": "Vicious Stab",
-
+				
+				"staminaCost": 0,
 				"readinessCost": 5,
+				
 				"sword": 0,
 				"shield": 0,
 				"sprint": 0,
@@ -159,7 +168,9 @@
 
 				"abilityName": "Decimate",
 
+				"staminaCost": 10,
 				"readinessCost": 10,
+
 				"sword": 2,
 				"shield": 0,
 				"sprint": 0,
@@ -180,7 +191,7 @@
 					"damage": 0,
 					"accuracy": 0,
 					"lifesteal": 0,
-					"criticalHit": 0
+					"criticalHit": 10
 				}
 			}
 		],
@@ -190,6 +201,7 @@
 
 				"abilityName": "Passive: Unrelenting Fury",
 
+				"staminaCost": 0,
 				"readinessCost": 0,
 				"sword": 0,
 				"shield": 0,

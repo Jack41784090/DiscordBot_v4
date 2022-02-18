@@ -1,10 +1,10 @@
 import { User, TextChannel, Guild, Message, Client, MessageSelectMenuOptions, MessageSelectOptionData, MessageEmbed, InteractionCollector, Interaction, MessageOptions } from "discord.js";
 import { InteractionEvent } from "../classes/InteractionEvent";
 import { InteractionEventManager } from "../classes/InteractionEventManager";
-import { Item } from "../classes/Item";
-import { formalise, getForgeWeaponMinMax, getInventorySelectOptions, getLoadingEmbed, getNewObject, getSelectMenuActionRow, log, setUpConfirmationInteractionCollect, setUpInteractionCollect, Test } from "../classes/Utility";
+import { ForgeWeaponItem, Item } from "../classes/Item";
+import { formalise, getAbilityEmbed, getForgeWeaponMinMax, getInventorySelectOptions, getLoadingEmbed, getNewObject, getSelectMenuActionRow, log, setUpConfirmationInteractionCollect, setUpInteractionCollect, Test } from "../classes/Utility";
 import { forgeWeaponData, itemData } from "../jsons";
-import { UserData, CommandModule, EMOJI_CROSS, MaterialInfo, EMOJI_WHITEB, ForgeWeaponPart, ForgeWeaponType, MEW, ForgeWeaponItem } from "../typedef";
+import { UserData, CommandModule, EMOJI_CROSS, MaterialInfo, EMOJI_WHITEB, ForgeWeaponPart, ForgeWeaponType, MEW } from "../typedef";
 
 module.exports = {
     commands: ['forge'],
@@ -145,6 +145,7 @@ module.exports = {
         selectedItems.push(r3);
 
         // confirm forge weapon
+        const weaponEmbed = getAbilityEmbed
         setUpConfirmationInteractionCollect(forgeMes, new MessageEmbed({
             title: `Forge ${formalise(selectedWeaponType)}?`,
             fields: (selectedItems.map(_i => ({

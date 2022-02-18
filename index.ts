@@ -54,8 +54,8 @@ BotClient.on('ready', async () => {
     BotClient.setMaxListeners(15);
     console.log("Ready.");
     importCommands();
-    // quickEmbark();
-    Test();
+    quickEmbark();
+    // Test();
 });
 
 BotClient.on('messageCreate', async m => {

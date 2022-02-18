@@ -11,6 +11,7 @@
             "max": 0,
             "radius": 0
         },
+        "staminaCost": 0,
         "readinessCost": 0,
         "sword": -1,
         "shield": 2,

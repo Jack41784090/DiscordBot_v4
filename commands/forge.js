@@ -49,7 +49,7 @@ module.exports = {
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var forgeMes, iem, event, updatedUserData, selectedWeaponType, selectedItems, selectOptionsCache, getForgeMesOptions, listenFor, weapons, r1, r2, r3;
+        var forgeMes, iem, event, updatedUserData, selectedWeaponType, selectedItems, selectOptionsCache, getForgeMesOptions, listenFor, weapons, r1, r2, r3, weaponEmbed;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, channel.send({
@@ -204,7 +204,7 @@ module.exports = {
                         return [2 /*return*/];
                     }
                     selectedItems.push(r3);
-                    // confirm forge weapon
+                    weaponEmbed = Utility_1.getAbilityEmbed;
                     (0, Utility_1.setUpConfirmationInteractionCollect)(forgeMes, new discord_js_1.MessageEmbed({
                         title: "Forge " + (0, Utility_1.formalise)(selectedWeaponType) + "?",
                         fields: (selectedItems.map(function (_i) { return ({

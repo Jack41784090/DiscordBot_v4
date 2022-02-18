@@ -1,9 +1,9 @@
 {
     "C-Farmhand": {
         "name": "Farmhand",
-        "AHP": 35,
-        "Dodge": 5,
-        "Prot": 0.1,
+        "maxHP": 35,
+        "dodge": 5,
+        "protection": 0.1,
         "speed": 6,
         "abilities": [
             {
@@ -33,9 +33,9 @@
     },
     "C-Chicken": {
         "name": "Meat",
-        "AHP": 5,
-        "Dodge": 20,
-        "Prot": 0,
+        "maxHP": 5,
+        "dodge": 20,
+        "protection": 0,
         "speed": 10,
         "abilities": [
             {
@@ -65,9 +65,9 @@
     },
     "C-Lump": {
         "name": "The Thing",
-        "AHP": 25,
-        "Dodge": 0,
-        "Prot": 0,
+        "maxHP": 25,
+        "dodge": 0,
+        "protection": 0,
         "speed": 10,
         "abilities": [
             {
@@ -98,9 +98,9 @@
     },
     "Sentry": {
         "name": "Phantom Sentry",
-        "AHP": 15,
-        "Dodge": 0,
-        "Prot": 0.2,
+        "maxHP": 15,
+        "dodge": 0,
+        "protection": 0.2,
         "speed": 5,
         "abilities": [
             {

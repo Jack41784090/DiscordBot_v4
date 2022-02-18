@@ -33,7 +33,7 @@ var AIFunctions = new Map([
     [
         typedef_1.BotType.approach_attack,
         function (_rS, _bd) {
-            var _a;
+            var _b;
             (0, Utility_1.log)("Employing approach_attack AI");
             var virtualStat = (0, Utility_1.getNewObject)(_rS, { virtual: true });
             // target selection: attack closest
@@ -45,29 +45,29 @@ var AIFunctions = new Map([
             // if found a target
             if (selectedTarget !== null) {
                 // 1. select weapon
-                var weaponSelected = virtualStat.base.arsenal[0] || jsons_1.universalWeaponsData.Unarmed;
-                var abilitySelected = virtualStat.base.abilities[0];
+                var weaponSelected_1 = virtualStat.base.arsenal[0] || jsons_1.universalWeaponsData.Unarmed;
+                var abilitySelected = virtualStat.base.abilities.find(function (_a) { return _a.type === weaponSelected_1.attackType; }) || (0, Utility_1.getForgeWeaponAttackAbility)(weaponSelected_1);
                 // 2. move to preferred location
                 var path = _bd.startPathFinding(_rS, selectedTarget, "lowest");
                 var moveActionArray = _bd.getMoveActionListFromCoordArray(_rS, path);
                 var fullActions = _bd.normaliseMoveActions(moveActionArray, virtualStat);
                 // 3. attack with selected weapon
-                var virtualAA = (0, Utility_1.getAttackAction)(virtualStat, selectedTarget, weaponSelected, abilitySelected, selectedTarget);
+                var virtualAA = (0, Utility_1.getAttackAction)(virtualStat, selectedTarget, weaponSelected_1, abilitySelected, selectedTarget);
                 if ((0, Utility_1.checkWithinDistance)(virtualAA, (0, Utility_1.getDistance)(virtualStat, selectedTarget))) {
                     var valid = _bd.executeVirtualAttack(virtualAA, virtualStat);
                     if (valid) {
-                        fullActions.push((0, Utility_1.getAttackAction)(_rS, selectedTarget, weaponSelected, abilitySelected, selectedTarget));
+                        fullActions.push((0, Utility_1.getAttackAction)(_rS, selectedTarget, weaponSelected_1, abilitySelected, selectedTarget));
                     }
                 }
-                (_a = _bd.roundActionsArray).push.apply(_a, __spreadArray([], __read(fullActions), false));
+                (_b = _bd.roundActionsArray).push.apply(_b, __spreadArray([], __read(fullActions), false));
             }
         }
     ],
     [
         typedef_1.BotType.passive_supportive,
         function (_rS, _bd) {
-            var _a;
             var _b;
+            var _d;
             (0, Utility_1.log)("Employing passive_supportive AI");
             var virtualStat = (0, Utility_1.getNewObject)(_rS);
             var allActions = [];
@@ -80,7 +80,7 @@ var AIFunctions = new Map([
             switch (AOE) {
                 case 'selfCircle':
                     // move to best place
-                    var blastRange_1 = ((_b = ability.range) === null || _b === void 0 ? void 0 : _b.max) || weaponSelected.range.radius;
+                    var blastRange_1 = ((_d = ability.range) === null || _d === void 0 ? void 0 : _d.max) || weaponSelected.range.radius;
                     var movesAvailable_1 = 1 + virtualStat.sprint;
                     (0, Utility_1.debug)("movesAvailable", movesAvailable_1);
                     var domain_1 = _bd.findEntities_radius(virtualStat, movesAvailable_1 + blastRange_1, false);
@@ -168,7 +168,7 @@ var AIFunctions = new Map([
                     allActions.push.apply(allActions, __spreadArray([], __read(escapingActions), false));
                 }
             }
-            (_a = _bd.roundActionsArray).push.apply(_a, __spreadArray([], __read(allActions), false));
+            (_b = _bd.roundActionsArray).push.apply(_b, __spreadArray([], __read(allActions), false));
         }
     ]
 ]);

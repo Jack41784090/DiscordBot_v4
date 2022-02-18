@@ -3,6 +3,7 @@ import { Battle } from "./classes/Battle";
 import { Item } from "./classes/Item";
 import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
+import { AbilityEffect } from "./classes/WeaponEffect";
 import { areasData, classData, dungeonData, enemiesData, itemData, materialData, interactionEventData, forgeWeaponData, universalWeaponsData, universalAbilitiesData } from "./jsons";
 
 export type StringCoordinate = `${number},${number}`;
@@ -97,9 +98,9 @@ export interface MapData {
 
 // STATISTICAL
 export const StatMaximus = {
-    AHP: 100,
-    Dodge: 50,
-    Prot: 1,
+    maxHP: 100,
+    dodge: 50,
+    protection: 1,
     speed: 10,
 }
 export type StatPrimus = keyof typeof StatMaximus;
@@ -109,14 +110,15 @@ export interface SimplePlayerStat extends Coordinate {
     botType: BotType,
 }
 export interface MainStat {
-    AHP: number,
-    Dodge: number,
-    Prot: number,
+    maxHP: number,
+    maxStamina: number,
+    dodge: number,
+    protection: number,
     speed: number,
 }
 export interface BaseStat extends MainStat {
     class: Class | EnemyClass,
-    arsenal: Array<ForgeWeapon>,
+    arsenal: Array<ForgeWeaponObject>,
     maxMove: number,
     abilities: Array<Ability>,
     autoWeapons: Array<Ability>,
@@ -127,7 +129,7 @@ export interface BaseStat extends MainStat {
 export interface Stat extends Coordinate {
     base: BaseStat,
 
-    equipped: ForgeWeapon,
+    equipped: ForgeWeaponObject,
 
     name: string,
 
@@ -139,6 +141,7 @@ export interface Stat extends Coordinate {
 
     HP: number,
     readiness: number,
+    stamina: number,
 
     sword: number,
     shield: number,
@@ -184,9 +187,11 @@ export interface Action {
     sprint: number,
 }
 export interface AttackAction extends Action {
-    weapon: ForgeWeapon | null,
+    weapon: ForgeWeaponObject | null,
     ability: Ability,
     coordinate: Coordinate,
+    clashResult?: ClashResult,
+    abilityEffectString?: string,
 }
 export interface MoveAction extends Action {
     axis: 'x' | 'y',
@@ -265,9 +270,22 @@ export interface QualityDeviation {
     min: number,
     max: number,
 }
+export interface ItemObject {
+    name: string,
+    type: ItemType,
+    materialInfo: Array<MaterialInfo>,
+    weight: number,
+    maxWeight: number,
+}
 
 export interface StartBattleOptions {
     ambush: Team | null,
+}
+
+export enum BattleToken {
+    sword,
+    shield,
+    sprint,
 }
 
 export interface Settings {
@@ -276,7 +294,7 @@ export interface Settings {
 export interface UserData {
     classes: Array<Class>,
     equippedClass: Class,
-    equippedWeapon: Array<ForgeWeapon>,
+    equippedWeapon: Array<ForgeWeaponObject>,
     money: number,
     name: string,
     party: Array<string>,
@@ -317,6 +335,7 @@ export interface Ability {
     abilityName: AbilityName | UniversalAbilityName,
     
     // costs
+    staminaCost: number,
     readinessCost: number,
     sword: number,
     shield: number,
@@ -408,10 +427,9 @@ export type ForgeWeaponPart =
     'shaft'
 export type ForgeWeaponRange = "melee" | "ranged" | "null";
 export type ForgeWeaponType = keyof typeof forgeWeaponData;
-export interface ForgeWeaponItem extends ForgeWeapon, Item {}
-export interface ForgeWeapon {
+export interface ForgeWeaponObject {
     weaponType: ForgeWeaponType,
-    type: ForgeWeaponRange,
+    attackType: ForgeWeaponRange,
                                         // material dependent
     range: AttackRange,                 // x
     accuracy: number,                   // o
@@ -433,12 +451,12 @@ export interface GetIconOptions {
     healthArc?: boolean,
 }
 export interface Buffs {
-    AHP: number,
+    maxHP: number,
     damageRange: number,
     accuracy: number,
-    Dodge: number,
+    dodge: number,
     criticalHit: number,
-    Prot: number,
+    protection: number,
     speed: number,
     lifesteal: number,
 }
@@ -463,7 +481,7 @@ export type StatusEffectType =
     "DamageUp"| // damage buff
     "lifestealUp"
 export interface StatusEffectFunction {
-    (_statusEffect: StatusEffect, _action: Action, _bd: Battle): string;
+    (_statusEffect: StatusEffect, _action: Action, _bd: Battle): void;
 }
 
 export type ClashResultFate = "Miss" | "Hit" | "criticalHit"
@@ -473,6 +491,7 @@ export interface ClashResult {
     u_damage: number,
     fate: ClashResultFate,
     roll: number,
+    error?: TargetingError,
 }
 
 export interface CommandModule {

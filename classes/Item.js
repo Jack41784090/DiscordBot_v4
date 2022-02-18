@@ -1,4 +1,19 @@
 "use strict";
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -25,7 +40,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Item = void 0;
+exports.ForgeWeaponItem = exports.Item = void 0;
 var jsons_1 = require("../jsons");
 var typedef_1 = require("../typedef");
 var Utility_1 = require("./Utility");
@@ -150,21 +165,21 @@ var Item = /** @class */ (function () {
         var weaponData = jsons_1.forgeWeaponData[_type];
         var fw = {
             weaponType: _type,
-            type: weaponData.type,
+            attackType: weaponData.type,
             range: weaponData.range,
             // (blade: x0.8, shaft: x1.5) * weaponType accScale
-            accuracy: 50 + get('blade', 'accuracy') * 0.8 + get('shaft', 'accuracy') * 1.5,
+            accuracy: (50 + get('blade', 'accuracy') * 0.8 + get('shaft', 'accuracy') * 1.5) * weaponData.accScale,
             // (blade: x1.5, shaft: x0.8) * weaponType damageScale
             damageRange: {
                 min: _blade.getAllMaterial().reduce(function (_tt, _m) {
                     return _tt + _m.occupation * bladeWeight * Math.pow(1.1, _m.grade) * jsons_1.materialData[_m.materialName].damageRange[0];
-                }, 0),
+                }, 0) * weaponData.damageScale,
                 max: _blade.getAllMaterial().reduce(function (_tt, _m) {
                     return _tt + _m.occupation * bladeWeight * Math.pow(1.1, _m.grade) * jsons_1.materialData[_m.materialName].damageRange[1];
-                }, 0),
+                }, 0) * weaponData.damageScale,
             },
             // (blade: x1.2, shaft: x1.2) * weaponType criticalHitScale
-            criticalHit: 0 + get('blade', 'criticalHit') * 1.2 + get('shaft', 'criticalHit') * 1.2,
+            criticalHit: (0 + get('blade', 'criticalHit') * 1.2 + get('shaft', 'criticalHit') * 1.2) * weaponData.critScale,
             // blade: x1.0
             lifesteal: get('blade', 'lifesteal'),
             // speed
@@ -175,7 +190,17 @@ var Item = /** @class */ (function () {
             // totalweight 
             staminaCost: totalWeight,
         };
-        return Object.assign(item, fw);
+        return new ForgeWeaponItem(fw, item.getAllMaterial(), item.getMaxWeight(), "Forged");
+    };
+    Item.Classify = function (_i_fwi) {
+        var wt = _i_fwi.weaponType;
+        if (wt) {
+            var fw = _i_fwi;
+            return new ForgeWeaponItem(fw, fw.materialInfo, fw.maxWeight, fw.name);
+        }
+        else {
+            return new Item(_i_fwi);
+        }
     };
     Item.prototype.print = function () {
         var realWeight = 0;
@@ -304,6 +329,9 @@ var Item = /** @class */ (function () {
         }
         this.normaliseWeight();
     };
+    Item.prototype.getName = function () {
+        return this.name;
+    };
     Item.prototype.getDisplayName = function () {
         return this.name + " " + (0, Utility_1.formalise)(jsons_1.itemData[this.itemType].name);
     };
@@ -377,3 +405,39 @@ var Item = /** @class */ (function () {
     return Item;
 }());
 exports.Item = Item;
+var ForgeWeaponItem = /** @class */ (function (_super) {
+    __extends(ForgeWeaponItem, _super);
+    function ForgeWeaponItem(_fw, _elements, _maxWeight, _name) {
+        var _this = _super.call(this, _elements, _maxWeight, _name) || this;
+        _this.weaponType = _fw.weaponType;
+        _this.attackType = _fw.attackType;
+        _this.range = _fw.range;
+        _this.accuracy = _fw.accuracy;
+        _this.damageRange = _fw.damageRange;
+        _this.criticalHit = _fw.criticalHit;
+        _this.lifesteal = _fw.lifesteal;
+        _this.readinessCost = _fw.readinessCost;
+        _this.staminaCost = _fw.staminaCost;
+        return _this;
+    }
+    ForgeWeaponItem.prototype.returnObject = function () {
+        return {
+            name: this.getName(),
+            type: this.getItemType(),
+            materialInfo: this.getAllMaterial(),
+            weight: this.getWeight(),
+            maxWeight: this.getMaxWeight(),
+            weaponType: this.weaponType,
+            attackType: this.attackType,
+            range: this.range,
+            accuracy: this.accuracy,
+            damageRange: this.damageRange,
+            criticalHit: this.criticalHit,
+            lifesteal: this.lifesteal,
+            readinessCost: this.readinessCost,
+            staminaCost: this.staminaCost,
+        };
+    };
+    return ForgeWeaponItem;
+}(Item));
+exports.ForgeWeaponItem = ForgeWeaponItem;

@@ -1,4 +1,4 @@
-import { BaseStat, Class, defaultAvatarURL, EMOJI_CROSS, EMOJI_WHITEB, ForgeWeapon, GetIconOptions, OwnerID, Settings, Stat, UserData, } from "../typedef"
+import { BaseStat, Class, defaultAvatarURL, EMOJI_CROSS, EMOJI_WHITEB, ForgeWeaponObject, GetIconOptions, ItemObject, OwnerID, Settings, Stat, UserData, } from "../typedef"
 import { MessageSelectOptionData, User } from "discord.js";
 
 import * as admin from 'firebase-admin'
@@ -73,9 +73,9 @@ export async function getUserData(id_author: string | User): Promise<UserData> {
 
     const fetched: FirebaseFirestore.DocumentData | null = await getAnyData('Users', id);
     const defaultData: UserData = getDefaultUserData(user);
-    const data: UserData = getNewObject(defaultData, fetched) as UserData;
-    data.inventory = data.inventory.map(_i => {
-        return new Item(_i);
+    const data: any = getNewObject(defaultData, fetched);
+    data.inventory = data.inventory.map((_i: ForgeWeaponObject | ItemObject) => {
+        return Item.Classify(_i);
     });
 
     if (fetched === null) {
@@ -144,7 +144,7 @@ export function getDefaultUserData(_user?: User) {
         settings: getDefaultSettings(),
         equippedClass: "Fighter" as Class,
         equippedWeapon: [
-            getNewObject(universalWeaponsData.Unarmed) as ForgeWeapon
+            getNewObject(universalWeaponsData.Unarmed) as ForgeWeaponObject
         ],
         welfare: 1,
         inventory: [],
@@ -255,7 +255,7 @@ export function getIconCanvas(_stat: Stat, _drawOptions: GetIconOptions = {
                 // health arc
                 if (_drawOptions.healthArc) {
                     // attach health arc
-                    const healthPercentage = clamp(_stat.HP / _stat.base.AHP, 0, 1);
+                    const healthPercentage = clamp(_stat.HP / _stat.base.maxHP, 0, 1);
                     ctx.strokeStyle = stringifyRGBA({
                         r: 255 * Number(_stat.team === "enemy"),
                         g: 255 * Number(_stat.team === "player"),
@@ -341,7 +341,7 @@ export async function saveBattle(battle: Battle) {
     }
 }
 
-export async function getEquippedForgeWeapon(_id: OwnerID): Promise<Array<ForgeWeapon>> {
+export async function getEquippedForgeWeapon(_id: OwnerID): Promise<Array<ForgeWeaponObject>> {
     const userData: UserData = InteractionEventManager.getInstance().userData(_id) || await getUserData(_id);
     return userData.equippedWeapon;
 }

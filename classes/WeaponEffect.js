@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WeaponEffect = void 0;
+exports.AbilityEffect = void 0;
 var typedef_1 = require("../typedef");
 var StatusEffect_1 = require("./StatusEffect");
 var Utility_1 = require("./Utility");
@@ -151,7 +151,7 @@ var statusEffect_effects = new Map([
         function (_action, _cR, _bd) {
             var returnString = '';
             var target = _action.target;
-            if (_cR.fate !== "Miss" && (target.HP / target.base.AHP) <= (1 / 3)) {
+            if (_cR.fate !== "Miss" && (target.HP / target.base.maxHP) <= (1 / 3)) {
                 _cR.damage = _cR.damage * 1.5;
                 _cR.u_damage = _cR.u_damage * 1.5;
                 returnString += 'x1.5❗❗';
@@ -229,13 +229,13 @@ var statusEffect_effects = new Map([
         }
     ],
 ]);
-var WeaponEffect = /** @class */ (function () {
-    function WeaponEffect(_aA, _cR, _bd) {
+var AbilityEffect = /** @class */ (function () {
+    function AbilityEffect(_aA, _cR, _bd) {
         this.attackAction = _aA;
         this.clashResult = _cR;
         this.battleData = _bd;
     }
-    WeaponEffect.prototype.activate = function () {
+    AbilityEffect.prototype.activate = function () {
         (0, Utility_1.log)("\tActivating " + this.attackAction.ability.abilityName);
         var returnString = "";
         var weaponEffect = statusEffect_effects.get(this.attackAction.ability.abilityName);
@@ -244,6 +244,6 @@ var WeaponEffect = /** @class */ (function () {
         }
         return returnString;
     };
-    return WeaponEffect;
+    return AbilityEffect;
 }());
-exports.WeaponEffect = WeaponEffect;
+exports.AbilityEffect = AbilityEffect;

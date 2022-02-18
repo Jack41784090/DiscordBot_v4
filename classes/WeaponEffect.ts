@@ -158,7 +158,7 @@ const statusEffect_effects = new Map<AbilityName | UniversalAbilityName, Ability
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = '';
             const target = _action.target;
-            if (_cR.fate !== "Miss" && (target.HP / target.base.AHP) <= (1/3)) {
+            if (_cR.fate !== "Miss" && (target.HP / target.base.maxHP) <= (1/3)) {
                 _cR.damage = _cR.damage * 1.5;
                 _cR.u_damage = _cR.u_damage * 1.5;
                 returnString += 'x1.5❗❗';
@@ -237,7 +237,7 @@ const statusEffect_effects = new Map<AbilityName | UniversalAbilityName, Ability
     ],
 ]);
 
-export class WeaponEffect {
+export class AbilityEffect {
     attackAction: AttackAction;
     clashResult: ClashResult;
     battleData: Battle;

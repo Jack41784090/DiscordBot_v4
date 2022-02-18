@@ -1,6 +1,6 @@
 import { User, TextChannel, Guild, Message, Client, MessageEmbed, MessageSelectOptionData, MessageSelectMenu, MessageOptions } from "discord.js";
 import { UserData, CommandModule, Class, EMOJI_CROSS, StatMaximus, StatPrimus, AbilityTargetting, EMOJI_SHIELD, EMOJI_SWORD, Ability, EMOJI_STAR, defaultAvatarURL } from "../typedef";
-import { addHPBar, formalise, getBaseClassStat, getLoadingEmbed, getNewObject, getSelectMenuActionRow, getStat, getStatsEmbed, getAbilityEmbed, setUpInteractionCollect, startDrawing } from "../classes/Utility";
+import { addHPBar, formalise, getBaseClassStat, getLoadingEmbed, getNewObject, getSelectMenuActionRow, getStat, getStatsEmbed, getAbilityEmbed, setUpInteractionCollect, startDrawing, log } from "../classes/Utility";
 import { getFileImage, getIconCanvas, getIconImgurLink } from "../classes/Database";
 import { Image } from "canvas";
 import { InteractionEventManager } from "../classes/InteractionEventManager";
@@ -19,7 +19,7 @@ module.exports = {
 
         const iem: InteractionEventManager = InteractionEventManager.getInstance();
         const iE: InteractionEvent = new InteractionEvent(author.id, mes, 'info');
-        iem.registerInteraction(author.id, iE);
+        await iem.registerInteraction(author.id, iE, authorUserData);
 
         const iconCache: Map<Class, string> = new Map<Class, string>();
         const getClassIconLink = async (className: Class) => {
@@ -49,28 +49,31 @@ module.exports = {
                 components: [actionrow]
             }));
             
-            // interaction end
-            const interactionCollector = setUpInteractionCollect(mes, async _itr => {
-                try {
-                    if (_itr.isSelectMenu()) {
-                        const classChosen = _itr.values[0] as Class;
-                        await _itr.update(Object.assign(await getClassEmbed(classChosen), {
-                            components: [actionrow]
-                        }));
+            const collect = () => {
+                setUpInteractionCollect(mes, async _itr => {
+                    try {
+                        if (_itr.isSelectMenu()) {
+                            const classChosen = _itr.values[0] as Class;
+                            await _itr.update(Object.assign(await getClassEmbed(classChosen), {
+                                components: [actionrow]
+                            }));
+                            collect();
+                        }
                     }
-                }
-                catch (_err) {
-                    console.error(_err);
-                }
-            }, 10);
-            interactionCollector.on('end', () => {
-                iem.stopInteraction(author.id, 'info');
-            });
+                    catch (_err) {
+                        console.error(_err);
+                        iem.stopInteraction(author.id, 'info');
+                    }
+                }, 1);
+            };
+            collect();
         }
         // class does not exist
         else if (classData[args[0] as Class] === undefined) {
             message.react(EMOJI_CROSS)
                 .catch(_err => console.log);
+            
+            log("dne stop")
             iem.stopInteraction(author.id, 'info');
         }
         else {
@@ -99,34 +102,34 @@ module.exports = {
                 components: [weaponSelectActionRow],
             }));
 
-            // interaction end
-            const interactionCollector = setUpInteractionCollect(mes, async _itr => {
-                try {
-                    if (_itr.isSelectMenu()) {
-                        const weaponIndex = parseInt(_itr.values[0]);
-                        const weaponChosen =
-                            classChosen.abilities[weaponIndex] as Ability||
-                            classChosen.autoWeapons[weaponIndex % classChosen.abilities.length];
-                        if (weaponChosen) {
-                            await _itr.update({
-                                embeds: [getAbilityEmbed(weaponChosen)]
-                            });
-                        }
-                        else {
-                            await _itr.update(Object.assign(await getClassEmbed(className), {
-                                components: [weaponSelectActionRow],
-                            }));
+            const collect = () => {
+                setUpInteractionCollect(mes, async _itr => {
+                    try {
+                        if (_itr.isSelectMenu()) {
+                            const weaponIndex = parseInt(_itr.values[0]);
+                            const weaponChosen =
+                                classChosen.abilities[weaponIndex] as Ability ||
+                                classChosen.autoWeapons[weaponIndex % classChosen.abilities.length];
+                            if (weaponChosen) {
+                                await _itr.update({
+                                    embeds: [getAbilityEmbed(weaponChosen)]
+                                });
+                            }
+                            else {
+                                await _itr.update(Object.assign(await getClassEmbed(className), {
+                                    components: [weaponSelectActionRow],
+                                }));
+                            }
+                            collect();
                         }
                     }
-                }
-                catch (_err) {
-                    console.log(_err);
-                    iem.stopInteraction(author.id, 'info');
-                }
-            }, 10);
-            interactionCollector.on('end', () => {
-                iem.stopInteraction(author.id, 'info');
-            });
+                    catch (_err) {
+                        console.log(_err);
+                        log("error stop")
+                        iem.stopInteraction(author.id, 'info');
+                    }
+                }, 1);
+            }; collect();
         }
     }
 } as CommandModule;

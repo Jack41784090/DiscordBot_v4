@@ -2,7 +2,7 @@ import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions, MessageSelectOptionData, ButtonInteraction } from "discord.js";
 
 import { BotClient } from "..";
-import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Stat, Ability, AbilityAOE, AbilityTargetting, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialInfo, MaterialGrade, UserData, Material, MaterialSpawnQualityInfo, LootAction, EMOJI_CROSS, EMOJI_WHITEB, ForgeWeaponPart, EMOJI_TICK, ForgeWeapon, DamageRange, EMOJI_MONEYBAG, ForgeWeaponType } from "../typedef";
+import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Stat, Ability, AbilityAOE, AbilityTargetting, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialInfo, MaterialGrade, UserData, Material, MaterialSpawnQualityInfo, LootAction, EMOJI_CROSS, EMOJI_WHITEB, ForgeWeaponPart, EMOJI_TICK, ForgeWeaponObject, DamageRange, EMOJI_MONEYBAG, ForgeWeaponType } from "../typedef";
 import { Battle } from "./Battle";
 import { Item } from "./Item";
 import { areasData, enemiesData, classData, itemData, universalAbilitiesData, forgeWeaponData, universalWeaponsData } from "../jsons";
@@ -97,22 +97,22 @@ export function normalRandom(_mean: number, _standardDeviation: number): number 
 
 // when attacked
 export function getAHP(_attacker: Stat, _options: GetBuffOption = 'WithBoth'): number {
-    const AHP = _attacker.base.AHP;
-    const AHPBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.AHP : 0;
-    const AHPDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.AHP : 0;
-    return (AHP + AHPBuff - AHPDebuff) || 0;
+    const maxHP = _attacker.base.maxHP;
+    const AHPBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.maxHP : 0;
+    const AHPDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.maxHP : 0;
+    return (maxHP + AHPBuff - AHPDebuff) || 0;
 }
 export function getDodge(_attacker: Stat, _options: GetBuffOption = 'WithBoth'): number {
-    const dodge = _attacker.base.Dodge;
-    const dodgeBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.Dodge : 0;
-    const dodgeDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.Dodge : 0;
+    const dodge = _attacker.base.dodge;
+    const dodgeBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.dodge : 0;
+    const dodgeDebuff = (_options === 'WithDebuff' || _options === 'WithBoth') ? _attacker.debuffs.dodge : 0;
     return (dodge + dodgeBuff - dodgeDebuff) || 0;
 }
 export function getProt(_defender: Stat, options: GetBuffOption = 'WithBoth'): number {
     const equippedWeapon = _defender.equipped;
-    const prot = _defender.base.Prot;
-    const protBuff = (options === 'WithBuff' || options === 'WithBoth') ? _defender.buffs.Prot : 0;
-    const protDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? _defender.debuffs.Prot : 0;
+    const prot = _defender.base.protection;
+    const protBuff = (options === 'WithBuff' || options === 'WithBoth') ? _defender.buffs.protection : 0;
+    const protDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? _defender.debuffs.protection : 0;
     return (prot + protBuff - protDebuff) || 0;
 }
 
@@ -161,7 +161,7 @@ export function getLifesteal(_attacker: Stat, _ability: Ability, _options: GetBu
     return (ls + _ability.bonus.lifesteal + lsBuff - lsDebuff) || 0;
 }
 
-export function findLongArm(_stat: Stat): Ability | ForgeWeapon | null {
+export function findLongArm(_stat: Stat): Ability | ForgeWeaponObject | null {
     const abilities: Array<Ability> = _stat.base.abilities.map(_a => {
         if (_a.range) {
             return _a;
@@ -538,7 +538,7 @@ export function directionToMagnitudeAxis(_direction: Direction | NumericDirectio
     };
 }
 
-export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: ForgeWeapon | null, _ability: Ability, _coord: Coordinate): AttackAction {
+export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: ForgeWeaponObject | null, _ability: Ability, _coord: Coordinate): AttackAction {
     const actionType: ActionType = "Attack";
     const attackAction: AttackAction = {
         executed: false,
@@ -691,7 +691,8 @@ export async function sendToSandbox(mo: MessageOptions) {
 export function extractActions(action: Action) {
     const aAction = action as AttackAction;
     const mAction = action as MoveAction;
-    return { aAction, mAction };
+    const lAction = action as LootAction;
+    return { aAction, mAction, lAction };
 }
 
 export function getConditionalTexts(text: string, condition: boolean): string {
@@ -704,6 +705,52 @@ export function getWithSign(number: number) {
     return getConditionalTexts("+", number > 0) + getConditionalTexts("-", number < 0) + `${Math.abs(number)}`;
 }
 
+export function getClashCommentary(_aA: AttackAction): string {
+    let returnString = '';
+    if (_aA.clashResult) {
+        const { attacker, target, ability } = _aA;
+        const { fate, damage, u_damage } = _aA.clashResult;
+
+        // weapon effect string
+        returnString += _aA.abilityEffectString || '';
+
+        // main chunk
+        switch (ability.targetting.target) {
+            case AbilityTargetting.enemy:
+                const accDodge = (getAcc(attacker, ability) - getDodge(target));
+                const hitRate =
+                    accDodge < 100 ?
+                        roundToDecimalPlace(accDodge) :
+                        100;
+                const critRate =
+                    roundToDecimalPlace(accDodge * 0.1 + getCrit(attacker, ability));
+                returnString +=
+                    `__**${ability.abilityName}**__ ${hitRate}% [${critRate}%]
+                **${fate}!** -**${roundToDecimalPlace(damage)}** (${roundToDecimalPlace(u_damage)}) [${roundToDecimalPlace(target.HP)} => ${roundToDecimalPlace(target.HP - damage)}]`
+                if (target.HP > 0 && target.HP - damage <= 0) {
+                    returnString += "\n__**KILLING BLOW!**__";
+                }
+                break;
+
+            case AbilityTargetting.ally:
+                if (attacker.index === target.index) {
+                    returnString +=
+                        `**${attacker.base.class}** (${attacker.index}) Activates __*${ability.abilityName}*__`;
+                }
+                else {
+                    returnString +=
+                        `**${attacker.base.class}** (${attacker.index}) 🛡️ **${target.base.class}** (${target.index})
+                    __*${ability.abilityName}*__`;
+                }
+                break;
+        }
+
+        // healing
+        // ...
+    }
+
+    return returnString;
+}
 export function getActionTranslate(_action: Action) {
     const { aAction, mAction } = extractActions(_action);
 
@@ -713,6 +760,7 @@ export function getActionTranslate(_action: Action) {
         case 'Attack':
             string +=
                 `${EMOJI_SWORD} ${attacker.base.class} (${attacker.index}) uses __${ability.abilityName}__ on ${target.base.class} (${target.index}).`;
+            string += "\n" + getClashCommentary(aAction);
             break;
 
         case 'Move':
@@ -737,6 +785,9 @@ export function getLoadingEmbed() {
         .setAuthor("Wait a while.", url, url)
         .setTitle("Now Loading...");
     return loadingEmbed;
+}
+export function getForgeWeaponEmbed(_fw: ForgeWeaponObject) {
+    
 }
 export function getAbilityEmbed(_ability: Ability) {
     const { damageScale, staminaScale, readinessCost, speedScale, range } = _ability
@@ -953,12 +1004,12 @@ export function getBaseEnemyStat(enemyClassName: EnemyClass) {
 
 export function getEmptyBuff(): Buffs {
     return {
-        AHP: 0,
+        maxHP: 0,
         damageRange: 0,
         accuracy: 0,
-        Dodge: 0,
+        dodge: 0,
         criticalHit: 0,
-        Prot: 0,
+        protection: 0,
         speed: 0,
         lifesteal: 0,
     };
@@ -1002,21 +1053,36 @@ export async function getStat(_arg0: Class | SimplePlayerStat | BaseStat, _owner
         base.abilities.push(uniWeapon);
     }
 
+    // extract arsenal from firebase
     if (_owner) {
         base.arsenal = await getEquippedForgeWeapon(_owner);
     }
-    const endStat: Stat = {
+
+    // add normal attacks for arsenal weapons
+    for (let i = 0; i < base.arsenal.length; i++) {
+        const fw = base.arsenal[i];
+        base.abilities.push(getForgeWeaponAttackAbility(fw));
+    }
+
+    // weapon uses init
+    const weaponUses: number[] = [];
+    for (let i = 0; i < base.abilities.length; i++) {
+        weaponUses.push(0);
+    }
+
+    return {
         base: base,
         index: -1,
 
-        equipped: base.arsenal[0] || getNewObject(universalWeaponsData.Unarmed) as ForgeWeapon,
+        equipped: base.arsenal[0] || getNewObject(universalWeaponsData.Unarmed) as ForgeWeaponObject,
 
         name: `${base.class}`,
 
-        weaponUses: [],
+        weaponUses: weaponUses,
         statusEffects: [],
 
-        HP: base.AHP,
+        HP: base.maxHP,
+        stamina: base.maxStamina,
         readiness: 0,
         moved: false,
 
@@ -1029,12 +1095,12 @@ export async function getStat(_arg0: Class | SimplePlayerStat | BaseStat, _owner
 
         team: ss.team === undefined ?
             _owner ?
-                "player":
-                "enemy":
+                "player" :
+                "enemy" :
             ss.team,
-        botType: ss.botType || (_owner?
-                BotType.naught:
-                BotType.approach_attack
+        botType: ss.botType || (_owner ?
+            BotType.naught :
+            BotType.approach_attack
         ),
         accolades: getEmptyAccolade(),
         buffs: getEmptyBuff(),
@@ -1044,13 +1110,7 @@ export async function getStat(_arg0: Class | SimplePlayerStat | BaseStat, _owner
         y: ss.y,
 
         pvp: false,
-    };
-
-    for (let i = 0; i < base.abilities.length; i++) {
-        endStat.weaponUses.push(0);
-    }
-
-    return endStat;
+    };;
 }
 
 export function getCoordString(coord: Coordinate): StringCoordinate {
@@ -1431,7 +1491,7 @@ export function getForgeWeaponMinMax(_t: ForgeWeaponPart): {
     }
 }
 
-export function getForgeWeaponAttackAbility(_fw: ForgeWeapon): Ability {
+export function getForgeWeaponAttackAbility(_fw: ForgeWeaponObject): Ability {
     return {
         type: 'melee',
 
@@ -1441,6 +1501,7 @@ export function getForgeWeaponAttackAbility(_fw: ForgeWeapon): Ability {
         shield: 0,
         sprint: 0,
         readinessCost: _fw.readinessCost,
+        staminaCost: 0,
 
         speedScale: 1,
         damageScale: 1,

@@ -1,7 +1,7 @@
 import { universalWeaponsData } from "../jsons";
-import { Action, AIFunction, AllTeams, BotType, Coordinate, MoveAction, NumericDirection, Stat, Team, VirtualStat, Ability, AbilityAOE, AbilityTargetting, ForgeWeapon, AttackAction } from "../typedef";
+import { Action, AIFunction, AllTeams, BotType, Coordinate, MoveAction, NumericDirection, Stat, Team, VirtualStat, Ability, AbilityAOE, AbilityTargetting, ForgeWeaponObject, AttackAction } from "../typedef";
 import { Battle } from "./Battle";
-import { getNewObject, log, checkWithinDistance, getDistance, getAttackAction, breadthFirstSearch as breadthSearch, getCoordString, numericDirectionToDirection, directionToMagnitudeAxis, average, arrayGetRandom, debug } from "./Utility";
+import { getNewObject, log, checkWithinDistance, getDistance, getAttackAction, breadthFirstSearch as breadthSearch, getCoordString, numericDirectionToDirection, directionToMagnitudeAxis, average, arrayGetRandom, debug, getForgeWeaponAttackAbility } from "./Utility";
 
 const AIFunctions = new Map<BotType, AIFunction>([
     [
@@ -20,8 +20,10 @@ const AIFunctions = new Map<BotType, AIFunction>([
             // if found a target
             if (selectedTarget !== null) {
                 // 1. select weapon
-                const weaponSelected: ForgeWeapon = virtualStat.base.arsenal[0] || universalWeaponsData.Unarmed as ForgeWeapon;
-                const abilitySelected: Ability = virtualStat.base.abilities[0];
+                const weaponSelected: ForgeWeaponObject =
+                    virtualStat.base.arsenal[0] || universalWeaponsData.Unarmed as ForgeWeaponObject;
+                const abilitySelected: Ability =
+                    virtualStat.base.abilities.find(_a => _a.type === weaponSelected.attackType) || getForgeWeaponAttackAbility(weaponSelected);
 
                 // 2. move to preferred location
                 const path: Array<Coordinate> = _bd.startPathFinding(_rS, selectedTarget, "lowest");
@@ -47,7 +49,7 @@ const AIFunctions = new Map<BotType, AIFunction>([
             log("Employing passive_supportive AI")
             const virtualStat = getNewObject(_rS);
             const allActions: Action[] = [];
-            const weaponSelected: ForgeWeapon = virtualStat.base.arsenal[0] || universalWeaponsData.Unarmed as ForgeWeapon;
+            const weaponSelected: ForgeWeaponObject = virtualStat.base.arsenal[0] || universalWeaponsData.Unarmed as ForgeWeaponObject;
             const ability: Ability | null = arrayGetRandom(virtualStat.base.abilities.filter(_w => _w.targetting.target === AbilityTargetting.ally));
             if (ability === null) return;
 

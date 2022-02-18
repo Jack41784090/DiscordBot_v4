@@ -30,7 +30,7 @@ const statusEffect_effects = new Map<StatusEffectType, StatusEffectFunction>([
     [
         "protected",
         (_statusEffect: StatusEffect, _sameRound_action: Action, _bd: Battle) => {
-            const value = clamp(_statusEffect.value, 0, _statusEffect.affected.base.AHP); _statusEffect.value = value;
+            const value = clamp(_statusEffect.value, 0, _statusEffect.affected.base.maxHP); _statusEffect.value = value;
             let returnString = "";
 
             if (value > 0) {
@@ -124,15 +124,11 @@ export class StatusEffect {
         const statusEffect = statusEffect_effects.get(this.type);
         if (this.duration > 0 && statusEffect) {
             log(`\t\t\tSuccessful execution!`)
-            statusResult = statusEffect(this, _action, this.battleData);
+            statusEffect(this, _action, this.battleData);
         }
         else {
             log(`\t\t\tFailed to execute. Removing.`)
         }
         return statusResult;
-    }
-
-    exit(_action: Action) {
-
     }
 }
