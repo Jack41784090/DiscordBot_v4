@@ -74,20 +74,17 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpConfirmationInteractionCollect = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.directionToMagnitudeAxis = exports.directionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getAttackRange = exports.getDistance = exports.findEqualCoordinate = exports.findLongArm = exports.getLifesteal = exports.getCrit = exports.getExecutionSpeed = exports.getAcc = exports.getDamage = exports.getProt = exports.getDodge = exports.getAHP = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.debug = exports.log = exports.stringifyRGBA = exports.normaliseRGBA = exports.clamp = void 0;
-exports.getForgeWeaponAttackAbility = exports.getForgeWeaponMinMax = exports.getForgeWeaponType = exports.getItemType = exports.getInventorySelectOptions = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoord = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getAbilityIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetSmallestInArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getAbilityEmbed = exports.getForgeWeaponEmbed = exports.getLoadingEmbed = exports.getActionTranslate = exports.getClashCommentary = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = void 0;
+exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpConfirmationInteractionCollect = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.translateRGBAToStringRGBA = exports.translateActionToCommentary = exports.translateClashToCommentary = exports.translateDirectionToMagnitudeAxis = exports.translateDirectionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getAttackRangeFromAA = exports.getDistance = exports.findEqualCoordinate = exports.getLongArm = exports.getLifesteal = exports.getCrit = exports.getExecutionSpeed = exports.getAcc = exports.getDamage = exports.getProt = exports.getDodge = exports.getAHP = exports.clamp = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.normaliseRGBA = void 0;
+exports.getForgeWeaponAttackAbility = exports.getForgeWeaponMinMax = exports.getForgeWeaponType = exports.getItemType = exports.getInventorySelectOptions = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoord = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getAbilityIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetSmallestInArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getAbilityEmbed = exports.getForgeWeaponEmbed = exports.getLoadingEmbed = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
+var console_1 = require("console");
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
 var jsons_1 = require("../jsons");
 var Database_1 = require("./Database");
-// import { Dungeon } from "./Dungeon";
-function clamp(value, min, max) {
-    return Math.max(Math.min(value, max), min);
-}
-exports.clamp = clamp;
+// RGBA
 function normaliseRGBA(rgba) {
     // R
     rgba.r = clamp(Math.round(rgba.r), 0, 255);
@@ -100,22 +97,6 @@ function normaliseRGBA(rgba) {
     return rgba;
 }
 exports.normaliseRGBA = normaliseRGBA;
-function stringifyRGBA(rgba) {
-    return "rgba(" + rgba.r + "," + rgba.g + "," + rgba.b + "," + rgba.alpha + ")";
-}
-exports.stringifyRGBA = stringifyRGBA;
-function log() {
-    var any = [];
-    for (var _d = 0; _d < arguments.length; _d++) {
-        any[_d] = arguments[_d];
-    }
-    any.forEach(function (any) { return console.log(any); });
-}
-exports.log = log;
-function debug(tag, any) {
-    console.log(tag + ": ", any);
-}
-exports.debug = debug;
 // string manipulation
 function extractCommands(string) {
     var sections = string.split(' ');
@@ -173,8 +154,11 @@ function normalRandom(_mean, _standardDeviation) {
     return _mean + _standardDeviation * x_N0_1;
 }
 exports.normalRandom = normalRandom;
-// get battle stats
-// when attacked
+function clamp(value, min, max) {
+    return Math.max(Math.min(value, max), min);
+}
+exports.clamp = clamp;
+// get battle stats: when attacked
 function getAHP(_attacker, _options) {
     if (_options === void 0) { _options = 'WithBoth'; }
     var maxHP = _attacker.base.maxHP;
@@ -200,7 +184,7 @@ function getProt(_defender, options) {
     return (prot + protBuff - protDebuff) || 0;
 }
 exports.getProt = getProt;
-// when attacking
+// get battle stats: when attacking
 function getDamage(_attacker, _ability, _options) {
     if (_options === void 0) { _options = 'WithBoth'; }
     var _fw = _attacker.equipped;
@@ -251,27 +235,37 @@ function getLifesteal(_attacker, _ability, _options) {
     return (ls + _ability.bonus.lifesteal + lsBuff - lsDebuff) || 0;
 }
 exports.getLifesteal = getLifesteal;
-function findLongArm(_stat) {
-    var abilities = _stat.base.abilities.map(function (_a) {
-        if (_a.range) {
+function getLongArm(_stat) {
+    var abilities = _stat.base.abilities;
+    var equippedWeaponRange = _stat.equipped.range;
+    return abilities.reduce(function (_longArm, _a) {
+        var _d, _f, _g, _j, _k;
+        // return longArm when...
+        //  _a is null type but does not have a range               (_a invalid)
+        //  longArm is not null and _a range is inferior to longArm (longArm superior)
+        if ((_a.type === 'null' && !_a.range) ||
+            _longArm !== null &&
+                ((((_d = _longArm.range) === null || _d === void 0 ? void 0 : _d.max) || equippedWeaponRange.max) >= (((_f = _a.range) === null || _f === void 0 ? void 0 : _f.max) || equippedWeaponRange.max))) {
+            return _longArm;
+        }
+        // return _a when...
+        // longArm is null and _a has valid range                   (_a valid)
+        //  _a is null type and innate range is superior to longArm (_a superior (null innate))
+        //  _a is specified type and range is superior to longArm   (_a superior (specified weapon/innate))
+        else if ((_longArm === null && (_a.type !== 'null' || _a.range)) ||
+            _longArm &&
+                (_a.type === 'null' && _a.range &&
+                    _a.range.max > (((_g = _longArm.range) === null || _g === void 0 ? void 0 : _g.max) || equippedWeaponRange.max) ||
+                    _a.type !== 'null' &&
+                        (((_j = _a.range) === null || _j === void 0 ? void 0 : _j.max) || equippedWeaponRange.max) > (((_k = _longArm.range) === null || _k === void 0 ? void 0 : _k.max) || equippedWeaponRange.max))) {
             return _a;
         }
         else {
-            return getNewObject(_a, {
-                range: _stat.equipped.range
-            });
-        }
-    });
-    return abilities.reduce(function (lR, thisWeapon) {
-        if (thisWeapon.range && (lR === null || thisWeapon.range.max > lR.range.max)) {
-            return thisWeapon;
-        }
-        else {
-            return lR;
+            return null;
         }
     }, null);
 }
-exports.findLongArm = findLongArm;
+exports.getLongArm = getLongArm;
 function findEqualCoordinate(_c, __c) {
     return _c.x === __c.x && _c.y === __c.y;
 }
@@ -282,11 +276,11 @@ function getDistance(stat1, stat2) {
     return Math.sqrt((xDif) * (xDif) + (yDif) * (yDif));
 }
 exports.getDistance = getDistance;
-function getAttackRange(_aA) {
+function getAttackRangeFromAA(_aA) {
     var _d;
     return ((_d = _aA.weapon) === null || _d === void 0 ? void 0 : _d.range) || _aA.ability.range || null;
 }
-exports.getAttackRange = getAttackRange;
+exports.getAttackRangeFromAA = getAttackRangeFromAA;
 function checkWithinDistance(_aA, distance) {
     var _d;
     var hasWeapon = _aA.weapon !== null;
@@ -489,7 +483,7 @@ function getMoveAction(_stat, args2, _round, args4) {
     if (args2_isAction) {
         var action = args2;
         var moveMagnitude = args4;
-        var translated = directionToMagnitudeAxis(action);
+        var translated = translateDirectionToMagnitudeAxis(action);
         moveAction.axis = translated.axis;
         moveAction.magnitude = translated.magnitude * moveMagnitude;
     }
@@ -550,7 +544,8 @@ function replaceCharacterAtIndex(_string, _replace, _index) {
     return _string.substring(0, _index) + _replace + _string.substring(_index + 1, _string.length);
 }
 exports.replaceCharacterAtIndex = replaceCharacterAtIndex;
-function directionToEmoji(_direction) {
+// translation functions
+function translateDirectionToEmoji(_direction) {
     var direction = Number.isInteger(_direction) ?
         numericDirectionToDirection(_direction) :
         _direction;
@@ -565,8 +560,8 @@ function directionToEmoji(_direction) {
             return "➡️";
     }
 }
-exports.directionToEmoji = directionToEmoji;
-function directionToMagnitudeAxis(_direction) {
+exports.translateDirectionToEmoji = translateDirectionToEmoji;
+function translateDirectionToMagnitudeAxis(_direction) {
     var magnitude, axis;
     if (typeof _direction === 'number') {
         _direction = numericDirectionToDirection(_direction);
@@ -598,7 +593,72 @@ function directionToMagnitudeAxis(_direction) {
         axis: axis,
     };
 }
-exports.directionToMagnitudeAxis = directionToMagnitudeAxis;
+exports.translateDirectionToMagnitudeAxis = translateDirectionToMagnitudeAxis;
+function translateClashToCommentary(_aA) {
+    var returnString = '';
+    if (_aA.clashResult) {
+        var attacker = _aA.attacker, target = _aA.target, ability = _aA.ability;
+        var _d = _aA.clashResult, fate = _d.fate, damage = _d.damage, u_damage = _d.u_damage;
+        // weapon effect string
+        returnString += _aA.abilityEffectString || '';
+        // main chunk
+        switch (ability.targetting.target) {
+            case typedef_1.AbilityTargetting.enemy:
+                var accDodge = (getAcc(attacker, ability) - getDodge(target));
+                var hitRate = accDodge < 100 ?
+                    roundToDecimalPlace(accDodge) :
+                    100;
+                var critRate = roundToDecimalPlace(accDodge * 0.1 + getCrit(attacker, ability));
+                returnString +=
+                    "__**" + ability.abilityName + "**__ " + hitRate + "% [" + critRate + "%]\n                **" + fate + "!** -**" + roundToDecimalPlace(damage) + "** (" + roundToDecimalPlace(u_damage) + ") [" + roundToDecimalPlace(target.HP) + " => " + roundToDecimalPlace(target.HP - damage) + "]";
+                if (target.HP > 0 && target.HP - damage <= 0) {
+                    returnString += "\n__**KILLING BLOW!**__";
+                }
+                break;
+            case typedef_1.AbilityTargetting.ally:
+                if (attacker.index === target.index) {
+                    returnString +=
+                        "**" + attacker.base.class + "** (" + attacker.index + ") Activates __*" + ability.abilityName + "*__";
+                }
+                else {
+                    returnString +=
+                        "**" + attacker.base.class + "** (" + attacker.index + ") \uD83D\uDEE1\uFE0F **" + target.base.class + "** (" + target.index + ")\n                    __*" + ability.abilityName + "*__";
+                }
+                break;
+        }
+        // healing
+        // ...
+    }
+    return returnString;
+}
+exports.translateClashToCommentary = translateClashToCommentary;
+function translateActionToCommentary(_action) {
+    var _d = extractActions(_action), aAction = _d.aAction, mAction = _d.mAction;
+    var string = '';
+    var attacker = aAction.attacker, target = aAction.target, ability = aAction.ability;
+    switch (_action.type) {
+        case 'Attack':
+            string +=
+                typedef_1.EMOJI_SWORD + " " + attacker.base.class + " (" + attacker.index + ") uses __" + ability.abilityName + "__ on " + target.base.class + " (" + target.index + ").";
+            string += "\n" + translateClashToCommentary(aAction);
+            break;
+        case 'Move':
+            string +=
+                typedef_1.EMOJI_SPRINT + " " + attacker.base.class + " (" + attacker.index + ") moves " + getDirection(mAction.axis, mAction.magnitude) + ".";
+            break;
+        case 'Loot':
+            string +=
+                typedef_1.EMOJI_MONEYBAG + " " + attacker.base.class + " (" + attacker.index + ") loots.";
+            break;
+    }
+    string += " [\uD83C\uDF2C\uFE0F" + _action.priority + "]";
+    return string;
+}
+exports.translateActionToCommentary = translateActionToCommentary;
+function translateRGBAToStringRGBA(rgba) {
+    return "rgba(" + rgba.r + "," + rgba.g + "," + rgba.b + "," + rgba.alpha + ")";
+}
+exports.translateRGBAToStringRGBA = translateRGBAToStringRGBA;
 function getAttackAction(_attacker, _victim, _weapon, _ability, _coord) {
     var actionType = "Attack";
     var attackAction = {
@@ -794,67 +854,7 @@ function getWithSign(number) {
     return getConditionalTexts("+", number > 0) + getConditionalTexts("-", number < 0) + ("" + Math.abs(number));
 }
 exports.getWithSign = getWithSign;
-function getClashCommentary(_aA) {
-    var returnString = '';
-    if (_aA.clashResult) {
-        var attacker = _aA.attacker, target = _aA.target, ability = _aA.ability;
-        var _d = _aA.clashResult, fate = _d.fate, damage = _d.damage, u_damage = _d.u_damage;
-        // weapon effect string
-        returnString += _aA.abilityEffectString || '';
-        // main chunk
-        switch (ability.targetting.target) {
-            case typedef_1.AbilityTargetting.enemy:
-                var accDodge = (getAcc(attacker, ability) - getDodge(target));
-                var hitRate = accDodge < 100 ?
-                    roundToDecimalPlace(accDodge) :
-                    100;
-                var critRate = roundToDecimalPlace(accDodge * 0.1 + getCrit(attacker, ability));
-                returnString +=
-                    "__**" + ability.abilityName + "**__ " + hitRate + "% [" + critRate + "%]\n                **" + fate + "!** -**" + roundToDecimalPlace(damage) + "** (" + roundToDecimalPlace(u_damage) + ") [" + roundToDecimalPlace(target.HP) + " => " + roundToDecimalPlace(target.HP - damage) + "]";
-                if (target.HP > 0 && target.HP - damage <= 0) {
-                    returnString += "\n__**KILLING BLOW!**__";
-                }
-                break;
-            case typedef_1.AbilityTargetting.ally:
-                if (attacker.index === target.index) {
-                    returnString +=
-                        "**" + attacker.base.class + "** (" + attacker.index + ") Activates __*" + ability.abilityName + "*__";
-                }
-                else {
-                    returnString +=
-                        "**" + attacker.base.class + "** (" + attacker.index + ") \uD83D\uDEE1\uFE0F **" + target.base.class + "** (" + target.index + ")\n                    __*" + ability.abilityName + "*__";
-                }
-                break;
-        }
-        // healing
-        // ...
-    }
-    return returnString;
-}
-exports.getClashCommentary = getClashCommentary;
-function getActionTranslate(_action) {
-    var _d = extractActions(_action), aAction = _d.aAction, mAction = _d.mAction;
-    var string = '';
-    var attacker = aAction.attacker, target = aAction.target, ability = aAction.ability;
-    switch (_action.type) {
-        case 'Attack':
-            string +=
-                typedef_1.EMOJI_SWORD + " " + attacker.base.class + " (" + attacker.index + ") uses __" + ability.abilityName + "__ on " + target.base.class + " (" + target.index + ").";
-            string += "\n" + getClashCommentary(aAction);
-            break;
-        case 'Move':
-            string +=
-                typedef_1.EMOJI_SPRINT + " " + attacker.base.class + " (" + attacker.index + ") moves " + getDirection(mAction.axis, mAction.magnitude) + ".";
-            break;
-        case 'Loot':
-            string +=
-                typedef_1.EMOJI_MONEYBAG + " " + attacker.base.class + " (" + attacker.index + ") loots.";
-            break;
-    }
-    string += " [\uD83C\uDF2C\uFE0F" + _action.priority + "]";
-    return string;
-}
-exports.getActionTranslate = getActionTranslate;
+// getting embeds
 function getLoadingEmbed() {
     var url = "https://cdn.discordapp.com/attachments/571180142500511745/829109314668724234/ajax-loader.gif";
     var loadingEmbed = new discord_js_1.MessageEmbed()
@@ -864,6 +864,11 @@ function getLoadingEmbed() {
 }
 exports.getLoadingEmbed = getLoadingEmbed;
 function getForgeWeaponEmbed(_fw) {
+    var embed = new discord_js_1.MessageEmbed({
+        title: _fw.weaponType,
+        description: "\n**__Range__**:\n\t**__Minimum__**: " + _fw.range.min + "\n\t**__Max__**: " + _fw.range.max + "\n\t**__Radius__**: " + _fw.range.radius + "\n**__Damage Range__**: [" + _fw.damageRange.min + "] ~ [" + _fw.damageRange.max + "]\n**__Accuracy__**: " + roundToDecimalPlace(_fw.accuracy) + "\n**__Lifesteal__**: " + roundToDecimalPlace(_fw.lifesteal) * 100 + "%\n**__Bonus Critical Chance__**: +" + roundToDecimalPlace(_fw.criticalHit) + "\n**__Readiness Cost__**: " + roundToDecimalPlace(_fw.readinessCost) + "\n**__Stamina Cost__**: " + roundToDecimalPlace(_fw.staminaCost) + "\n"
+    });
+    return embed;
 }
 exports.getForgeWeaponEmbed = getForgeWeaponEmbed;
 function getAbilityEmbed(_ability) {
@@ -1024,12 +1029,12 @@ function getWeaponUses(ability, owner) {
 }
 exports.getWeaponUses = getWeaponUses;
 function printCSMap(map) {
-    log("===================================");
+    (0, console_1.log)("===================================");
     map.forEach(function (v, k) {
         var _d = { x: k.split(',')[0], y: k.split(',')[1] }, x = _d.x, y = _d.y;
-        log(x + ", " + y + "     |      " + v.base.class);
+        (0, console_1.log)(x + ", " + y + "     |      " + v.base.class);
     });
-    log("===================================");
+    (0, console_1.log)("===================================");
 }
 exports.printCSMap = printCSMap;
 function getMapFromCS(coordStat) {
@@ -1292,9 +1297,9 @@ function dealWithAction(action, attCB, movCB) {
 exports.dealWithAction = dealWithAction;
 function printAction(_action) {
     dealWithAction(_action, function (aA) {
-        log(aA.type + " || readiness=" + aA.readinessCost + " | affected=" + aA.target.index + " | from=" + aA.attacker.index + " | ability=" + aA.ability.abilityName);
+        (0, console_1.log)(aA.type + " || readiness=" + aA.readinessCost + " | affected=" + aA.target.index + " | from=" + aA.attacker.index + " | ability=" + aA.ability.abilityName);
     }, function (mA) {
-        log(mA.type + " || readiness=" + mA.readinessCost + " | affected=" + mA.target.index + " | from=" + mA.attacker.index + " | magnitude=" + mA.magnitude + " | axis=" + mA.axis);
+        (0, console_1.log)(mA.type + " || readiness=" + mA.readinessCost + " | affected=" + mA.target.index + " | from=" + mA.attacker.index + " | magnitude=" + mA.magnitude + " | axis=" + mA.axis);
     });
 }
 exports.printAction = printAction;
@@ -1470,7 +1475,7 @@ function sendInvitation(_user_id, _from, channel) {
                                     }, 15 * 1000);
                                 })
                                     .catch(function (_e) {
-                                    log(_e);
+                                    (0, console_1.log)(_e);
                                     resolve(null);
                                 });
                             }

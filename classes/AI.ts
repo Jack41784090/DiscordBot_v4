@@ -1,7 +1,9 @@
 import { universalWeaponsData } from "../jsons";
 import { Action, AIFunction, AllTeams, BotType, Coordinate, MoveAction, NumericDirection, Stat, Team, VirtualStat, Ability, AbilityAOE, AbilityTargetting, ForgeWeaponObject, AttackAction } from "../typedef";
 import { Battle } from "./Battle";
-import { getNewObject, log, checkWithinDistance, getDistance, getAttackAction, breadthFirstSearch as breadthSearch, getCoordString, numericDirectionToDirection, directionToMagnitudeAxis, average, arrayGetRandom, debug, getForgeWeaponAttackAbility } from "./Utility";
+import { getNewObject, checkWithinDistance, getDistance, getAttackAction, breadthFirstSearch, getCoordString, numericDirectionToDirection, translateDirectionToMagnitudeAxis, average, arrayGetRandom, getForgeWeaponAttackAbility } from "./Utility";
+
+import { debug, log } from "console"
 
 const AIFunctions = new Map<BotType, AIFunction>([
     [
@@ -68,7 +70,7 @@ const AIFunctions = new Map<BotType, AIFunction>([
                     const coordMap: Map<string, Coordinate> = new Map<string, Coordinate>();
 
                     // breadth search out to find an empty space that can hit the most allies
-                    breadthSearch(
+                    breadthFirstSearch(
                         { x: virtualStat.x, y: virtualStat.y } as Coordinate,
                         _c => {
                             const result = [];
@@ -76,7 +78,7 @@ const AIFunctions = new Map<BotType, AIFunction>([
                                 // new coordinate
                                 const newCoord = { x: _c.x, y: _c.y };
                                 const numDir = i as NumericDirection;
-                                const magAxis = directionToMagnitudeAxis(numDir);
+                                const magAxis = translateDirectionToMagnitudeAxis(numDir);
                                 newCoord[magAxis.axis] += magAxis.magnitude;
 
                                 // save coord obj ref for exploredRoom.include in breadthSearch to function
@@ -122,7 +124,7 @@ const AIFunctions = new Map<BotType, AIFunction>([
             // run away from danger if possible
             if (!virtualStat.moved || (virtualStat.sprint > 0)) {
                 const coordMap: Map<string, Coordinate> = new Map<string, Coordinate>();
-                const reachableEnemiesCoordinates: Coordinate[] = breadthSearch(
+                const reachableEnemiesCoordinates: Coordinate[] = breadthFirstSearch(
                     { x: virtualStat.x, y: virtualStat.y } as Coordinate,
                     _c => {
                         const result = [];
@@ -130,7 +132,7 @@ const AIFunctions = new Map<BotType, AIFunction>([
                             // new coordinate
                             const newCoord = { x: _c.x, y: _c.y };
                             const numDir = i as NumericDirection;
-                            const magAxis = directionToMagnitudeAxis(numDir);
+                            const magAxis = translateDirectionToMagnitudeAxis(numDir);
                             newCoord[magAxis.axis] += magAxis.magnitude;
 
                             // save coord obj ref for exploredRoom.include in breadthSearch to function

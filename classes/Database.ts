@@ -1,11 +1,13 @@
 import { BaseStat, Class, defaultAvatarURL, EMOJI_CROSS, EMOJI_WHITEB, ForgeWeaponObject, GetIconOptions, ItemObject, OwnerID, Settings, Stat, UserData, } from "../typedef"
 import { MessageSelectOptionData, User } from "discord.js";
 
+import { log, debug } from "console";
+
 import * as admin from 'firebase-admin'
 import * as serviceAccount from '../serviceAccount.json'
 import { Canvas, Image } from "canvas";
 import { ServiceAccount } from "firebase-admin";
-import { drawCircle, getCSFromMap, getNewObject, log, uniformRandom, startDrawing, stringifyRGBA, clamp, getCanvasCoordsFromBattleCoord } from "./Utility";
+import { drawCircle, getCSFromMap, getNewObject, uniformRandom, startDrawing, translateRGBAToStringRGBA, clamp, getCanvasCoordsFromBattleCoord } from "./Utility";
 import { Battle } from "./Battle";
 import { BotClient } from "..";
 
@@ -236,7 +238,7 @@ export function getIconCanvas(_stat: Stat, _drawOptions: GetIconOptions = {
                 if (_drawOptions.frame) {
                     ctx.globalCompositeOperation = "source-over";
                     ctx.lineWidth = 10;
-                    ctx.strokeStyle = stringifyRGBA({
+                    ctx.strokeStyle = translateRGBAToStringRGBA({
                         r: 0,
                         g: 0,
                         b: 0,
@@ -256,7 +258,7 @@ export function getIconCanvas(_stat: Stat, _drawOptions: GetIconOptions = {
                 if (_drawOptions.healthArc) {
                     // attach health arc
                     const healthPercentage = clamp(_stat.HP / _stat.base.maxHP, 0, 1);
-                    ctx.strokeStyle = stringifyRGBA({
+                    ctx.strokeStyle = translateRGBAToStringRGBA({
                         r: 255 * Number(_stat.team === "enemy"),
                         g: 255 * Number(_stat.team === "player"),
                         b: 0,
@@ -342,6 +344,7 @@ export async function saveBattle(battle: Battle) {
 }
 
 export async function getEquippedForgeWeapon(_id: OwnerID): Promise<Array<ForgeWeaponObject>> {
-    const userData: UserData = InteractionEventManager.getInstance().userData(_id) || await getUserData(_id);
+    const userData: UserData =
+        InteractionEventManager.getInstance().userData(_id) || await getUserData(_id);
     return userData.equippedWeapon;
 }

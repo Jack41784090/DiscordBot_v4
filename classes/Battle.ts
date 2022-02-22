@@ -1,7 +1,9 @@
 import { ButtonInteraction, CategoryChannel, Client, EmbedFieldData, Guild, Interaction, InteractionCollector, Message, MessageButtonOptions, MessageButtonStyle, MessageEmbed, MessageOptions, MessageSelectMenu, MessageSelectOptionData, OverwriteData, SelectMenuInteraction, TextChannel, User } from "discord.js";
-import { addHPBar, counterAxis, getAHP, getExecutionSpeed, getCompass, log, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getAbilityIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, handleTokens, getNewNode, getDistance, getMoveAction, debug, getAttackAction, normaliseRGBA, clamp, stringifyRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, directionToMagnitudeAxis, formalise, getGradeTag, getLootAction, getForgeWeaponAttackAbility, getAttackRange, getLoadingEmbed, getActionTranslate, extractActions } from "./Utility";
+import { addHPBar, counterAxis, getAHP, getExecutionSpeed, getCompass, uniformRandom, returnGridCanvas, roundToDecimalPlace, checkWithinDistance, average, getAcc, getDodge, getCrit, getDamage, getProt, getLifesteal, arrayGetLastElement, dealWithAccolade, getWeaponUses, getCoordString, getMapFromCS, getBaseClassStat, getStat, getAbilityIndex, getNewObject, startDrawing, dealWithAction, getDeathEmbed, getSelectMenuActionRow, setUpInteractionCollect, arrayGetLargestInArray, getCoordsWithinRadius, getPyTheorem, handleTokens, getNewNode, getDistance, getMoveAction, getAttackAction, normaliseRGBA, clamp, translateRGBAToStringRGBA, shortenString, drawText, drawCircle, getBuffStatusEffect, getCanvasCoordsFromBattleCoord, getButtonsActionRow, arrayRemoveItemArray, findEqualCoordinate, translateDirectionToMagnitudeAxis, formalise, getGradeTag, getLootAction, getForgeWeaponAttackAbility, getAttackRangeFromAA, getLoadingEmbed, translateActionToCommentary, extractActions } from "./Utility";
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { getFileImage, getIconCanvas, getUserWelfare } from "./Database";
+
+import { log, debug } from "console";
 
 import fs from 'fs';
 import { Action, AINode, AttackAction, BaseStat, BotType, ClashResult, ClashResultFate, Class, Coordinate, Direction, EnemyClass, MapData, MoveAction, MovingError, OwnerID, RGBA, Stat, TargetingError, Team, Vector2, Ability, AbilityTargetting, StatusEffectType, Buff, EMOJI_TICK, UserData, StartBattleOptions, VirtualStat, PossibleAttackInfo, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, PathFindMethod as PathfindMethod, Loot, MaterialInfo, EMOJI_MONEYBAG, LootAction, ForgeWeaponObject, ForgeWeaponType, StringCoordinate, BattleToken } from "../typedef";
@@ -371,7 +373,7 @@ export class Battle {
                             return u;
                         })
                         .catch(err => {
-                            console.log(err);
+                            log(err);
                             return null;
                         });
                 
@@ -418,7 +420,7 @@ export class Battle {
                 }
 
                 // mention user
-                createdChannel.send(`<@${user?.id}>`).then(mes => mes.delete().catch(console.log));
+                createdChannel.send(`<@${user?.id}>`).then(mes => mes.delete().catch(log));
 
                 // send time, player embed, and input manual
                 createdChannel.send({
@@ -507,7 +509,7 @@ export class Battle {
         });
 
         log("Reporting phase finished.")
-        // allPromise.forEach(console.log);
+        // allPromise.forEach(log);
         //#endregion
 
         // check death: after player round
@@ -593,6 +595,7 @@ export class Battle {
         );
 
         return abilities.map(_a => {
+            debug("ability", _a);
             const shortestRange: number = Number.isInteger(_a.range?.min)?
                 (_a.range!.min):
                 equippedWeapon.range.min;
@@ -601,6 +604,7 @@ export class Battle {
                 equippedWeapon.range.max;
             const reachableEntities: Array<Stat> =
                 this.findEntities_radius(_stat, longestRange, shortestRange === 0, ['block'], _domain);
+            debug("reachable", reachableEntities.map(_ => _.index));
             
             const targettedEntities: Array<Stat> =
                 reachableEntities.filter(_s => {
@@ -608,6 +612,7 @@ export class Battle {
                         _s.team === _stat.team:
                         ((_s.team !== _stat.team) || _s.pvp);
                 });
+            debug("targetted", targettedEntities.map(_ => _.index))
 
             return targettedEntities.map(_e => ({
                 attacker: _stat,
@@ -656,7 +661,7 @@ export class Battle {
                 return _ === 'all' ?
                     e.setDescription(
                         reportedActions
-                            .map(_a => getActionTranslate(_a))
+                            .map(_a => translateActionToCommentary(_a))
                             .join("\n") ||
                         "( *No Actions* )") :
                     e.setDescription(
@@ -665,7 +670,7 @@ export class Battle {
                                 _a.target.index === _ ||
                                 _a.attacker.index === _
                             )
-                            .map(_a => getActionTranslate(_a))
+                            .map(_a => translateActionToCommentary(_a))
                             .join("\n") ||
                         "( *No Actions* )");
 
@@ -743,7 +748,7 @@ export class Battle {
     drawSquareOnBattleCoords(ctx: NodeCanvasRenderingContext2D, coord: Coordinate, rgba?: RGBA) {
         const canvasCoord = getCanvasCoordsFromBattleCoord(coord, this.pixelsPerTile, this.height, false);
         if (rgba) {
-            ctx.fillStyle = stringifyRGBA(rgba);
+            ctx.fillStyle = translateRGBAToStringRGBA(rgba);
         }
         ctx.fillRect(canvasCoord.x, canvasCoord.y, this.pixelsPerTile, this.pixelsPerTile);
     }
@@ -831,7 +836,6 @@ export class Battle {
                         EMOJI_SHIELD :
                         EMOJI_SWORD;
 
-                    log(attacker.base.abilities, ability, getAbilityIndex(ability, attacker));
                     return {
                         emoji: icon,
                         label: `${ability.abilityName}`,
@@ -945,7 +949,7 @@ export class Battle {
                         }
                     }
                     catch (_err) {
-                        console.log(_err);
+                        log(_err);
                     }
                 }, 1);
             }
@@ -1353,7 +1357,7 @@ export class Battle {
     }
 
     // actions
-    executeAutoWeapons(_action: Action): string {
+    executeAutoWeapons(_action: Action): void {
         // const round = _action.round;
 
         const executeAuto = (_s: Stat) => {
@@ -1387,14 +1391,10 @@ export class Battle {
             });
         }
 
-        let totalString: string[] = [];
-
         executeAuto(_action.attacker);
         if (_action.attacker.index !== _action.target.index) {
             executeAuto(_action.target);
         }
-
-        return totalString.join("\n");
     }
     executeActions() {
         log("Executing actions...")
@@ -1563,7 +1563,7 @@ export class Battle {
         stat[axis] += newMagnitude;
         this.CSMap = this.CSMap.set(getCoordString(stat), stat);
         
-        // console.log(`${_mA.from.base.class} (${_mA.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
+        // log(`${_mA.from.base.class} (${_mA.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
 
         const affected = _mA.target;
         _mA.executed = true;
@@ -1688,7 +1688,7 @@ export class Battle {
             style.r = 255;
             style.g = 0;
             style.b = 0;
-            ctx.strokeStyle = stringifyRGBA(normaliseRGBA(style));
+            ctx.strokeStyle = translateRGBAToStringRGBA(normaliseRGBA(style));
 
             // draw tracing path
             const victimWithinDistance = checkWithinDistance(_aA, getDistance(_aA.attacker, _aA.target));
@@ -1751,7 +1751,7 @@ export class Battle {
             style.r = 0;
             style.g = 0;
             style.b = 0;
-            ctx.strokeStyle = stringifyRGBA(normaliseRGBA(style));
+            ctx.strokeStyle = translateRGBAToStringRGBA(normaliseRGBA(style));
 
             log(`Drawing move action: (${_fromBattleCoord.x},${_fromBattleCoord.y})=>(${_toBattleCoord.x},${_toBattleCoord.y}) (width:${_width})(offset x:${_offsetCanvas.x} y:${_offsetCanvas.y})`)
             ctx.lineWidth = _width;
@@ -1812,8 +1812,8 @@ export class Battle {
         const virtualCoordsMap = new Map<number, Coordinate>();
         const graph = new hGraph<number, Action>(true);
 
-        ctx.fillStyle = stringifyRGBA(style);
-        ctx.strokeStyle = stringifyRGBA(style);
+        ctx.fillStyle = translateRGBAToStringRGBA(style);
+        ctx.strokeStyle = translateRGBAToStringRGBA(style);
         
         for (let i = 0; i < actions.length; i++) {
             const action = actions[i];
@@ -1828,7 +1828,7 @@ export class Battle {
 
             await dealWithAction(action,
                 async (aA: AttackAction) => {
-                    const attackRange = getAttackRange(aA);
+                    const attackRange = getAttackRangeFromAA(aA);
                     if (attackRange) {
                         const { ability } = aA;
                         switch (ability.targetting.AOE) {
@@ -1973,7 +1973,7 @@ export class Battle {
 
             // attach health arc
             const healthPercentage = clamp(stat.HP / stat.base.maxHP, 0, 1);
-            ctx.strokeStyle = stringifyRGBA({
+            ctx.strokeStyle = translateRGBAToStringRGBA({
                 r: 255 * Number(stat.team === "enemy"),
                 g: 255 * Number(stat.team === "player"),
                 b: 0,
@@ -2512,7 +2512,7 @@ export class Battle {
             // look at surrounding nodes
             for (let i = 0; i < 4; i++) {
                 const numDir = i as NumericDirection;
-                const magAxis = directionToMagnitudeAxis(numDir);
+                const magAxis = translateDirectionToMagnitudeAxis(numDir);
 
                 const nodeDirectedCoord = { x: AINode.x, y: AINode.y }; nodeDirectedCoord[magAxis.axis] += magAxis.magnitude;
                 const nodeDirectedCoordString = getCoordString(nodeDirectedCoord);

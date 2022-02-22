@@ -43,6 +43,7 @@ var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
 var Room_1 = require("./Room");
 var Utility_1 = require("./Utility");
+var console_1 = require("console");
 var Database_1 = require("./Database");
 var jsons_1 = require("../jsons");
 var Dungeon = /** @class */ (function () {
@@ -102,7 +103,7 @@ var Dungeon = /** @class */ (function () {
             var branchOutCoord = null;
             var previousRoom = startingRoom;
             var direction = (0, Utility_1.numericDirectionToDirection)(_direction);
-            var magAxis = (0, Utility_1.directionToMagnitudeAxis)(direction);
+            var magAxis = (0, Utility_1.translateDirectionToMagnitudeAxis)(direction);
             var coord = {
                 x: _c.x,
                 y: _c.y,
@@ -196,7 +197,7 @@ var Dungeon = /** @class */ (function () {
         }
         // branch out paths
         var battleRoomsCount = (0, Utility_1.uniformRandom)(_dungeonData.minBattle, _dungeonData.maxBattle);
-        (0, Utility_1.debug)("battleRoomsCount", battleRoomsCount);
+        (0, console_1.debug)("battleRoomsCount", battleRoomsCount);
         var battleRoomsSpawned = 0;
         var roomsPerBattle = roomCount / battleRoomsCount;
         var battleEncounterChanceAccumulator = 0;
@@ -216,7 +217,7 @@ var Dungeon = /** @class */ (function () {
                     takeRoot((0, Utility_1.arrayGetRandom)(availableRooms).coordinate, length_1);
                 }
                 else {
-                    (0, Utility_1.log)("Failure to include all lengths @ " + i + ".");
+                    (0, console_1.log)("Failure to include all lengths @ " + i + ".");
                 }
             }
             else if (takeRootResult) {
@@ -504,7 +505,7 @@ var Dungeon = /** @class */ (function () {
                                             case "down":
                                             case "right":
                                             case "left":
-                                                magAxis = (0, Utility_1.directionToMagnitudeAxis)(direction);
+                                                magAxis = (0, Utility_1.translateDirectionToMagnitudeAxis)(direction);
                                                 valid = this.validateMovement(direction);
                                                 if (valid) {
                                                     this.leaderCoordinate[magAxis.axis] += magAxis.magnitude;

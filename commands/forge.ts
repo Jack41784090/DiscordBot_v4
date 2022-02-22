@@ -2,9 +2,11 @@ import { User, TextChannel, Guild, Message, Client, MessageSelectMenuOptions, Me
 import { InteractionEvent } from "../classes/InteractionEvent";
 import { InteractionEventManager } from "../classes/InteractionEventManager";
 import { ForgeWeaponItem, Item } from "../classes/Item";
-import { formalise, getAbilityEmbed, getForgeWeaponMinMax, getInventorySelectOptions, getLoadingEmbed, getNewObject, getSelectMenuActionRow, log, setUpConfirmationInteractionCollect, setUpInteractionCollect, Test } from "../classes/Utility";
+import { arrayRemoveItemArray, formalise, getAbilityEmbed, getForgeWeaponEmbed, getForgeWeaponMinMax, getInventorySelectOptions, getLoadingEmbed, getNewObject, getSelectMenuActionRow, setUpConfirmationInteractionCollect, setUpInteractionCollect, Test } from "../classes/Utility";
 import { forgeWeaponData, itemData } from "../jsons";
 import { UserData, CommandModule, EMOJI_CROSS, MaterialInfo, EMOJI_WHITEB, ForgeWeaponPart, ForgeWeaponType, MEW } from "../typedef";
+
+import { debug, log } from "console";
 
 module.exports = {
     commands: ['forge'],
@@ -20,10 +22,15 @@ module.exports = {
         // interaction event
         const iem = InteractionEventManager.getInstance();
         const event = new InteractionEvent(author.id, forgeMes, 'forge');
-        const updatedUserData = (await iem.registerInteraction(author.id, event, authorUserData))!;
+        const updatedUserData: UserData = (await iem.registerInteraction(author.id, event, authorUserData))!;
 
         // 
         let selectedWeaponType: ForgeWeaponType | null;
+        const parts: Array<ForgeWeaponPart> = [
+            'blade',
+            'guard',
+            'shaft',
+        ]
         const selectedItems: Array<Item> = [];
         const selectOptionsCache: Map<ForgeWeaponPart, Array<Item>> = new Map <ForgeWeaponPart, Array<Item>>();
         const getForgeMesOptions = (_t: ForgeWeaponPart): MessageOptions => {
@@ -39,12 +46,12 @@ module.exports = {
                 embeds: [
                     new MessageEmbed()
                         .setTitle(`Select material for the ${formalise(_t)}`)
-                        .setFields(selectedItems.map(_i => ({
-                            name: _i.getDisplayName(),
+                        .setFields(selectedItems.map((_item, _i) => ({
+                            name: `${formalise(parts[_i])}: "${_item.getDisplayName()}"`,
                             value: 
-                                _i.getAllMaterial()
+                                _item.getAllMaterial()
                                     .filter(_mi => _mi.occupation >= 0.1)
-                                    .map(_mi => _i.getMaterialInfoString(_mi))
+                                    .map(_mi => _item.getMaterialInfoString(_mi))
                                     .join('\n'),
                         })))
                 ],
@@ -145,27 +152,43 @@ module.exports = {
         selectedItems.push(r3);
 
         // confirm forge weapon
-        const weaponEmbed = getAbilityEmbed
+        const forged: ForgeWeaponItem = Item.Forge(r1, r2, r3, selectedWeaponType!);
+        const weaponEmbed: MessageEmbed = getForgeWeaponEmbed(forged);
         setUpConfirmationInteractionCollect(forgeMes, new MessageEmbed({
+            description: weaponEmbed.description!,
             title: `Forge ${formalise(selectedWeaponType)}?`,
-            fields: (selectedItems.map(_i => ({
+            fields: (selectedItems.map((_item, _i) => ({
                 name:
-                    _i.getDisplayName(),
+                    `${formalise(parts[_i])}: "${_item.getDisplayName()}"`,
                 value:
-                    _i.getAllMaterial()
+                    _item.getAllMaterial()
                         .filter(_mi => _mi.occupation >= 0.1)
-                        .map(_mi => _i.getMaterialInfoString(_mi))
+                        .map(_mi => _item.getMaterialInfoString(_mi))
                         .join('\n'),
             })))
         }),
         // yes, forge!
-        () => {
-            const forged: ForgeWeaponItem = Item.Forge(r1, r2, r3, selectedWeaponType!);
-            log(forged);
+        async _itr => {
+            await _itr.update({});
+
+            // remove items from inventory
+            selectedItems.forEach(_item => {
+                arrayRemoveItemArray(updatedUserData.inventory, _item);
+            });
+
+            // add weapon as an item
+            updatedUserData.inventory.push(forged);
+
+            iem.stopInteraction(author.id, 'forge');
+
+            message.reply({
+                embeds: [weaponEmbed]
+            })
         },
         // no, don't forge!
-        () => {
-
+        async _itr => {
+            await _itr.update({});
+            iem.stopInteraction(author.id, 'forge');
         });
     }
 } as CommandModule;

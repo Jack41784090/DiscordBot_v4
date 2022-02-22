@@ -4,9 +4,11 @@ import * as fs from "fs";
 import * as path from "path";
 import { Battle } from "./classes/Battle.js";
 import { getDefaultUserData, getUserData } from "./classes/Database.js";
-import { extractCommands, getNewObject, log, Test } from "./classes/Utility.js";
+import { extractCommands, getNewObject, Test } from "./classes/Utility.js";
 import { areasData } from "./jsons.js";
 import { CommandModule, COMMAND_CALL, MapData } from "./typedef.js";
+
+import { debug, log } from "console"
 
 const commandReferral: { [key: string]: CommandModule } = {};
 
@@ -54,7 +56,7 @@ BotClient.on('ready', async () => {
     BotClient.setMaxListeners(15);
     console.log("Ready.");
     importCommands();
-    quickEmbark();
+    // quickEmbark();
     // Test();
 });
 

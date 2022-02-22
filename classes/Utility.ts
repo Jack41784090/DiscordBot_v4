@@ -1,18 +1,16 @@
 import { Canvas, Image, NodeCanvasRenderingContext2D } from "canvas";
 import { Interaction, Message, MessageActionRow, MessageEmbed, MessageOptions, MessageSelectMenu, TextChannel, InteractionCollector, ChannelLogsQueryOptions, User, MessageButton, MessageButtonOptions, MessageSelectOptionData, ButtonInteraction } from "discord.js";
 
+import { debug, log } from "console"
+
 import { BotClient } from "..";
-import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Stat, Ability, AbilityAOE, AbilityTargetting, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, DungeonData, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, MapData, ItemType, LootInfo, MaterialInfo, MaterialGrade, UserData, Material, MaterialSpawnQualityInfo, LootAction, EMOJI_CROSS, EMOJI_WHITEB, ForgeWeaponPart, EMOJI_TICK, ForgeWeaponObject, DamageRange, EMOJI_MONEYBAG, ForgeWeaponType } from "../typedef";
+import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes, CoordStat, preludeQuotes, Action, ActionType, AINode, AttackAction, BaseStat, BotType, ClashResult, Coordinate, EnemyClass, MoveAction, Stat, Ability, AbilityAOE, AbilityTargetting, Vector2, RGBA, COMMAND_CALL, GetBuffOption, Buff, StatusEffectType, Direction, Axis, NumericDirection, EMOJI_SWORD, EMOJI_SHIELD, EMOJI_SPRINT, StatMaximus, StatPrimus, ItemType, MaterialInfo, MaterialGrade, Material, LootAction, EMOJI_CROSS, EMOJI_WHITEB, ForgeWeaponPart, EMOJI_TICK, ForgeWeaponObject, DamageRange, EMOJI_MONEYBAG, ForgeWeaponType, AttackRange } from "../typedef";
 import { Battle } from "./Battle";
 import { Item } from "./Item";
-import { areasData, enemiesData, classData, itemData, universalAbilitiesData, forgeWeaponData, universalWeaponsData } from "../jsons";
-import { getEquippedForgeWeapon, getIconImgurLink, getUserData, saveUserData } from "./Database";
-// import { Dungeon } from "./Dungeon";
+import { enemiesData, classData, itemData, universalAbilitiesData, forgeWeaponData, universalWeaponsData } from "../jsons";
+import { getEquippedForgeWeapon, getUserData } from "./Database";
 
-export function clamp(value: number, min: number, max: number) {
-    return Math.max(Math.min(value, max), min);
-}
-
+// RGBA
 export function normaliseRGBA(rgba: RGBA) {
     // R
     rgba.r = clamp(Math.round(rgba.r), 0, 255);
@@ -27,18 +25,6 @@ export function normaliseRGBA(rgba: RGBA) {
     rgba.alpha = clamp(rgba.alpha, 0, 1);
 
     return rgba;
-}
-
-export function stringifyRGBA(rgba: RGBA) {
-    return `rgba(${rgba.r},${rgba.g},${rgba.b},${rgba.alpha})`;
-}
-
-export function log(...any: any[]): void {
-    any.forEach(any => console.log(any));
-}
-
-export function debug(tag: String, any: any) {
-    console.log(`${tag}: `, any);
 }
 
 // string manipulation
@@ -92,10 +78,11 @@ export function normalRandom(_mean: number, _standardDeviation: number): number 
 
     return _mean + _standardDeviation * x_N0_1;
 }
+export function clamp(value: number, min: number, max: number) {
+    return Math.max(Math.min(value, max), min);
+}
 
-// get battle stats
-
-// when attacked
+// get battle stats: when attacked
 export function getAHP(_attacker: Stat, _options: GetBuffOption = 'WithBoth'): number {
     const maxHP = _attacker.base.maxHP;
     const AHPBuff = (_options === 'WithBuff' || _options === 'WithBoth') ? _attacker.buffs.maxHP : 0;
@@ -115,8 +102,7 @@ export function getProt(_defender: Stat, options: GetBuffOption = 'WithBoth'): n
     const protDebuff = (options === 'WithDebuff' || options === 'WithBoth') ? _defender.debuffs.protection : 0;
     return (prot + protBuff - protDebuff) || 0;
 }
-
-// when attacking
+// get battle stats: when attacking
 export function getDamage(_attacker: Stat, _ability: Ability, _options: GetBuffOption = 'WithBoth'): DamageRange {
     const _fw = _attacker.equipped;
     const damageRange = _fw.damageRange;
@@ -161,24 +147,36 @@ export function getLifesteal(_attacker: Stat, _ability: Ability, _options: GetBu
     return (ls + _ability.bonus.lifesteal + lsBuff - lsDebuff) || 0;
 }
 
-export function findLongArm(_stat: Stat): Ability | ForgeWeaponObject | null {
-    const abilities: Array<Ability> = _stat.base.abilities.map(_a => {
-        if (_a.range) {
+export function getLongArm(_stat: Stat): Ability | null {
+    const abilities: Array<Ability> = _stat.base.abilities;
+    const equippedWeaponRange: AttackRange = _stat.equipped.range;
+    return abilities.reduce((_longArm, _a) => {
+        // return longArm when...
+        //  _a is null type but does not have a range               (_a invalid)
+        //  longArm is not null and _a range is inferior to longArm (longArm superior)
+        if (
+            (_a.type === 'null' && !_a.range) ||
+            _longArm !== null &&
+                ((_longArm.range?.max || equippedWeaponRange.max) >= (_a.range?.max || equippedWeaponRange.max))
+        ) {
+            return _longArm;
+        }
+        // return _a when...
+        // longArm is null and _a has valid range                   (_a valid)
+        //  _a is null type and innate range is superior to longArm (_a superior (null innate))
+        //  _a is specified type and range is superior to longArm   (_a superior (specified weapon/innate))
+        else if (
+            (_longArm === null && (_a.type !== 'null' || _a.range)) ||
+            _longArm &&
+            (_a.type === 'null' && _a.range &&
+                _a.range.max > (_longArm.range?.max || equippedWeaponRange.max) ||
+            _a.type !== 'null' &&
+                (_a.range?.max || equippedWeaponRange.max) > (_longArm.range?.max || equippedWeaponRange.max))
+        ) {
             return _a;
         }
         else {
-            return getNewObject(_a, {
-                range: _stat.equipped.range
-            })
-        }
-    });
-
-    return abilities.reduce((lR, thisWeapon) => {
-        if (thisWeapon.range && (lR === null || thisWeapon.range.max > lR!.range!.max)) {
-            return thisWeapon;
-        }
-        else {
-            return lR;
+            return null;
         }
     }, null as Ability | null);
 }
@@ -192,7 +190,7 @@ export function getDistance(stat1: Coordinate, stat2: Coordinate): number {
     const yDif = stat1.y - stat2.y;
     return Math.sqrt((xDif) * (xDif) + (yDif) * (yDif));
 }
-export function getAttackRange(_aA: AttackAction) {
+export function getAttackRangeFromAA(_aA: AttackAction) {
     return _aA.weapon?.range || _aA.ability.range || null;
 }
 
@@ -426,7 +424,7 @@ export function getMoveAction(_stat: Stat, args2: string | number, _round: numbe
         const action: string = args2 as string;
         const moveMagnitude: number = args4 as number;
 
-        const translated = directionToMagnitudeAxis(action as Direction);
+        const translated = translateDirectionToMagnitudeAxis(action as Direction);
 
         moveAction.axis = translated.axis;
         moveAction.magnitude = translated.magnitude * moveMagnitude;
@@ -487,7 +485,8 @@ export function replaceCharacterAtIndex(_string: string, _replace: string, _inde
     return _string.substring(0, _index) + _replace + _string.substring(_index+1, _string.length);
 }
 
-export function directionToEmoji(_direction: Direction | NumericDirection) {
+// translation functions
+export function translateDirectionToEmoji(_direction: Direction | NumericDirection) {
     const direction: Direction = Number.isInteger(_direction) ?
         numericDirectionToDirection(_direction as NumericDirection) :
         _direction as Direction;
@@ -503,7 +502,7 @@ export function directionToEmoji(_direction: Direction | NumericDirection) {
             return "➡️";
     }
 }
-export function directionToMagnitudeAxis(_direction: Direction | NumericDirection) {
+export function translateDirectionToMagnitudeAxis(_direction: Direction | NumericDirection) {
     let magnitude, axis: Axis;
     if (typeof _direction === 'number') {
         _direction = numericDirectionToDirection(_direction);
@@ -536,6 +535,82 @@ export function directionToMagnitudeAxis(_direction: Direction | NumericDirectio
         magnitude: magnitude,
         axis: axis,
     };
+}
+export function translateClashToCommentary(_aA: AttackAction): string {
+    let returnString = '';
+    if (_aA.clashResult) {
+        const { attacker, target, ability } = _aA;
+        const { fate, damage, u_damage } = _aA.clashResult;
+
+        // weapon effect string
+        returnString += _aA.abilityEffectString || '';
+
+        // main chunk
+        switch (ability.targetting.target) {
+            case AbilityTargetting.enemy:
+                const accDodge = (getAcc(attacker, ability) - getDodge(target));
+                const hitRate =
+                    accDodge < 100 ?
+                        roundToDecimalPlace(accDodge) :
+                        100;
+                const critRate =
+                    roundToDecimalPlace(accDodge * 0.1 + getCrit(attacker, ability));
+                returnString +=
+                    `__**${ability.abilityName}**__ ${hitRate}% [${critRate}%]
+                **${fate}!** -**${roundToDecimalPlace(damage)}** (${roundToDecimalPlace(u_damage)}) [${roundToDecimalPlace(target.HP)} => ${roundToDecimalPlace(target.HP - damage)}]`
+                if (target.HP > 0 && target.HP - damage <= 0) {
+                    returnString += "\n__**KILLING BLOW!**__";
+                }
+                break;
+
+            case AbilityTargetting.ally:
+                if (attacker.index === target.index) {
+                    returnString +=
+                        `**${attacker.base.class}** (${attacker.index}) Activates __*${ability.abilityName}*__`;
+                }
+                else {
+                    returnString +=
+                        `**${attacker.base.class}** (${attacker.index}) 🛡️ **${target.base.class}** (${target.index})
+                    __*${ability.abilityName}*__`;
+                }
+                break;
+        }
+
+        // healing
+        // ...
+    }
+
+    return returnString;
+}
+export function translateActionToCommentary(_action: Action) {
+    const { aAction, mAction } = extractActions(_action);
+
+    let string: string = '';
+    const { attacker, target, ability } = aAction;
+    switch (_action.type) {
+        case 'Attack':
+            string +=
+                `${EMOJI_SWORD} ${attacker.base.class} (${attacker.index}) uses __${ability.abilityName}__ on ${target.base.class} (${target.index}).`;
+            string += "\n" + translateClashToCommentary(aAction);
+            break;
+
+        case 'Move':
+            string +=
+                `${EMOJI_SPRINT} ${attacker.base.class} (${attacker.index}) moves ${getDirection(mAction.axis, mAction.magnitude)}.`
+            break;
+
+        case 'Loot':
+            string +=
+                `${EMOJI_MONEYBAG} ${attacker.base.class} (${attacker.index}) loots.`
+            break;
+    }
+
+    string += ` [🌬️${_action.priority}]`
+
+    return string;
+}
+export function translateRGBAToStringRGBA(rgba: RGBA) {
+    return `rgba(${rgba.r},${rgba.g},${rgba.b},${rgba.alpha})`;
 }
 
 export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: ForgeWeaponObject | null, _ability: Ability, _coord: Coordinate): AttackAction {
@@ -705,80 +780,7 @@ export function getWithSign(number: number) {
     return getConditionalTexts("+", number > 0) + getConditionalTexts("-", number < 0) + `${Math.abs(number)}`;
 }
 
-export function getClashCommentary(_aA: AttackAction): string {
-    let returnString = '';
-    if (_aA.clashResult) {
-        const { attacker, target, ability } = _aA;
-        const { fate, damage, u_damage } = _aA.clashResult;
-
-        // weapon effect string
-        returnString += _aA.abilityEffectString || '';
-
-        // main chunk
-        switch (ability.targetting.target) {
-            case AbilityTargetting.enemy:
-                const accDodge = (getAcc(attacker, ability) - getDodge(target));
-                const hitRate =
-                    accDodge < 100 ?
-                        roundToDecimalPlace(accDodge) :
-                        100;
-                const critRate =
-                    roundToDecimalPlace(accDodge * 0.1 + getCrit(attacker, ability));
-                returnString +=
-                    `__**${ability.abilityName}**__ ${hitRate}% [${critRate}%]
-                **${fate}!** -**${roundToDecimalPlace(damage)}** (${roundToDecimalPlace(u_damage)}) [${roundToDecimalPlace(target.HP)} => ${roundToDecimalPlace(target.HP - damage)}]`
-                if (target.HP > 0 && target.HP - damage <= 0) {
-                    returnString += "\n__**KILLING BLOW!**__";
-                }
-                break;
-
-            case AbilityTargetting.ally:
-                if (attacker.index === target.index) {
-                    returnString +=
-                        `**${attacker.base.class}** (${attacker.index}) Activates __*${ability.abilityName}*__`;
-                }
-                else {
-                    returnString +=
-                        `**${attacker.base.class}** (${attacker.index}) 🛡️ **${target.base.class}** (${target.index})
-                    __*${ability.abilityName}*__`;
-                }
-                break;
-        }
-
-        // healing
-        // ...
-    }
-
-    return returnString;
-}
-export function getActionTranslate(_action: Action) {
-    const { aAction, mAction } = extractActions(_action);
-
-    let string: string = '';
-    const { attacker, target, ability } = aAction;
-    switch (_action.type) {
-        case 'Attack':
-            string +=
-                `${EMOJI_SWORD} ${attacker.base.class} (${attacker.index}) uses __${ability.abilityName}__ on ${target.base.class} (${target.index}).`;
-            string += "\n" + getClashCommentary(aAction);
-            break;
-
-        case 'Move':
-            string +=
-                `${EMOJI_SPRINT} ${attacker.base.class} (${attacker.index}) moves ${getDirection(mAction.axis, mAction.magnitude)}.`
-            break;
-
-        case 'Loot':
-            string +=
-                `${EMOJI_MONEYBAG} ${attacker.base.class} (${attacker.index}) loots.`
-            break;
-    }
-
-    string += ` [🌬️${_action.priority}]`
-
-    return string;
-}
-
+// getting embeds
 export function getLoadingEmbed() {
     const url = "https://cdn.discordapp.com/attachments/571180142500511745/829109314668724234/ajax-loader.gif";
     const loadingEmbed = new MessageEmbed()
@@ -787,7 +789,24 @@ export function getLoadingEmbed() {
     return loadingEmbed;
 }
 export function getForgeWeaponEmbed(_fw: ForgeWeaponObject) {
-    
+    const embed = new MessageEmbed({
+        title: _fw.weaponType,
+        description:
+`
+**__Range__**:
+\t**__Minimum__**: ${_fw.range.min}
+\t**__Max__**: ${_fw.range.max}
+\t**__Radius__**: ${_fw.range.radius}
+**__Damage Range__**: [${_fw.damageRange.min}] ~ [${_fw.damageRange.max}]
+**__Accuracy__**: ${roundToDecimalPlace(_fw.accuracy)}
+**__Lifesteal__**: ${roundToDecimalPlace(_fw.lifesteal) * 100}%
+**__Bonus Critical Chance__**: +${roundToDecimalPlace(_fw.criticalHit)}
+**__Readiness Cost__**: ${roundToDecimalPlace(_fw.readinessCost)}
+**__Stamina Cost__**: ${roundToDecimalPlace(_fw.staminaCost)}
+`
+    })
+
+    return embed;
 }
 export function getAbilityEmbed(_ability: Ability) {
     const { damageScale, staminaScale, readinessCost, speedScale, range } = _ability

@@ -66,7 +66,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InteractionEventManager = void 0;
 var jsons_1 = require("../jsons");
 var Database_1 = require("./Database");
-var Utility_1 = require("./Utility");
+var console_1 = require("console");
 var InteractionEventManager = /** @class */ (function () {
     function InteractionEventManager() {
         this.user_interaction_map = new Map();
@@ -89,7 +89,7 @@ var InteractionEventManager = /** @class */ (function () {
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
-                        (0, Utility_1.log)("Registering event (" + _id + "): " + _interactionEvent.interactionEventType);
+                        (0, console_1.log)("Registering event (" + _id + "): " + _interactionEvent.interactionEventType);
                         _a = this.user_interaction_map.get(_id);
                         if (_a) return [3 /*break*/, 3];
                         _c = (_b = this.user_interaction_map).set;
@@ -163,7 +163,7 @@ var InteractionEventManager = /** @class */ (function () {
     };
     InteractionEventManager.prototype.stopInteraction = function (_userID, _eventType, _replaceEvent) {
         var _a;
-        (0, Utility_1.log)("Stopping event (" + _userID + "): " + _eventType);
+        (0, console_1.log)("Stopping event (" + _userID + "): " + _eventType);
         var interaction = this.user_interaction_map.get(_userID);
         if (interaction) {
             (_a = interaction[_eventType]) === null || _a === void 0 ? void 0 : _a.stop();

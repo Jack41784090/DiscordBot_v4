@@ -295,6 +295,7 @@ export interface UserData {
     classes: Array<Class>,
     equippedClass: Class,
     equippedWeapon: Array<ForgeWeaponObject>,
+    arsenal: Array<ForgeWeaponObject>,
     money: number,
     name: string,
     party: Array<string>,

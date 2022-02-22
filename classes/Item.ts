@@ -1,6 +1,7 @@
 import { forgeWeaponData, itemData, materialData } from "../jsons";
 import { ForgeWeaponObject, ForgeWeaponPart, ForgeWeaponRange, ForgeWeaponType, ItemObject, ItemType, Material, MaterialGrade, MaterialInfo, MaterialSpawnQualityInfo, MEW, DamageRange, AttackRange } from "../typedef";
-import { addHPBar, arrayGetLargestInArray, clamp, formalise, getGradeTag, getItemType, getNewObject, arrayGetRandom, uniformRandom, roundToDecimalPlace, normalRandom, debug, getForgeWeaponType } from "./Utility";
+import { addHPBar, arrayGetLargestInArray, clamp, formalise, getGradeTag, getItemType, getNewObject, arrayGetRandom, uniformRandom, roundToDecimalPlace, normalRandom, getForgeWeaponType } from "./Utility";
+import { debug, log } from "console"
 
 export class Item {
     static Generate(_name: ItemType, _customName: string): Item {

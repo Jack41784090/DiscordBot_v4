@@ -1,5 +1,5 @@
 import { Coordinate } from "../typedef";
-import { debug, getCoordString, uniformRandom } from "./Utility";
+import { getCoordString, uniformRandom } from "./Utility";
 
 export class hNode<dataType> {
     data?: dataType;

@@ -80,6 +80,7 @@ var discord_js_1 = require("discord.js");
 var Utility_1 = require("./Utility");
 var canvas_1 = require("canvas");
 var Database_1 = require("./Database");
+var console_1 = require("console");
 var fs_1 = __importDefault(require("fs"));
 var typedef_1 = require("../typedef");
 var hGraphTheory_1 = require("./hGraphTheory");
@@ -332,15 +333,15 @@ var Battle = /** @class */ (function () {
         var _this = this;
         var _b, _c;
         // check player welfare
-        (0, Utility_1.log)("Checking welfare...");
+        (0, console_1.log)("Checking welfare...");
         var playerStats = this.party.map(function (_ownerID) { return _this.tobespawnedArray.find(function (_s) { return _s.owner === _ownerID; }); });
         for (var i = 0; i < playerStats.length; i++) {
             var player = playerStats[i];
             if (player) {
                 var welfare = (_b = this.userDataCache.get(player.owner)) === null || _b === void 0 ? void 0 : _b.welfare;
-                (0, Utility_1.debug)("\t" + player.base.class, welfare);
+                (0, console_1.debug)("\t" + player.base.class, welfare);
                 if (welfare) {
-                    (0, Utility_1.log)("\t" + player.HP + " => " + player.base.maxHP * (0, Utility_1.clamp)(welfare, 0, 1));
+                    (0, console_1.log)("\t" + player.HP + " => " + player.base.maxHP * (0, Utility_1.clamp)(welfare, 0, 1));
                     player.HP = player.base.maxHP * (0, Utility_1.clamp)(welfare, 0, 1);
                 }
                 else {
@@ -370,26 +371,26 @@ var Battle = /** @class */ (function () {
             return __generator(this, function (_j) {
                 switch (_j.label) {
                     case 0:
-                        (0, Utility_1.log)("======= New Round =======");
+                        (0, console_1.log)("======= New Round =======");
                         // resetting action list and round current maps
                         this.roundActionsArray = [];
                         // SPAWNING
-                        (0, Utility_1.log)("Currently waiting to be spawned...");
+                        (0, console_1.log)("Currently waiting to be spawned...");
                         for (i = 0; i < this.tobespawnedArray.length; i++) {
                             spawning = this.tobespawnedArray[i];
-                            (0, Utility_1.log)("\t{ index:" + spawning.index + ", class:" + spawning.base.class + " }");
+                            (0, console_1.log)("\t{ index:" + spawning.index + ", class:" + spawning.base.class + " }");
                         }
-                        (0, Utility_1.log)("Spawning...");
+                        (0, console_1.log)("Spawning...");
                         this.SpawnOnSpawner();
                         allStats = this.allStats();
                         //#region COUNT LIVES
-                        (0, Utility_1.log)("Counting lives...");
+                        (0, console_1.log)("Counting lives...");
                         this.playerCount = allStats.reduce(function (acc, stat) { return acc + Number(stat.team === "player" && stat.HP > 0); }, 0);
-                        (0, Utility_1.debug)("   PlayerCount", this.playerCount);
-                        (0, Utility_1.debug)("   Remaining Enemies", this.totalEnemyCount);
+                        (0, console_1.debug)("   PlayerCount", this.playerCount);
+                        (0, console_1.debug)("   Remaining Enemies", this.totalEnemyCount);
                         //#endregion
                         //#region INCREASE ALL READINESS & TOKENS
-                        (0, Utility_1.log)("readinessCost ticking...");
+                        (0, console_1.log)("readinessCost ticking...");
                         for (i = 0; i < allStats.length; i++) {
                             s = allStats[i];
                             if (s.team === 'block')
@@ -431,7 +432,7 @@ var Battle = /** @class */ (function () {
                         }
                         //#endregion
                         //#region SAVE CURRENT MAP TO LOCAL
-                        (0, Utility_1.log)("Saving current map to local...");
+                        (0, console_1.log)("Saving current map to local...");
                         return [4 /*yield*/, this.getNewCanvasMap()];
                     case 3:
                         currentMapDataURL = (_j.sent()).toDataURL();
@@ -447,9 +448,9 @@ var Battle = /** @class */ (function () {
                             })];
                     case 4:
                         _j.sent();
-                        (0, Utility_1.log)("||=> Success.");
+                        (0, console_1.log)("||=> Success.");
                         reportPromises = [];
-                        (0, Utility_1.log)("Playing phase!");
+                        (0, console_1.log)("Playing phase!");
                         _loop_2 = function (realStat) {
                             var user, _l, virtualStat_1, channelAlreadyExist, createdChannel_1, _m, existingPermissions_everyone_1, existingPermissions_author, newChannel, noExistingPermission, extraPermissions, missingPermissions, overWrites, _o, _p, readingPlayerPromise, ai_f;
                             var _q, _t;
@@ -464,7 +465,7 @@ var Battle = /** @class */ (function () {
                                         // reset moved
                                         realStat.moved = false;
                                         if (!(realStat.botType === typedef_1.BotType.naught && realStat.owner)) return [3 /*break*/, 6];
-                                        (0, Utility_1.log)("Player: " + realStat.base.class + " (" + realStat.index + ")");
+                                        (0, console_1.log)("Player: " + realStat.base.class + " (" + realStat.index + ")");
                                         _l = this_2.userCache.get(realStat.owner);
                                         if (_l) return [3 /*break*/, 2];
                                         return [4 /*yield*/, this_2.client.users.fetch(realStat.owner)
@@ -473,7 +474,7 @@ var Battle = /** @class */ (function () {
                                                 return u;
                                             })
                                                 .catch(function (err) {
-                                                console.log(err);
+                                                (0, console_1.log)(err);
                                                 return null;
                                             })];
                                     case 1:
@@ -523,7 +524,7 @@ var Battle = /** @class */ (function () {
                                             createdChannel_1.permissionOverwrites.set(overWrites);
                                         }
                                         // mention user
-                                        createdChannel_1.send("<@" + (user === null || user === void 0 ? void 0 : user.id) + ">").then(function (mes) { return mes.delete().catch(console.log); });
+                                        createdChannel_1.send("<@" + (user === null || user === void 0 ? void 0 : user.id) + ">").then(function (mes) { return mes.delete().catch(console_1.log); });
                                         // send time, player embed, and input manual
                                         _p = (_o = createdChannel_1).send;
                                         _q = {};
@@ -548,7 +549,7 @@ var Battle = /** @class */ (function () {
                                         //#endregion
                                         //#region AI
                                         if (realStat.botType !== typedef_1.BotType.naught) {
-                                            (0, Utility_1.log)("AI: " + realStat.base.class + " (" + realStat.index + ")");
+                                            (0, console_1.log)("AI: " + realStat.base.class + " (" + realStat.index + ")");
                                             ai_f = new AI_1.AI(realStat, realStat.botType, this_2);
                                             ai_f.activate();
                                         }
@@ -591,7 +592,7 @@ var Battle = /** @class */ (function () {
                         //#endregion
                         //#region WAIT FOR PLAYER INPUTS
                         _j.sent();
-                        (0, Utility_1.log)("Players are all ready!");
+                        (0, console_1.log)("Players are all ready!");
                         canvas = new canvas_1.Canvas(this.width * this.pixelsPerTile, this.height * this.pixelsPerTile);
                         ctx = canvas.getContext("2d");
                         return [4 /*yield*/, this.getNewCanvasMap()];
@@ -609,7 +610,7 @@ var Battle = /** @class */ (function () {
                             var s = allStats[i];
                             (0, Utility_1.handleTokens)(s, function (p, t) {
                                 if (p > 3) {
-                                    (0, Utility_1.log)("\t\t" + s.index + ") " + t + " =" + 3);
+                                    (0, console_1.log)("\t\t" + s.index + ") " + t + " =" + 3);
                                     s[t] = 3;
                                 }
                             });
@@ -620,7 +621,7 @@ var Battle = /** @class */ (function () {
                             _loop_3(i);
                         }
                         //#region REPORT ACTIONS
-                        (0, Utility_1.log)("Reporting...");
+                        (0, console_1.log)("Reporting...");
                         allPromise = [];
                         players = allStats.filter(function (s) { return s.botType === typedef_1.BotType.naught; });
                         players.forEach(function (stat) { return __awaiter(_this, void 0, void 0, function () {
@@ -641,8 +642,8 @@ var Battle = /** @class */ (function () {
                     case 16:
                         // wait for all players to finish reading the reports
                         _j.sent();
-                        (0, Utility_1.log)("Reporting phase finished.");
-                        // allPromise.forEach(console.log);
+                        (0, console_1.log)("Reporting phase finished.");
+                        // allPromise.forEach(log);
                         //#endregion
                         // check death: after player round
                         this.checkDeath(allStats);
@@ -656,7 +657,7 @@ var Battle = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var PVE, PVP, allStats, i, id, stat, userData, endEmbedFields_1, victoryTitle;
             return __generator(this, function (_c) {
-                (0, Utility_1.log)("Finishing Round...");
+                (0, console_1.log)("Finishing Round...");
                 PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
                 PVP = this.playerCount === 1;
                 if ((this.pvp && PVP) || (!this.pvp && PVE)) {
@@ -719,6 +720,7 @@ var Battle = /** @class */ (function () {
         });
         return abilities.map(function (_a) {
             var _b, _c;
+            (0, console_1.debug)("ability", _a);
             var shortestRange = Number.isInteger((_b = _a.range) === null || _b === void 0 ? void 0 : _b.min) ?
                 (_a.range.min) :
                 equippedWeapon.range.min;
@@ -726,11 +728,13 @@ var Battle = /** @class */ (function () {
                 (_a.range.max) :
                 equippedWeapon.range.max;
             var reachableEntities = _this.findEntities_radius(_stat, longestRange, shortestRange === 0, ['block'], _domain);
+            (0, console_1.debug)("reachable", reachableEntities.map(function (_) { return _.index; }));
             var targettedEntities = reachableEntities.filter(function (_s) {
                 return _a.targetting.target === typedef_1.AbilityTargetting.ally ?
                     _s.team === _stat.team :
                     ((_s.team !== _stat.team) || _s.pvp);
             });
+            (0, console_1.debug)("targetted", targettedEntities.map(function (_) { return _.index; }));
             return targettedEntities.map(function (_e) { return ({
                 attacker: _stat,
                 target: _e,
@@ -779,7 +783,7 @@ var Battle = /** @class */ (function () {
                             });
                             return _ === 'all' ?
                                 e.setDescription(reportedActions
-                                    .map(function (_a) { return (0, Utility_1.getActionTranslate)(_a); })
+                                    .map(function (_a) { return (0, Utility_1.translateActionToCommentary)(_a); })
                                     .join("\n") ||
                                     "( *No Actions* )") :
                                 e.setDescription(reportedActions
@@ -787,7 +791,7 @@ var Battle = /** @class */ (function () {
                                     return _a.target.index === _ ||
                                         _a.attacker.index === _;
                                 })
-                                    .map(function (_a) { return (0, Utility_1.getActionTranslate)(_a); })
+                                    .map(function (_a) { return (0, Utility_1.translateActionToCommentary)(_a); })
                                     .join("\n") ||
                                     "( *No Actions* )");
                         };
@@ -875,7 +879,7 @@ var Battle = /** @class */ (function () {
     Battle.prototype.drawSquareOnBattleCoords = function (ctx, coord, rgba) {
         var canvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(coord, this.pixelsPerTile, this.height, false);
         if (rgba) {
-            ctx.fillStyle = (0, Utility_1.stringifyRGBA)(rgba);
+            ctx.fillStyle = (0, Utility_1.translateRGBAToStringRGBA)(rgba);
         }
         ctx.fillRect(canvasCoord.x, canvasCoord.y, this.pixelsPerTile, this.pixelsPerTile);
     };
@@ -888,28 +892,28 @@ var Battle = /** @class */ (function () {
             _virtualAttacker.weaponUses[(0, Utility_1.getAbilityIndex)(ability, _virtualAttacker)]++;
             _virtualAttacker.readiness -= _aA.readinessCost;
             (0, Utility_1.handleTokens)(_virtualAttacker, function (p, t) {
-                (0, Utility_1.log)("\t\t" + _virtualAttacker.index + ") " + t + " --" + _aA[t]);
+                (0, console_1.log)("\t\t" + _virtualAttacker.index + ") " + t + " --" + _aA[t]);
                 _virtualAttacker[t] -= _aA[t];
             });
         }
         // attack cannot go through
         else {
-            (0, Utility_1.log)("Failed to target. Reason: " + check.reason + " (" + check.value + ")");
+            (0, console_1.log)("Failed to target. Reason: " + check.reason + " (" + check.value + ")");
         }
         return check === null;
     };
     ;
     /** Execute a movement that will only mutate the provided stat, as the mover's, numbers */
     Battle.prototype.executeVirtualMovement = function (_mA, _virtualStat) {
-        (0, Utility_1.log)("\tExecuting virtual movement for " + _virtualStat.base.class + " (" + _virtualStat.index + ").");
+        (0, console_1.log)("\tExecuting virtual movement for " + _virtualStat.base.class + " (" + _virtualStat.index + ").");
         var check = this.validateMovement(_virtualStat, _mA);
         if (check === null) {
-            (0, Utility_1.log)("\t\tMoved!");
+            (0, console_1.log)("\t\tMoved!");
             // spending sprint to move
             if (_virtualStat.moved === true) {
                 (0, Utility_1.handleTokens)(_mA, function (p, type) {
                     if (type === "sprint") {
-                        (0, Utility_1.log)("\t\t" + _virtualStat.index + ") " + type + " --" + p);
+                        (0, console_1.log)("\t\t" + _virtualStat.index + ") " + type + " --" + p);
                         _virtualStat.sprint -= p;
                     }
                 });
@@ -920,7 +924,7 @@ var Battle = /** @class */ (function () {
             _virtualStat[_mA.axis] += _mA.magnitude;
         }
         else {
-            (0, Utility_1.log)("\t\tFailed to move. Reason: " + check.reason + " (" + check.value + ")");
+            (0, console_1.log)("\t\tFailed to move. Reason: " + check.reason + " (" + check.value + ")");
         }
         return check === null;
     };
@@ -956,7 +960,6 @@ var Battle = /** @class */ (function () {
                                             var icon = ability.targetting.target === typedef_1.AbilityTargetting.ally ?
                                                 typedef_1.EMOJI_SHIELD :
                                                 typedef_1.EMOJI_SWORD;
-                                            (0, Utility_1.log)(attacker.base.abilities, ability, (0, Utility_1.getAbilityIndex)(ability, attacker));
                                             return {
                                                 emoji: icon,
                                                 label: "" + ability.abilityName,
@@ -1078,7 +1081,7 @@ var Battle = /** @class */ (function () {
                                                 case 6: return [3 /*break*/, 8];
                                                 case 7:
                                                     _err_1 = _h.sent();
-                                                    console.log(_err_1);
+                                                    (0, console_1.log)(_err_1);
                                                     return [3 /*break*/, 8];
                                                 case 8: return [2 /*return*/];
                                             }
@@ -1102,7 +1105,7 @@ var Battle = /** @class */ (function () {
                                         var ability = attacker === null || attacker === void 0 ? void 0 : attacker.base.abilities[abilityIndex];
                                         var weapon = (attacker === null || attacker === void 0 ? void 0 : attacker.equipped) || (attacker === null || attacker === void 0 ? void 0 : attacker.base.arsenal[0]);
                                         var target = domain.find(function (_s) { return _s.index === targetIndex_1; });
-                                        (0, Utility_1.debug)("ability", ability);
+                                        (0, console_1.debug)("ability", ability);
                                         if (attacker && ability && weapon && target) {
                                             var virtualAttackAction = (0, Utility_1.getAttackAction)(_vS, target, weapon, ability, target);
                                             valid = _this.executeVirtualAttack(virtualAttackAction, _vS);
@@ -1227,7 +1230,7 @@ var Battle = /** @class */ (function () {
         var oldIndex = stat.index;
         this.getIndex(stat);
         this.allIndex.set(stat.index, true);
-        (0, Utility_1.log)("\tSetting index of " + stat.base.class + " from " + oldIndex + " to " + stat.index);
+        (0, console_1.log)("\tSetting index of " + stat.base.class + " from " + oldIndex + " to " + stat.index);
     };
     // checkings regarding this battle
     Battle.prototype.checkVacantPlace = function (coord, exemption) {
@@ -1242,26 +1245,26 @@ var Battle = /** @class */ (function () {
         return this.width > coord.x && this.height > coord.y && coord.x >= 0 && coord.y >= 0;
     };
     Battle.prototype.tickStatuses = function (_s, _currentRoundAction) {
-        (0, Utility_1.log)("\tTick status for " + _s.base.class + " (" + _s.index + ")...");
+        (0, console_1.log)("\tTick status for " + _s.base.class + " (" + _s.index + ")...");
         var statuses = _s.statusEffects;
-        (0, Utility_1.debug)("\t(" + _s.index + ") statuses", statuses.map(function (_se) { return _se.type; }));
+        (0, console_1.debug)("\t(" + _s.index + ") statuses", statuses.map(function (_se) { return _se.type; }));
         for (var i = 0; i < statuses.length; i++) {
             var status_1 = statuses[i];
             // make sure status is affecting the right entity and entity is still alive
             if (status_1.affected.index === _s.index && status_1.affected.HP > 0) {
                 // tick
-                (0, Utility_1.log)("\t\t" + status_1.type + " " + status_1.value + " (" + status_1.duration + " turns)");
+                (0, console_1.log)("\t\t" + status_1.type + " " + status_1.value + " (" + status_1.duration + " turns)");
                 var statusString = status_1.tick(_currentRoundAction);
                 // empty string == invalid status => remove status
                 if (!statusString) {
-                    (0, Utility_1.log)("\t\t\tRemoving status");
+                    (0, console_1.log)("\t\t\tRemoving status");
                     this.removeStatus(status_1);
                     i--;
                 }
             }
             else {
-                (0, Utility_1.debug)("status.affected.index === _s.index", status_1.affected.index === _s.index);
-                (0, Utility_1.debug)("status.affected.HP > 0", status_1.affected.HP > 0);
+                (0, console_1.debug)("status.affected.index === _s.index", status_1.affected.index === _s.index);
+                (0, console_1.debug)("status.affected.HP > 0", status_1.affected.HP > 0);
             }
         }
     };
@@ -1282,7 +1285,7 @@ var Battle = /** @class */ (function () {
                 var shieldingStatus = (0, Utility_1.arrayGetLargestInArray)(target.statusEffects.filter(function (_status) { return _status.type === "protected"; }), function (_item) { return _item.value; });
                 while (damage > 0 && shieldingStatus && shieldingStatus.value > 0) {
                     var shieldValue = shieldingStatus.value;
-                    (0, Utility_1.log)("reduced " + shieldValue + " damage!");
+                    (0, console_1.log)("reduced " + shieldValue + " damage!");
                     shieldingStatus.value -= damage;
                     damage -= shieldValue;
                     if (damage < 0) {
@@ -1308,7 +1311,7 @@ var Battle = /** @class */ (function () {
         }
     };
     Battle.prototype.clash = function (_aA) {
-        (0, Utility_1.log)("\tClash: " + _aA.attacker.base.class + " => " + _aA.target.base.class);
+        (0, console_1.log)("\tClash: " + _aA.attacker.base.class + " => " + _aA.target.base.class);
         var fate = 'Miss';
         var damage = 0, u_damage = 0;
         var attacker = _aA.attacker, target = _aA.target, weapon = _aA.weapon, ability = _aA.ability;
@@ -1387,7 +1390,7 @@ var Battle = /** @class */ (function () {
     // spawning methods
     Battle.prototype.Spawn = function (unit, coords) {
         this.setIndex(unit);
-        (0, Utility_1.debug)("Spawning", unit.base.class + " (" + unit.index + ")");
+        (0, console_1.debug)("Spawning", unit.base.class + " (" + unit.index + ")");
         unit.x = coords.x;
         unit.y = coords.y;
         this.CSMap.set((0, Utility_1.getCoordString)(coords), unit);
@@ -1472,15 +1475,13 @@ var Battle = /** @class */ (function () {
                 }
             });
         };
-        var totalString = [];
         executeAuto(_action.attacker);
         if (_action.attacker.index !== _action.target.index) {
             executeAuto(_action.target);
         }
-        return totalString.join("\n");
     };
     Battle.prototype.executeActions = function () {
-        (0, Utility_1.log)("Executing actions...");
+        (0, console_1.log)("Executing actions...");
         var executedActions = [];
         var executing = this.getNextAction();
         while (executing) {
@@ -1491,7 +1492,7 @@ var Battle = /** @class */ (function () {
         return executedActions;
     };
     Battle.prototype.executeOneAction = function (_action) {
-        (0, Utility_1.log)("\tExecuting action: " + _action.type + ", " + _action.attacker.base.class + " => " + _action.target.base.class);
+        (0, console_1.log)("\tExecuting action: " + _action.type + ", " + _action.attacker.base.class + " => " + _action.target.base.class);
         var _b = (0, Utility_1.extractActions)(_action), aAction = _b.aAction, mAction = _b.mAction, lAction = _b.lAction;
         var actionAffected = _action.target;
         var actionFrom = _action.attacker;
@@ -1611,7 +1612,7 @@ var Battle = /** @class */ (function () {
         attacker.stamina -= ((weapon === null || weapon === void 0 ? void 0 : weapon.staminaCost) || 0) * ability.staminaScale;
         attacker.weaponUses[(0, Utility_1.getAbilityIndex)(ability, attacker)]++;
         (0, Utility_1.handleTokens)(attacker, function (p, t) {
-            (0, Utility_1.log)("\t\t" + attacker.index + ") " + t + " --" + _aA[t]);
+            (0, console_1.log)("\t\t" + attacker.index + ") " + t + " --" + _aA[t]);
             attacker[t] -= _aA[t];
         });
         return _aA;
@@ -1628,12 +1629,12 @@ var Battle = /** @class */ (function () {
         this.CSMap.delete((0, Utility_1.getCoordString)(stat));
         stat[axis] += newMagnitude;
         this.CSMap = this.CSMap.set((0, Utility_1.getCoordString)(stat), stat);
-        // console.log(`${_mA.from.base.class} (${_mA.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
+        // log(`${_mA.from.base.class} (${_mA.from.index}) 👢${formalize(direction)} ${Math.abs(newMagnitude)} blocks.`);
         var affected = _mA.target;
         _mA.executed = true;
         affected.readiness -= _mA.readinessCost;
         (0, Utility_1.handleTokens)(affected, function (p, t) {
-            (0, Utility_1.log)("\t\t" + affected.index + ") " + t + " --" + _mA[t]);
+            (0, console_1.log)("\t\t" + affected.index + ") " + t + " --" + _mA[t]);
             affected[t] -= _mA[t];
         });
         return _mA;
@@ -1714,14 +1715,14 @@ var Battle = /** @class */ (function () {
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 2, , 4]);
-                        (0, Utility_1.log)("\tReading existing file...");
+                        (0, console_1.log)("\tReading existing file...");
                         readsrc = fs_1.default.readFileSync(thePath, 'utf8');
-                        (0, Utility_1.log)("\t\tFinish reading.");
+                        (0, console_1.log)("\t\tFinish reading.");
                         src = readsrc;
                         return [3 /*break*/, 4];
                     case 2:
                         err_1 = _b.sent();
-                        (0, Utility_1.log)("\tCreating new file...");
+                        (0, console_1.log)("\tCreating new file...");
                         return [4 /*yield*/, this.getNewCanvasMap()];
                     case 3:
                         newMap = _b.sent();
@@ -1731,14 +1732,14 @@ var Battle = /** @class */ (function () {
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/, new Promise(function (resolve) {
                             image.onload = function () {
-                                (0, Utility_1.log)("\t\tSuccessfully loaded.");
+                                (0, console_1.log)("\t\tSuccessfully loaded.");
                                 var _b = (0, Utility_1.startDrawing)(image.width, image.height), canvas = _b.canvas, ctx = _b.ctx;
                                 ctx.drawImage(image, 0, 0, image.width, image.height);
                                 _this.drawHealthArcs(canvas);
                                 _this.drawIndexi(canvas);
                                 resolve(canvas);
                             };
-                            (0, Utility_1.log)("\tWaiting for image to load...");
+                            (0, console_1.log)("\tWaiting for image to load...");
                             image.src = src;
                         })];
                 }
@@ -1806,14 +1807,14 @@ var Battle = /** @class */ (function () {
                                 return __generator(this, function (_c) {
                                     switch (_c.label) {
                                         case 0:
-                                            (0, Utility_1.log)("Drawing attack action...");
-                                            (0, Utility_1.debug)("\tfromCoord", { x: _fromBattleCoord.x, y: _fromBattleCoord.y });
-                                            (0, Utility_1.debug)("\ttoCoord", { x: _toBattleCoord.x, y: _toBattleCoord.y });
+                                            (0, console_1.log)("Drawing attack action...");
+                                            (0, console_1.debug)("\tfromCoord", { x: _fromBattleCoord.x, y: _fromBattleCoord.y });
+                                            (0, console_1.debug)("\ttoCoord", { x: _toBattleCoord.x, y: _toBattleCoord.y });
                                             ctx.save();
                                             style.r = 255;
                                             style.g = 0;
                                             style.b = 0;
-                                            ctx.strokeStyle = (0, Utility_1.stringifyRGBA)((0, Utility_1.normaliseRGBA)(style));
+                                            ctx.strokeStyle = (0, Utility_1.translateRGBAToStringRGBA)((0, Utility_1.normaliseRGBA)(style));
                                             victimWithinDistance = (0, Utility_1.checkWithinDistance)(_aA, (0, Utility_1.getDistance)(_aA.attacker, _aA.target));
                                             ctx.beginPath();
                                             ctx.strokeStyle = victimWithinDistance ?
@@ -1870,8 +1871,8 @@ var Battle = /** @class */ (function () {
                             style.r = 0;
                             style.g = 0;
                             style.b = 0;
-                            ctx.strokeStyle = (0, Utility_1.stringifyRGBA)((0, Utility_1.normaliseRGBA)(style));
-                            (0, Utility_1.log)("Drawing move action: (" + _fromBattleCoord.x + "," + _fromBattleCoord.y + ")=>(" + _toBattleCoord.x + "," + _toBattleCoord.y + ") (width:" + _width + ")(offset x:" + _offsetCanvas.x + " y:" + _offsetCanvas.y + ")");
+                            ctx.strokeStyle = (0, Utility_1.translateRGBAToStringRGBA)((0, Utility_1.normaliseRGBA)(style));
+                            (0, console_1.log)("Drawing move action: (" + _fromBattleCoord.x + "," + _fromBattleCoord.y + ")=>(" + _toBattleCoord.x + "," + _toBattleCoord.y + ") (width:" + _width + ")(offset x:" + _offsetCanvas.x + " y:" + _offsetCanvas.y + ")");
                             ctx.lineWidth = _width;
                             // get position before move
                             var beforeCanvasCoord = (0, Utility_1.getCanvasCoordsFromBattleCoord)(_fromBattleCoord, _this.pixelsPerTile, _this.height);
@@ -1918,8 +1919,8 @@ var Battle = /** @class */ (function () {
                         };
                         virtualCoordsMap = new Map();
                         graph = new hGraphTheory_1.hGraph(true);
-                        ctx.fillStyle = (0, Utility_1.stringifyRGBA)(style);
-                        ctx.strokeStyle = (0, Utility_1.stringifyRGBA)(style);
+                        ctx.fillStyle = (0, Utility_1.translateRGBAToStringRGBA)(style);
+                        ctx.strokeStyle = (0, Utility_1.translateRGBAToStringRGBA)(style);
                         _loop_5 = function (i) {
                             var action, attackerIndex, victimIndex, victim_beforeCoords, attacker_beforeCoords;
                             return __generator(this, function (_j) {
@@ -1936,7 +1937,7 @@ var Battle = /** @class */ (function () {
                                                 var attackRange, ability, epicenterCoord, affecteds, i_3, af, singleTarget, _b, _c, coord;
                                                 var e_4, _d;
                                                 return __generator(this, function (_g) {
-                                                    attackRange = (0, Utility_1.getAttackRange)(aA);
+                                                    attackRange = (0, Utility_1.getAttackRangeFromAA)(aA);
                                                     if (attackRange) {
                                                         ability = aA.ability;
                                                         switch (ability.targetting.AOE) {
@@ -2094,7 +2095,7 @@ var Battle = /** @class */ (function () {
             var stat = allStats[i];
             // attach health arc
             var healthPercentage = (0, Utility_1.clamp)(stat.HP / stat.base.maxHP, 0, 1);
-            ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
+            ctx.strokeStyle = (0, Utility_1.translateRGBAToStringRGBA)({
                 r: 255 * Number(stat.team === "enemy"),
                 g: 255 * Number(stat.team === "player"),
                 b: 0,
@@ -2589,7 +2590,7 @@ var Battle = /** @class */ (function () {
             // look at surrounding nodes
             for (var i = 0; i < 4; i++) {
                 var numDir = i;
-                var magAxis = (0, Utility_1.directionToMagnitudeAxis)(numDir);
+                var magAxis = (0, Utility_1.translateDirectionToMagnitudeAxis)(numDir);
                 var nodeDirectedCoord = { x: AINode.x, y: AINode.y };
                 nodeDirectedCoord[magAxis.axis] += magAxis.magnitude;
                 var nodeDirectedCoordString = (0, Utility_1.getCoordString)(nodeDirectedCoord);
@@ -2679,7 +2680,7 @@ var Battle = /** @class */ (function () {
     };
     // status function
     Battle.prototype.removeStatus = function (_status) {
-        (0, Utility_1.debug)("\tRemoving status", _status.type + " " + _status.value + " (x" + _status.duration + ")");
+        (0, console_1.debug)("\tRemoving status", _status.type + " " + _status.value + " (x" + _status.duration + ")");
         var owner = _status.affected;
         (0, Utility_1.arrayRemoveItemArray)(owner.statusEffects, _status);
     };

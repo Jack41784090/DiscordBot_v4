@@ -4,6 +4,7 @@ exports.AbilityEffect = void 0;
 var typedef_1 = require("../typedef");
 var StatusEffect_1 = require("./StatusEffect");
 var Utility_1 = require("./Utility");
+var console_1 = require("console");
 var statusEffect_effects = new Map([
     [
         "Obliterate",
@@ -130,7 +131,7 @@ var statusEffect_effects = new Map([
                 var coord = (0, Utility_1.getNewObject)(_action.attacker);
                 var numDir = i;
                 var dir = (0, Utility_1.numericDirectionToDirection)(numDir);
-                var magAxis = (0, Utility_1.directionToMagnitudeAxis)(dir);
+                var magAxis = (0, Utility_1.translateDirectionToMagnitudeAxis)(dir);
                 coord[magAxis.axis] += magAxis.magnitude;
                 if (_bd.findEntity_coord(coord) === undefined) {
                     (0, Utility_1.getStat)((0, Utility_1.getBaseEnemyStat)("Diana's Wolf")).then(function (wolf) {
@@ -236,7 +237,7 @@ var AbilityEffect = /** @class */ (function () {
         this.battleData = _bd;
     }
     AbilityEffect.prototype.activate = function () {
-        (0, Utility_1.log)("\tActivating " + this.attackAction.ability.abilityName);
+        (0, console_1.log)("\tActivating " + this.attackAction.ability.abilityName);
         var returnString = "";
         var weaponEffect = statusEffect_effects.get(this.attackAction.ability.abilityName);
         if (weaponEffect) {

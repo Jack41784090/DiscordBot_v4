@@ -1,7 +1,9 @@
 import { Action, AttackAction, ClashResult, Coordinate, Direction, EMOJI_SHIELD, EMOJI_SWORD, NumericDirection, AbilityEffectFunction, AbilityName, UniversalAbilityName } from "../typedef";
 import { Battle } from "./Battle";
 import { StatusEffect } from "./StatusEffect";
-import { clamp, directionToMagnitudeAxis, getBaseEnemyStat, getNewObject, getStat, log, numericDirectionToDirection, roundToDecimalPlace } from "./Utility";
+import { clamp, translateDirectionToMagnitudeAxis, getBaseEnemyStat, getNewObject, getStat, numericDirectionToDirection, roundToDecimalPlace } from "./Utility";
+
+import { debug, log } from "console"
 
 const statusEffect_effects = new Map<AbilityName | UniversalAbilityName, AbilityEffectFunction>([
     [
@@ -138,7 +140,7 @@ const statusEffect_effects = new Map<AbilityName | UniversalAbilityName, Ability
                 const coord: Coordinate = getNewObject(_action.attacker);
                 const numDir: NumericDirection = i;
                 const dir: Direction = numericDirectionToDirection(numDir);
-                const magAxis = directionToMagnitudeAxis(dir);
+                const magAxis = translateDirectionToMagnitudeAxis(dir);
                 
                 coord[magAxis.axis] += magAxis.magnitude;
                 if (_bd.findEntity_coord(coord) === undefined) {

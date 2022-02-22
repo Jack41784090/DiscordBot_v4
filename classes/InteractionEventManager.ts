@@ -3,7 +3,8 @@ import { interactionEventData } from "../jsons";
 import { InteractionEventType, OwnerID, UserData } from "../typedef";
 import { getUserData, saveUserData } from "./Database";
 import { InteractionEvent } from "./InteractionEvent";
-import { log } from "./Utility";
+
+import { debug, log } from "console"
 
 interface InteractionSplit {
     userData: UserData,

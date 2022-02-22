@@ -60,6 +60,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getEquippedForgeWeapon = exports.saveBattle = exports.getBufferFromImage = exports.getIconImgurLink = exports.getIconCanvas = exports.getFileImage = exports.getFileBufferImage = exports.getDefaultSettings = exports.getDefaultUserData = exports.getUserWelfare = exports.setUserWelfare = exports.createNewUser = exports.getUserData = exports.getMapFromLocal = exports.saveUserData = exports.getAnyData = void 0;
 var typedef_1 = require("../typedef");
+var console_1 = require("console");
 var admin = __importStar(require("firebase-admin"));
 var serviceAccount = __importStar(require("../serviceAccount.json"));
 var canvas_1 = require("canvas");
@@ -107,7 +108,7 @@ function saveUserData(_userData) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    (0, Utility_1.log)("Saving");
+                    (0, console_1.log)("Saving");
                     document = database.collection("Users").doc(_userData.party[0]);
                     return [4 /*yield*/, document.get()];
                 case 1:
@@ -319,20 +320,20 @@ function getIconCanvas(_stat, _drawOptions) {
         frame: true,
     }; }
     var threadID = (0, Utility_1.uniformRandom)(0, 10000);
-    (0, Utility_1.log)("\t\t\tGetting icon for " + _stat.base.class + "(" + _stat.index + ") (" + threadID + ")");
+    (0, console_1.log)("\t\t\tGetting icon for " + _stat.base.class + "(" + _stat.index + ") (" + threadID + ")");
     var iconURL = _stat.base.iconURL;
     var image = new canvas_1.Image();
     return new Promise(function (resolve) {
         try {
             // take at most 10 seconds to get icon before using default icon    
             var invalidURLTimeout_1 = setTimeout(function () {
-                (0, Utility_1.log)("\t\t\t\tFailed. (" + threadID + ")");
+                (0, console_1.log)("\t\t\t\tFailed. (" + threadID + ")");
                 image.src = typedef_1.defaultAvatarURL;
             }, 10 * 1000);
             // set onLoad after timeout
             image.onload = function () {
                 if (image.src !== typedef_1.defaultAvatarURL) {
-                    (0, Utility_1.log)("\t\t\t\tSuccess! (" + threadID + ")");
+                    (0, console_1.log)("\t\t\t\tSuccess! (" + threadID + ")");
                 }
                 clearTimeout(invalidURLTimeout_1);
                 var squaredSize = Math.min(image.width, image.height);
@@ -357,7 +358,7 @@ function getIconCanvas(_stat, _drawOptions) {
                 if (_drawOptions.frame) {
                     ctx.globalCompositeOperation = "source-over";
                     ctx.lineWidth = 10;
-                    ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
+                    ctx.strokeStyle = (0, Utility_1.translateRGBAToStringRGBA)({
                         r: 0,
                         g: 0,
                         b: 0,
@@ -372,7 +373,7 @@ function getIconCanvas(_stat, _drawOptions) {
                 if (_drawOptions.healthArc) {
                     // attach health arc
                     var healthPercentage = (0, Utility_1.clamp)(_stat.HP / _stat.base.maxHP, 0, 1);
-                    ctx.strokeStyle = (0, Utility_1.stringifyRGBA)({
+                    ctx.strokeStyle = (0, Utility_1.translateRGBAToStringRGBA)({
                         r: 255 * Number(_stat.team === "enemy"),
                         g: 255 * Number(_stat.team === "player"),
                         b: 0,

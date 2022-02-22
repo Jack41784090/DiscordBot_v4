@@ -29,12 +29,13 @@ exports.AI = void 0;
 var jsons_1 = require("../jsons");
 var typedef_1 = require("../typedef");
 var Utility_1 = require("./Utility");
+var console_1 = require("console");
 var AIFunctions = new Map([
     [
         typedef_1.BotType.approach_attack,
         function (_rS, _bd) {
             var _b;
-            (0, Utility_1.log)("Employing approach_attack AI");
+            (0, console_1.log)("Employing approach_attack AI");
             var virtualStat = (0, Utility_1.getNewObject)(_rS, { virtual: true });
             // target selection: attack closest
             var intendedTargets = ["block"];
@@ -68,7 +69,7 @@ var AIFunctions = new Map([
         function (_rS, _bd) {
             var _b;
             var _d;
-            (0, Utility_1.log)("Employing passive_supportive AI");
+            (0, console_1.log)("Employing passive_supportive AI");
             var virtualStat = (0, Utility_1.getNewObject)(_rS);
             var allActions = [];
             var weaponSelected = virtualStat.base.arsenal[0] || jsons_1.universalWeaponsData.Unarmed;
@@ -82,7 +83,7 @@ var AIFunctions = new Map([
                     // move to best place
                     var blastRange_1 = ((_d = ability.range) === null || _d === void 0 ? void 0 : _d.max) || weaponSelected.range.radius;
                     var movesAvailable_1 = 1 + virtualStat.sprint;
-                    (0, Utility_1.debug)("movesAvailable", movesAvailable_1);
+                    (0, console_1.debug)("movesAvailable", movesAvailable_1);
                     var domain_1 = _bd.findEntities_radius(virtualStat, movesAvailable_1 + blastRange_1, false);
                     var mostOccupants_1 = 0;
                     var optimalLocation_1 = { x: virtualStat.x, y: virtualStat.y };
@@ -94,7 +95,7 @@ var AIFunctions = new Map([
                             // new coordinate
                             var newCoord = { x: _c.x, y: _c.y };
                             var numDir = i;
-                            var magAxis = (0, Utility_1.directionToMagnitudeAxis)(numDir);
+                            var magAxis = (0, Utility_1.translateDirectionToMagnitudeAxis)(numDir);
                             newCoord[magAxis.axis] += magAxis.magnitude;
                             // save coord obj ref for exploredRoom.include in breadthSearch to function
                             var coordString = (0, Utility_1.getCoordString)(newCoord);
@@ -120,7 +121,7 @@ var AIFunctions = new Map([
                         }
                         return false;
                     });
-                    (0, Utility_1.debug)("optimalLocation", optimalLocation_1);
+                    (0, console_1.debug)("optimalLocation", optimalLocation_1);
                     var pathToBuffing = _bd.startPathFinding(virtualStat, optimalLocation_1, "lowest");
                     allActions.push.apply(allActions, __spreadArray([], __read(_bd.normaliseMoveActions(_bd.getMoveActionListFromCoordArray(virtualStat, pathToBuffing), virtualStat)), false));
                     break;
@@ -136,7 +137,7 @@ var AIFunctions = new Map([
                         // new coordinate
                         var newCoord = { x: _c.x, y: _c.y };
                         var numDir = i;
-                        var magAxis = (0, Utility_1.directionToMagnitudeAxis)(numDir);
+                        var magAxis = (0, Utility_1.translateDirectionToMagnitudeAxis)(numDir);
                         newCoord[magAxis.axis] += magAxis.magnitude;
                         // save coord obj ref for exploredRoom.include in breadthSearch to function
                         var coordString = (0, Utility_1.getCoordString)(newCoord);
@@ -147,10 +148,10 @@ var AIFunctions = new Map([
                             coord :
                             null);
                     }
-                    (0, Utility_1.log)(result);
+                    (0, console_1.log)(result);
                     return result;
                 }, function (_q, _c) {
-                    (0, Utility_1.debug)("ra: @" + _c.x + "," + _c.y + " distance", (0, Utility_1.getDistance)(_c, virtualStat));
+                    (0, console_1.debug)("ra: @" + _c.x + "," + _c.y + " distance", (0, Utility_1.getDistance)(_c, virtualStat));
                     return (0, Utility_1.getDistance)(_c, virtualStat) < 3;
                 }, function (_c) {
                     var character = _bd.CSMap.get((0, Utility_1.getCoordString)(_c)) || null;
@@ -161,7 +162,7 @@ var AIFunctions = new Map([
                         x: Utility_1.average.apply(void 0, __spreadArray([], __read(reachableEnemiesCoordinates.map(function (_c) { return _c.x; })), false)),
                         y: Utility_1.average.apply(void 0, __spreadArray([], __read(reachableEnemiesCoordinates.map(function (_c) { return _c.y; })), false)),
                     };
-                    (0, Utility_1.debug)("run away from", runAwayFromCoord);
+                    (0, console_1.debug)("run away from", runAwayFromCoord);
                     var path = _bd.startPathFinding(virtualStat, runAwayFromCoord, "highest", (0, Utility_1.average)(_bd.width, _bd.height));
                     var actions = _bd.getMoveActionListFromCoordArray(virtualStat, path);
                     var escapingActions = _bd.normaliseMoveActions(actions, virtualStat);

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StatusEffect = void 0;
 var Utility_1 = require("./Utility");
+var console_1 = require("console");
 var statusEffect_effects = new Map([
     [
         "bleed",
@@ -92,7 +93,7 @@ var statusEffect_effects = new Map([
 ]);
 var StatusEffect = /** @class */ (function () {
     function StatusEffect(_type, _duration, _value, _from, _affected, _bd) {
-        (0, Utility_1.log)("\t\t\tConstructed new Status: " + _type + ", " + _value + " for " + _duration + " rounds");
+        (0, console_1.log)("\t\t\tConstructed new Status: " + _type + ", " + _value + " for " + _duration + " rounds");
         this.type = _type;
         this.duration = _duration;
         this.from = _from;
@@ -101,15 +102,15 @@ var StatusEffect = /** @class */ (function () {
         this.battleData = _bd;
     }
     StatusEffect.prototype.tick = function (_action) {
-        (0, Utility_1.log)("\t\tFinding \"" + this.type + "\" (" + this.value + " for " + this.duration + ")...");
+        (0, console_1.log)("\t\tFinding \"" + this.type + "\" (" + this.value + " for " + this.duration + ")...");
         var statusResult = "";
         var statusEffect = statusEffect_effects.get(this.type);
         if (this.duration > 0 && statusEffect) {
-            (0, Utility_1.log)("\t\t\tSuccessful execution!");
+            (0, console_1.log)("\t\t\tSuccessful execution!");
             statusEffect(this, _action, this.battleData);
         }
         else {
-            (0, Utility_1.log)("\t\t\tFailed to execute. Removing.");
+            (0, console_1.log)("\t\t\tFailed to execute. Removing.");
         }
         return statusResult;
     };

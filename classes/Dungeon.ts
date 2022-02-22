@@ -3,8 +3,9 @@ import { BotClient } from "..";
 import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, ItemType, Team, DungeonDisplayMode, DungeonBlockCode, OwnerID } from "../typedef";
 import { Battle } from "./Battle";
 import { Room } from "./Room";
-import { addHPBar, breadthFirstSearch, debug, directionToEmoji, directionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalise, getButtonsActionRow, getDistance, getNewObject, arrayGetRandom, getSelectMenuActionRow, log, numericDirectionToDirection, uniformRandom, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
+import { addHPBar, breadthFirstSearch, translateDirectionToEmoji, translateDirectionToMagnitudeAxis, directionToNumericDirection, findEqualCoordinate, formalise, getButtonsActionRow, getDistance, getNewObject, arrayGetRandom, getSelectMenuActionRow, numericDirectionToDirection, uniformRandom, replaceCharacterAtIndex, setUpInteractionCollect } from "./Utility";
 
+import { debug, log } from "console"
 import { getUserData, getUserWelfare } from "./Database";
 import { Item } from "./Item";
 import { areasData } from "../jsons";
@@ -108,7 +109,7 @@ export class Dungeon {
             let previousRoom: Room = startingRoom;
 
             const direction: Direction = numericDirectionToDirection(_direction);
-            const magAxis = directionToMagnitudeAxis(direction);
+            const magAxis = translateDirectionToMagnitudeAxis(direction);
             const coord = {
                 x: _c.x,
                 y: _c.y,
@@ -492,7 +493,7 @@ export class Dungeon {
                 case "down":
                 case "right":
                 case "left":
-                    const magAxis = directionToMagnitudeAxis(direction);
+                    const magAxis = translateDirectionToMagnitudeAxis(direction);
                     valid = this.validateMovement(direction);
 
                     if (valid) {

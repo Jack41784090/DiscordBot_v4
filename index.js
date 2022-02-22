@@ -76,6 +76,7 @@ var Database_js_1 = require("./classes/Database.js");
 var Utility_js_1 = require("./classes/Utility.js");
 var jsons_js_1 = require("./jsons.js");
 var typedef_js_1 = require("./typedef.js");
+var console_1 = require("console");
 var commandReferral = {};
 exports.BotClient = new discord_js_1.Client({
     intents: [
@@ -146,7 +147,6 @@ exports.BotClient.on('ready', function () { return __awaiter(void 0, void 0, voi
         exports.BotClient.setMaxListeners(15);
         console.log("Ready.");
         importCommands();
-        quickEmbark();
         return [2 /*return*/];
     });
 }); });
@@ -163,7 +163,7 @@ exports.BotClient.on('messageCreate', function (m) { return __awaiter(void 0, vo
             case 1:
                 firebaseAuthor = _a.sent();
                 sections = (0, Utility_js_1.extractCommands)(content);
-                (0, Utility_js_1.log)(sections);
+                (0, console_1.log)(sections);
                 command = sections[0];
                 sections.shift();
                 if (commandReferral[command]) {
