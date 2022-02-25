@@ -82,6 +82,7 @@ var console_1 = require("console");
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
+var Item_1 = require("./Item");
 var jsons_1 = require("../jsons");
 var Database_1 = require("./Database");
 // RGBA
@@ -680,12 +681,16 @@ function getAttackAction(_attacker, _victim, _weapon, _ability, _coord) {
 exports.getAttackAction = getAttackAction;
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
-        var ud;
+        var ud, i;
         return __generator(this, function (_d) {
             switch (_d.label) {
                 case 0: return [4 /*yield*/, (0, Database_1.getUserData)("262871357455466496")];
                 case 1:
                     ud = _d.sent();
+                    for (i = 0; i < 25; i++) {
+                        ud.inventory.push(Item_1.Item.Generate('cobalt', "Test"));
+                    }
+                    (0, Database_1.saveUserData)(ud);
                     return [2 /*return*/];
             }
         });
@@ -865,8 +870,8 @@ function getLoadingEmbed() {
 exports.getLoadingEmbed = getLoadingEmbed;
 function getForgeWeaponEmbed(_fw) {
     var embed = new discord_js_1.MessageEmbed({
-        title: _fw.weaponType,
-        description: "\n**__Range__**:\n\t**__Minimum__**: " + _fw.range.min + "\n\t**__Max__**: " + _fw.range.max + "\n\t**__Radius__**: " + _fw.range.radius + "\n**__Damage Range__**: [" + _fw.damageRange.min + "] ~ [" + _fw.damageRange.max + "]\n**__Accuracy__**: " + roundToDecimalPlace(_fw.accuracy) + "\n**__Lifesteal__**: " + roundToDecimalPlace(_fw.lifesteal) * 100 + "%\n**__Bonus Critical Chance__**: +" + roundToDecimalPlace(_fw.criticalHit) + "\n**__Readiness Cost__**: " + roundToDecimalPlace(_fw.readinessCost) + "\n**__Stamina Cost__**: " + roundToDecimalPlace(_fw.staminaCost) + "\n"
+        title: formalise(_fw.weaponType),
+        description: "\n**__Range__**:\n\u200E\t**__Minimum__**: " + _fw.range.min + "\n\u200E\t**__Max__**: " + _fw.range.max + "\n\u200E\t**__Radius__**: " + _fw.range.radius + "\n**__Damage Range__**: [" + _fw.damageRange.min + "] ~ [" + _fw.damageRange.max + "]\n**__Accuracy__**: [" + _fw.accuracy + "]\n**__Lifesteal__**: [" + _fw.lifesteal * 100 + "]%\n**__Bonus Critical Chance__**: +[" + _fw.criticalHit + "]\n**__Readiness Cost__**: [" + _fw.readinessCost + "]\n**__Stamina Cost__**: [" + _fw.staminaCost + "]\n"
     });
     return embed;
 }

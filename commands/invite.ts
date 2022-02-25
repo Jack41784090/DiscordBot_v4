@@ -1,5 +1,6 @@
 import { Client, Guild, Message, TextChannel, User } from "discord.js";
 import { getUserData, saveUserData } from "../classes/Database";
+import { InteractionEventManager } from "../classes/InteractionEventManager";
 import { getButtonsActionRow, sendInvitation } from "../classes/Utility";
 import { CommandModule, UserData } from "../typedef";
 
@@ -14,7 +15,8 @@ module.exports = {
 
         if (invitedUser && invitedUser.id !== author.id) {
             // get user from firebase
-            const invitedUserData: UserData = await getUserData(invitedUser);
+            const invitedUserData: UserData =
+                InteractionEventManager.userData(invitedUser.id) || await getUserData(invitedUser);
 
             const acceptedInvite = async () => {
                 author.send(`${invitedUser.username} accepted your invitation!`)

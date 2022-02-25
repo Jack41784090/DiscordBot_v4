@@ -36,14 +36,100 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var discord_js_1 = require("discord.js");
+var InteractionEvent_1 = require("../classes/InteractionEvent");
+var InteractionEventManager_1 = require("../classes/InteractionEventManager");
+var Utility_1 = require("../classes/Utility");
 module.exports = {
-    commands: ['forge'],
-    expectedArgs: '[weapon/armour]',
+    commands: ['equip'],
+    expectedArgs: '',
     minArgs: 0,
-    maxArgs: 1,
+    maxArgs: 0,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
+        var iem, equipMes, event, updatedUserData, getComponents, collect;
         return __generator(this, function (_a) {
-            return [2 /*return*/];
+            switch (_a.label) {
+                case 0:
+                    iem = InteractionEventManager_1.InteractionEventManager.getInstance();
+                    return [4 /*yield*/, message.reply({
+                            embeds: [(0, Utility_1.getLoadingEmbed)()]
+                        })];
+                case 1:
+                    equipMes = _a.sent();
+                    event = new InteractionEvent_1.InteractionEvent(author.id, equipMes, 'equip');
+                    return [4 /*yield*/, iem.registerInteraction(author.id, event, authorUserData)];
+                case 2:
+                    updatedUserData = (_a.sent());
+                    getComponents = function () {
+                        var inventorySelectMenu = (0, Utility_1.getInventorySelectOptions)(authorUserData.arsenal
+                            .filter(function (_fwI) { return !authorUserData.equippedWeapon.includes(_fwI); }));
+                        return {
+                            embeds: [
+                                new discord_js_1.MessageEmbed({
+                                    title: "Equipments",
+                                    fields: authorUserData.equippedWeapon.map(function (_fw) {
+                                        var _ = (0, Utility_1.getForgeWeaponEmbed)(_fw);
+                                        return {
+                                            name: _.title,
+                                            value: _.description,
+                                            inline: true,
+                                        };
+                                    })
+                                }).setThumbnail("https://i.imgur.com/1rBk4xI.png")
+                            ],
+                            components: [(0, Utility_1.getSelectMenuActionRow)(inventorySelectMenu)]
+                        };
+                    };
+                    equipMes.edit(getComponents());
+                    collect = function () {
+                        (0, Utility_1.setUpInteractionCollect)(equipMes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
+                            var selectedIndexArsenal, weaponSelected_1, replacing, _a;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
+                                    case 0:
+                                        if (!_itr.isSelectMenu()) return [3 /*break*/, 7];
+                                        selectedIndexArsenal = parseInt(_itr.values[0]);
+                                        weaponSelected_1 = authorUserData.arsenal[selectedIndexArsenal];
+                                        if (!weaponSelected_1) return [3 /*break*/, 3];
+                                        if (authorUserData.equippedWeapon.length >= 2) {
+                                            replacing = authorUserData.equippedWeapon
+                                                .find(function (_fw) { return _fw.attackType === weaponSelected_1.attackType; }) || null;
+                                            if (replacing) {
+                                                (0, Utility_1.arrayRemoveItemArray)(authorUserData.equippedWeapon, replacing);
+                                            }
+                                        }
+                                        if (!(authorUserData.equippedWeapon.length < 2)) return [3 /*break*/, 2];
+                                        authorUserData.equippedWeapon.push(weaponSelected_1);
+                                        return [4 /*yield*/, _itr.update(getComponents())];
+                                    case 1:
+                                        _b.sent();
+                                        _b.label = 2;
+                                    case 2:
+                                        collect();
+                                        return [3 /*break*/, 7];
+                                    case 3:
+                                        _a = _itr.values[0];
+                                        switch (_a) {
+                                            case 'refresh': return [3 /*break*/, 4];
+                                            case 'end': return [3 /*break*/, 6];
+                                        }
+                                        return [3 /*break*/, 7];
+                                    case 4: return [4 /*yield*/, _itr.update(getComponents())];
+                                    case 5:
+                                        _b.sent();
+                                        collect();
+                                        return [3 /*break*/, 7];
+                                    case 6:
+                                        iem.stopInteraction(author.id, event.interactionEventType);
+                                        return [3 /*break*/, 7];
+                                    case 7: return [2 /*return*/];
+                                }
+                            });
+                        }); }, 1);
+                    };
+                    collect();
+                    return [2 /*return*/];
+            }
         });
     }); }
 };

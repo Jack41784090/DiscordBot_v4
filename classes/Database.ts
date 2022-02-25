@@ -49,7 +49,9 @@ export async function saveUserData(_userData: UserData) {
     if (snapshotData.exists) {
         const defaultUserData = getDefaultUserData();
         const mod = getNewObject(_userData, {
-            inventory: _userData?.inventory.map(_i => _i.returnObject()) || []
+            inventory: _userData?.inventory.map(_i => _i.returnObject()) || [],
+            arsenal: _userData?.arsenal.map(_i => _i.returnObject()) || [],
+            equippedWeapon: _userData?.equippedWeapon.map(_i => _i.returnObject()) || []
         });
         document.update(getNewObject(defaultUserData, mod));
     }
@@ -76,9 +78,10 @@ export async function getUserData(id_author: string | User): Promise<UserData> {
     const fetched: FirebaseFirestore.DocumentData | null = await getAnyData('Users', id);
     const defaultData: UserData = getDefaultUserData(user);
     const data: any = getNewObject(defaultData, fetched);
-    data.inventory = data.inventory.map((_i: ForgeWeaponObject | ItemObject) => {
-        return Item.Classify(_i);
-    });
+
+    data.inventory = data.inventory.map((_i: ForgeWeaponObject | ItemObject) => Item.Classify(_i));
+    data.arsenal = data.arsenal.map((_i: ForgeWeaponObject | ItemObject) => Item.Classify(_i));
+    data.equippedWeapon = data.equippedWeapon.map((_i: ForgeWeaponObject | ItemObject) => Item.Classify(_i));
 
     if (fetched === null) {
         await createNewUser(user);
@@ -145,11 +148,10 @@ export function getDefaultUserData(_user?: User) {
         party: [id],
         settings: getDefaultSettings(),
         equippedClass: "Fighter" as Class,
-        equippedWeapon: [
-            getNewObject(universalWeaponsData.Unarmed) as ForgeWeaponObject
-        ],
+        equippedWeapon: [],
         welfare: 1,
         inventory: [],
+        arsenal: [],
     };
 }
 
@@ -345,6 +347,6 @@ export async function saveBattle(battle: Battle) {
 
 export async function getEquippedForgeWeapon(_id: OwnerID): Promise<Array<ForgeWeaponObject>> {
     const userData: UserData =
-        InteractionEventManager.getInstance().userData(_id) || await getUserData(_id);
+        InteractionEventManager.userData(_id) || await getUserData(_id);
     return userData.equippedWeapon;
 }

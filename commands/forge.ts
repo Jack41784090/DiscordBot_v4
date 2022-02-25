@@ -22,7 +22,7 @@ module.exports = {
         // interaction event
         const iem = InteractionEventManager.getInstance();
         const event = new InteractionEvent(author.id, forgeMes, 'forge');
-        const updatedUserData: UserData = (await iem.registerInteraction(author.id, event, authorUserData))!;
+        const updatedUserData = (await iem.registerInteraction(author.id, event))!;
 
         // 
         let selectedWeaponType: ForgeWeaponType | null;
@@ -177,7 +177,7 @@ module.exports = {
             });
 
             // add weapon as an item
-            updatedUserData.inventory.push(forged);
+            updatedUserData.arsenal.push(forged);
 
             iem.stopInteraction(author.id, 'forge');
 

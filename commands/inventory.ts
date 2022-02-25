@@ -12,6 +12,13 @@ module.exports = {
     minArgs: 0,
     maxArgs: 0,
     callback: async (author: User, authorUserData: UserData, content: string, channel: TextChannel, guild: Guild, args: Array<string>, message: Message, client: Client) => {
+        const invMessage: Message = await message.reply({
+            embeds: [getLoadingEmbed()]
+        });
+        const interactionEvent: InteractionEvent = new InteractionEvent(author.id, invMessage, 'inventory');
+        const iem = InteractionEventManager.getInstance();
+        const updatedUserData = (await iem.registerInteraction(author.id, interactionEvent, authorUserData))!;
+
         const returnSelectItemsMessage = (): MessageOptions => {
             const selectMenuOptions: MessageSelectOptionData[] = getInventorySelectOptions(updatedUserData.inventory);
             const selectMenuActionRow: MessageActionRow = getSelectMenuActionRow(selectMenuOptions, "select");
@@ -140,14 +147,10 @@ module.exports = {
             }, 1);
         }
 
-        const invMessage: Message = await message.reply({
-            embeds: [getLoadingEmbed()]
-        });
-        const interactionEvent: InteractionEvent = new InteractionEvent(author.id, invMessage, 'inventory');
-        const iem = InteractionEventManager.getInstance();
-        const updatedUserData: UserData = (await iem.registerInteraction(author.id, interactionEvent, authorUserData))!;
         let itemSelected: Item;
+
         invMessage.edit(returnSelectItemsMessage());
+
         listen();
     }
 } as CommandModule;

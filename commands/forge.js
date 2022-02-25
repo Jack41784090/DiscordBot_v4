@@ -60,7 +60,7 @@ module.exports = {
                     forgeMes = _a.sent();
                     iem = InteractionEventManager_1.InteractionEventManager.getInstance();
                     event = new InteractionEvent_1.InteractionEvent(author.id, forgeMes, 'forge');
-                    return [4 /*yield*/, iem.registerInteraction(author.id, event, authorUserData)];
+                    return [4 /*yield*/, iem.registerInteraction(author.id, event)];
                 case 2:
                     updatedUserData = (_a.sent());
                     parts = [
@@ -235,7 +235,7 @@ module.exports = {
                                         (0, Utility_1.arrayRemoveItemArray)(updatedUserData.inventory, _item);
                                     });
                                     // add weapon as an item
-                                    updatedUserData.inventory.push(forged);
+                                    updatedUserData.arsenal.push(forged);
                                     iem.stopInteraction(author.id, 'forge');
                                     message.reply({
                                         embeds: [weaponEmbed]

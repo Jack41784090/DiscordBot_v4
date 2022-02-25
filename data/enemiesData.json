@@ -319,6 +319,7 @@
             }
         ],
         "maxHP": 15,
+        "maxStamina": 100,
         "dodge": 0,
         "protection": 0,
         "speed": 5,
@@ -383,6 +384,7 @@
             }
         ],
         "maxHP": 8,
+        "maxStamina": 100,
         "dodge": 0,
         "protection": 0,
         "speed": 5,

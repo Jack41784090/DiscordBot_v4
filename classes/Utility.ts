@@ -8,7 +8,7 @@ import { Class, SimplePlayerStat, StringCoordinate, Accolade, Buffs, deathQuotes
 import { Battle } from "./Battle";
 import { Item } from "./Item";
 import { enemiesData, classData, itemData, universalAbilitiesData, forgeWeaponData, universalWeaponsData } from "../jsons";
-import { getEquippedForgeWeapon, getUserData } from "./Database";
+import { getEquippedForgeWeapon, getUserData, saveUserData } from "./Database";
 
 // RGBA
 export function normaliseRGBA(rgba: RGBA) {
@@ -638,10 +638,10 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: ForgeWe
 
 export async function Test() {
     const ud = await getUserData("262871357455466496");
-    // for (let i = 0; i < 25; i++) {
-    //     ud.inventory.push(Item.Generate('cobalt', "Test"));
-    // }
-    // saveUserData(ud);
+    for (let i = 0; i < 25; i++) {
+        ud.inventory.push(Item.Generate('cobalt', "Test"));
+    }
+    saveUserData(ud);
     // for (let i = 0; i < 25; i++) {
     //     let i, ii, iii;
     //     i = arrayGetRandom(ud.inventory)!
@@ -790,19 +790,19 @@ export function getLoadingEmbed() {
 }
 export function getForgeWeaponEmbed(_fw: ForgeWeaponObject) {
     const embed = new MessageEmbed({
-        title: _fw.weaponType,
+        title: formalise(_fw.weaponType),
         description:
 `
 **__Range__**:
-\t**__Minimum__**: ${_fw.range.min}
-\t**__Max__**: ${_fw.range.max}
-\t**__Radius__**: ${_fw.range.radius}
+‎\t**__Minimum__**: ${_fw.range.min}
+‎\t**__Max__**: ${_fw.range.max}
+‎\t**__Radius__**: ${_fw.range.radius}
 **__Damage Range__**: [${_fw.damageRange.min}] ~ [${_fw.damageRange.max}]
-**__Accuracy__**: ${roundToDecimalPlace(_fw.accuracy)}
-**__Lifesteal__**: ${roundToDecimalPlace(_fw.lifesteal) * 100}%
-**__Bonus Critical Chance__**: +${roundToDecimalPlace(_fw.criticalHit)}
-**__Readiness Cost__**: ${roundToDecimalPlace(_fw.readinessCost)}
-**__Stamina Cost__**: ${roundToDecimalPlace(_fw.staminaCost)}
+**__Accuracy__**: [${_fw.accuracy}]
+**__Lifesteal__**: [${_fw.lifesteal * 100}]%
+**__Bonus Critical Chance__**: +[${_fw.criticalHit}]
+**__Readiness Cost__**: [${_fw.readinessCost}]
+**__Stamina Cost__**: [${_fw.staminaCost}]
 `
     })
 

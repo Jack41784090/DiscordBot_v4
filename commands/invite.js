@@ -37,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var Database_1 = require("../classes/Database");
+var InteractionEventManager_1 = require("../classes/InteractionEventManager");
 var Utility_1 = require("../classes/Utility");
 module.exports = {
     commands: ['invite'],
@@ -44,15 +45,20 @@ module.exports = {
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var invitedUser, invitedUserData_1, acceptedInvite, rejectedInvite, invitationAccepted, tryTwo;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var invitedUser, invitedUserData_1, _a, acceptedInvite, rejectedInvite, invitationAccepted, tryTwo;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     invitedUser = message.mentions.users.first();
-                    if (!(invitedUser && invitedUser.id !== author.id)) return [3 /*break*/, 7];
+                    if (!(invitedUser && invitedUser.id !== author.id)) return [3 /*break*/, 8];
+                    _a = InteractionEventManager_1.InteractionEventManager.userData(invitedUser.id);
+                    if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, (0, Database_1.getUserData)(invitedUser)];
                 case 1:
-                    invitedUserData_1 = _a.sent();
+                    _a = (_b.sent());
+                    _b.label = 2;
+                case 2:
+                    invitedUserData_1 = _a;
                     acceptedInvite = function () { return __awaiter(void 0, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             switch (_a.label) {
@@ -86,37 +92,37 @@ module.exports = {
                             return [2 /*return*/];
                         });
                     }); };
-                    if (!(invitedUserData_1.classes[0] !== undefined)) return [3 /*break*/, 6];
+                    if (!(invitedUserData_1.classes[0] !== undefined)) return [3 /*break*/, 7];
                     if (invitedUserData_1.equippedClass == null) {
                         invitedUserData_1.equippedClass = invitedUserData_1.classes[0];
                     }
                     return [4 /*yield*/, (0, Utility_1.sendInvitation)(invitedUser, author)];
-                case 2:
-                    invitationAccepted = _a.sent();
-                    if (!(invitationAccepted === true)) return [3 /*break*/, 3];
-                    acceptedInvite();
-                    return [3 /*break*/, 6];
                 case 3:
-                    if (!(invitationAccepted === false)) return [3 /*break*/, 4];
-                    rejectedInvite();
-                    return [3 /*break*/, 6];
+                    invitationAccepted = _b.sent();
+                    if (!(invitationAccepted === true)) return [3 /*break*/, 4];
+                    acceptedInvite();
+                    return [3 /*break*/, 7];
                 case 4:
-                    if (!(invitationAccepted === null)) return [3 /*break*/, 6];
-                    return [4 /*yield*/, (0, Utility_1.sendInvitation)(invitedUser, author, channel)];
+                    if (!(invitationAccepted === false)) return [3 /*break*/, 5];
+                    rejectedInvite();
+                    return [3 /*break*/, 7];
                 case 5:
-                    tryTwo = _a.sent();
+                    if (!(invitationAccepted === null)) return [3 /*break*/, 7];
+                    return [4 /*yield*/, (0, Utility_1.sendInvitation)(invitedUser, author, channel)];
+                case 6:
+                    tryTwo = _b.sent();
                     if (tryTwo === true) {
                         acceptedInvite();
                     }
                     else {
                         rejectedInvite();
                     }
-                    _a.label = 6;
-                case 6: return [3 /*break*/, 8];
-                case 7:
+                    _b.label = 7;
+                case 7: return [3 /*break*/, 9];
+                case 8:
                     message.reply("You did not mention a player. Mention another user to invite them.");
-                    _a.label = 8;
-                case 8: return [2 /*return*/];
+                    _b.label = 9;
+                case 9: return [2 /*return*/];
             }
         });
     }); }

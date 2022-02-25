@@ -69,7 +69,6 @@ var __1 = require("..");
 var fs_1 = __importDefault(require("fs"));
 var imgur_1 = require("imgur");
 var Item_1 = require("./Item");
-var jsons_1 = require("../jsons");
 var InteractionEventManager_1 = require("./InteractionEventManager");
 // firebase login
 admin.initializeApp({
@@ -116,7 +115,9 @@ function saveUserData(_userData) {
                     if (snapshotData.exists) {
                         defaultUserData = getDefaultUserData();
                         mod = (0, Utility_1.getNewObject)(_userData, {
-                            inventory: (_userData === null || _userData === void 0 ? void 0 : _userData.inventory.map(function (_i) { return _i.returnObject(); })) || []
+                            inventory: (_userData === null || _userData === void 0 ? void 0 : _userData.inventory.map(function (_i) { return _i.returnObject(); })) || [],
+                            arsenal: (_userData === null || _userData === void 0 ? void 0 : _userData.arsenal.map(function (_i) { return _i.returnObject(); })) || [],
+                            equippedWeapon: (_userData === null || _userData === void 0 ? void 0 : _userData.equippedWeapon.map(function (_i) { return _i.returnObject(); })) || []
                         });
                         document.update((0, Utility_1.getNewObject)(defaultUserData, mod));
                     }
@@ -168,9 +169,9 @@ function getUserData(id_author) {
                     fetched = _d.sent();
                     defaultData = getDefaultUserData(user);
                     data = (0, Utility_1.getNewObject)(defaultData, fetched);
-                    data.inventory = data.inventory.map(function (_i) {
-                        return Item_1.Item.Classify(_i);
-                    });
+                    data.inventory = data.inventory.map(function (_i) { return Item_1.Item.Classify(_i); });
+                    data.arsenal = data.arsenal.map(function (_i) { return Item_1.Item.Classify(_i); });
+                    data.equippedWeapon = data.equippedWeapon.map(function (_i) { return Item_1.Item.Classify(_i); });
                     if (!(fetched === null)) return [3 /*break*/, 6];
                     return [4 /*yield*/, createNewUser(user)];
                 case 5:
@@ -271,11 +272,10 @@ function getDefaultUserData(_user) {
         party: [id],
         settings: getDefaultSettings(),
         equippedClass: "Fighter",
-        equippedWeapon: [
-            (0, Utility_1.getNewObject)(jsons_1.universalWeaponsData.Unarmed)
-        ],
+        equippedWeapon: [],
         welfare: 1,
         inventory: [],
+        arsenal: [],
     };
 }
 exports.getDefaultUserData = getDefaultUserData;
@@ -491,7 +491,7 @@ function getEquippedForgeWeapon(_id) {
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _a = InteractionEventManager_1.InteractionEventManager.getInstance().userData(_id);
+                    _a = InteractionEventManager_1.InteractionEventManager.userData(_id);
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, getUserData(_id)];
                 case 1:

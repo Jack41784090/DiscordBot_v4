@@ -14,6 +14,7 @@ interface InteractionSplit {
     'battle': InteractionEvent | null;
     'info': InteractionEvent | null;
     'forge': InteractionEvent | null;
+    'equip': InteractionEvent | null;
 }
 
 export class InteractionEventManager {
@@ -25,15 +26,15 @@ export class InteractionEventManager {
         }
         return this.instance;
     }
+    static userData(_id: OwnerID): UserData | null {
+        return this.getInstance().user_interaction_map.get(_id)?.userData || null;
+    }
+    
 
     user_interaction_map: Map<OwnerID, InteractionSplit>;
 
     private constructor() {
         this.user_interaction_map = new Map<OwnerID, InteractionSplit>();
-    }
-
-    userData(_id: OwnerID): UserData | null {
-        return this.user_interaction_map.get(_id)?.userData || null;
     }
 
     async registerInteraction(_id: OwnerID, _interactionEvent: InteractionEvent, _userData?: UserData): Promise<UserData | null> {
@@ -54,7 +55,6 @@ export class InteractionEventManager {
                     }
 
                     const interactionEventCount: number = Object.keys(interactionEventData).length;
-                    // log(`\tnulled: ${nulledCount} v. eventCount: ${interactionEventCount}`)
                     
                     if (nulledCount === interactionEventCount) {
                         await saveUserData(interactionSplit.userData);
@@ -67,10 +67,12 @@ export class InteractionEventManager {
                 'battle': null,
                 'info': null,
                 'forge': null,
+                'equip': null,
             }).get(_id)!;
         const existing: InteractionEvent | null = split[_interactionEvent.interactionEventType];
         if (!existing || (existing && existing.stoppable === true)) {
             this.stopInteraction(_id, _interactionEvent.interactionEventType, _interactionEvent);
+            split[_interactionEvent.interactionEventType] = _interactionEvent;
             return split.userData;
         }
         else {

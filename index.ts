@@ -9,6 +9,7 @@ import { areasData } from "./jsons.js";
 import { CommandModule, COMMAND_CALL, MapData } from "./typedef.js";
 
 import { debug, log } from "console"
+import { InteractionEventManager } from "./classes/InteractionEventManager.js";
 
 const commandReferral: { [key: string]: CommandModule } = {};
 
@@ -66,7 +67,7 @@ BotClient.on('messageCreate', async m => {
     if (author.bot === true) return;
 
     if (content[0] === COMMAND_CALL) {
-        const firebaseAuthor = await getUserData(author);
+        const firebaseAuthor = InteractionEventManager.userData(author.id) || await getUserData(author);
         const sections = extractCommands(content); log(sections)
         const command = sections[0]; sections.shift();
         if (commandReferral[command]) {

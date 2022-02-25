@@ -1,6 +1,6 @@
 import { Client, Guild, Message, TextChannel, User } from "discord.js";
 import { Battle } from "./classes/Battle";
-import { Item } from "./classes/Item";
+import { ForgeWeaponItem, Item } from "./classes/Item";
 import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
 import { AbilityEffect } from "./classes/WeaponEffect";
@@ -294,13 +294,13 @@ export interface Settings {
 export interface UserData {
     classes: Array<Class>,
     equippedClass: Class,
-    equippedWeapon: Array<ForgeWeaponObject>,
-    arsenal: Array<ForgeWeaponObject>,
+    equippedWeapon: Array<ForgeWeaponItem>,
     money: number,
     name: string,
     party: Array<string>,
     settings: Settings,
     welfare: number,
+    arsenal: Array<ForgeWeaponItem>,
     inventory: Array<Item>,
 }
 

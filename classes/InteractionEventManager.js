@@ -77,9 +77,9 @@ var InteractionEventManager = /** @class */ (function () {
         }
         return this.instance;
     };
-    InteractionEventManager.prototype.userData = function (_id) {
+    InteractionEventManager.userData = function (_id) {
         var _a;
-        return ((_a = this.user_interaction_map.get(_id)) === null || _a === void 0 ? void 0 : _a.userData) || null;
+        return ((_a = this.getInstance().user_interaction_map.get(_id)) === null || _a === void 0 ? void 0 : _a.userData) || null;
     };
     InteractionEventManager.prototype.registerInteraction = function (_id, _interactionEvent, _userData) {
         return __awaiter(this, void 0, void 0, function () {
@@ -128,6 +128,7 @@ var InteractionEventManager = /** @class */ (function () {
                                                     finally { if (e_1) throw e_1.error; }
                                                 }
                                                 interactionEventCount = Object.keys(jsons_1.interactionEventData).length;
+                                                (0, console_1.log)("\tnulled: " + nulledCount + " v. eventCount: " + interactionEventCount);
                                                 if (!(nulledCount === interactionEventCount)) return [3 /*break*/, 2];
                                                 return [4 /*yield*/, (0, Database_1.saveUserData)(interactionSplit.userData)];
                                             case 1:
@@ -144,6 +145,7 @@ var InteractionEventManager = /** @class */ (function () {
                                 _f['battle'] = null,
                                 _f['info'] = null,
                                 _f['forge'] = null,
+                                _f['equip'] = null,
                                 _f)])).get(_id);
                         _g.label = 3;
                     case 3:
@@ -151,6 +153,7 @@ var InteractionEventManager = /** @class */ (function () {
                         existing = split[_interactionEvent.interactionEventType];
                         if (!existing || (existing && existing.stoppable === true)) {
                             this.stopInteraction(_id, _interactionEvent.interactionEventType, _interactionEvent);
+                            split[_interactionEvent.interactionEventType] = _interactionEvent;
                             return [2 /*return*/, split.userData];
                         }
                         else {

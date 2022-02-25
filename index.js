@@ -77,6 +77,7 @@ var Utility_js_1 = require("./classes/Utility.js");
 var jsons_js_1 = require("./jsons.js");
 var typedef_js_1 = require("./typedef.js");
 var console_1 = require("console");
+var InteractionEventManager_js_1 = require("./classes/InteractionEventManager.js");
 var commandReferral = {};
 exports.BotClient = new discord_js_1.Client({
     intents: [
@@ -151,17 +152,22 @@ exports.BotClient.on('ready', function () { return __awaiter(void 0, void 0, voi
     });
 }); });
 exports.BotClient.on('messageCreate', function (m) { return __awaiter(void 0, void 0, void 0, function () {
-    var author, content, channel, member, guild, firebaseAuthor, sections, command;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var author, content, channel, member, guild, firebaseAuthor, _a, sections, command;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 author = m.author, content = m.content, channel = m.channel, member = m.member, guild = m.guild;
                 if (author.bot === true)
                     return [2 /*return*/];
-                if (!(content[0] === typedef_js_1.COMMAND_CALL)) return [3 /*break*/, 2];
+                if (!(content[0] === typedef_js_1.COMMAND_CALL)) return [3 /*break*/, 3];
+                _a = InteractionEventManager_js_1.InteractionEventManager.userData(author.id);
+                if (_a) return [3 /*break*/, 2];
                 return [4 /*yield*/, (0, Database_js_1.getUserData)(author)];
             case 1:
-                firebaseAuthor = _a.sent();
+                _a = (_b.sent());
+                _b.label = 2;
+            case 2:
+                firebaseAuthor = _a;
                 sections = (0, Utility_js_1.extractCommands)(content);
                 (0, console_1.log)(sections);
                 command = sections[0];
@@ -169,8 +175,8 @@ exports.BotClient.on('messageCreate', function (m) { return __awaiter(void 0, vo
                 if (commandReferral[command]) {
                     commandReferral[command].callback(author, firebaseAuthor, content, channel, guild, sections, m, exports.BotClient);
                 }
-                _a.label = 2;
-            case 2: return [2 /*return*/];
+                _b.label = 3;
+            case 3: return [2 /*return*/];
         }
     });
 }); });
