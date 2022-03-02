@@ -107,6 +107,7 @@ var Battle = /** @class */ (function () {
         // user cache
         this.userCache = new Map();
         this.userDataCache = new Map();
+        this.interactionCache = new Map();
         this.author = _author;
         this.message = _message;
         this.channel = _message.channel;
@@ -298,7 +299,7 @@ var Battle = /** @class */ (function () {
                     case 1:
                         if (!(i < this.party.length)) return [3 /*break*/, 7];
                         ownerID = this.party[i];
-                        interactEvent = new InteractionEvent_1.InteractionEvent(ownerID, this.message, 'battle');
+                        interactEvent = this.interactionCache.set(ownerID, new InteractionEvent_1.InteractionEvent(ownerID, this.message, 'battle')).get(ownerID);
                         return [4 /*yield*/, instance.registerInteraction(ownerID, interactEvent)];
                     case 2:
                         userData = _b.sent();
@@ -348,7 +349,7 @@ var Battle = /** @class */ (function () {
                     this.author.send({
                         embeds: [
                             new discord_js_1.MessageEmbed({
-                                title: "Alert!",
+                                title: "Achtung!",
                                 description: "One of your teammates playing " + player.base.class + " has 0 welfare and cannot attend the battle.",
                                 footer: {
                                     text: "associated user: " + (((_c = this.userCache.get(player.owner)) === null || _c === void 0 ? void 0 : _c.username) || player.owner)
@@ -356,6 +357,7 @@ var Battle = /** @class */ (function () {
                             })
                         ]
                     });
+                    this.removeEntity(player);
                 }
             }
         }
@@ -653,10 +655,10 @@ var Battle = /** @class */ (function () {
         });
     };
     Battle.prototype.FinishRound = function () {
-        var _b;
+        var _b, _c;
         return __awaiter(this, void 0, void 0, function () {
             var PVE, PVP, allStats, i, id, stat, userData, endEmbedFields_1, victoryTitle;
-            return __generator(this, function (_c) {
+            return __generator(this, function (_d) {
                 (0, console_1.log)("Finishing Round...");
                 PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
                 PVP = this.playerCount === 1;
@@ -669,19 +671,19 @@ var Battle = /** @class */ (function () {
                         if (userData) {
                             userData.welfare = (0, Utility_1.clamp)(stat.HP / stat.base.maxHP, 0, 1);
                         }
-                        InteractionEventManager_1.InteractionEventManager.getInstance().stopInteraction(id, 'battle');
+                        (_b = this.interactionCache.get(id)) === null || _b === void 0 ? void 0 : _b.stop();
                     }
                     endEmbedFields_1 = [];
                     this.callbackOnParty(function (stat) {
                         var statAcco = stat.accolades;
-                        var value = "Kills: " + statAcco.kill + "\n                        damageRange Dealt: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageDealt) + "\n                        Healing Done: " + (0, Utility_1.roundToDecimalPlace)(statAcco.healingDone) + "\n                        damageRange Absorbed: " + (0, Utility_1.roundToDecimalPlace)(statAcco.absorbed) + "\n                        damageRange Taken: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageTaken) + "\n                        Dodged: " + statAcco.dodged + " times\n                        Critical Hits: " + statAcco.critNo + " times\n                        Clashed " + statAcco.clashNo + " times\n                        Average Rolls: " + ((0, Utility_1.roundToDecimalPlace)(statAcco.rollAverage) || "N/A");
+                        var value = "Kills: " + statAcco.kill + "\ndamageRange Dealt: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageDealt) + "\nHealing Done: " + (0, Utility_1.roundToDecimalPlace)(statAcco.healingDone) + "\ndamageRange Absorbed: " + (0, Utility_1.roundToDecimalPlace)(statAcco.absorbed) + "\ndamageRange Taken: " + (0, Utility_1.roundToDecimalPlace)(statAcco.damageTaken) + "\nDodged: " + statAcco.dodged + " times\nCritical Hits: " + statAcco.critNo + " times\nClashed " + statAcco.clashNo + " times\nAverage Rolls: " + ((0, Utility_1.roundToDecimalPlace)(statAcco.rollAverage) || "N/A");
                         endEmbedFields_1.push({
                             name: stat.name + (" (" + stat.base.class + ")"),
                             value: value,
                         });
                     });
                     victoryTitle = this.pvp ?
-                        (((_b = this.allStats().find(function (_s) { return _s.owner && _s.HP > 0; })) === null || _b === void 0 ? void 0 : _b.base.class) || "What? No one ") + " wins!" :
+                        (((_c = this.allStats().find(function (_s) { return _s.owner && _s.HP > 0; })) === null || _c === void 0 ? void 0 : _c.base.class) || "What? No one ") + " wins!" :
                         this.totalEnemyCount === 0 ? "VICTORY!" : "Defeat.";
                     this.channel.send({
                         embeds: [new discord_js_1.MessageEmbed({
@@ -1329,7 +1331,7 @@ var Battle = /** @class */ (function () {
                 // crit
                 if (hit <= hitChance * 0.1 + crit) {
                     u_damage = ((0, Utility_1.uniformRandom)((0, Utility_1.average)(minDamage, maxDamage), maxDamage)) * 2;
-                    fate = "criticalHit";
+                    fate = "CRIT";
                 }
                 // hit
                 else {
@@ -2706,8 +2708,8 @@ var Battle = /** @class */ (function () {
             // is not 5, buff is most probably more than 5. Ignore.
         }
     };
-    Battle.prototype.getStatus = function (_stat, _type) {
-        return _stat.statusEffects.filter(function (_s) { return _s.type === _type; });
+    Battle.prototype.getStatus = function (_s, _type) {
+        return _s.statusEffects.filter(function (_s) { return _s.type === _type; });
     };
     Battle.ROUND_SECONDS = 100;
     Battle.MAX_READINESS = 25;

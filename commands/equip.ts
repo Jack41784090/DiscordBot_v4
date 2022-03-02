@@ -22,13 +22,13 @@ module.exports = {
 
         const getComponents = () => {
             const inventorySelectMenu =
-                getInventorySelectOptions(authorUserData.arsenal
-                    .filter(_fwI => !authorUserData.equippedWeapon.includes(_fwI)));
+                getInventorySelectOptions(updatedUserData.arsenal
+                    .filter(_fwI => !updatedUserData.equippedWeapon.includes(_fwI)));
             return {
                 embeds: [
                     new MessageEmbed({
                         title: "Equipments",
-                        fields: authorUserData.equippedWeapon.map(_fw => {
+                        fields: updatedUserData.equippedWeapon.map(_fw => {
                             const _ = getForgeWeaponEmbed(_fw);
                             return {
                                 name: _.title!,
@@ -48,19 +48,19 @@ module.exports = {
             setUpInteractionCollect(equipMes, async _itr => {
                 if (_itr.isSelectMenu()) {
                     const selectedIndexArsenal: number = parseInt(_itr.values[0]);
-                    const weaponSelected: ForgeWeaponItem = authorUserData.arsenal[selectedIndexArsenal];
+                    const weaponSelected: ForgeWeaponItem = updatedUserData.arsenal[selectedIndexArsenal];
 
                     if (weaponSelected) {
-                        if (authorUserData.equippedWeapon.length >= 2) {
+                        if (updatedUserData.equippedWeapon.length >= 2) {
                             const replacing: ForgeWeaponObject | null =
-                                authorUserData.equippedWeapon
+                                updatedUserData.equippedWeapon
                                     .find(_fw => _fw.attackType === weaponSelected.attackType) || null;
                             if (replacing) {
-                                arrayRemoveItemArray(authorUserData.equippedWeapon, replacing);
+                                arrayRemoveItemArray(updatedUserData.equippedWeapon, replacing);
                             }
                         }
-                        if (authorUserData.equippedWeapon.length < 2) {
-                            authorUserData.equippedWeapon.push(weaponSelected);
+                        if (updatedUserData.equippedWeapon.length < 2) {
+                            updatedUserData.equippedWeapon.push(weaponSelected);
                             await _itr.update(getComponents());
                         }
                         collect();
@@ -73,7 +73,7 @@ module.exports = {
                                 break;
 
                             case 'end':
-                                iem.stopInteraction(author.id, event.interactionEventType);
+                                event.stop();
                                 break;
                         }
                     }

@@ -72,7 +72,7 @@ module.exports = {
                                         resolve(listenFor(_t));
                                         break;
                                     case 'end':
-                                        iem.stopInteraction(author.id, 'forge');
+                                        event.stop();
                                         resolve(null)
                                         break;
                                     default:
@@ -112,22 +112,21 @@ module.exports = {
             ],
             components: [getSelectMenuActionRow(weapons)]
         });
-        selectedWeaponType = await new Promise(resolve => {
-            const timeout = setTimeout(() => {
-                iem.stopInteraction(author.id, 'forge')
-                itrC.stop();
-                resolve(null);
-            }, 100 * 1000);
-
-            const itrC = setUpInteractionCollect(forgeMes, async _itr => {
-                clearTimeout(timeout);
-                if (_itr.isSelectMenu()) {
-                    const selected = _itr.values[0] as ForgeWeaponType;
-                    await _itr.update({});
-                    resolve(selected);
-                }
-            }, 1);
-        });
+        const weaponTypeColl = async () => {
+            return new Promise<ForgeWeaponType | null>(resolve => {
+                const itrC = setUpInteractionCollect(forgeMes, async _itr => {
+                    if (_itr.user.id !== author.id) {
+                        resolve(weaponTypeColl())
+                    }
+                    else if (_itr.isSelectMenu()) {
+                        const selected = _itr.values[0] as ForgeWeaponType;
+                        await _itr.update({});
+                        resolve(selected);
+                    }
+                }, 1);
+            });
+        }
+        selectedWeaponType = await weaponTypeColl();
         if (selectedWeaponType === null) {
             return;
         }
@@ -179,7 +178,7 @@ module.exports = {
             // add weapon as an item
             updatedUserData.arsenal.push(forged);
 
-            iem.stopInteraction(author.id, 'forge');
+            event.stop();
 
             message.reply({
                 embeds: [weaponEmbed]
@@ -188,7 +187,7 @@ module.exports = {
         // no, don't forge!
         async _itr => {
             await _itr.update({});
-            iem.stopInteraction(author.id, 'forge');
+            event.stop();
         });
     }
 } as CommandModule;

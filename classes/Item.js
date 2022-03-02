@@ -438,6 +438,9 @@ var ForgeWeaponItem = /** @class */ (function (_super) {
             staminaCost: this.staminaCost,
         };
     };
+    ForgeWeaponItem.prototype.getDisplayName = function () {
+        return this.getName() + " " + (0, Utility_1.formalise)(this.weaponType);
+    };
     return ForgeWeaponItem;
 }(Item));
 exports.ForgeWeaponItem = ForgeWeaponItem;

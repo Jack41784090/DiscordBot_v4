@@ -1,41 +1,66 @@
-import { Message, User } from "discord.js";
-import { InteractionEventOptions, InteractionEventType, OwnerID } from "../typedef";
+import { Interaction, InteractionCollector, Message, User } from "discord.js";
+import { InteractionEventOptions, InteractionEventType, OwnerID, UserData } from "../typedef";
 import { Battle } from "./Battle";
+import { Dungeon } from "./Dungeon";
 import { InteractionEventManager } from "./InteractionEventManager";
+
+import { debug, log } from "console"
+import { getUserData } from "./Database";
+import { arrayRemoveItemArray } from "./Utility";
+import { Room } from "./Room";
 
 export class InteractionEvent {
     battle?: Battle;
+    dungeon?: Dungeon;
+
     ownerID: OwnerID;
     interactedMessage: Message;
-    interactionEventType: InteractionEventType;
-    stoppable: boolean;
+    type: InteractionEventType;
+    stoppable: boolean = false;
+    collectors: Array<InteractionCollector<Interaction>> = [];
+    finishingPromiseResolve: (_v: void | PromiseLike<void>) => void = () => {};
+    finishingPromiseTimer: NodeJS.Timeout = setTimeout(() => {}, 1);
+    finishingPromise: Promise<void>;
 
     constructor(_id: OwnerID, _message: Message, _eventType: InteractionEventType, _options: InteractionEventOptions = {}) {
         this.ownerID = _id;
-        this.interactionEventType = _eventType;
+        this.type = _eventType;
         this.interactedMessage = _message;
 
-        if (_eventType === 'battle') {
-            if (_options.battle) {
-                this.battle = _options.battle;
-            }
-            else {
-                InteractionEventManager.getInstance().stopInteraction(_id, 'battle');
-            }
-        }
+        this.finishingPromise = new Promise<void>((resolve) => {
+            this.finishingPromiseResolve = resolve;
 
-        this.stoppable = (() => {
-            switch (_eventType) {
-                case 'battle':
-                    return false;
-                default:
-                    return true;
-            }
-        })();
+            // inactivity stop
+            this.finishingPromiseTimer = setTimeout(() => {
+                this.collectors.forEach(_c => _c.stop());
+                resolve();
+                this.stop();
+            }, 100 * 1000);
+
+            // stop function stop: calling this.finishingPromise(true)
+        });
+
+        // special cases events
+        switch (_eventType) {
+            case 'battle':
+            case 'dungeon':
+                if (_options[_eventType] !== undefined) {
+                    this.stoppable = false;
+                    this[_eventType] = _options[_eventType] as (Battle & Dungeon);
+                }
+                else {
+                    this.finishingPromiseResolve();
+                }
+                break;
+        
+            default:
+                this.stoppable = true;
+                break;
+        }
     }
 
-    stop() {
-        switch (this.interactionEventType) {
+    async stop() {
+        switch (this.type) {
             case 'battle':
                 if (this.battle) {
                     const stat = this.battle.allStats().find(_s => _s.owner === this.ownerID);
@@ -43,12 +68,48 @@ export class InteractionEvent {
                         this.battle.removeEntity(stat);
                     }
                 }
+                clearTimeout(this.finishingPromiseTimer);
+                this.finishingPromiseResolve();
+                break;
+
+            case 'dungeon':
+                if (this.dungeon) {
+                    const leaderData: UserData | null = InteractionEventManager.userData(this.dungeon.leaderUser?.id || "");
+                    // remove the player from the leader's userData and the dungeon's user cache
+                    if (leaderData) {
+                        arrayRemoveItemArray(this.dungeon.userParty, this.dungeon.userParty.find(_u => _u.id === this.ownerID));
+                        arrayRemoveItemArray(leaderData.party, this.ownerID);
+                    }
+
+                    // remove the player from every possible future battles
+                    for (let i = 0; i < this.dungeon.rooms.length; i++) {
+                        const room: Room = this.dungeon.rooms[i];
+                        if (room.isBattleRoom) {
+                            room.battle!.removeEntity(this.ownerID);
+                        }
+                    }
+                }
                 break;
         
             default:
                 this.interactedMessage.delete()
                     .catch(_err => null);
+                clearTimeout(this.finishingPromiseTimer);
+                this.finishingPromiseResolve();
                 break;
         }
+    }
+
+    promise() {
+        return this.finishingPromise;
+    }
+
+    activity() {
+        clearTimeout(this.finishingPromiseTimer);
+        this.finishingPromiseTimer = setTimeout(() => {
+            this.collectors.forEach(_c => _c.stop());
+            this.finishingPromiseResolve;
+            this.stop();
+        }, 5 * 1000);
     }
 }

@@ -61,13 +61,13 @@ module.exports = {
                 case 2:
                     updatedUserData = (_a.sent());
                     getComponents = function () {
-                        var inventorySelectMenu = (0, Utility_1.getInventorySelectOptions)(authorUserData.arsenal
-                            .filter(function (_fwI) { return !authorUserData.equippedWeapon.includes(_fwI); }));
+                        var inventorySelectMenu = (0, Utility_1.getInventorySelectOptions)(updatedUserData.arsenal
+                            .filter(function (_fwI) { return !updatedUserData.equippedWeapon.includes(_fwI); }));
                         return {
                             embeds: [
                                 new discord_js_1.MessageEmbed({
                                     title: "Equipments",
-                                    fields: authorUserData.equippedWeapon.map(function (_fw) {
+                                    fields: updatedUserData.equippedWeapon.map(function (_fw) {
                                         var _ = (0, Utility_1.getForgeWeaponEmbed)(_fw);
                                         return {
                                             name: _.title,
@@ -89,17 +89,17 @@ module.exports = {
                                     case 0:
                                         if (!_itr.isSelectMenu()) return [3 /*break*/, 7];
                                         selectedIndexArsenal = parseInt(_itr.values[0]);
-                                        weaponSelected_1 = authorUserData.arsenal[selectedIndexArsenal];
+                                        weaponSelected_1 = updatedUserData.arsenal[selectedIndexArsenal];
                                         if (!weaponSelected_1) return [3 /*break*/, 3];
-                                        if (authorUserData.equippedWeapon.length >= 2) {
-                                            replacing = authorUserData.equippedWeapon
+                                        if (updatedUserData.equippedWeapon.length >= 2) {
+                                            replacing = updatedUserData.equippedWeapon
                                                 .find(function (_fw) { return _fw.attackType === weaponSelected_1.attackType; }) || null;
                                             if (replacing) {
-                                                (0, Utility_1.arrayRemoveItemArray)(authorUserData.equippedWeapon, replacing);
+                                                (0, Utility_1.arrayRemoveItemArray)(updatedUserData.equippedWeapon, replacing);
                                             }
                                         }
-                                        if (!(authorUserData.equippedWeapon.length < 2)) return [3 /*break*/, 2];
-                                        authorUserData.equippedWeapon.push(weaponSelected_1);
+                                        if (!(updatedUserData.equippedWeapon.length < 2)) return [3 /*break*/, 2];
+                                        updatedUserData.equippedWeapon.push(weaponSelected_1);
                                         return [4 /*yield*/, _itr.update(getComponents())];
                                     case 1:
                                         _b.sent();
@@ -120,7 +120,7 @@ module.exports = {
                                         collect();
                                         return [3 /*break*/, 7];
                                     case 6:
-                                        iem.stopInteraction(author.id, event.interactionEventType);
+                                        event.stop();
                                         return [3 /*break*/, 7];
                                     case 7: return [2 /*return*/];
                                 }

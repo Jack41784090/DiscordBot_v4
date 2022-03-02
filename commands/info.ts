@@ -20,8 +20,8 @@ module.exports = {
         });
 
         const iem: InteractionEventManager = InteractionEventManager.getInstance();
-        const iE: InteractionEvent = new InteractionEvent(author.id, mes, 'info');
-        await iem.registerInteraction(author.id, iE, authorUserData);
+        const event: InteractionEvent = new InteractionEvent(author.id, mes, 'info');
+        await iem.registerInteraction(author.id, event, authorUserData);
 
         const iconCache: Map<Class, string> = new Map<Class, string>();
         const getClassIconLink = async (className: Class) => {
@@ -64,7 +64,7 @@ module.exports = {
                     }
                     catch (_err) {
                         console.error(_err);
-                        iem.stopInteraction(author.id, 'info');
+                        event.stop();
                     }
                 }, 1);
             };
@@ -76,7 +76,7 @@ module.exports = {
                 .catch(_err => console.log);
             
             log("dne stop")
-            iem.stopInteraction(author.id, 'info');
+            event.stop();
         }
         else {
             const className = formalise(args[0]) as Class;
@@ -128,7 +128,7 @@ module.exports = {
                     catch (_err) {
                         console.log(_err);
                         log("error stop")
-                        iem.stopInteraction(author.id, 'info');
+                        event.stop();
                     }
                 }, 1);
             }; collect();

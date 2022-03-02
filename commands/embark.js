@@ -52,64 +52,81 @@ var Utility_1 = require("../classes/Utility");
 var typedef_1 = require("../typedef");
 var Dungeon_1 = require("../classes/Dungeon");
 var jsons_1 = require("../jsons");
+var InteractionEvent_1 = require("../classes/InteractionEvent");
+var InteractionEventManager_1 = require("../classes/InteractionEventManager");
 module.exports = {
     commands: ['embark', 'adventure', 'go'],
     expectedArgs: '[location]',
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var locationsEmbed, _a, _b, locationName, formalName, location_1, dungeon;
+        var locationsEmbed, _a, _b, locationName, formalName, location_1, dungeonInputData, dungeon, event_1, updatedUD;
         var e_1, _c;
         return __generator(this, function (_d) {
-            if (args[0] === undefined) {
-                locationsEmbed = new discord_js_1.MessageEmbed({
-                    title: "Here are all the places you can go...",
-                    description: '',
-                    footer: {
-                        text: "//go [location]"
-                    }
-                });
-                try {
-                    for (_a = __values(Object.keys(jsons_1.dungeonData)), _b = _a.next(); !_b.done; _b = _a.next()) {
-                        locationName = _b.value;
-                        formalName = (0, Utility_1.formalise)(locationName);
-                        locationsEmbed.description += "**" + formalName + "**\n";
-                    }
-                }
-                catch (e_1_1) { e_1 = { error: e_1_1 }; }
-                finally {
+            switch (_d.label) {
+                case 0:
+                    if (!(args[0] === undefined)) return [3 /*break*/, 1];
+                    locationsEmbed = new discord_js_1.MessageEmbed({
+                        title: "Here are all the places you can go...",
+                        description: '',
+                        footer: {
+                            text: "//go [location]"
+                        }
+                    });
                     try {
-                        if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
+                        for (_a = __values(Object.keys(jsons_1.dungeonData)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                            locationName = _b.value;
+                            formalName = (0, Utility_1.formalise)(locationName);
+                            locationsEmbed.description += "**" + formalName + "**\n";
+                        }
                     }
-                    finally { if (e_1) throw e_1.error; }
-                }
-                channel.send({ embeds: [locationsEmbed] });
-                //#endregion
-            }
-            else if (args[0]) {
-                location_1 = args[0];
-                //#region STATUS WORK
-                if (!authorData) {
-                    message.reply("You don't have an account set up yet. Use the `//begin` command first!");
-                    return [2 /*return*/];
-                }
-                if (!authorData.equippedClass) {
-                    message.reply("You have yet to have a class equipped.");
-                    return [2 /*return*/];
-                }
-                dungeon = jsons_1.dungeonData[location_1] ?
-                    (0, Utility_1.getNewObject)(jsons_1.dungeonData[location_1], {}) :
-                    null;
-                // BATTLEDATA INIT (SPAWN PLAYERS)
-                if (dungeon) {
+                    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                    finally {
+                        try {
+                            if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
+                        }
+                        finally { if (e_1) throw e_1.error; }
+                    }
+                    channel.send({ embeds: [locationsEmbed] });
+                    return [3 /*break*/, 5];
+                case 1:
+                    if (!args[0]) return [3 /*break*/, 5];
+                    location_1 = args[0];
+                    dungeonInputData = jsons_1.dungeonData[location_1] ?
+                        (0, Utility_1.getNewObject)(jsons_1.dungeonData[location_1], {}) :
+                        null;
+                    if (dungeonInputData === null) {
+                        message.reply("Cannot generate map. Check if you are inputting the correct map name.");
+                        return [2 /*return*/];
+                    }
+                    dungeon = Dungeon_1.Dungeon.Generate(dungeonInputData);
+                    event_1 = new InteractionEvent_1.InteractionEvent(author.id, message, 'dungeon', {
+                        dungeon: dungeon
+                    });
+                    return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance()
+                            .registerInteraction(author.id, event_1, authorData)];
+                case 2:
+                    updatedUD = _d.sent();
+                    if (!updatedUD) {
+                        message.reply("Your request is pending. Please try again later.");
+                        return [2 /*return*/];
+                    }
+                    if (!updatedUD.equippedClass) {
+                        message.reply("You have yet to have a class equipped.");
+                        return [2 /*return*/];
+                    }
+                    if (!dungeonInputData) return [3 /*break*/, 4];
                     message.react(typedef_1.EMOJI_TICK);
-                    Dungeon_1.Dungeon.Start(dungeon, message);
-                }
-                else {
+                    return [4 /*yield*/, dungeon.initialiseUsers(message)];
+                case 3:
+                    _d.sent();
+                    dungeon.readAction();
+                    return [3 /*break*/, 5];
+                case 4:
                     message.reply("The location \"" + location_1 + "\" is not valid.");
-                }
+                    _d.label = 5;
+                case 5: return [2 /*return*/];
             }
-            return [2 /*return*/];
         });
     }); }
 };

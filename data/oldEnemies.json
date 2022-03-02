@@ -18,7 +18,7 @@
                     1
                 ],
                 "readinessCost": 15,
-                "criticalHit": 0,
+                "CRIT": 0,
                 "CritScale": 0.1,
                 "targetting": {
                     "target": "o",
@@ -50,7 +50,7 @@
                     1
                 ],
                 "readinessCost": 5,
-                "criticalHit": 15,
+                "CRIT": 15,
                 "CritScale": 0.1,
                 "targetting": {
                     "target": "o",
@@ -83,7 +83,7 @@
                     1
                 ],
                 "readinessCost": 5,
-                "criticalHit": 0,
+                "CRIT": 0,
                 "CritScale": 0.1,
                 "targetting": {
                     "target": "o",
@@ -115,7 +115,7 @@
                     3
                 ],
                 "readinessCost": 15,
-                "criticalHit": 0,
+                "CRIT": 0,
                 "CritScale": 0.1,
                 "targetting": {
                     "target": "o",
@@ -134,7 +134,7 @@
                     1.5
                 ],
                 "readinessCost": 15,
-                "criticalHit": 0,
+                "CRIT": 0,
                 "CritScale": 0.1,
                 "targetting": {
                     "target": "o",

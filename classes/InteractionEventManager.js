@@ -35,42 +35,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __values = (this && this.__values) || function(o) {
-    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) return m.call(o);
-    if (o && typeof o.length === "number") return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-};
-var __read = (this && this.__read) || function (o, n) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator];
-    if (!m) return o;
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-    }
-    catch (error) { e = { error: error }; }
-    finally {
-        try {
-            if (r && !r.done && (m = i["return"])) m.call(i);
-        }
-        finally { if (e) throw e.error; }
-    }
-    return ar;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InteractionEventManager = void 0;
-var jsons_1 = require("../jsons");
 var Database_1 = require("./Database");
 var console_1 = require("console");
+var Utility_1 = require("./Utility");
 var InteractionEventManager = /** @class */ (function () {
     function InteractionEventManager() {
-        this.user_interaction_map = new Map();
+        this.userProfilesMap = new Map();
     }
+    // static to access data easier
     InteractionEventManager.getInstance = function () {
         if (InteractionEventManager.instance === undefined) {
             InteractionEventManager.instance = new InteractionEventManager();
@@ -79,99 +53,102 @@ var InteractionEventManager = /** @class */ (function () {
     };
     InteractionEventManager.userData = function (_id) {
         var _a;
-        return ((_a = this.getInstance().user_interaction_map.get(_id)) === null || _a === void 0 ? void 0 : _a.userData) || null;
+        return ((_a = this.getInstance().userProfilesMap.get(_id)) === null || _a === void 0 ? void 0 : _a.userData) || null;
+    };
+    InteractionEventManager.prototype.handle = function (_id) {
+        var _this = this;
+        (0, console_1.log)("New Handle");
+        var userProfile = this.userProfilesMap.get(_id) || null;
+        if (userProfile) {
+            if (userProfile.handling.length === 0) {
+                userProfile.handling = userProfile.pending;
+                userProfile.pending = [];
+            }
+            (0, console_1.debug)("\tHandling", userProfile.handling.map(function (_e) { return _e.type + " " + _e.finishingPromise; }));
+            (0, console_1.debug)("\tPending", userProfile.pending.map(function (_e) { return _e.type + " " + _e.finishingPromise; }));
+            userProfile.handlerPromise =
+                Promise.allSettled(userProfile.handling.map(function (_e) { return _e.promise(); }))
+                    .then(function () {
+                    userProfile.handling.forEach(function (_e) { return _e.stop(); });
+                    userProfile.handling = [];
+                    if (userProfile.pending.length > 0) {
+                        (0, console_1.log)("\t\tPending is not empty, reusing.");
+                        return _this.handle(_id);
+                    }
+                    else {
+                        (0, console_1.log)("\t\tAll done.");
+                        (0, Database_1.saveUserData)(userProfile.userData);
+                        return 1;
+                    }
+                });
+        }
     };
     InteractionEventManager.prototype.registerInteraction = function (_id, _interactionEvent, _userData) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var split, _a, _b, _c, _d, _e, existing;
-            var _f;
+            var returning, type, userProfile, _b, duplicateEvent, _c;
             var _this = this;
-            return __generator(this, function (_g) {
-                switch (_g.label) {
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
-                        (0, console_1.log)("Registering event (" + _id + "): " + _interactionEvent.interactionEventType);
-                        _a = this.user_interaction_map.get(_id);
-                        if (_a) return [3 /*break*/, 3];
-                        _c = (_b = this.user_interaction_map).set;
-                        _d = [_id];
-                        _f = {};
-                        _e = _userData;
-                        if (_e) return [3 /*break*/, 2];
-                        return [4 /*yield*/, (0, Database_1.getUserData)(_id)];
+                        returning = null;
+                        type = _interactionEvent.type;
+                        _b = this.userProfilesMap.get(_id);
+                        if (_b) return [3 /*break*/, 2];
+                        return [4 /*yield*/, (function () { return __awaiter(_this, void 0, void 0, function () {
+                                var _a, _b, _c, _d;
+                                var _f;
+                                return __generator(this, function (_g) {
+                                    switch (_g.label) {
+                                        case 0:
+                                            _b = (_a = this.userProfilesMap).set;
+                                            _c = [_id];
+                                            _f = {
+                                                pending: [],
+                                                handling: []
+                                            };
+                                            _d = _userData;
+                                            if (_d) return [3 /*break*/, 2];
+                                            return [4 /*yield*/, (0, Database_1.getUserData)(_id)];
+                                        case 1:
+                                            _d = (_g.sent());
+                                            _g.label = 2;
+                                        case 2: return [2 /*return*/, _b.apply(_a, _c.concat([(_f.userData = _d,
+                                                    _f)])).get(_id)];
+                                    }
+                                });
+                            }); })()];
                     case 1:
-                        _e = (_g.sent());
-                        _g.label = 2;
+                        _b = (_d.sent());
+                        _d.label = 2;
                     case 2:
-                        _a = _c.apply(_b, _d.concat([(_f.userData = _e,
-                                _f.timer = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
-                                    var nulledCount, interactionSplit, splitEntries, splitEntries_1, splitEntries_1_1, _a, _key, _value, interactionEventCount;
-                                    var e_1, _b;
-                                    return __generator(this, function (_c) {
-                                        switch (_c.label) {
-                                            case 0:
-                                                nulledCount = 0;
-                                                interactionSplit = this.user_interaction_map.get(_id);
-                                                splitEntries = Object.entries(interactionSplit);
-                                                try {
-                                                    for (splitEntries_1 = __values(splitEntries), splitEntries_1_1 = splitEntries_1.next(); !splitEntries_1_1.done; splitEntries_1_1 = splitEntries_1.next()) {
-                                                        _a = __read(splitEntries_1_1.value, 2), _key = _a[0], _value = _a[1];
-                                                        if (_value === null) {
-                                                            nulledCount++;
-                                                        }
-                                                    }
-                                                }
-                                                catch (e_1_1) { e_1 = { error: e_1_1 }; }
-                                                finally {
-                                                    try {
-                                                        if (splitEntries_1_1 && !splitEntries_1_1.done && (_b = splitEntries_1.return)) _b.call(splitEntries_1);
-                                                    }
-                                                    finally { if (e_1) throw e_1.error; }
-                                                }
-                                                interactionEventCount = Object.keys(jsons_1.interactionEventData).length;
-                                                (0, console_1.log)("\tnulled: " + nulledCount + " v. eventCount: " + interactionEventCount);
-                                                if (!(nulledCount === interactionEventCount)) return [3 /*break*/, 2];
-                                                return [4 /*yield*/, (0, Database_1.saveUserData)(interactionSplit.userData)];
-                                            case 1:
-                                                _c.sent();
-                                                clearInterval(interactionSplit.timer);
-                                                this.user_interaction_map.delete(_id);
-                                                _c.label = 2;
-                                            case 2: return [2 /*return*/];
-                                        }
-                                    });
-                                }); }, 2000),
-                                _f['inventory'] = null,
-                                _f['shop'] = null,
-                                _f['battle'] = null,
-                                _f['info'] = null,
-                                _f['forge'] = null,
-                                _f['equip'] = null,
-                                _f)])).get(_id);
-                        _g.label = 3;
+                        userProfile = _b;
+                        if (!(userProfile.pending.length < 5)) return [3 /*break*/, 5];
+                        duplicateEvent = userProfile.pending.find(function (_e) { return _e.type === type; }) ||
+                            userProfile.handling.find(function (_e) { return _e.type === type; }) ||
+                            null;
+                        if (!(!duplicateEvent || duplicateEvent.stoppable)) return [3 /*break*/, 5];
+                        (0, console_1.log)("Registering event (" + _id + "): " + _interactionEvent.type);
+                        duplicateEvent === null || duplicateEvent === void 0 ? void 0 : duplicateEvent.stop();
+                        userProfile.pending.push(_interactionEvent);
+                        returning = userProfile.userData;
+                        (0, console_1.debug)("\tHandler Promise is", userProfile.handlerPromise);
+                        (0, console_1.debug)("\tthen", (_a = userProfile.handlerPromise) === null || _a === void 0 ? void 0 : _a.then(function (_) { return _; }));
+                        _c = !userProfile.handlerPromise;
+                        if (_c) return [3 /*break*/, 4];
+                        return [4 /*yield*/, (0, Utility_1.promiseState)(userProfile.handlerPromise)];
                     case 3:
-                        split = _a;
-                        existing = split[_interactionEvent.interactionEventType];
-                        if (!existing || (existing && existing.stoppable === true)) {
-                            this.stopInteraction(_id, _interactionEvent.interactionEventType, _interactionEvent);
-                            split[_interactionEvent.interactionEventType] = _interactionEvent;
-                            return [2 /*return*/, split.userData];
+                        _c = (_d.sent()) === 'fulfilled';
+                        _d.label = 4;
+                    case 4:
+                        if (_c) {
+                            this.handle(_id);
                         }
-                        else {
-                            return [2 /*return*/, null];
-                        }
-                        return [2 /*return*/];
+                        _d.label = 5;
+                    case 5: return [2 /*return*/, returning];
                 }
             });
         });
-    };
-    InteractionEventManager.prototype.stopInteraction = function (_userID, _eventType, _replaceEvent) {
-        var _a;
-        (0, console_1.log)("Stopping event (" + _userID + "): " + _eventType);
-        var interaction = this.user_interaction_map.get(_userID);
-        if (interaction) {
-            (_a = interaction[_eventType]) === null || _a === void 0 ? void 0 : _a.stop();
-            interaction[_eventType] = _replaceEvent || null;
-        }
     };
     return InteractionEventManager;
 }());

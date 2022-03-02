@@ -1,5 +1,6 @@
 import { Client, Guild, Message, TextChannel, User } from "discord.js";
 import { Battle } from "./classes/Battle";
+import { Dungeon } from "./classes/Dungeon";
 import { ForgeWeaponItem, Item } from "./classes/Item";
 import { Room } from "./classes/Room";
 import { StatusEffect } from "./classes/StatusEffect";
@@ -485,7 +486,7 @@ export interface StatusEffectFunction {
     (_statusEffect: StatusEffect, _action: Action, _bd: Battle): void;
 }
 
-export type ClashResultFate = "Miss" | "Hit" | "criticalHit"
+export type ClashResultFate = "Miss" | "Hit" | "CRIT"
 
 export interface ClashResult {
     damage: number,
@@ -516,4 +517,5 @@ export type PathFindMethod = "lowest" | "highest";
 export type InteractionEventType = keyof typeof interactionEventData;
 export interface InteractionEventOptions {
     battle?: Battle
+    dungeon?: Dungeon
 }

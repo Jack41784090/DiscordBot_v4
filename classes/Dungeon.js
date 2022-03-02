@@ -358,35 +358,6 @@ var Dungeon = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         returnMapMessage = function () {
-                            var buttonOptions = [
-                                {
-                                    label: "UP ⬆️",
-                                    style: "PRIMARY",
-                                    customId: "up"
-                                },
-                                {
-                                    label: "DOWN ⬇️",
-                                    style: "SECONDARY",
-                                    customId: "down"
-                                },
-                                {
-                                    label: "RIGHT ➡️",
-                                    style: "PRIMARY",
-                                    customId: "right"
-                                },
-                                {
-                                    label: "LEFT ⬅️",
-                                    style: "SECONDARY",
-                                    customId: "left"
-                                },
-                                {
-                                    label: _this.displayMode === "pc" ?
-                                        "📱" :
-                                        "🖥️",
-                                    style: "SUCCESS",
-                                    customId: "switch"
-                                }
-                            ];
                             // const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
                             //     return {
                             //         label: `${formalize(_dItem.type)} x${_dItem.uses}`,
@@ -394,7 +365,7 @@ var Dungeon = /** @class */ (function () {
                             //     }
                             // });
                             var messagePayload = {
-                                components: [(0, Utility_1.getButtonsActionRow)(buttonOptions)],
+                                components: [(0, Utility_1.getButtonsActionRow)(Battle_1.Battle.MOVEMENT_BUTTONOPTIONS)],
                             };
                             // if (selectMenuOptions.length > 0) {
                             //     messagePayload.components!.push(getSelectMenuActionRow(selectMenuOptions));

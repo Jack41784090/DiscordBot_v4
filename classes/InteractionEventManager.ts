@@ -5,21 +5,19 @@ import { getUserData, saveUserData } from "./Database";
 import { InteractionEvent } from "./InteractionEvent";
 
 import { debug, log } from "console"
+import { promiseState } from "./Utility";
 
-interface InteractionSplit {
+interface InteractionUserProfile {
     userData: UserData,
-    timer: NodeJS.Timer,
-    'inventory': InteractionEvent | null;
-    'shop': InteractionEvent | null;
-    'battle': InteractionEvent | null;
-    'info': InteractionEvent | null;
-    'forge': InteractionEvent | null;
-    'equip': InteractionEvent | null;
+    pending: Array<InteractionEvent>,
+    handling: Array<InteractionEvent>,
+    handlerPromise?: Promise<unknown>,
 }
 
 export class InteractionEventManager {
     private static instance: InteractionEventManager;
 
+    // static to access data easier
     static getInstance(): InteractionEventManager {
         if (InteractionEventManager.instance === undefined) {
             InteractionEventManager.instance = new InteractionEventManager();
@@ -27,65 +25,83 @@ export class InteractionEventManager {
         return this.instance;
     }
     static userData(_id: OwnerID): UserData | null {
-        return this.getInstance().user_interaction_map.get(_id)?.userData || null;
+        return this.getInstance().userProfilesMap.get(_id)?.userData || null;
     }
     
-
-    user_interaction_map: Map<OwnerID, InteractionSplit>;
+    // instance values
+    userProfilesMap: Map<OwnerID, InteractionUserProfile>;
 
     private constructor() {
-        this.user_interaction_map = new Map<OwnerID, InteractionSplit>();
+        this.userProfilesMap = new Map<OwnerID, InteractionUserProfile>();
+    }
+
+    handle(_id: OwnerID) {
+        log("New Handle");
+        const userProfile: InteractionUserProfile | null =
+            this.userProfilesMap.get(_id) || null;
+        if (userProfile) {
+            if (userProfile.handling.length === 0) {
+                userProfile.handling = userProfile.pending;
+                userProfile.pending = [];
+            }
+
+            debug("\tHandling", userProfile.handling.map(_e => `${_e.type} ${_e.finishingPromise}`));
+            debug("\tPending", userProfile.pending.map(_e => `${_e.type} ${_e.finishingPromise}`));
+
+            userProfile.handlerPromise =
+                Promise.allSettled(userProfile.handling.map(_e => _e.promise()))
+                    .then(() => {
+                        userProfile.handling.forEach(_e => _e.stop());
+                        userProfile.handling = [];
+                        if (userProfile.pending.length > 0) {
+                            log("\t\tPending is not empty, reusing.")
+                            return this.handle(_id);
+                        }
+                        else {
+                            log("\t\tAll done.")
+                            saveUserData(userProfile.userData);
+                            return 1;
+                        }
+                    });
+        }
     }
 
     async registerInteraction(_id: OwnerID, _interactionEvent: InteractionEvent, _userData?: UserData): Promise<UserData | null> {
-        log(`Registering event (${_id}): ${_interactionEvent.interactionEventType}`);
-        const split: InteractionSplit =
-            this.user_interaction_map.get(_id)||
-            this.user_interaction_map.set(_id, {
-                userData: _userData || await getUserData(_id),
-                timer: setInterval(async () => {
-                    // log("Check null...");
-                    let nulledCount: number = 0;
-                    const interactionSplit: InteractionSplit = this.user_interaction_map.get(_id)!
-                    const splitEntries = Object.entries(interactionSplit);
-                    for (const [_key, _value] of splitEntries) {
-                        if (_value === null) {
-                            nulledCount++;
-                        }
-                    }
+        let returning = null;
+        const { type } = _interactionEvent;
+        const userProfile: InteractionUserProfile =
+            this.userProfilesMap.get(_id)||
+            await (async () => {
+                return this.userProfilesMap.set(_id, {
+                    pending: [],
+                    handling: [],
+                    userData: _userData || await getUserData(_id),
+                }).get(_id)!;
+            })();
+        
+        if (userProfile.pending.length < 5) {
+            const duplicateEvent: InteractionEvent | null =
+                userProfile.pending.find(_e => _e.type === type) ||
+                userProfile.handling.find(_e => _e.type === type) ||
+                null;
 
-                    const interactionEventCount: number = Object.keys(interactionEventData).length;
-                    
-                    if (nulledCount === interactionEventCount) {
-                        await saveUserData(interactionSplit.userData);
-                        clearInterval(interactionSplit.timer);
-                        this.user_interaction_map.delete(_id);
-                    }
-                }, 2000),
-                'inventory': null,
-                'shop': null,
-                'battle': null,
-                'info': null,
-                'forge': null,
-                'equip': null,
-            }).get(_id)!;
-        const existing: InteractionEvent | null = split[_interactionEvent.interactionEventType];
-        if (!existing || (existing && existing.stoppable === true)) {
-            this.stopInteraction(_id, _interactionEvent.interactionEventType, _interactionEvent);
-            split[_interactionEvent.interactionEventType] = _interactionEvent;
-            return split.userData;
-        }
-        else {
-            return null;
-        }
-    }
+            if (!duplicateEvent || duplicateEvent.stoppable) {
+                log(`Registering event (${_id}): ${_interactionEvent.type}`);
+                duplicateEvent?.stop();
+                userProfile.pending.push(_interactionEvent);
+                returning = userProfile.userData;
 
-    stopInteraction(_userID: OwnerID, _eventType: InteractionEventType, _replaceEvent?: InteractionEvent) {
-        log(`Stopping event (${_userID}): ${_eventType}`);
-        const interaction = this.user_interaction_map.get(_userID);
-        if (interaction) {
-            interaction[_eventType]?.stop();
-            interaction[_eventType] = _replaceEvent || null;
+                debug("\tHandler Promise is", userProfile.handlerPromise);
+                debug("\tthen", userProfile.handlerPromise?.then(_ => _));
+                if (
+                    !userProfile.handlerPromise ||
+                    (await promiseState(userProfile.handlerPromise)) === 'fulfilled'
+                ) {
+                    this.handle(_id);
+                }
+            }
         }
+
+        return returning;
     }
 }

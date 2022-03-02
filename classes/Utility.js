@@ -74,15 +74,14 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendToSandbox = exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpConfirmationInteractionCollect = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.Test = exports.getAttackAction = exports.translateRGBAToStringRGBA = exports.translateActionToCommentary = exports.translateClashToCommentary = exports.translateDirectionToMagnitudeAxis = exports.translateDirectionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getAttackRangeFromAA = exports.getDistance = exports.findEqualCoordinate = exports.getLongArm = exports.getLifesteal = exports.getCrit = exports.getExecutionSpeed = exports.getAcc = exports.getDamage = exports.getProt = exports.getDodge = exports.getAHP = exports.clamp = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.normaliseRGBA = void 0;
-exports.getForgeWeaponAttackAbility = exports.getForgeWeaponMinMax = exports.getForgeWeaponType = exports.getItemType = exports.getInventorySelectOptions = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoord = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getAbilityIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetSmallestInArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getAbilityEmbed = exports.getForgeWeaponEmbed = exports.getLoadingEmbed = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = void 0;
+exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpConfirmationInteractionCollect = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.promiseState = exports.Test = exports.getAttackAction = exports.translateRGBAToStringRGBA = exports.translateActionToCommentary = exports.translateClashToCommentary = exports.translateDirectionToMagnitudeAxis = exports.translateDirectionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getAttackRangeFromAA = exports.getDistance = exports.findEqualCoordinate = exports.getLongArm = exports.getLifesteal = exports.getCrit = exports.getExecutionSpeed = exports.getAcc = exports.getDamage = exports.getProt = exports.getDodge = exports.getAHP = exports.clamp = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.normaliseRGBA = void 0;
+exports.getForgeWeaponAttackAbility = exports.getForgeWeaponMinMax = exports.getForgeWeaponType = exports.getItemType = exports.getInventorySelectOptions = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoord = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getAbilityIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetSmallestInArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getAbilityEmbed = exports.getForgeWeaponEmbed = exports.getLoadingEmbed = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
 var console_1 = require("console");
 var __1 = require("..");
 var typedef_1 = require("../typedef");
 var Battle_1 = require("./Battle");
-var Item_1 = require("./Item");
 var jsons_1 = require("../jsons");
 var Database_1 = require("./Database");
 // RGBA
@@ -611,7 +610,7 @@ function translateClashToCommentary(_aA) {
                     100;
                 var critRate = roundToDecimalPlace(accDodge * 0.1 + getCrit(attacker, ability));
                 returnString +=
-                    "__**" + ability.abilityName + "**__ " + hitRate + "% [" + critRate + "%]\n                **" + fate + "!** -**" + roundToDecimalPlace(damage) + "** (" + roundToDecimalPlace(u_damage) + ") [" + roundToDecimalPlace(target.HP) + " => " + roundToDecimalPlace(target.HP - damage) + "]";
+                    "__**" + ability.abilityName + "**__ " + hitRate + "% [" + critRate + "%]\n**" + fate + "!** -**" + roundToDecimalPlace(damage) + "** (" + roundToDecimalPlace(u_damage) + ")";
                 if (target.HP > 0 && target.HP - damage <= 0) {
                     returnString += "\n__**KILLING BLOW!**__";
                 }
@@ -635,7 +634,7 @@ function translateClashToCommentary(_aA) {
 exports.translateClashToCommentary = translateClashToCommentary;
 function translateActionToCommentary(_action) {
     var _d = extractActions(_action), aAction = _d.aAction, mAction = _d.mAction;
-    var string = '';
+    var string = "[🌬️${_action.priority}] ";
     var attacker = aAction.attacker, target = aAction.target, ability = aAction.ability;
     switch (_action.type) {
         case 'Attack':
@@ -652,7 +651,6 @@ function translateActionToCommentary(_action) {
                 typedef_1.EMOJI_MONEYBAG + " " + attacker.base.class + " (" + attacker.index + ") loots.";
             break;
     }
-    string += " [\uD83C\uDF2C\uFE0F" + _action.priority + "]";
     return string;
 }
 exports.translateActionToCommentary = translateActionToCommentary;
@@ -681,22 +679,22 @@ function getAttackAction(_attacker, _victim, _weapon, _ability, _coord) {
 exports.getAttackAction = getAttackAction;
 function Test() {
     return __awaiter(this, void 0, void 0, function () {
-        var ud, i;
         return __generator(this, function (_d) {
-            switch (_d.label) {
-                case 0: return [4 /*yield*/, (0, Database_1.getUserData)("262871357455466496")];
-                case 1:
-                    ud = _d.sent();
-                    for (i = 0; i < 25; i++) {
-                        ud.inventory.push(Item_1.Item.Generate('cobalt', "Test"));
-                    }
-                    (0, Database_1.saveUserData)(ud);
-                    return [2 /*return*/];
-            }
+            return [2 /*return*/];
         });
     });
 }
 exports.Test = Test;
+function promiseState(p) {
+    var t = {};
+    return Promise.race([p, t])
+        .then(function (v) {
+        return (v === t) ?
+            "pending" :
+            "fulfilled";
+    }, function () { return "rejected"; });
+}
+exports.promiseState = promiseState;
 function findReferenceAngle(_angle) {
     var angle = Math.abs(_angle);
     if (angle <= 90) {
@@ -963,7 +961,7 @@ function dealWithAccolade(clashResult, attacker, defender) {
         if (defender.HP > 0 && defender.HP - CR_damage <= 0)
             attackerTAcco.kill++;
         // crit no
-        if (CR_fate === 'criticalHit')
+        if (CR_fate === "CRIT")
             attackerTAcco.critNo++;
         // damage dealt
         attackerTAcco.damageDealt += CR_damage;

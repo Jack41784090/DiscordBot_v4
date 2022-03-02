@@ -49,7 +49,7 @@ module.exports = {
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var mes, iem, iE, iconCache, getClassIconLink, getClassEmbed, selectMenuOptions, actionrow_1, selectMenu, _a, _b, _c, _d, collect_1, className_1, classChosen_1, arsenal, selectMenuOptions, weaponSelectActionRow_1, _e, _f, _g, _h, collect_2;
+        var mes, iem, event, iconCache, getClassIconLink, getClassEmbed, selectMenuOptions, actionrow_1, selectMenu, _a, _b, _c, _d, collect_1, className_1, classChosen_1, arsenal, selectMenuOptions, weaponSelectActionRow_1, _e, _f, _g, _h, collect_2;
         return __generator(this, function (_j) {
             switch (_j.label) {
                 case 0: return [4 /*yield*/, message.reply({
@@ -58,8 +58,8 @@ module.exports = {
                 case 1:
                     mes = _j.sent();
                     iem = InteractionEventManager_1.InteractionEventManager.getInstance();
-                    iE = new InteractionEvent_1.InteractionEvent(author.id, mes, 'info');
-                    return [4 /*yield*/, iem.registerInteraction(author.id, iE, authorUserData)];
+                    event = new InteractionEvent_1.InteractionEvent(author.id, mes, 'info');
+                    return [4 /*yield*/, iem.registerInteraction(author.id, event, authorUserData)];
                 case 2:
                     _j.sent();
                     iconCache = new Map();
@@ -139,7 +139,7 @@ module.exports = {
                                     case 4:
                                         _err_1 = _e.sent();
                                         console.error(_err_1);
-                                        iem.stopInteraction(author.id, 'info');
+                                        event.stop();
                                         return [3 /*break*/, 5];
                                     case 5: return [2 /*return*/];
                                 }
@@ -153,7 +153,7 @@ module.exports = {
                     message.react(typedef_1.EMOJI_CROSS)
                         .catch(function (_err) { return console.log; });
                     (0, console_1.log)("dne stop");
-                    iem.stopInteraction(author.id, 'info');
+                    event.stop();
                     return [3 /*break*/, 9];
                 case 6:
                     className_1 = (0, Utility_1.formalise)(args[0]);
@@ -217,7 +217,7 @@ module.exports = {
                                         _err_2 = _e.sent();
                                         console.log(_err_2);
                                         (0, console_1.log)("error stop");
-                                        iem.stopInteraction(author.id, 'info');
+                                        event.stop();
                                         return [3 /*break*/, 8];
                                     case 8: return [2 /*return*/];
                                 }

@@ -3,6 +3,8 @@ import { formalise, getNewObject } from "../classes/Utility";
 import { CommandModule, Location, EMOJI_TICK, UserData, DungeonData } from "../typedef";
 import { Dungeon } from "../classes/Dungeon";
 import { dungeonData } from "../jsons";
+import { InteractionEvent } from "../classes/InteractionEvent";
+import { InteractionEventManager } from "../classes/InteractionEventManager";
 
 module.exports = {
     commands: ['embark', 'adventure', 'go'],
@@ -29,27 +31,39 @@ module.exports = {
         }
         else if (args[0]) {
             const location: Location = args[0] as Location;
-            
-            //#region STATUS WORK
-            if (!authorData) {
-                message.reply("You don't have an account set up yet. Use the `//begin` command first!");
+
+            // MAP DATA INIT
+            const dungeonInputData: DungeonData | null = dungeonData[location] ?
+                getNewObject<DungeonData, unknown>(dungeonData[location] as DungeonData, {}) :
+                null;
+            if (dungeonInputData === null) {
+                message.reply("Cannot generate map. Check if you are inputting the correct map name.")
                 return;
             }
-            if (!authorData.equippedClass) {
+
+            //#region STATUS WORK
+            const dungeon: Dungeon = Dungeon.Generate(dungeonInputData);
+            const event: InteractionEvent = new InteractionEvent(author.id, message, 'dungeon', {
+                dungeon: dungeon
+            });
+            const updatedUD: UserData | null = await InteractionEventManager.getInstance()
+                .registerInteraction(author.id, event, authorData);
+
+            if (!updatedUD) {
+                message.reply("Your request is pending. Please try again later.");
+                return;
+            }
+            if (!updatedUD.equippedClass) {
                 message.reply("You have yet to have a class equipped.");
                 return;
             }
             //#endregion
 
-            // MAP DATA INIT
-            const dungeon: DungeonData | null = dungeonData[location]?
-                getNewObject<DungeonData, unknown>(dungeonData[location] as DungeonData, {}):
-                null;
-
             // BATTLEDATA INIT (SPAWN PLAYERS)
-            if (dungeon) {
+            if (dungeonInputData) {
                 message.react(EMOJI_TICK);
-                Dungeon.Start(dungeon, message);
+                await dungeon.initialiseUsers(message);
+                dungeon.readAction();
             }
             else {
                 message.reply(`The location "${location}" is not valid.`)

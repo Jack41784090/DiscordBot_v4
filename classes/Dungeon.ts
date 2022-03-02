@@ -9,6 +9,7 @@ import { debug, log } from "console"
 import { getUserData, getUserWelfare } from "./Database";
 import { Item } from "./Item";
 import { areasData } from "../jsons";
+import { InteractionEventManager } from "./InteractionEventManager";
 
 export class Dungeon {
     static readonly BRANCHOUT_CHANCE = 0.1;
@@ -61,7 +62,7 @@ export class Dungeon {
     leaderCoordinate: Coordinate;
     leaderUser: User | null = null;
     leaderUserData: UserData | null = null;
-    party: User[] = [];
+    userParty: User[] = [];
     partyWelfare: Map<OwnerID, number> = new Map<OwnerID, number>();
 
     data: DungeonData;
@@ -283,13 +284,13 @@ export class Dungeon {
     }
 
     async updateWelfare() {
-        for (let i = 0; i < this.party.length; i++) {
-            const user = this.party[i];
+        for (let i = 0; i < this.userParty.length; i++) {
+            const user = this.userParty[i];
             await getUserWelfare(user)
                 .then(_wel => {
                     if (_wel === null) {
                         // remove player
-                        this.party.splice(i, 1);
+                        this.userParty.splice(i, 1);
                         i--;
                     }
                     else {
@@ -341,11 +342,11 @@ export class Dungeon {
             value: "Welfare",
             inline: false,
         }];
-        for (let i = 0; i < this.party.length; i++) {
-            const welfare = this.partyWelfare.get(this.party[i].id);
+        for (let i = 0; i < this.userParty.length; i++) {
+            const welfare = this.partyWelfare.get(this.userParty[i].id);
             if (welfare) {
                 fields.push({
-                    name: `${this.party[i].username}`,
+                    name: `${this.userParty[i].username}`,
                     value: "`"+addHPBar(1, welfare, 25)+"`",
                     inline: true,
                 })
@@ -362,35 +363,6 @@ export class Dungeon {
 
     async readAction() {
         const returnMapMessage = () => {
-            const buttonOptions: MessageButtonOptions[] = [
-                {
-                    label: "UP ⬆️",
-                    style: "PRIMARY",
-                    customId: "up"
-                },
-                {
-                    label: "DOWN ⬇️",
-                    style: "SECONDARY",
-                    customId: "down"
-                },
-                {
-                    label: "RIGHT ➡️",
-                    style: "PRIMARY",
-                    customId: "right"
-                },
-                {
-                    label: "LEFT ⬅️",
-                    style: "SECONDARY",
-                    customId: "left"
-                },
-                {
-                    label: this.displayMode === "pc"?
-                        "📱":
-                        "🖥️",
-                    style: "SUCCESS",
-                    customId: "switch"
-                }
-            ];
             // const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
             //     return {
             //         label: `${formalize(_dItem.type)} x${_dItem.uses}`,
@@ -398,7 +370,7 @@ export class Dungeon {
             //     }
             // });
             const messagePayload: MessageOptions = {
-                components: [getButtonsActionRow(buttonOptions)],
+                components: [getButtonsActionRow(Battle.MOVEMENT_BUTTONOPTIONS)],
             }
             // if (selectMenuOptions.length > 0) {
             //     messagePayload.components!.push(getSelectMenuActionRow(selectMenuOptions));
@@ -641,13 +613,12 @@ export class Dungeon {
 
     async initialiseUsers(_message: Message) {
         const user = _message.author;
-        const userData = await getUserData(user.id);
 
         // set leader data
         this.leaderUser = user;
-        this.leaderUserData = userData;
+        this.leaderUserData = InteractionEventManager.userData(user.id)!;
         this.callMessage = _message;
-        this.party = await Promise.all(userData.party.map(async _id => BotClient.users.fetch(_id)))
+        this.userParty = await Promise.all(this.leaderUserData.party.map(async _id => BotClient.users.fetch(_id)))
         await this.updateWelfare();
 
         // initialise all battles
@@ -657,7 +628,7 @@ export class Dungeon {
                 const encounterName: MapName | null = arrayGetRandom(this.data.encounterMaps);
                 if (encounterName && areasData[encounterName]) {
                     const mapdata: MapData = getNewObject(areasData[encounterName]) as MapData;
-                    await Battle.Generate(mapdata, this.leaderUser, _message, userData.party, BotClient, false)
+                    await Battle.Generate(mapdata, this.leaderUser, _message, this.leaderUserData.party, BotClient, false)
                         .then(_b => {
                             room.battle = _b;
                         });

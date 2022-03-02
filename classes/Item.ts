@@ -472,4 +472,7 @@ export class ForgeWeaponItem extends Item {
             staminaCost: this.staminaCost,
         }
     }
+    override getDisplayName(): string {
+        return `${this.getName()} ${formalise(this.weaponType)}`;
+    }
 }

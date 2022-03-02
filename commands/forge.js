@@ -50,7 +50,7 @@ module.exports = {
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var forgeMes, iem, event, updatedUserData, selectedWeaponType, parts, selectedItems, selectOptionsCache, getForgeMesOptions, listenFor, weapons, r1, r2, r3, forged, weaponEmbed;
+        var forgeMes, iem, event, updatedUserData, selectedWeaponType, parts, selectedItems, selectOptionsCache, getForgeMesOptions, listenFor, weapons, weaponTypeColl, r1, r2, r3, forged, weaponEmbed;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, channel.send({
@@ -119,7 +119,7 @@ module.exports = {
                                                         resolve(listenFor(_t));
                                                         return [3 /*break*/, 6];
                                                     case 3:
-                                                        iem.stopInteraction(author.id, 'forge');
+                                                        event.stop();
                                                         resolve(null);
                                                         return [3 /*break*/, 6];
                                                     case 4:
@@ -160,30 +160,33 @@ module.exports = {
                         })];
                 case 3:
                     _a.sent();
-                    return [4 /*yield*/, new Promise(function (resolve) {
-                            var timeout = setTimeout(function () {
-                                iem.stopInteraction(author.id, 'forge');
-                                itrC.stop();
-                                resolve(null);
-                            }, 100 * 1000);
-                            var itrC = (0, Utility_1.setUpInteractionCollect)(forgeMes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
-                                var selected;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0:
-                                            clearTimeout(timeout);
-                                            if (!_itr.isSelectMenu()) return [3 /*break*/, 2];
-                                            selected = _itr.values[0];
-                                            return [4 /*yield*/, _itr.update({})];
-                                        case 1:
-                                            _a.sent();
-                                            resolve(selected);
-                                            _a.label = 2;
-                                        case 2: return [2 /*return*/];
-                                    }
-                                });
-                            }); }, 1);
-                        })];
+                    weaponTypeColl = function () { return __awaiter(void 0, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            return [2 /*return*/, new Promise(function (resolve) {
+                                    var itrC = (0, Utility_1.setUpInteractionCollect)(forgeMes, function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
+                                        var selected;
+                                        return __generator(this, function (_a) {
+                                            switch (_a.label) {
+                                                case 0:
+                                                    if (!(_itr.user.id !== author.id)) return [3 /*break*/, 1];
+                                                    resolve(weaponTypeColl());
+                                                    return [3 /*break*/, 3];
+                                                case 1:
+                                                    if (!_itr.isSelectMenu()) return [3 /*break*/, 3];
+                                                    selected = _itr.values[0];
+                                                    return [4 /*yield*/, _itr.update({})];
+                                                case 2:
+                                                    _a.sent();
+                                                    resolve(selected);
+                                                    _a.label = 3;
+                                                case 3: return [2 /*return*/];
+                                            }
+                                        });
+                                    }); }, 1);
+                                })];
+                        });
+                    }); };
+                    return [4 /*yield*/, weaponTypeColl()];
                 case 4:
                     selectedWeaponType = _a.sent();
                     if (selectedWeaponType === null) {
@@ -236,7 +239,7 @@ module.exports = {
                                     });
                                     // add weapon as an item
                                     updatedUserData.arsenal.push(forged);
-                                    iem.stopInteraction(author.id, 'forge');
+                                    event.stop();
                                     message.reply({
                                         embeds: [weaponEmbed]
                                     });
@@ -251,7 +254,7 @@ module.exports = {
                                 case 0: return [4 /*yield*/, _itr.update({})];
                                 case 1:
                                     _a.sent();
-                                    iem.stopInteraction(author.id, 'forge');
+                                    event.stop();
                                     return [2 /*return*/];
                             }
                         });

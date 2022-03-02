@@ -15,9 +15,9 @@ module.exports = {
         const invMessage: Message = await message.reply({
             embeds: [getLoadingEmbed()]
         });
-        const interactionEvent: InteractionEvent = new InteractionEvent(author.id, invMessage, 'inventory');
+        const event: InteractionEvent = new InteractionEvent(author.id, invMessage, 'inventory');
         const iem = InteractionEventManager.getInstance();
-        const updatedUserData = (await iem.registerInteraction(author.id, interactionEvent, authorUserData))!;
+        const updatedUserData = (await iem.registerInteraction(author.id, event, authorUserData))!;
 
         const returnSelectItemsMessage = (): MessageOptions => {
             const selectMenuOptions: MessageSelectOptionData[] = getInventorySelectOptions(updatedUserData.inventory);
@@ -83,7 +83,7 @@ module.exports = {
                         break;
 
                     case "end":
-                        iem.stopInteraction(author.id, 'inventory');
+                        event.stop();
                         break;
 
                     default:

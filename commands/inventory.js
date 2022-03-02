@@ -47,7 +47,7 @@ module.exports = {
     minArgs: 0,
     maxArgs: 0,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var invMessage, interactionEvent, iem, updatedUserData, returnSelectItemsMessage, returnItemsActionMessage, selectingItem, managingItem, listen, itemSelected;
+        var invMessage, event, iem, updatedUserData, returnSelectItemsMessage, returnItemsActionMessage, selectingItem, managingItem, listen, itemSelected;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, message.reply({
@@ -55,9 +55,9 @@ module.exports = {
                     })];
                 case 1:
                     invMessage = _a.sent();
-                    interactionEvent = new InteractionEvent_1.InteractionEvent(author.id, invMessage, 'inventory');
+                    event = new InteractionEvent_1.InteractionEvent(author.id, invMessage, 'inventory');
                     iem = InteractionEventManager_1.InteractionEventManager.getInstance();
-                    return [4 /*yield*/, iem.registerInteraction(author.id, interactionEvent, authorUserData)];
+                    return [4 /*yield*/, iem.registerInteraction(author.id, event, authorUserData)];
                 case 2:
                     updatedUserData = (_a.sent());
                     returnSelectItemsMessage = function () {
@@ -130,7 +130,7 @@ module.exports = {
                                     _b.sent();
                                     return [3 /*break*/, 6];
                                 case 3:
-                                    iem.stopInteraction(author.id, 'inventory');
+                                    event.stop();
                                     return [3 /*break*/, 6];
                                 case 4:
                                     index = parseInt(_itr.values[0]);

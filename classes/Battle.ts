@@ -78,6 +78,7 @@ export class Battle {
     // user cache
     userCache: Map<OwnerID, User> = new Map<OwnerID, User>();
     userDataCache: Map<OwnerID, UserData> = new Map<OwnerID, UserData>();
+    interactionCache: Map<OwnerID, InteractionEvent> = new Map<OwnerID, InteractionEvent>();
 
     // gamemode
     pvp: boolean;
@@ -199,7 +200,8 @@ export class Battle {
             const ownerID = this.party[i];
 
             // interaction event
-            const interactEvent: InteractionEvent = new InteractionEvent(ownerID, this.message, 'battle');
+            const interactEvent: InteractionEvent = 
+                this.interactionCache.set(ownerID, new InteractionEvent(ownerID, this.message, 'battle')).get(ownerID)!;
             const userData = await instance.registerInteraction(ownerID, interactEvent);
             if (userData) {
                 this.userDataCache.set(ownerID, userData);
@@ -239,7 +241,7 @@ export class Battle {
                     this.author.send({
                         embeds: [
                             new MessageEmbed({
-                                title: "Alert!",
+                                title: "Achtung!",
                                 description: `One of your teammates playing ${player.base.class} has 0 welfare and cannot attend the battle.`,
                                 footer: {
                                     text: `associated user: ${this.userCache.get(player.owner)?.username || player.owner}`
@@ -247,6 +249,7 @@ export class Battle {
                             })
                         ]
                     })
+                    this.removeEntity(player);
                 }
             }
         }
@@ -535,7 +538,7 @@ export class Battle {
                     userData.welfare = clamp(stat.HP / stat.base.maxHP, 0, 1);
                 }
 
-                InteractionEventManager.getInstance().stopInteraction(id, 'battle');
+                this.interactionCache.get(id)?.stop();
             }
 
             // == ACCOLADES ==
@@ -543,14 +546,14 @@ export class Battle {
             this.callbackOnParty((stat: Stat) => {
                 const statAcco = stat.accolades;
                 const value = `Kills: ${statAcco.kill}
-                        damageRange Dealt: ${roundToDecimalPlace(statAcco.damageDealt)}
-                        Healing Done: ${roundToDecimalPlace(statAcco.healingDone)}
-                        damageRange Absorbed: ${roundToDecimalPlace(statAcco.absorbed)}
-                        damageRange Taken: ${roundToDecimalPlace(statAcco.damageTaken)}
-                        Dodged: ${statAcco.dodged} times
-                        Critical Hits: ${statAcco.critNo} times
-                        Clashed ${statAcco.clashNo} times
-                        Average Rolls: ${roundToDecimalPlace(statAcco.rollAverage) || "N/A"}`;
+damageRange Dealt: ${roundToDecimalPlace(statAcco.damageDealt)}
+Healing Done: ${roundToDecimalPlace(statAcco.healingDone)}
+damageRange Absorbed: ${roundToDecimalPlace(statAcco.absorbed)}
+damageRange Taken: ${roundToDecimalPlace(statAcco.damageTaken)}
+Dodged: ${statAcco.dodged} times
+Critical Hits: ${statAcco.critNo} times
+Clashed ${statAcco.clashNo} times
+Average Rolls: ${roundToDecimalPlace(statAcco.rollAverage) || "N/A"}`;
                 endEmbedFields.push({
                     name: stat.name + ` (${stat.base.class})`,
                     value: value,
@@ -1220,7 +1223,7 @@ export class Battle {
                 // crit
                 if (hit <= hitChance * 0.1 + crit) {
                     u_damage = (uniformRandom(average(minDamage, maxDamage), maxDamage)) * 2;
-                    fate = "criticalHit";
+                    fate = "CRIT";
                 }
                 // hit
                 else {
@@ -2093,6 +2096,9 @@ export class Battle {
     }
 
     // find entities
+    findEntity_ownerID(_id: OwnerID): Stat | null {
+        return this.allStats(true).find(_u => _u.owner === _id) || null;
+    }
     findEntity_coord(_coord: Coordinate): Stat | undefined {
         return this.CSMap.get(getCoordString(_coord));
     }
@@ -2241,8 +2247,16 @@ export class Battle {
         });
     }
 
-    removeEntity(_stat: Stat) {
-        this.CSMap.delete(getCoordString(_stat));
+    removeEntity(_owner: OwnerID): boolean;
+    removeEntity(_stat: Stat): boolean;
+    removeEntity(_stat_owner: Stat | OwnerID) {
+        const entity = (_stat_owner as Stat).x ?
+            _stat_owner as Stat:
+            this.findEntity_ownerID(_stat_owner as OwnerID);
+
+        return entity?
+            this.CSMap.delete(getCoordString(entity)):
+            false;
     }
 
     // validation
@@ -2640,7 +2654,7 @@ export class Battle {
             // is not 5, buff is most probably more than 5. Ignore.
         }
     }
-    getStatus(_stat: Stat, _type: StatusEffectType) {
-        return _stat.statusEffects.filter(_s => _s.type === _type);
+    getStatus(_s: Stat, _type: StatusEffectType) {
+        return _s.statusEffects.filter(_s => _s.type === _type);
     }
 }

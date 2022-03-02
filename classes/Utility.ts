@@ -9,6 +9,7 @@ import { Battle } from "./Battle";
 import { Item } from "./Item";
 import { enemiesData, classData, itemData, universalAbilitiesData, forgeWeaponData, universalWeaponsData } from "../jsons";
 import { getEquippedForgeWeapon, getUserData, saveUserData } from "./Database";
+import { InteractionEvent } from "./InteractionEvent";
 
 // RGBA
 export function normaliseRGBA(rgba: RGBA) {
@@ -556,8 +557,7 @@ export function translateClashToCommentary(_aA: AttackAction): string {
                 const critRate =
                     roundToDecimalPlace(accDodge * 0.1 + getCrit(attacker, ability));
                 returnString +=
-                    `__**${ability.abilityName}**__ ${hitRate}% [${critRate}%]
-                **${fate}!** -**${roundToDecimalPlace(damage)}** (${roundToDecimalPlace(u_damage)}) [${roundToDecimalPlace(target.HP)} => ${roundToDecimalPlace(target.HP - damage)}]`
+                    `__**${ability.abilityName}**__ ${hitRate}% [${critRate}%]\n**${fate}!** -**${roundToDecimalPlace(damage)}** (${roundToDecimalPlace(u_damage)})`
                 if (target.HP > 0 && target.HP - damage <= 0) {
                     returnString += "\n__**KILLING BLOW!**__";
                 }
@@ -585,7 +585,7 @@ export function translateClashToCommentary(_aA: AttackAction): string {
 export function translateActionToCommentary(_action: Action) {
     const { aAction, mAction } = extractActions(_action);
 
-    let string: string = '';
+    let string: string = "[🌬️${_action.priority}] ";
     const { attacker, target, ability } = aAction;
     switch (_action.type) {
         case 'Attack':
@@ -604,8 +604,6 @@ export function translateActionToCommentary(_action: Action) {
                 `${EMOJI_MONEYBAG} ${attacker.base.class} (${attacker.index}) loots.`
             break;
     }
-
-    string += ` [🌬️${_action.priority}]`
 
     return string;
 }
@@ -637,30 +635,18 @@ export function getAttackAction(_attacker: Stat, _victim: Stat, _weapon: ForgeWe
 }
 
 export async function Test() {
-    const ud = await getUserData("262871357455466496");
-    for (let i = 0; i < 25; i++) {
-        ud.inventory.push(Item.Generate('cobalt', "Test"));
-    }
-    saveUserData(ud);
-    // for (let i = 0; i < 25; i++) {
-    //     let i, ii, iii;
-    //     i = arrayGetRandom(ud.inventory)!
-    //     ii = arrayGetRandom(ud.inventory)!
-    //     while (i === ii) {
-    //         ii = arrayGetRandom(ud.inventory)!;
-    //     }
-    //     iii = arrayGetRandom(ud.inventory)!;
-    //     while (i === iii || ii === iii) {
-    //         iii = arrayGetRandom(ud.inventory)!
-    //     }
-    //     const forged = Item.Forge(
-    //         i,
-    //         ii,
-    //         iii,
-    //         'dagger'
-    //     );
-    //     log(forged);
-    // }
+    // const testEvent = new InteractionEvent("", )
+}
+
+export function promiseState(p: Promise<unknown>): Promise<'pending' | 'fulfilled' | 'rejected'> {
+    const t = {};
+    return Promise.race([p, t])
+        .then(v =>
+            (v === t)?
+                "pending":
+                "fulfilled",
+            () => "rejected"
+        );
 }
 
 export function findReferenceAngle(_angle: number): number {
@@ -900,7 +886,7 @@ export function dealWithAccolade(clashResult: ClashResult, attacker: Stat, defen
         // kill count
         if (defender.HP > 0 && defender.HP - CR_damage <= 0) attackerTAcco.kill++;
         // crit no
-        if (CR_fate === 'criticalHit') attackerTAcco.critNo++;
+        if (CR_fate === "CRIT") attackerTAcco.critNo++;
         // damage dealt
         attackerTAcco.damageDealt += CR_damage;
         if (CR_roll !== null) {
