@@ -44,8 +44,9 @@ var Battle_1 = require("./Battle");
 var Room_1 = require("./Room");
 var Utility_1 = require("./Utility");
 var console_1 = require("console");
-var Database_1 = require("./Database");
 var jsons_1 = require("../jsons");
+var InteractionEventManager_1 = require("./InteractionEventManager");
+var InteractionEvent_1 = require("./InteractionEvent");
 var Dungeon = /** @class */ (function () {
     /** Be sure to follow it up with initialise users */
     function Dungeon(_data) {
@@ -54,8 +55,7 @@ var Dungeon = /** @class */ (function () {
         this.callMessage = null;
         this.leaderUser = null;
         this.leaderUserData = null;
-        this.party = [];
-        this.partyWelfare = new Map();
+        this.userParty = [];
         this.rooms = [];
         this.CS = {};
         this.mapDoubleArray = [];
@@ -69,7 +69,7 @@ var Dungeon = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         dungeon = Dungeon.Generate(_dungeonData);
-                        return [4 /*yield*/, dungeon.initialiseUsers(_message)];
+                        return [4 /*yield*/, dungeon.initialiseUsersAndInteraction(_message)];
                     case 1:
                         _a.sent();
                         dungeon.readAction();
@@ -247,55 +247,6 @@ var Dungeon = /** @class */ (function () {
         }
         return dungeon;
     };
-    Dungeon.prototype.updateWelfare = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var _loop_2, this_1, out_i_1, i;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _loop_2 = function (i) {
-                            var user;
-                            return __generator(this, function (_e) {
-                                switch (_e.label) {
-                                    case 0:
-                                        user = this_1.party[i];
-                                        return [4 /*yield*/, (0, Database_1.getUserWelfare)(user)
-                                                .then(function (_wel) {
-                                                if (_wel === null) {
-                                                    // remove player
-                                                    _this.party.splice(i, 1);
-                                                    i--;
-                                                }
-                                                else {
-                                                    _this.partyWelfare.set(user.id, _wel);
-                                                }
-                                            })];
-                                    case 1:
-                                        _e.sent();
-                                        out_i_1 = i;
-                                        return [2 /*return*/];
-                                }
-                            });
-                        };
-                        this_1 = this;
-                        i = 0;
-                        _a.label = 1;
-                    case 1:
-                        if (!(i < this.party.length)) return [3 /*break*/, 4];
-                        return [5 /*yield**/, _loop_2(i)];
-                    case 2:
-                        _a.sent();
-                        i = out_i_1;
-                        _a.label = 3;
-                    case 3:
-                        i++;
-                        return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/];
-                }
-            });
-        });
-    };
     Dungeon.prototype.validateMovement = function (_direction) {
         var direction = Number.isInteger(_direction) ?
             (0, Utility_1.numericDirectionToDirection)(_direction) :
@@ -328,23 +279,19 @@ var Dungeon = /** @class */ (function () {
                 mapEmbed.setTitle("\u2757\u2757 Enemy Ambush! \u2757\u2757");
             }
         }
-        // welfare report
+        // welfare text
         var fields = [{
                 name: "‏",
                 value: "Welfare",
                 inline: false,
             }];
-        for (var i = 0; i < this.party.length; i++) {
-            var welfare = this.partyWelfare.get(this.party[i].id);
-            if (welfare) {
-                fields.push({
-                    name: "" + this.party[i].username,
-                    value: "`" + (0, Utility_1.addHPBar)(1, welfare, 25) + "`",
-                    inline: true,
-                });
-            }
-        }
-        mapEmbed.fields = fields;
+        mapEmbed.fields = fields.concat(this.userParty.map(function (_ud) {
+            return {
+                name: "" + _ud.name,
+                value: "`" + (0, Utility_1.addHPBar)(1, _ud.welfare, 25) + "`",
+                inline: true,
+            };
+        }));
         var messageOption = (0, Utility_1.getNewObject)({
             embeds: [mapEmbed],
         }, _messageOption);
@@ -491,7 +438,7 @@ var Dungeon = /** @class */ (function () {
                                                 valid = false;
                                         }
                                         nextRoom = this.getRoom(this.leaderCoordinate);
-                                        if (!(valid && (nextRoom === null || nextRoom === void 0 ? void 0 : nextRoom.isBattleRoom))) return [3 /*break*/, 3];
+                                        if (!(valid && (nextRoom === null || nextRoom === void 0 ? void 0 : nextRoom.isBattleRoom))) return [3 /*break*/, 2];
                                         ambush = null;
                                         if (!nextRoom.isDiscovered) {
                                             ambush = "enemy";
@@ -500,23 +447,20 @@ var Dungeon = /** @class */ (function () {
                                     case 1:
                                         victory_1 = _a.sent();
                                         nextRoom.isDiscovered = true;
-                                        return [4 /*yield*/, this.updateWelfare()];
-                                    case 2:
-                                        _a.sent();
                                         mapMessage.edit(returnMapMessage())
                                             .then(function () {
                                             if (victory_1) {
                                                 listenToQueue();
                                             }
                                         });
-                                        return [3 /*break*/, 4];
-                                    case 3:
+                                        return [3 /*break*/, 3];
+                                    case 2:
                                         listenToQueue();
                                         if (nextRoom) {
                                             nextRoom.isDiscovered = true;
                                         }
-                                        _a.label = 4;
-                                    case 4: return [2 /*return*/];
+                                        _a.label = 3;
+                                    case 3: return [2 /*return*/];
                                 }
                             });
                         }); };
@@ -616,41 +560,48 @@ var Dungeon = /** @class */ (function () {
             ]
         });
     };
-    Dungeon.prototype.initialiseUsers = function (_message) {
+    Dungeon.prototype.initialiseUsersAndInteraction = function (_message) {
         return __awaiter(this, void 0, void 0, function () {
-            var user, userData, _a, _loop_3, this_2, i;
+            var leaderUser, leaderEvent, leaderUserData, _a, _loop_2, this_1, i;
             var _this = this;
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
-                        user = _message.author;
-                        return [4 /*yield*/, (0, Database_1.getUserData)(user.id)];
+                        leaderUser = _message.author;
+                        leaderEvent = new InteractionEvent_1.InteractionEvent(leaderUser.id, _message, 'dungeon', {
+                            dungeon: this
+                        });
+                        return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance()
+                                .registerInteraction(leaderUser.id, leaderEvent)];
                     case 1:
-                        userData = _e.sent();
+                        leaderUserData = _e.sent();
+                        if (!leaderUserData) return [3 /*break*/, 7];
                         // set leader data
-                        this.leaderUser = user;
-                        this.leaderUserData = userData;
+                        this.leaderUser = leaderUser;
+                        this.leaderUserData = leaderUserData;
                         this.callMessage = _message;
                         _a = this;
-                        return [4 /*yield*/, Promise.all(userData.party.map(function (_id) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-                                return [2 /*return*/, __1.BotClient.users.fetch(_id)];
-                            }); }); }))];
+                        return [4 /*yield*/, Promise.all(leaderUserData.party.map(function (_playerID) {
+                                var event = new InteractionEvent_1.InteractionEvent(_playerID, _message, 'dungeon', {
+                                    dungeon: _this
+                                });
+                                var playerUD = InteractionEventManager_1.InteractionEventManager.getInstance()
+                                    .registerInteraction(_playerID, event);
+                                return playerUD;
+                            }))];
                     case 2:
-                        _a.party = _e.sent();
-                        return [4 /*yield*/, this.updateWelfare()];
-                    case 3:
-                        _e.sent();
-                        _loop_3 = function (i) {
+                        _a.userParty = (_e.sent()).filter(function (_ud) { return _ud !== null; });
+                        _loop_2 = function (i) {
                             var room, encounterName, mapdata;
                             return __generator(this, function (_f) {
                                 switch (_f.label) {
                                     case 0:
-                                        room = this_2.rooms[i];
+                                        room = this_1.rooms[i];
                                         if (!room.isBattleRoom) return [3 /*break*/, 2];
-                                        encounterName = (0, Utility_1.arrayGetRandom)(this_2.data.encounterMaps);
+                                        encounterName = (0, Utility_1.arrayGetRandom)(this_1.data.encounterMaps);
                                         if (!(encounterName && jsons_1.areasData[encounterName])) return [3 /*break*/, 2];
                                         mapdata = (0, Utility_1.getNewObject)(jsons_1.areasData[encounterName]);
-                                        return [4 /*yield*/, Battle_1.Battle.Generate(mapdata, this_2.leaderUser, _message, userData.party, __1.BotClient, false)
+                                        return [4 /*yield*/, Battle_1.Battle.Generate(mapdata, this_1.leaderUser, _message, leaderUserData.party, __1.BotClient, false)
                                                 .then(function (_b) {
                                                 room.battle = _b;
                                             })];
@@ -661,19 +612,33 @@ var Dungeon = /** @class */ (function () {
                                 }
                             });
                         };
-                        this_2 = this;
+                        this_1 = this;
                         i = 0;
-                        _e.label = 4;
+                        _e.label = 3;
+                    case 3:
+                        if (!(i < this.rooms.length)) return [3 /*break*/, 6];
+                        return [5 /*yield**/, _loop_2(i)];
                     case 4:
-                        if (!(i < this.rooms.length)) return [3 /*break*/, 7];
-                        return [5 /*yield**/, _loop_3(i)];
-                    case 5:
                         _e.sent();
-                        _e.label = 6;
-                    case 6:
+                        _e.label = 5;
+                    case 5:
                         i++;
-                        return [3 /*break*/, 4];
-                    case 7: return [2 /*return*/];
+                        return [3 /*break*/, 3];
+                    case 6: return [3 /*break*/, 8];
+                    case 7:
+                        leaderUser.send({
+                            embeds: [
+                                new discord_js_1.MessageEmbed({
+                                    title: "Achtung!",
+                                    description: 'Dungeon failed to start!',
+                                    footer: {
+                                        text: "It's most probably that you are already in a Dungeon. Quit that Dungeon first, and then start a new one."
+                                    }
+                                })
+                            ]
+                        });
+                        _e.label = 8;
+                    case 8: return [2 /*return*/, leaderUserData !== null];
                 }
             });
         });

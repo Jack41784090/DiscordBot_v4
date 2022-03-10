@@ -634,7 +634,7 @@ function translateClashToCommentary(_aA) {
 exports.translateClashToCommentary = translateClashToCommentary;
 function translateActionToCommentary(_action) {
     var _d = extractActions(_action), aAction = _d.aAction, mAction = _d.mAction;
-    var string = "[🌬️${_action.priority}] ";
+    var string = "[\uD83C\uDF2C\uFE0F" + _action.priority + "] ";
     var attacker = aAction.attacker, target = aAction.target, ability = aAction.ability;
     switch (_action.type) {
         case 'Attack':

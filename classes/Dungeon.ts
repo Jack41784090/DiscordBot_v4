@@ -63,7 +63,7 @@ export class Dungeon {
     leaderCoordinate: Coordinate;
     leaderUser: User | null = null;
     leaderUserData: UserData | null = null;
-    userParty: UserData[] = [];
+    userDataParty: UserData[] = [];
 
     data: DungeonData;
     rooms: Room[] = [];
@@ -325,7 +325,7 @@ export class Dungeon {
             value: "Welfare",
             inline: false,
         }];
-        mapEmbed.fields = fields.concat(this.userParty.map(_ud => {
+        mapEmbed.fields = fields.concat(this.userDataParty.map(_ud => {
             return {
                 name: `${_ud.name}`,
                 value: "`" + addHPBar(1, _ud.welfare, 25) + "`",
@@ -590,9 +590,8 @@ export class Dungeon {
     }
 
     async initialiseUsersAndInteraction(_message: Message): Promise<boolean> {
-        
         // initiate leader user
-        const leaderUser = _message.author;
+        const leaderUser: User = _message.author;
         const leaderEvent: InteractionEvent = new InteractionEvent(
             leaderUser.id, _message, 'dungeon', {
             dungeon: this
@@ -605,7 +604,7 @@ export class Dungeon {
             this.leaderUser = leaderUser;
             this.leaderUserData = leaderUserData;
             this.callMessage = _message;
-            this.userParty = (
+            this.userDataParty = (
                 await Promise.all(leaderUserData.party.map(_playerID => {
                     const event: InteractionEvent = new InteractionEvent(
                         _playerID, _message, 'dungeon', {
@@ -634,7 +633,17 @@ export class Dungeon {
             }
         }
         else {
-
+            leaderUser.send({
+                embeds: [
+                    new MessageEmbed({
+                        title: "Achtung!",
+                        description: 'Dungeon failed to start!',
+                        footer: {
+                            text: "It's most probably that you are already in a Dungeon. Quit that Dungeon first, and then start a new one."
+                        }
+                    })
+                ]
+            })
         }
 
         return leaderUserData !== null;

@@ -106,11 +106,60 @@
         "enemiesInfo": {
             "Crystal Zombie": {
                 "min": 3,
-                "max": 5
+                "max": 3
             },
             "Barcher": {
                 "min": 1,
                 "max": 1
+            }
+        }
+    },
+    "farmstead_archers": {
+        "map": {
+            "coordStat": {},
+            "spawners": [
+                {
+                    "spawns": "player",
+                    "x": 0,
+                    "y": 0
+                },
+                {
+                    "spawns": "player",
+                    "x": 1,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 2,
+                    "y": 2
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 3,
+                    "y": 3
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 4,
+                    "y": 4
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 4,
+                    "y": 2
+                }
+            ],
+            "width": 5,
+            "height": 5
+        },
+        "enemiesInfo": {
+            "Crystal Zombie": {
+                "min": 1,
+                "max": 1
+            },
+            "Barcher": {
+                "min": 3,
+                "max": 3
             }
         }
     },
@@ -154,57 +203,8 @@
         },
         "enemiesInfo": {
             "Crystal Zombie": {
-                "min": 1,
-                "max": 2
-            },
-            "Barcher": {
-                "min": 3,
+                "min": 4,
                 "max": 4
-            }
-        }
-    },
-    "farmstead_walkers3": {
-        "map": {
-            "coordStat": {},
-            "spawners": [
-                {
-                    "spawns": "player",
-                    "x": 0,
-                    "y": 0
-                },
-                {
-                    "spawns": "player",
-                    "x": 1,
-                    "y": 1
-                },
-                {
-                    "spawns": "player",
-                    "x": 2,
-                    "y": 2
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 3,
-                    "y": 3
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 4,
-                    "y": 4
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 4,
-                    "y": 2
-                }
-            ],
-            "width": 5,
-            "height": 5
-        },
-        "enemiesInfo": {
-            "Crystal Zombie": {
-                "min": 6,
-                "max": 8
             },
             "Barcher": {
                 "min": 0,
@@ -267,12 +267,12 @@
         },
         "enemiesInfo": {
             "Crystal Zombie": {
-                "min": 10,
-                "max": 12
+                "min": 4,
+                "max": 4
             },
             "Barcher": {
                 "min": 4,
-                "max": 5
+                "max": 4
             }
         }
     }

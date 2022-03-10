@@ -42,7 +42,7 @@ export async function getAnyData(collection: string, doc: string, failureCB?: (d
         null;
 }
 export async function saveUserData(_userData: UserData) {
-    log("Saving");
+    log(_userData.party);
     const document = database.collection("Users").doc(_userData.party[0]);
     const snapshotData = await document.get();
 
@@ -53,7 +53,11 @@ export async function saveUserData(_userData: UserData) {
             arsenal: _userData?.arsenal.map(_i => _i.returnObject()) || [],
             equippedWeapon: _userData?.equippedWeapon.map(_i => _i.returnObject()) || []
         });
+        debug("Saving", _userData);
         document.update(getNewObject(defaultUserData, mod));
+    }
+    else {
+        log("Saving failed because snapShot does not exist");
     }
 }
 

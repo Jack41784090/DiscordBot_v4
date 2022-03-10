@@ -56,8 +56,10 @@ module.exports = {
             // initiate users
             if (dungeonInputData) {
                 message.react(EMOJI_TICK);
-                await dungeon.initialiseUsersAndInteraction(message);
-                dungeon.readAction();
+                const initSuccessful: boolean = await dungeon.initialiseUsersAndInteraction(message);
+                if (initSuccessful) {
+                    dungeon.readAction();
+                }
             }
             else {
                 message.reply(`The location "${location}" is not valid.`)

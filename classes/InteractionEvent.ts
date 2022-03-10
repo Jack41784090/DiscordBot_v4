@@ -74,11 +74,19 @@ export class InteractionEvent {
 
             case 'dungeon':
                 if (this.dungeon) {
-                    const leaderData: UserData | null = InteractionEventManager.userData(this.dungeon.leaderUser?.id || "");
+                    const removingUserData: UserData | null = InteractionEventManager.userData(this.ownerID || "");
                     // remove the player from the leader's userData and the dungeon's user cache
-                    if (leaderData) {
-                        arrayRemoveItemArray(this.dungeon.userParty, this.dungeon.userParty.find(_ud => _ud.party[0] === this.ownerID));
-                        arrayRemoveItemArray(leaderData.party, this.ownerID);
+                    if (removingUserData) {
+                        arrayRemoveItemArray(
+                            this.dungeon.userDataParty,
+                            this.dungeon.userDataParty.find(_ud => _ud.party[0] === this.ownerID)
+                        );
+                        if (this.ownerID !== this.dungeon.leaderUser?.id && this.dungeon.leaderUserData) {
+                            arrayRemoveItemArray(
+                                this.dungeon.leaderUserData.party,
+                                this.ownerID
+                            )
+                        }
                     }
 
                     // remove the player from every possible future battles

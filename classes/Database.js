@@ -107,7 +107,7 @@ function saveUserData(_userData) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    (0, console_1.log)("Saving");
+                    (0, console_1.log)(_userData.party);
                     document = database.collection("Users").doc(_userData.party[0]);
                     return [4 /*yield*/, document.get()];
                 case 1:
@@ -119,7 +119,11 @@ function saveUserData(_userData) {
                             arsenal: (_userData === null || _userData === void 0 ? void 0 : _userData.arsenal.map(function (_i) { return _i.returnObject(); })) || [],
                             equippedWeapon: (_userData === null || _userData === void 0 ? void 0 : _userData.equippedWeapon.map(function (_i) { return _i.returnObject(); })) || []
                         });
+                        (0, console_1.debug)("Saving", _userData);
                         document.update((0, Utility_1.getNewObject)(defaultUserData, mod));
+                    }
+                    else {
+                        (0, console_1.log)("Saving failed because snapShot does not exist");
                     }
                     return [2 /*return*/];
             }

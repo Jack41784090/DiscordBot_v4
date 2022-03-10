@@ -585,7 +585,7 @@ export function translateClashToCommentary(_aA: AttackAction): string {
 export function translateActionToCommentary(_action: Action) {
     const { aAction, mAction } = extractActions(_action);
 
-    let string: string = "[🌬️${_action.priority}] ";
+    let string: string = `[🌬️${_action.priority}] `;
     const { attacker, target, ability } = aAction;
     switch (_action.type) {
         case 'Attack':

@@ -52,15 +52,13 @@ var Utility_1 = require("../classes/Utility");
 var typedef_1 = require("../typedef");
 var Dungeon_1 = require("../classes/Dungeon");
 var jsons_1 = require("../jsons");
-var InteractionEvent_1 = require("../classes/InteractionEvent");
-var InteractionEventManager_1 = require("../classes/InteractionEventManager");
 module.exports = {
     commands: ['embark', 'adventure', 'go'],
     expectedArgs: '[location]',
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var locationsEmbed, _a, _b, locationName, formalName, location_1, dungeonInputData, dungeon, event_1, updatedUD;
+        var locationsEmbed, _a, _b, locationName, formalName, location_1, dungeonInputData, dungeon, initSuccessful;
         var e_1, _c;
         return __generator(this, function (_d) {
             switch (_d.label) {
@@ -88,9 +86,9 @@ module.exports = {
                         finally { if (e_1) throw e_1.error; }
                     }
                     channel.send({ embeds: [locationsEmbed] });
-                    return [3 /*break*/, 5];
+                    return [3 /*break*/, 4];
                 case 1:
-                    if (!args[0]) return [3 /*break*/, 5];
+                    if (!args[0]) return [3 /*break*/, 4];
                     location_1 = args[0];
                     dungeonInputData = jsons_1.dungeonData[location_1] ?
                         (0, Utility_1.getNewObject)(jsons_1.dungeonData[location_1], {}) :
@@ -100,32 +98,27 @@ module.exports = {
                         return [2 /*return*/];
                     }
                     dungeon = Dungeon_1.Dungeon.Generate(dungeonInputData);
-                    event_1 = new InteractionEvent_1.InteractionEvent(author.id, message, 'dungeon', {
-                        dungeon: dungeon
-                    });
-                    return [4 /*yield*/, InteractionEventManager_1.InteractionEventManager.getInstance()
-                            .registerInteraction(author.id, event_1, authorData)];
-                case 2:
-                    updatedUD = _d.sent();
-                    if (!updatedUD) {
+                    if (!authorData) {
                         message.reply("Your request is pending. Please try again later.");
                         return [2 /*return*/];
                     }
-                    if (!updatedUD.equippedClass) {
+                    if (!authorData.equippedClass) {
                         message.reply("You have yet to have a class equipped.");
                         return [2 /*return*/];
                     }
-                    if (!dungeonInputData) return [3 /*break*/, 4];
+                    if (!dungeonInputData) return [3 /*break*/, 3];
                     message.react(typedef_1.EMOJI_TICK);
-                    return [4 /*yield*/, dungeon.initialiseUsers(message)];
+                    return [4 /*yield*/, dungeon.initialiseUsersAndInteraction(message)];
+                case 2:
+                    initSuccessful = _d.sent();
+                    if (initSuccessful) {
+                        dungeon.readAction();
+                    }
+                    return [3 /*break*/, 4];
                 case 3:
-                    _d.sent();
-                    dungeon.readAction();
-                    return [3 /*break*/, 5];
-                case 4:
                     message.reply("The location \"" + location_1 + "\" is not valid.");
-                    _d.label = 5;
-                case 5: return [2 /*return*/];
+                    _d.label = 4;
+                case 4: return [2 /*return*/];
             }
         });
     }); }

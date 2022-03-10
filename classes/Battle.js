@@ -335,30 +335,28 @@ var Battle = /** @class */ (function () {
         var _b, _c;
         // check player welfare
         (0, console_1.log)("Checking welfare...");
-        var playerStats = this.party.map(function (_ownerID) { return _this.tobespawnedArray.find(function (_s) { return _s.owner === _ownerID; }); });
+        var playerStats = this.tobespawnedArray.filter(function (_s) { return _this.party.includes(_s.owner); });
         for (var i = 0; i < playerStats.length; i++) {
             var player = playerStats[i];
-            if (player) {
-                var welfare = (_b = this.userDataCache.get(player.owner)) === null || _b === void 0 ? void 0 : _b.welfare;
-                (0, console_1.debug)("\t" + player.base.class, welfare);
-                if (welfare) {
-                    (0, console_1.log)("\t" + player.HP + " => " + player.base.maxHP * (0, Utility_1.clamp)(welfare, 0, 1));
-                    player.HP = player.base.maxHP * (0, Utility_1.clamp)(welfare, 0, 1);
-                }
-                else {
-                    this.author.send({
-                        embeds: [
-                            new discord_js_1.MessageEmbed({
-                                title: "Achtung!",
-                                description: "One of your teammates playing " + player.base.class + " has 0 welfare and cannot attend the battle.",
-                                footer: {
-                                    text: "associated user: " + (((_c = this.userCache.get(player.owner)) === null || _c === void 0 ? void 0 : _c.username) || player.owner)
-                                }
-                            })
-                        ]
-                    });
-                    this.removeEntity(player);
-                }
+            var welfare = ((_b = this.userDataCache.get(player.owner)) === null || _b === void 0 ? void 0 : _b.welfare) || null;
+            (0, console_1.debug)("\t" + player.base.class, welfare);
+            if (welfare !== null && welfare > 0) {
+                (0, console_1.log)("\t" + player.HP + " => " + player.base.maxHP * (0, Utility_1.clamp)(welfare, 0, 1));
+                player.HP = player.base.maxHP * (0, Utility_1.clamp)(welfare, 0, 1);
+            }
+            else {
+                this.author.send({
+                    embeds: [
+                        new discord_js_1.MessageEmbed({
+                            title: "Achtung!",
+                            description: "One of your teammates playing " + player.base.class + " has 0 welfare and cannot attend the battle.",
+                            footer: {
+                                text: "associated user: " + (((_c = this.userCache.get(player.owner)) === null || _c === void 0 ? void 0 : _c.username) || player.owner)
+                            }
+                        })
+                    ]
+                });
+                this.removeEntity(player);
             }
         }
     };
@@ -456,8 +454,8 @@ var Battle = /** @class */ (function () {
                         _loop_2 = function (realStat) {
                             var user, _l, virtualStat_1, channelAlreadyExist, createdChannel_1, _m, existingPermissions_everyone_1, existingPermissions_author, newChannel, noExistingPermission, extraPermissions, missingPermissions, overWrites, _o, _p, readingPlayerPromise, ai_f;
                             var _q, _t;
-                            return __generator(this, function (_u) {
-                                switch (_u.label) {
+                            return __generator(this, function (_v) {
+                                switch (_v.label) {
                                     case 0:
                                         // if the entity is dead or is just an inanimate block, skip turn
                                         if (realStat.HP <= 0 || realStat.team === "block")
@@ -480,8 +478,8 @@ var Battle = /** @class */ (function () {
                                                 return null;
                                             })];
                                     case 1:
-                                        _l = (_u.sent());
-                                        _u.label = 2;
+                                        _l = (_v.sent());
+                                        _v.label = 2;
                                     case 2:
                                         user = _l;
                                         if (user === null)
@@ -496,8 +494,8 @@ var Battle = /** @class */ (function () {
                                         if (_m) return [3 /*break*/, 4];
                                         return [4 /*yield*/, this_2.guild.channels.create("" + virtualStat_1.owner, { type: 'GUILD_TEXT' })];
                                     case 3:
-                                        _m = (_u.sent());
-                                        _u.label = 4;
+                                        _m = (_v.sent());
+                                        _v.label = 4;
                                     case 4:
                                         createdChannel_1 = _m;
                                         if (!createdChannel_1.parent || createdChannel_1.parent.name !== commandCategory.name) {
@@ -535,7 +533,7 @@ var Battle = /** @class */ (function () {
                                     case 5:
                                         // send time, player embed, and input manual
                                         _p.apply(_o, [(_q.files = [
-                                                (_t.attachment = _u.sent(), _t.name = "map.png", _t)
+                                                (_t.attachment = _v.sent(), _t.name = "map.png", _t)
                                             ],
                                                 _q.embeds = [
                                                     new discord_js_1.MessageEmbed()
@@ -546,7 +544,7 @@ var Battle = /** @class */ (function () {
                                             createdChannel_1.send({ embeds: [new discord_js_1.MessageEmbed().setTitle("Your turn has ended.")] });
                                         });
                                         reportPromises.push(readingPlayerPromise);
-                                        _u.label = 6;
+                                        _v.label = 6;
                                     case 6:
                                         //#endregion
                                         //#region AI
@@ -2200,6 +2198,9 @@ var Battle = /** @class */ (function () {
         });
     };
     // find entities
+    Battle.prototype.findEntity_ownerID = function (_id) {
+        return this.allStats(true).find(function (_u) { return _u.owner === _id; }) || null;
+    };
     Battle.prototype.findEntity_coord = function (_coord) {
         return this.CSMap.get((0, Utility_1.getCoordString)(_coord));
     };
@@ -2337,8 +2338,19 @@ var Battle = /** @class */ (function () {
             return coordDiff.x === coordDiff_this.x && coordDiff.y === coordDiff_this.y && isWithinDistance && (withinSlopeA || isVertSlope);
         });
     };
-    Battle.prototype.removeEntity = function (_stat) {
-        this.CSMap.delete((0, Utility_1.getCoordString)(_stat));
+    Battle.prototype.removeEntity = function (_stat_owner) {
+        var entity = _stat_owner.x ?
+            _stat_owner :
+            this.findEntity_ownerID(_stat_owner);
+        var deleteSuccess = false;
+        if (entity) {
+            // deleting failed in CSMap space => entity is yet to be spawned
+            deleteSuccess = this.CSMap.delete((0, Utility_1.getCoordString)(entity));
+            if (!deleteSuccess) {
+                deleteSuccess = (0, Utility_1.arrayRemoveItemArray)(this.tobespawnedArray, entity);
+            }
+        }
+        return deleteSuccess;
     };
     Battle.prototype.validateTarget = function (_stat_aa, _weapon, _ability, _target) {
         var eM = {

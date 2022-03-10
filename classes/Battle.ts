@@ -227,30 +227,29 @@ export class Battle {
     ManageWelfare(): void {
         // check player welfare
         log("Checking welfare...")
-        const playerStats = this.party.map(_ownerID => this.tobespawnedArray.find(_s => _s.owner === _ownerID));
+        const playerStats: Array<Stat> =
+            this.tobespawnedArray.filter(_s => this.party.includes(_s.owner));
         for (let i = 0; i < playerStats.length; i++) {
-            const player = playerStats[i];
-            if (player) {
-                const welfare = this.userDataCache.get(player.owner)?.welfare || null;
-                debug(`\t${player.base.class}`, welfare);
-                if (welfare !== null && welfare > 0) {
-                    log(`\t${player.HP} => ${player.base.maxHP * clamp(welfare, 0, 1)}`)
-                    player.HP = player.base.maxHP * clamp(welfare, 0, 1);
-                }
-                else {
-                    this.author.send({
-                        embeds: [
-                            new MessageEmbed({
-                                title: "Achtung!",
-                                description: `One of your teammates playing ${player.base.class} has 0 welfare and cannot attend the battle.`,
-                                footer: {
-                                    text: `associated user: ${this.userCache.get(player.owner)?.username || player.owner}`
-                                }
-                            })
-                        ]
-                    })
-                    this.removeEntity(player);
-                }
+            const player: Stat = playerStats[i];
+            const welfare: number | null = this.userDataCache.get(player.owner)?.welfare || null;
+            debug(`\t${player.base.class}`, welfare);
+            if (welfare !== null && welfare > 0) {
+                log(`\t${player.HP} => ${player.base.maxHP * clamp(welfare, 0, 1)}`)
+                player.HP = player.base.maxHP * clamp(welfare, 0, 1);
+            }
+            else {
+                this.author.send({
+                    embeds: [
+                        new MessageEmbed({
+                            title: "Achtung!",
+                            description: `One of your teammates playing ${player.base.class} has 0 welfare and cannot attend the battle.`,
+                            footer: {
+                                text: `associated user: ${this.userCache.get(player.owner)?.username || player.owner}`
+                            }
+                        })
+                    ]
+                })
+                this.removeEntity(player.owner);
             }
         }
     }
@@ -2254,9 +2253,15 @@ Average Rolls: ${roundToDecimalPlace(statAcco.rollAverage) || "N/A"}`;
             _stat_owner as Stat:
             this.findEntity_ownerID(_stat_owner as OwnerID);
 
-        return entity?
-            this.CSMap.delete(getCoordString(entity)):
-            false;
+        let deleteSuccess = false;
+        if (entity) {
+            // deleting failed in CSMap space => entity is yet to be spawned
+            deleteSuccess = this.CSMap.delete(getCoordString(entity));
+            if (!deleteSuccess) {
+                deleteSuccess = arrayRemoveItemArray(this.tobespawnedArray, entity);
+            }
+        }
+        return deleteSuccess;
     }
 
     // validation
