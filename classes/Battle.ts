@@ -231,9 +231,9 @@ export class Battle {
         for (let i = 0; i < playerStats.length; i++) {
             const player = playerStats[i];
             if (player) {
-                const welfare = this.userDataCache.get(player.owner)?.welfare;
+                const welfare = this.userDataCache.get(player.owner)?.welfare || null;
                 debug(`\t${player.base.class}`, welfare);
-                if (welfare) {
+                if (welfare !== null && welfare > 0) {
                     log(`\t${player.HP} => ${player.base.maxHP * clamp(welfare, 0, 1)}`)
                     player.HP = player.base.maxHP * clamp(welfare, 0, 1);
                 }

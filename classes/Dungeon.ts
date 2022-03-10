@@ -10,6 +10,7 @@ import { getUserData, getUserWelfare } from "./Database";
 import { Item } from "./Item";
 import { areasData } from "../jsons";
 import { InteractionEventManager } from "./InteractionEventManager";
+import { InteractionEvent } from "./InteractionEvent";
 
 export class Dungeon {
     static readonly BRANCHOUT_CHANCE = 0.1;
@@ -62,8 +63,7 @@ export class Dungeon {
     leaderCoordinate: Coordinate;
     leaderUser: User | null = null;
     leaderUserData: UserData | null = null;
-    userParty: User[] = [];
-    partyWelfare: Map<OwnerID, number> = new Map<OwnerID, number>();
+    userParty: UserData[] = [];
 
     data: DungeonData;
     rooms: Room[] = [];
@@ -78,7 +78,7 @@ export class Dungeon {
 
     static async Start(_dungeonData: DungeonData, _message: Message) {
         const dungeon = Dungeon.Generate(_dungeonData);
-        await dungeon.initialiseUsers(_message);
+        await dungeon.initialiseUsersAndInteraction(_message);
         dungeon.readAction();
     }
 
@@ -283,23 +283,6 @@ export class Dungeon {
         return dungeon;
     }
 
-    async updateWelfare() {
-        for (let i = 0; i < this.userParty.length; i++) {
-            const user = this.userParty[i];
-            await getUserWelfare(user)
-                .then(_wel => {
-                    if (_wel === null) {
-                        // remove player
-                        this.userParty.splice(i, 1);
-                        i--;
-                    }
-                    else {
-                        this.partyWelfare.set(user.id, _wel);
-                    }
-                })
-        }
-    }
-
     validateMovement(_direction: NumericDirection | Direction): boolean {
         const direction: Direction = Number.isInteger(_direction)?
             numericDirectionToDirection(_direction as NumericDirection):
@@ -336,23 +319,19 @@ export class Dungeon {
             }
         }
 
-        // welfare report
+        // welfare text
         const fields: EmbedField[] = [{
             name: "‏",
             value: "Welfare",
             inline: false,
         }];
-        for (let i = 0; i < this.userParty.length; i++) {
-            const welfare = this.partyWelfare.get(this.userParty[i].id);
-            if (welfare) {
-                fields.push({
-                    name: `${this.userParty[i].username}`,
-                    value: "`"+addHPBar(1, welfare, 25)+"`",
-                    inline: true,
-                })
-            }   
-        }
-        mapEmbed.fields = fields;
+        mapEmbed.fields = fields.concat(this.userParty.map(_ud => {
+            return {
+                name: `${_ud.name}`,
+                value: "`" + addHPBar(1, _ud.welfare, 25) + "`",
+                inline: true,
+            };
+        }));
 
         const messageOption: MessageOptions = getNewObject({
             embeds: [mapEmbed],
@@ -495,7 +474,6 @@ export class Dungeon {
                 // start battle
                 const victory = await nextRoom.StartBattle(ambush)!
                 nextRoom.isDiscovered = true;
-                await this.updateWelfare();
                 mapMessage.edit(returnMapMessage())
                     .then(() => {
                         if (victory) {
@@ -611,29 +589,54 @@ export class Dungeon {
         });
     }
 
-    async initialiseUsers(_message: Message) {
-        const user = _message.author;
+    async initialiseUsersAndInteraction(_message: Message): Promise<boolean> {
+        
+        // initiate leader user
+        const leaderUser = _message.author;
+        const leaderEvent: InteractionEvent = new InteractionEvent(
+            leaderUser.id, _message, 'dungeon', {
+            dungeon: this
+        });
+        const leaderUserData: UserData | null = await InteractionEventManager.getInstance()
+            .registerInteraction(leaderUser.id, leaderEvent);
 
-        // set leader data
-        this.leaderUser = user;
-        this.leaderUserData = InteractionEventManager.userData(user.id)!;
-        this.callMessage = _message;
-        this.userParty = await Promise.all(this.leaderUserData.party.map(async _id => BotClient.users.fetch(_id)))
-        await this.updateWelfare();
+        if (leaderUserData) {
+            // set leader data
+            this.leaderUser = leaderUser;
+            this.leaderUserData = leaderUserData;
+            this.callMessage = _message;
+            this.userParty = (
+                await Promise.all(leaderUserData.party.map(_playerID => {
+                    const event: InteractionEvent = new InteractionEvent(
+                        _playerID, _message, 'dungeon', {
+                            dungeon: this
+                    });
+                    const playerUD: Promise<UserData | null> = InteractionEventManager.getInstance()
+                        .registerInteraction(_playerID, event);
 
-        // initialise all battles
-        for (let i = 0; i < this.rooms.length; i++) {
-            const room = this.rooms[i];
-            if (room.isBattleRoom) {
-                const encounterName: MapName | null = arrayGetRandom(this.data.encounterMaps);
-                if (encounterName && areasData[encounterName]) {
-                    const mapdata: MapData = getNewObject(areasData[encounterName]) as MapData;
-                    await Battle.Generate(mapdata, this.leaderUser, _message, this.leaderUserData.party, BotClient, false)
-                        .then(_b => {
-                            room.battle = _b;
-                        });
+                    return playerUD;
+                }))
+            ).filter(_ud => _ud !== null) as Array<UserData>;
+
+            // initialise all battles
+            for (let i = 0; i < this.rooms.length; i++) {
+                const room = this.rooms[i];
+                if (room.isBattleRoom) {
+                    const encounterName: MapName | null = arrayGetRandom(this.data.encounterMaps);
+                    if (encounterName && areasData[encounterName]) {
+                        const mapdata: MapData = getNewObject(areasData[encounterName]) as MapData;
+                        await Battle.Generate(mapdata, this.leaderUser, _message, leaderUserData.party, BotClient, false)
+                            .then(_b => {
+                                room.battle = _b;
+                            });
+                    }
                 }
             }
         }
+        else {
+
+        }
+
+        return leaderUserData !== null;
     }
 }

@@ -77,7 +77,7 @@ export class InteractionEvent {
                     const leaderData: UserData | null = InteractionEventManager.userData(this.dungeon.leaderUser?.id || "");
                     // remove the player from the leader's userData and the dungeon's user cache
                     if (leaderData) {
-                        arrayRemoveItemArray(this.dungeon.userParty, this.dungeon.userParty.find(_u => _u.id === this.ownerID));
+                        arrayRemoveItemArray(this.dungeon.userParty, this.dungeon.userParty.find(_ud => _ud.party[0] === this.ownerID));
                         arrayRemoveItemArray(leaderData.party, this.ownerID);
                     }
 

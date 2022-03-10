@@ -32,7 +32,7 @@ module.exports = {
         else if (args[0]) {
             const location: Location = args[0] as Location;
 
-            // MAP DATA INIT
+            // Look for dungeon's data
             const dungeonInputData: DungeonData | null = dungeonData[location] ?
                 getNewObject<DungeonData, unknown>(dungeonData[location] as DungeonData, {}) :
                 null;
@@ -41,28 +41,22 @@ module.exports = {
                 return;
             }
 
-            //#region STATUS WORK
+            // Generate the dungeon and initiate event
             const dungeon: Dungeon = Dungeon.Generate(dungeonInputData);
-            const event: InteractionEvent = new InteractionEvent(author.id, message, 'dungeon', {
-                dungeon: dungeon
-            });
-            const updatedUD: UserData | null = await InteractionEventManager.getInstance()
-                .registerInteraction(author.id, event, authorData);
 
-            if (!updatedUD) {
+            if (!authorData) {
                 message.reply("Your request is pending. Please try again later.");
                 return;
             }
-            if (!updatedUD.equippedClass) {
+            if (!authorData.equippedClass) {
                 message.reply("You have yet to have a class equipped.");
                 return;
             }
-            //#endregion
 
-            // BATTLEDATA INIT (SPAWN PLAYERS)
+            // initiate users
             if (dungeonInputData) {
                 message.react(EMOJI_TICK);
-                await dungeon.initialiseUsers(message);
+                await dungeon.initialiseUsersAndInteraction(message);
                 dungeon.readAction();
             }
             else {
