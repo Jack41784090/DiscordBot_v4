@@ -5,7 +5,7 @@ import { getUserData, saveUserData } from "./Database";
 import { InteractionEvent } from "./InteractionEvent";
 
 import { debug, log } from "console"
-import { promiseState } from "./Utility";
+import { getPromiseStatus } from "./Utility";
 
 interface InteractionUserProfile {
     userData: UserData,
@@ -45,13 +45,17 @@ export class InteractionEventManager {
                 userProfile.pending = [];
             }
 
-            debug("\tHandling", userProfile.handling.map(_e => `${_e.type} ${_e.finishingPromise}`));
-            debug("\tPending", userProfile.pending.map(_e => `${_e.type} ${_e.finishingPromise}`));
+            debug("\tHandling", userProfile.handling.map(_e => `${_e.type} ${_e.timerPromise}`));
+            debug("\tPending", userProfile.pending.map(_e => `${_e.type} ${_e.timerPromise}`));
 
             userProfile.handlerPromise =
                 Promise.allSettled(userProfile.handling.map(_e => _e.promise()))
                     .then(() => {
-                        userProfile.handling.forEach(_e => _e.stop());
+                        userProfile.handling.forEach(_e => {
+                            if (!_e.stopped) {
+                                _e.stop()
+                            }
+                        });
                         userProfile.handling = [];
                         if (userProfile.pending.length > 0) {
                             log("\t\tPending is not empty, reusing.")
@@ -91,12 +95,11 @@ export class InteractionEventManager {
                 userProfile.pending.push(_interactionEvent);
                 returning = userProfile.userData;
 
-                debug("\tHandler Promise is", userProfile.handlerPromise);
-                debug("\tthen", userProfile.handlerPromise?.then(_ => _));
-                if (
-                    !userProfile.handlerPromise ||
-                    (await promiseState(userProfile.handlerPromise)) === 'fulfilled'
-                ) {
+                const promiseStatus = userProfile.handlerPromise?
+                    (await getPromiseStatus(userProfile.handlerPromise)):
+                    undefined;
+                debug("\tHandler Promise is", promiseStatus);
+                if (promiseStatus === 'fulfilled') {
                     this.handle(_id);
                 }
             }

@@ -35,6 +35,31 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Dungeon = void 0;
 var discord_js_1 = require("discord.js");
@@ -55,7 +80,7 @@ var Dungeon = /** @class */ (function () {
         this.callMessage = null;
         this.leaderUser = null;
         this.leaderUserData = null;
-        this.userParty = [];
+        this.userDataParty = [];
         this.rooms = [];
         this.CS = {};
         this.mapDoubleArray = [];
@@ -285,7 +310,7 @@ var Dungeon = /** @class */ (function () {
                 value: "Welfare",
                 inline: false,
             }];
-        mapEmbed.fields = fields.concat(this.userParty.map(function (_ud) {
+        mapEmbed.fields = fields.concat(this.userDataParty.map(function (_ud) {
             return {
                 name: "" + _ud.name,
                 value: "`" + (0, Utility_1.addHPBar)(1, _ud.welfare, 25) + "`",
@@ -311,8 +336,16 @@ var Dungeon = /** @class */ (function () {
                             //         value: _dItem.type,
                             //     }
                             // });
+                            var buttons = __spreadArray([], __read(Battle_1.Battle.MOVEMENT_BUTTONOPTIONS), false);
+                            buttons[buttons.length - 1] = {
+                                label: _this.displayMode === 'pc' ?
+                                    '📱' :
+                                    '🖥️',
+                                style: 'PRIMARY',
+                                customId: 'switch'
+                            };
                             var messagePayload = {
-                                components: [(0, Utility_1.getButtonsActionRow)(Battle_1.Battle.MOVEMENT_BUTTONOPTIONS)],
+                                components: [(0, Utility_1.getButtonsActionRow)(buttons)],
                             };
                             // if (selectMenuOptions.length > 0) {
                             //     messagePayload.components!.push(getSelectMenuActionRow(selectMenuOptions));
@@ -590,7 +623,7 @@ var Dungeon = /** @class */ (function () {
                                 return playerUD;
                             }))];
                     case 2:
-                        _a.userParty = (_e.sent()).filter(function (_ud) { return _ud !== null; });
+                        _a.userDataParty = (_e.sent()).filter(function (_ud) { return _ud !== null; });
                         _loop_2 = function (i) {
                             var room, encounterName, mapdata;
                             return __generator(this, function (_f) {

@@ -1,4 +1,4 @@
-import { Interaction, InteractionCollector, Message, User } from "discord.js";
+import { Interaction, InteractionCollector, Message, MessageEmbed, User } from "discord.js";
 import { InteractionEventOptions, InteractionEventType, OwnerID, UserData } from "../typedef";
 import { Battle } from "./Battle";
 import { Dungeon } from "./Dungeon";
@@ -6,10 +6,13 @@ import { InteractionEventManager } from "./InteractionEventManager";
 
 import { debug, log } from "console"
 import { getUserData } from "./Database";
-import { arrayRemoveItemArray } from "./Utility";
+import { arrayRemoveItemArray, confirmationInteractionCollect, formalise } from "./Utility";
 import { Room } from "./Room";
+import { BotClient } from "..";
 
 export class InteractionEvent {
+    static STANDARD_TIMEOUT = 2 * 1000;
+
     battle?: Battle;
     dungeon?: Dungeon;
 
@@ -17,28 +20,22 @@ export class InteractionEvent {
     interactedMessage: Message;
     type: InteractionEventType;
     stoppable: boolean = false;
-    collectors: Array<InteractionCollector<Interaction>> = [];
-    finishingPromiseResolve: (_v: void | PromiseLike<void>) => void = () => {};
-    finishingPromiseTimer: NodeJS.Timeout = setTimeout(() => {}, 1);
-    finishingPromise: Promise<void>;
+    stopped: boolean = false;
+    timerPromise_resolve: (_v: void | PromiseLike<void>) => void = () => {};
+    timerPromise_timeout: NodeJS.Timeout;
+    timerPromise: Promise<void>;
 
     constructor(_id: OwnerID, _message: Message, _eventType: InteractionEventType, _options: InteractionEventOptions = {}) {
         this.ownerID = _id;
         this.type = _eventType;
         this.interactedMessage = _message;
 
-        this.finishingPromise = new Promise<void>((resolve) => {
-            this.finishingPromiseResolve = resolve;
-
-            // inactivity stop
-            this.finishingPromiseTimer = setTimeout(() => {
-                this.collectors.forEach(_c => _c.stop());
-                resolve();
-                this.stop();
-            }, 100 * 1000);
-
-            // stop function stop: calling this.finishingPromise(true)
+        this.timerPromise = new Promise<void>((resolve) => {
+            this.timerPromise_resolve = resolve;
         });
+
+        // inactivity stop
+        this.timerPromise_timeout = this.generateTimeout();
 
         // special cases events
         switch (_eventType) {
@@ -49,7 +46,7 @@ export class InteractionEvent {
                     this[_eventType] = _options[_eventType] as (Battle & Dungeon);
                 }
                 else {
-                    this.finishingPromiseResolve();
+                    this.timerPromise_resolve();
                 }
                 break;
         
@@ -59,28 +56,24 @@ export class InteractionEvent {
         }
     }
 
+    /** Removing the player's presence in the activity and allows for a new one to be generated */
     async stop() {
+        this.stopped = true;
         switch (this.type) {
             case 'battle':
-                if (this.battle) {
-                    const stat = this.battle.allStats().find(_s => _s.owner === this.ownerID);
-                    if (stat) {
-                        this.battle.removeEntity(stat);
-                    }
-                }
-                clearTimeout(this.finishingPromiseTimer);
-                this.finishingPromiseResolve();
+                this.battle?.queueRemovePlayer(this.ownerID);
                 break;
 
             case 'dungeon':
                 if (this.dungeon) {
                     const removingUserData: UserData | null = InteractionEventManager.userData(this.ownerID || "");
-                    // remove the player from the leader's userData and the dungeon's user cache
+                    // remove player from the dungeon's userData cache ...
                     if (removingUserData) {
                         arrayRemoveItemArray(
                             this.dungeon.userDataParty,
                             this.dungeon.userDataParty.find(_ud => _ud.party[0] === this.ownerID)
                         );
+                        // ... and from the leader's userData party.
                         if (this.ownerID !== this.dungeon.leaderUser?.id && this.dungeon.leaderUserData) {
                             arrayRemoveItemArray(
                                 this.dungeon.leaderUserData.party,
@@ -93,7 +86,7 @@ export class InteractionEvent {
                     for (let i = 0; i < this.dungeon.rooms.length; i++) {
                         const room: Room = this.dungeon.rooms[i];
                         if (room.isBattleRoom) {
-                            room.battle!.removeEntity(this.ownerID);
+                            room.battle?.queueRemovePlayer(this.ownerID);
                         }
                     }
                 }
@@ -102,22 +95,57 @@ export class InteractionEvent {
             default:
                 this.interactedMessage.delete()
                     .catch(_err => null);
-                clearTimeout(this.finishingPromiseTimer);
-                this.finishingPromiseResolve();
+                clearTimeout(this.timerPromise_timeout);
+                this.timerPromise_resolve();
                 break;
         }
     }
 
     promise() {
-        return this.finishingPromise;
+        return this.timerPromise;
     }
 
     activity() {
-        clearTimeout(this.finishingPromiseTimer);
-        this.finishingPromiseTimer = setTimeout(() => {
-            this.collectors.forEach(_c => _c.stop());
-            this.finishingPromiseResolve;
-            this.stop();
-        }, 5 * 1000);
+        clearTimeout(this.timerPromise_timeout);
+        this.timerPromise_timeout = this.generateTimeout();
+    }
+
+    generateTimeout(): NodeJS.Timeout {
+        return setTimeout(async () => {
+            switch (this.type) {
+                case 'battle':
+                case 'dungeon':
+                    const user: User | null = await BotClient.users.fetch(this.ownerID) || null;
+                    if (user) {
+                        const mes: Message = await user.send({
+                            embeds: [
+                                new MessageEmbed({
+                                    title: `AFK Warning on your current ${formalise(this.type)}.`,
+                                    footer: {
+                                        text: "Answer yes to continue your session or else you will be removed automatically."
+                                    }
+                                })
+                            ]
+                        })
+                        const answer: number = await confirmationInteractionCollect(mes);
+                        if (answer === 0 || answer === -1) {
+                            this.timerPromise_resolve();
+                            this.stop();
+                        }
+                        else {
+                            const event: InteractionEvent = new InteractionEvent(this.ownerID, this.interactedMessage, this.type, {
+                                battle: this.battle,
+                                dungeon: this.dungeon
+                            })
+                            InteractionEventManager.getInstance().registerInteraction(this.ownerID, event);
+                        }
+                    }
+                    break;
+
+                default:
+                    this.timerPromise_resolve();
+                    this.stop();
+            }
+        }, InteractionEvent.STANDARD_TIMEOUT);
     }
 }

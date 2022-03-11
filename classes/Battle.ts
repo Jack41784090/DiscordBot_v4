@@ -55,7 +55,10 @@ export class Battle {
     channel: TextChannel;
     client: Client;
     guild: Guild;
-    party: OwnerID[];
+
+    // Party
+    partyIDs: OwnerID[];
+    partyStats: (Stat | null)[];
 
     // Map-related Information
     mapData: MapData;
@@ -76,12 +79,15 @@ export class Battle {
     allIndex: Map<number, boolean> = new Map<number, boolean>();
 
     // user cache
+    iem: InteractionEventManager = InteractionEventManager.getInstance();
     userCache: Map<OwnerID, User> = new Map<OwnerID, User>();
-    userDataCache: Map<OwnerID, UserData> = new Map<OwnerID, UserData>();
     interactionCache: Map<OwnerID, InteractionEvent> = new Map<OwnerID, InteractionEvent>();
 
     // gamemode
     pvp: boolean;
+
+    // AFK players
+    afkPlayers_ownerID: Array<OwnerID> = [];
 
     private constructor(_mapData: MapData, _author: User, _message: Message, _client: Client, _pvp: boolean, _party: OwnerID[]) {
         this.author = _author;
@@ -89,7 +95,8 @@ export class Battle {
         this.channel = _message.channel as TextChannel;
         this.client = _client;
         this.guild = _message.guild as Guild;
-        this.party = _party;
+        this.partyIDs = _party;
+        this.partyStats = _party.map(_ => null);
 
         this.mapData = _mapData;
         this.width = _mapData.map.width;
@@ -196,15 +203,16 @@ export class Battle {
     async InitiateUsers(): Promise<void> {
         const instance = InteractionEventManager.getInstance();
         // initiate users
-        for (let i = 0; i < this.party.length; i++) {
-            const ownerID = this.party[i];
+        for (let i = 0; i < this.partyIDs.length; i++) {
+            const ownerID = this.partyIDs[i];
 
             // interaction event
             const interactEvent: InteractionEvent = 
-                this.interactionCache.set(ownerID, new InteractionEvent(ownerID, this.message, 'battle')).get(ownerID)!;
+                this.interactionCache.set(ownerID, new InteractionEvent(ownerID, this.message, 'battle', {
+                    battle: this
+                })).get(ownerID)!;
             const userData = await instance.registerInteraction(ownerID, interactEvent);
             if (userData) {
-                this.userDataCache.set(ownerID, userData);
                 // add to spawn queue
                 const blankStat = await getStat(getBaseClassStat(userData.equippedClass), ownerID);
                 blankStat.pvp = this.pvp;
@@ -218,7 +226,7 @@ export class Battle {
             }
             else {
                 this.message.channel.send(`<@${ownerID}> is busy (most possibly already in another battle) and cannot participate.`)
-                arrayRemoveItemArray(this.party, ownerID);
+                arrayRemoveItemArray(this.partyIDs, ownerID);
             }
         }
     }
@@ -228,10 +236,10 @@ export class Battle {
         // check player welfare
         log("Checking welfare...")
         const playerStats: Array<Stat> =
-            this.tobespawnedArray.filter(_s => this.party.includes(_s.owner));
+            this.tobespawnedArray.filter(_s => this.partyIDs.includes(_s.owner));
         for (let i = 0; i < playerStats.length; i++) {
             const player: Stat = playerStats[i];
-            const welfare: number | null = this.userDataCache.get(player.owner)?.welfare || null;
+            const welfare: number | null = InteractionEventManager.userData(player.owner)?.welfare || null;
             debug(`\t${player.base.class}`, welfare);
             if (welfare !== null && welfare > 0) {
                 log(`\t${player.HP} => ${player.base.maxHP * clamp(welfare, 0, 1)}`)
@@ -261,6 +269,12 @@ export class Battle {
 
         // resetting action list and round current maps
         this.roundActionsArray = [];
+
+        // remove AFK players
+        this.afkPlayers_ownerID.forEach(_id => {
+            debug("Removing AFK player", _id);
+            this.removeEntity(_id);
+        })
 
         // SPAWNING
         log("Currently waiting to be spawned...")
@@ -528,16 +542,8 @@ export class Battle {
         {
             // update InteractionManager userData
             const allStats = this.allStats();
-            for (let i = 0; i < this.party.length; i++) {
-                const id: OwnerID = this.party[i];
-                const stat: Stat = allStats[i];
-
-                const userData = this.userDataCache.get(id);
-                if (userData) {
-                    userData.welfare = clamp(stat.HP / stat.base.maxHP, 0, 1);
-                }
-
-                this.interactionCache.get(id)?.stop();
+            for (let i = 0; i < this.partyIDs.length; i++) {
+                this.disconnectEvent(this.partyIDs[i]);
             }
 
             // == ACCOLADES ==
@@ -578,8 +584,16 @@ Average Rolls: ${roundToDecimalPlace(statAcco.rollAverage) || "N/A"}`;
 
     /** Execute function on every stat of players */
     callbackOnParty(_callback: (stat: Stat) => void) {
-        const playersArray = this.allStats().filter(_s => _s.owner);
-        playersArray.forEach(_callback);
+        let allStats = this.allStats(true);
+        this.partyStats.forEach((_s, _index) => {
+            if (_s === null) {
+                this.partyStats[_index] = allStats.find(_s => _s.owner === this.partyIDs[_index]) || null;
+            }
+            const s = this.partyStats[_index];
+            if (s) {
+                _callback(s);
+            }
+        });
     }
 
     /** Get array of all Stat, saved by reference */
@@ -597,7 +611,7 @@ Average Rolls: ${roundToDecimalPlace(statAcco.rollAverage) || "N/A"}`;
         );
 
         return abilities.map(_a => {
-            debug("ability", _a);
+            debug("ability", _a.abilityName);
             const shortestRange: number = Number.isInteger(_a.range?.min)?
                 (_a.range!.min):
                 equippedWeapon.range.min;
@@ -1257,7 +1271,7 @@ Average Rolls: ${roundToDecimalPlace(statAcco.rollAverage) || "N/A"}`;
             // for each lootbox on the tile
             for (let i = 0; i < allLoot.length; i++) {
                 const loot: Loot = allLoot[i];
-                const userData: UserData | null = this.userDataCache.get(_owner) || null;
+                const userData: UserData | null = InteractionEventManager.userData(_owner) || null;
 
                 // for each item in the lootbox
                 for (let i = 0; i < loot.items.length; i++) {
@@ -1302,6 +1316,12 @@ Average Rolls: ${roundToDecimalPlace(statAcco.rollAverage) || "N/A"}`;
         unit.x = coords.x;
         unit.y = coords.y;
         this.CSMap.set(getCoordString(coords), unit);
+
+        // update partyStats as players spawn in
+        if (unit.owner && this.partyIDs.includes(unit.owner)) {
+            const index = this.partyIDs.indexOf(unit.owner);
+            this.partyStats[index] = unit;
+        }
     }
     SpawnOnSpawner(unit?: Array<Stat>) {
         // adding addition units to be spawned this round.
@@ -2262,6 +2282,23 @@ Average Rolls: ${roundToDecimalPlace(statAcco.rollAverage) || "N/A"}`;
             }
         }
         return deleteSuccess;
+    }
+
+    // queue remove: used for AFK players
+    queueRemovePlayer(_id: OwnerID) {
+        debug("Queued remove", _id);
+        this.afkPlayers_ownerID.push(_id);
+    }
+
+    // event
+    disconnectEvent(_id: OwnerID) {
+        const disconnectingUserData: UserData | null = InteractionEventManager.userData(_id) || null;
+        const disconnectingStat: Stat | null = this.partyStats.find(_s => _s?.owner === _id) || null;
+        if (disconnectingUserData && disconnectingStat) {
+            disconnectingUserData.welfare =
+                clamp(disconnectingStat.HP / disconnectingStat.base.maxHP, 0, 1);
+        }
+        this.interactionCache.get(_id)?.stop();
     }
 
     // validation

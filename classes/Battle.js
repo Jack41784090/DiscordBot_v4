@@ -108,6 +108,8 @@ var Battle = /** @class */ (function () {
         this.userCache = new Map();
         this.userDataCache = new Map();
         this.interactionCache = new Map();
+        // AFK players
+        this.afkPlayers_ownerID = [];
         this.author = _author;
         this.message = _message;
         this.channel = _message.channel;
@@ -299,7 +301,9 @@ var Battle = /** @class */ (function () {
                     case 1:
                         if (!(i < this.party.length)) return [3 /*break*/, 7];
                         ownerID = this.party[i];
-                        interactEvent = this.interactionCache.set(ownerID, new InteractionEvent_1.InteractionEvent(ownerID, this.message, 'battle')).get(ownerID);
+                        interactEvent = this.interactionCache.set(ownerID, new InteractionEvent_1.InteractionEvent(ownerID, this.message, 'battle', {
+                            battle: this
+                        })).get(ownerID);
                         return [4 /*yield*/, instance.registerInteraction(ownerID, interactEvent)];
                     case 2:
                         userData = _b.sent();
@@ -356,7 +360,7 @@ var Battle = /** @class */ (function () {
                         })
                     ]
                 });
-                this.removeEntity(player);
+                this.removeEntity(player.owner);
             }
         }
     };
@@ -374,6 +378,11 @@ var Battle = /** @class */ (function () {
                         (0, console_1.log)("======= New Round =======");
                         // resetting action list and round current maps
                         this.roundActionsArray = [];
+                        // remove AFK players
+                        this.afkPlayers_ownerID.forEach(function (_id) {
+                            (0, console_1.debug)("Removing AFK player", _id);
+                            _this.removeEntity(_id);
+                        });
                         // SPAWNING
                         (0, console_1.log)("Currently waiting to be spawned...");
                         for (i = 0; i < this.tobespawnedArray.length; i++) {
@@ -720,7 +729,7 @@ var Battle = /** @class */ (function () {
         });
         return abilities.map(function (_a) {
             var _b, _c;
-            (0, console_1.debug)("ability", _a);
+            (0, console_1.debug)("ability", _a.abilityName);
             var shortestRange = Number.isInteger((_b = _a.range) === null || _b === void 0 ? void 0 : _b.min) ?
                 (_a.range.min) :
                 equippedWeapon.range.min;
@@ -2351,6 +2360,11 @@ var Battle = /** @class */ (function () {
             }
         }
         return deleteSuccess;
+    };
+    // queue remove: used for AFK players
+    Battle.prototype.queueRemovePlayer = function (_id) {
+        (0, console_1.debug)("Queued remove", _id);
+        this.afkPlayers_ownerID.push(_id);
     };
     Battle.prototype.validateTarget = function (_stat_aa, _weapon, _ability, _target) {
         var eM = {

@@ -74,7 +74,7 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.setUpConfirmationInteractionCollect = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.promiseState = exports.Test = exports.getAttackAction = exports.translateRGBAToStringRGBA = exports.translateActionToCommentary = exports.translateClashToCommentary = exports.translateDirectionToMagnitudeAxis = exports.translateDirectionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getAttackRangeFromAA = exports.getDistance = exports.findEqualCoordinate = exports.getLongArm = exports.getLifesteal = exports.getCrit = exports.getExecutionSpeed = exports.getAcc = exports.getDamage = exports.getProt = exports.getDodge = exports.getAHP = exports.clamp = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.normaliseRGBA = void 0;
+exports.clearChannel = exports.getButtonsActionRow = exports.getSelectMenuActionRow = exports.confirmationInteractionCollect = exports.setUpInteractionCollect = exports.findReferenceAngle = exports.getPromiseStatus = exports.Test = exports.getAttackAction = exports.translateRGBAToStringRGBA = exports.translateActionToCommentary = exports.translateClashToCommentary = exports.translateDirectionToMagnitudeAxis = exports.translateDirectionToEmoji = exports.replaceCharacterAtIndex = exports.directionToNumericDirection = exports.numericDirectionToDirection = exports.getLootAction = exports.getMoveAction = exports.getDirection = exports.counterAxis = exports.returnGridCanvas = exports.getCanvasCoordsFromBattleCoord = exports.startDrawing = exports.addHPBar = exports.roundToDecimalPlace = exports.newWeapon = exports.getBuffStatusEffect = exports.getCoordsWithinRadius = exports.checkWithinDistance = exports.getAttackRangeFromAA = exports.getDistance = exports.findEqualCoordinate = exports.getLongArm = exports.getLifesteal = exports.getCrit = exports.getExecutionSpeed = exports.getAcc = exports.getDamage = exports.getProt = exports.getDodge = exports.getAHP = exports.clamp = exports.normalRandom = exports.average = exports.uniformRandom = exports.formalise = exports.capitalize = exports.extractCommands = exports.normaliseRGBA = void 0;
 exports.getForgeWeaponAttackAbility = exports.getForgeWeaponMinMax = exports.getForgeWeaponType = exports.getItemType = exports.getInventorySelectOptions = exports.getGradeTag = exports.breadthFirstSearch = exports.sendInvitation = exports.drawCircle = exports.drawText = exports.shortenString = exports.getNewNode = exports.handleTokens = exports.getDeathEmbed = exports.printAction = exports.dealWithAction = exports.getRandomCode = exports.getCoord = exports.getCoordString = exports.getStat = exports.getEmptyBuff = exports.getBaseEnemyStat = exports.getBaseClassStat = exports.getAbilityIndex = exports.getEmptyAccolade = exports.getCSFromMap = exports.getMapFromCS = exports.printCSMap = exports.getWeaponUses = exports.arrayGetRandom = exports.arrayRemoveItemArray = exports.arrayGetSmallestInArray = exports.arrayGetLargestInArray = exports.arrayGetLastElement = exports.getNewObject = exports.dealWithAccolade = exports.getPyTheorem = exports.getCompass = exports.getStatsEmbed = exports.getAbilityEmbed = exports.getForgeWeaponEmbed = exports.getLoadingEmbed = exports.getWithSign = exports.getConditionalTexts = exports.extractActions = exports.sendToSandbox = void 0;
 var canvas_1 = require("canvas");
 var discord_js_1 = require("discord.js");
@@ -685,7 +685,7 @@ function Test() {
     });
 }
 exports.Test = Test;
-function promiseState(p) {
+function getPromiseStatus(p) {
     var t = {};
     return Promise.race([p, t])
         .then(function (v) {
@@ -694,7 +694,7 @@ function promiseState(p) {
             "fulfilled";
     }, function () { return "rejected"; });
 }
-exports.promiseState = promiseState;
+exports.getPromiseStatus = getPromiseStatus;
 function findReferenceAngle(_angle) {
     var angle = Math.abs(_angle);
     if (angle <= 90) {
@@ -719,51 +719,87 @@ function setUpInteractionCollect(msg, cb, collectCount) {
     return interCollector;
 }
 exports.setUpInteractionCollect = setUpInteractionCollect;
-function setUpConfirmationInteractionCollect(_editMsg, _embed, _yesCB, _noCB) {
+function confirmationInteractionCollect(_editMsg, _yesCB, _noCB, _timeout) {
+    var _this = this;
+    if (_yesCB === void 0) { _yesCB = function (_itr) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_d) {
+        switch (_d.label) {
+            case 0: return [4 /*yield*/, _itr.update({})];
+            case 1: return [2 /*return*/, _d.sent()];
+        }
+    }); }); }; }
+    if (_noCB === void 0) { _noCB = function (_itr) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_d) {
+        switch (_d.label) {
+            case 0: return [4 /*yield*/, _itr.update({})];
+            case 1: return [2 /*return*/, _d.sent()];
+        }
+    }); }); }; }
+    if (_timeout === void 0) { _timeout = 120 * 1000; }
     return __awaiter(this, void 0, void 0, function () {
-        var yesNoCollector, buttonsOptions;
+        var collector;
         var _this = this;
         return __generator(this, function (_d) {
-            yesNoCollector = new discord_js_1.InteractionCollector(__1.BotClient, { message: _editMsg, max: 1 });
-            buttonsOptions = [
-                {
-                    emoji: typedef_1.EMOJI_TICK,
-                    label: "Yes",
-                    style: "SUCCESS",
-                    customId: "yes"
-                },
-                {
-                    emoji: typedef_1.EMOJI_CROSS,
-                    label: "No",
-                    style: "DANGER",
-                    customId: "no"
-                }
-            ];
-            yesNoCollector.on('collect', function (_itr) { return __awaiter(_this, void 0, void 0, function () {
-                var selected;
-                return __generator(this, function (_d) {
-                    if (_itr.isButton()) {
-                        selected = _itr.customId;
-                        switch (selected) {
-                            case 'yes':
-                                _yesCB(_itr);
-                                break;
-                            case 'no':
-                                _noCB(_itr);
-                                break;
-                        }
-                    }
-                    return [2 /*return*/];
-                });
-            }); });
-            return [2 /*return*/, _editMsg.edit({
-                    embeds: [_embed],
-                    components: [getButtonsActionRow(buttonsOptions)],
-                })];
+            switch (_d.label) {
+                case 0:
+                    collector = new discord_js_1.InteractionCollector(__1.BotClient, { message: _editMsg, max: 1, time: _timeout });
+                    return [4 /*yield*/, _editMsg.edit({
+                            embeds: _editMsg.embeds,
+                            components: [getButtonsActionRow([
+                                    {
+                                        emoji: typedef_1.EMOJI_TICK,
+                                        label: "Yes",
+                                        style: "SUCCESS",
+                                        customId: "yes"
+                                    },
+                                    {
+                                        emoji: typedef_1.EMOJI_CROSS,
+                                        label: "No",
+                                        style: "DANGER",
+                                        customId: "no"
+                                    }
+                                ])],
+                        })];
+                case 1:
+                    _d.sent();
+                    return [2 /*return*/, new Promise(function (resolve) {
+                            var answer = -1;
+                            collector.on('collect', function (_itr) { return __awaiter(_this, void 0, void 0, function () {
+                                var selected, _d;
+                                return __generator(this, function (_f) {
+                                    switch (_f.label) {
+                                        case 0:
+                                            if (!_itr.isButton()) return [3 /*break*/, 5];
+                                            selected = _itr.customId;
+                                            _d = selected;
+                                            switch (_d) {
+                                                case 'yes': return [3 /*break*/, 1];
+                                                case 'no': return [3 /*break*/, 3];
+                                            }
+                                            return [3 /*break*/, 5];
+                                        case 1:
+                                            answer = 1;
+                                            return [4 /*yield*/, _itr.update({})];
+                                        case 2:
+                                            _f.sent();
+                                            return [3 /*break*/, 5];
+                                        case 3:
+                                            answer = 0;
+                                            return [4 /*yield*/, _itr.update({})];
+                                        case 4:
+                                            _f.sent();
+                                            return [3 /*break*/, 5];
+                                        case 5: return [2 /*return*/];
+                                    }
+                                });
+                            }); });
+                            collector.on('end', function () {
+                                resolve(answer);
+                            });
+                        })];
+            }
         });
     });
 }
-exports.setUpConfirmationInteractionCollect = setUpConfirmationInteractionCollect;
+exports.confirmationInteractionCollect = confirmationInteractionCollect;
 function getSelectMenuActionRow(options, customID) {
     var menu = new discord_js_1.MessageSelectMenu({
         options: options,

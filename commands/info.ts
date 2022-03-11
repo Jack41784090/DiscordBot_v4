@@ -74,8 +74,6 @@ module.exports = {
         else if (classData[args[0] as Class] === undefined) {
             message.react(EMOJI_CROSS)
                 .catch(_err => console.log);
-            
-            log("dne stop")
             event.stop();
         }
         else {
@@ -127,7 +125,6 @@ module.exports = {
                     }
                     catch (_err) {
                         console.log(_err);
-                        log("error stop")
                         event.stop();
                     }
                 }, 1);

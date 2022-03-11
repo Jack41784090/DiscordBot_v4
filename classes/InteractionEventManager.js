@@ -84,17 +84,16 @@ var InteractionEventManager = /** @class */ (function () {
         }
     };
     InteractionEventManager.prototype.registerInteraction = function (_id, _interactionEvent, _userData) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var returning, type, userProfile, _b, duplicateEvent, _c;
+            var returning, type, userProfile, _a, duplicateEvent, promiseStatus, _b;
             var _this = this;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         returning = null;
                         type = _interactionEvent.type;
-                        _b = this.userProfilesMap.get(_id);
-                        if (_b) return [3 /*break*/, 2];
+                        _a = this.userProfilesMap.get(_id);
+                        if (_a) return [3 /*break*/, 2];
                         return [4 /*yield*/, (function () { return __awaiter(_this, void 0, void 0, function () {
                                 var _a, _b, _c, _d;
                                 var _f;
@@ -119,33 +118,35 @@ var InteractionEventManager = /** @class */ (function () {
                                 });
                             }); })()];
                     case 1:
-                        _b = (_d.sent());
-                        _d.label = 2;
+                        _a = (_c.sent());
+                        _c.label = 2;
                     case 2:
-                        userProfile = _b;
-                        if (!(userProfile.pending.length < 5)) return [3 /*break*/, 5];
+                        userProfile = _a;
+                        if (!(userProfile.pending.length < 5)) return [3 /*break*/, 6];
                         duplicateEvent = userProfile.pending.find(function (_e) { return _e.type === type; }) ||
                             userProfile.handling.find(function (_e) { return _e.type === type; }) ||
                             null;
-                        if (!(!duplicateEvent || duplicateEvent.stoppable)) return [3 /*break*/, 5];
+                        if (!(!duplicateEvent || duplicateEvent.stoppable)) return [3 /*break*/, 6];
                         (0, console_1.log)("Registering event (" + _id + "): " + _interactionEvent.type);
                         duplicateEvent === null || duplicateEvent === void 0 ? void 0 : duplicateEvent.stop();
                         userProfile.pending.push(_interactionEvent);
                         returning = userProfile.userData;
-                        (0, console_1.debug)("\tHandler Promise is", userProfile.handlerPromise);
-                        (0, console_1.debug)("\tthen", (_a = userProfile.handlerPromise) === null || _a === void 0 ? void 0 : _a.then(function (_) { return _; }));
-                        _c = !userProfile.handlerPromise;
-                        if (_c) return [3 /*break*/, 4];
-                        return [4 /*yield*/, (0, Utility_1.promiseState)(userProfile.handlerPromise)];
+                        if (!userProfile.handlerPromise) return [3 /*break*/, 4];
+                        return [4 /*yield*/, (0, Utility_1.getPromiseStatus)(userProfile.handlerPromise)];
                     case 3:
-                        _c = (_d.sent()) === 'fulfilled';
-                        _d.label = 4;
+                        _b = (_c.sent());
+                        return [3 /*break*/, 5];
                     case 4:
-                        if (_c) {
+                        _b = undefined;
+                        _c.label = 5;
+                    case 5:
+                        promiseStatus = _b;
+                        (0, console_1.debug)("\tHandler Promise is", promiseStatus);
+                        if (promiseStatus === 'fulfilled') {
                             this.handle(_id);
                         }
-                        _d.label = 5;
-                    case 5: return [2 /*return*/, returning];
+                        _c.label = 6;
+                    case 6: return [2 /*return*/, returning];
                 }
             });
         });

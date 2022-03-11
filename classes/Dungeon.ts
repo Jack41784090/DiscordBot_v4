@@ -1,4 +1,4 @@
-import { ButtonInteraction, EmbedField, EmbedFieldData, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectOptionData, SelectMenuInteraction, TextChannel, User } from "discord.js";
+import { ButtonInteraction, EmbedField, EmbedFieldData, InteractionButtonOptions, Message, MessageButtonOptions, MessageEmbed, MessageOptions, MessageSelectOptionData, SelectMenuInteraction, TextChannel, User } from "discord.js";
 import { BotClient } from "..";
 import { Coordinate, CoordStat, Direction, DungeonData, MapData, MapName, NumericDirection, RoomDirections, UserData, ItemType, Team, DungeonDisplayMode, DungeonBlockCode, OwnerID } from "../typedef";
 import { Battle } from "./Battle";
@@ -348,8 +348,16 @@ export class Dungeon {
             //         value: _dItem.type,
             //     }
             // });
+            const buttons: Array<MessageButtonOptions> = [...Battle.MOVEMENT_BUTTONOPTIONS];
+            buttons[buttons.length - 1] = {
+                label: this.displayMode === 'pc' ?
+                    '📱' :
+                    '🖥️',
+                style: 'PRIMARY',
+                customId: 'switch'
+            };
             const messagePayload: MessageOptions = {
-                components: [getButtonsActionRow(Battle.MOVEMENT_BUTTONOPTIONS)],
+                components: [getButtonsActionRow(buttons)],
             }
             // if (selectMenuOptions.length > 0) {
             //     messagePayload.components!.push(getSelectMenuActionRow(selectMenuOptions));

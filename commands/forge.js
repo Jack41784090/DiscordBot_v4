@@ -50,7 +50,7 @@ module.exports = {
     minArgs: 0,
     maxArgs: 1,
     callback: function (author, authorUserData, content, channel, guild, args, message, client) { return __awaiter(void 0, void 0, void 0, function () {
-        var forgeMes, iem, event, updatedUserData, selectedWeaponType, parts, selectedItems, selectOptionsCache, getForgeMesOptions, listenFor, weapons, weaponTypeColl, r1, r2, r3, forged, weaponEmbed;
+        var forgeMes, iem, event, updatedUserData, selectedWeaponType, parts, selectedItems, selectOptionsCache, getForgeMesOptions, listenFor, weapons, weaponTypeColl, r1, r2, r3, forged, weaponEmbed, answer;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, channel.send({
@@ -215,50 +215,44 @@ module.exports = {
                     selectedItems.push(r3);
                     forged = Item_1.Item.Forge(r1, r2, r3, selectedWeaponType);
                     weaponEmbed = (0, Utility_1.getForgeWeaponEmbed)(forged);
-                    (0, Utility_1.setUpConfirmationInteractionCollect)(forgeMes, new discord_js_1.MessageEmbed({
-                        description: weaponEmbed.description,
-                        title: "Forge " + (0, Utility_1.formalise)(selectedWeaponType) + "?",
-                        fields: (selectedItems.map(function (_item, _i) { return ({
-                            name: (0, Utility_1.formalise)(parts[_i]) + ": \"" + _item.getDisplayName() + "\"",
-                            value: _item.getAllMaterial()
-                                .filter(function (_mi) { return _mi.occupation >= 0.1; })
-                                .map(function (_mi) { return _item.getMaterialInfoString(_mi); })
-                                .join('\n'),
-                        }); }))
-                    }), 
+                    return [4 /*yield*/, forgeMes.edit({
+                            embeds: [
+                                new discord_js_1.MessageEmbed({
+                                    description: weaponEmbed.description,
+                                    title: "Forge " + (0, Utility_1.formalise)(selectedWeaponType) + "?",
+                                    fields: selectedItems.map(function (_item, _i) {
+                                        return {
+                                            name: (0, Utility_1.formalise)(parts[_i]) + ": \"" + _item.getDisplayName() + "\"",
+                                            value: _item.getAllMaterial()
+                                                .filter(function (_mi) { return _mi.occupation >= 0.1; })
+                                                .map(function (_mi) { return _item.getMaterialInfoString(_mi); })
+                                                .join('\n'),
+                                        };
+                                    })
+                                })
+                            ]
+                        })];
+                case 8:
+                    _a.sent();
+                    return [4 /*yield*/, (0, Utility_1.confirmationInteractionCollect)(forgeMes)];
+                case 9:
+                    answer = _a.sent();
                     // yes, forge!
-                    function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0: return [4 /*yield*/, _itr.update({})];
-                                case 1:
-                                    _a.sent();
-                                    // remove items from inventory
-                                    selectedItems.forEach(function (_item) {
-                                        (0, Utility_1.arrayRemoveItemArray)(updatedUserData.inventory, _item);
-                                    });
-                                    // add weapon as an item
-                                    updatedUserData.arsenal.push(forged);
-                                    event.stop();
-                                    message.reply({
-                                        embeds: [weaponEmbed]
-                                    });
-                                    return [2 /*return*/];
-                            }
+                    if (answer === 1) {
+                        // remove items from inventory
+                        selectedItems.forEach(function (_item) {
+                            (0, Utility_1.arrayRemoveItemArray)(updatedUserData.inventory, _item);
                         });
-                    }); }, 
-                    // no, don't forge!
-                    function (_itr) { return __awaiter(void 0, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0: return [4 /*yield*/, _itr.update({})];
-                                case 1:
-                                    _a.sent();
-                                    event.stop();
-                                    return [2 /*return*/];
-                            }
+                        // add weapon as an item
+                        updatedUserData.arsenal.push(forged);
+                        event.stop();
+                        message.reply({
+                            embeds: [weaponEmbed]
                         });
-                    }); });
+                    }
+                    else {
+                        event.stop();
+                    }
                     return [2 /*return*/];
             }
         });

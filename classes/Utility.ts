@@ -638,7 +638,7 @@ export async function Test() {
     // const testEvent = new InteractionEvent("", )
 }
 
-export function promiseState(p: Promise<unknown>): Promise<'pending' | 'fulfilled' | 'rejected'> {
+export function getPromiseStatus(p: Promise<unknown>): Promise<'pending' | 'fulfilled' | 'rejected'> {
     const t = {};
     return Promise.race([p, t])
         .then(v =>
@@ -671,45 +671,55 @@ export function setUpInteractionCollect(msg: Message, cb: (itr: Interaction) => 
     interCollector.on('collect', cb);
     return interCollector;
 }
-export async function setUpConfirmationInteractionCollect(
+export async function confirmationInteractionCollect(
     _editMsg: Message,
-    _embed: MessageEmbed,
-    _yesCB: (_itr: ButtonInteraction) => void,
-    _noCB: (_itr: ButtonInteraction) => void
-) {
-    const yesNoCollector = new InteractionCollector(BotClient, { message: _editMsg, max: 1 });
-    const buttonsOptions: Array<MessageButtonOptions> = [
-        {
-            emoji: EMOJI_TICK,
-            label: "Yes",
-            style: "SUCCESS",
-            customId: "yes"
-        },
-        {
-            emoji: EMOJI_CROSS,
-            label: "No",
-            style: "DANGER",
-            customId: "no"
-        }
-    ];
-    yesNoCollector.on('collect', async _itr => {
-        if (_itr.isButton()) {
-            const selected = _itr.customId;
-            switch (selected) {
-                case 'yes':
-                    _yesCB(_itr);
-                    break;
-                
-                case 'no':
-                    _noCB(_itr);
-                    break;
+    _yesCB: (_itr: ButtonInteraction) => void = async _itr => await _itr.update({}),
+    _noCB: (_itr: ButtonInteraction) => void = async _itr => await _itr.update({}),
+    _timeout = 120 * 1000
+): Promise<number> {
+    const collector: InteractionCollector<Interaction> =
+        new InteractionCollector(BotClient, { message: _editMsg, max: 1, time: _timeout });
+    await _editMsg.edit({
+        embeds: _editMsg.embeds,
+        components: [getButtonsActionRow([
+            {
+                emoji: EMOJI_TICK,
+                label: "Yes",
+                style: "SUCCESS",
+                customId: "yes"
+            },
+            {
+                emoji: EMOJI_CROSS,
+                label: "No",
+                style: "DANGER",
+                customId: "no"
             }
-        }
+        ])],
     });
-    return _editMsg.edit({
-        embeds: [_embed],
-        components: [getButtonsActionRow(buttonsOptions)],
-    });
+
+    return new Promise((resolve) => {
+        let answer = -1;
+        collector.on('collect', async _itr => {
+            if (_itr.isButton()) {
+                const selected = _itr.customId;
+                switch (selected) {
+                    case 'yes':
+                        answer = 1;
+                        await _itr.update({});
+                        break;
+
+                    case 'no':
+                        answer = 0;
+                        await _itr.update({});
+                        break;
+                }
+            }
+        });
+
+        collector.on('end', () => {
+            resolve(answer);
+        });
+    })
 }
 
 export function getSelectMenuActionRow(options: MessageSelectOptionData[], customID?: string) {
