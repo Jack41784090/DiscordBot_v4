@@ -28,14 +28,14 @@
         "protection": 1,
         "speed": 0,
         "maxMove": 0,
-        "iconURL": "images/Crystal Zombie.png",
+        "iconURL": "images/Cobalt Monster.png",
         "abilities": [],
         "autoWeapons": [],
         "botType": 0,
         "lootInfo": []
     },
-    "Crystal Zombie": {
-        "class": "Crystal Zombie",
+    "Cobalt Monster": {
+        "class": "Cobalt Monster",
         "arsenal": [
             {
                 "name": "Bite",
@@ -57,19 +57,19 @@
                 "staminaCost": 5
             }
         ],
-        "maxHP": 1,
+        "maxHP": 15,
         "maxStamina": 100,
         "dodge": 0,
         "protection": 0.5,
         "speed": 5,
         "maxMove": 1,
-        "iconURL": "images/Crystal Zombie.png",
+        "iconURL": "images/class/cobalt_monster_default.png",
         "abilities": [],
         "autoWeapons": [],
         "botType": 1,
         "lootInfo": [
             {
-                "itemName": "[Crystal Zombie]",
+                "itemName": "[Cobalt Monster]",
                 "chance": 1,
                 "materials": [
                     {
@@ -167,7 +167,7 @@
                 }
             },
             {
-                "itemName": "[Crystal Zombie] Comet",
+                "itemName": "[Cobalt Monster] Comet",
                 "chance": 0.1,
                 "materials": [
                     {
@@ -255,8 +255,8 @@
             }
         ]
     },
-    "Barcher": {
-        "class": "Barcher",
+    "Cobalt Archer": {
+        "class": "Cobalt Archer",
         "arsenal": [
             {
                 "name": "Ruster",
@@ -278,13 +278,13 @@
                 "staminaCost": 5
             }
         ],
-        "maxHP": 15,
+        "maxHP": 10,
         "maxStamina": 100,
         "dodge": 0,
         "protection": 0.3,
         "speed": 5,
         "maxMove": 1,
-        "iconURL": "images/Barcher.png",
+        "iconURL": "images/class/cobalt_archer_default.png",
         "abilities": [],
         "autoWeapons": [],
         "botType": 1,
@@ -295,8 +295,8 @@
             }
         ]
     },
-    "Bardar": {
-        "class": "Bardar",
+    "Cobalt Herald": {
+        "class": "Cobalt Herald",
         "arsenal": [
             {
                 "name": "Bite",
@@ -318,13 +318,13 @@
                 "staminaCost": 5
             }
         ],
-        "maxHP": 15,
+        "maxHP": 10,
         "maxStamina": 100,
         "dodge": 0,
         "protection": 0,
         "speed": 5,
         "maxMove": 1,
-        "iconURL": "images/Venus1.png",
+        "iconURL": "images/class/cobalt_bard_default.png",
         "abilities": [
             {
                 "type": "null",
@@ -358,41 +358,5 @@
                 "itemType": "mineral"
             }
         ]
-    },
-    "Diana's Wolf": {
-        "class": "Diana's Wolf",
-        "arsenal": [
-            {
-                "name": "Bite",
-                "weaponType": "dagger",
-                "attackType": "melee",
-
-                "range": {
-                    "min": 1,
-                    "max": 1,
-                    "radius": 1
-                },
-                "accuracy": 85,
-                "damageRange": [
-                    10,
-                    12
-                ],
-                "criticalHit": 5,
-                "lifesteal": 0.5,
-                "readinessCost": 5,
-                "staminaCost": 5
-            }
-        ],
-        "maxHP": 8,
-        "maxStamina": 100,
-        "dodge": 0,
-        "protection": 0,
-        "speed": 5,
-        "maxMove": 1,
-        "iconURL": "images/wolf.png",
-        "abilities": [],
-        "autoWeapons": [],
-        "botType": 1,
-        "lootInfo": []
     }
 }
