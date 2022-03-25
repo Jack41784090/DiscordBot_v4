@@ -107,7 +107,6 @@ function saveUserData(_userData) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    (0, console_1.log)(_userData.party);
                     document = database.collection("Users").doc(_userData.party[0]);
                     return [4 /*yield*/, document.get()];
                 case 1:

@@ -64,12 +64,16 @@ var InteractionEventManager = /** @class */ (function () {
                 userProfile.handling = userProfile.pending;
                 userProfile.pending = [];
             }
-            (0, console_1.debug)("\tHandling", userProfile.handling.map(function (_e) { return _e.type + " " + _e.finishingPromise; }));
-            (0, console_1.debug)("\tPending", userProfile.pending.map(function (_e) { return _e.type + " " + _e.finishingPromise; }));
+            (0, console_1.debug)("\tHandling", userProfile.handling.map(function (_e) { return _e.type + " " + _e.timerPromise; }));
+            (0, console_1.debug)("\tPending", userProfile.pending.map(function (_e) { return _e.type + " " + _e.timerPromise; }));
             userProfile.handlerPromise =
                 Promise.allSettled(userProfile.handling.map(function (_e) { return _e.promise(); }))
                     .then(function () {
-                    userProfile.handling.forEach(function (_e) { return _e.stop(); });
+                    userProfile.handling.forEach(function (_e) {
+                        if (!_e.stopped) {
+                            _e.stop();
+                        }
+                    });
                     userProfile.handling = [];
                     if (userProfile.pending.length > 0) {
                         (0, console_1.log)("\t\tPending is not empty, reusing.");

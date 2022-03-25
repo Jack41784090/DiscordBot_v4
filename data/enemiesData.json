@@ -34,6 +34,227 @@
         "botType": 0,
         "lootInfo": []
     },
+    "Overgrown Bat": {
+        "class": "Overgrown Bat",
+        "arsenal": [
+            {
+                "name": "Bite",
+                "weaponType": "dagger",
+                "attackType": "melee",
+                "range": {
+                    "min": 1,
+                    "max": 1,
+                    "radius": 1
+                },
+                "accuracy": 85,
+                "damageRange": {
+                    "min": 3,
+                    "max": 5
+                },
+                "criticalHit": 5,
+                "lifesteal": 0.5,
+                "readinessCost": 5,
+                "staminaCost": 5
+            }
+        ],
+        "maxHP": 8,
+        "maxStamina": 100,
+        "dodge": 0,
+        "protection": 0.5,
+        "speed": 5,
+        "maxMove": 1,
+        "iconURL": "images/class/cobalt_monster_default.png",
+        "abilities": [],
+        "autoWeapons": [],
+        "botType": 1,
+        "lootInfo": [
+            {
+                "itemName": "[Overgrown Bat]",
+                "chance": 1,
+                "materials": [
+                    {
+                        "materialName": "flesh",
+                        "occupationDeviation": {
+                            "min": 0.79,
+                            "max": 0.887
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 0
+                        }
+                    },
+                    {
+                        "materialName": "flesh",
+                        "occupationDeviation": {
+                            "min": 0.09,
+                            "max": 0.1
+                        },
+                        "gradeDeviation": {
+                            "min": 1,
+                            "max": 1
+                        }
+                    }
+                ],
+                "weightDeviation": {
+                    "min": 6,
+                    "max": 8
+                }
+            },
+            {
+                "itemName": "[Overgrown Bat]",
+                "chance": 0.2,
+                "materials": [
+                    {
+                        "materialName": "force_of_nature",
+                        "occupationDeviation": {
+                            "min": 0.79,
+                            "max": 0.887
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 0
+                        }
+                    },
+                    {
+                        "materialName": "force_of_nature",
+                        "occupationDeviation": {
+                            "min": 0.09,
+                            "max": 0.1
+                        },
+                        "gradeDeviation": {
+                            "min": 1,
+                            "max": 1
+                        }
+                    },
+                    {
+                        "materialName": "force_of_nature",
+                        "occupationDeviation": {
+                            "min": 0.09,
+                            "max": 0.1
+                        },
+                        "gradeDeviation": {
+                            "min": 2,
+                            "max": 2
+                        }
+                    }
+                ],
+                "weightDeviation": {
+                    "min": 0.1,
+                    "max": 0.2
+                }
+            },
+            {
+                "itemName": "[Overgrown Bat Trophy]",
+                "chance": 0.05,
+                "materials": [
+                    {
+                        "materialName": "diamond",
+                        "occupationDeviation": {
+                            "min": 0.7,
+                            "max": 0.8
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 10
+                        }
+                    }
+                ],
+                "weightDeviation": {
+                    "min": 1,
+                    "max": 2
+                }
+            }
+        ]
+    },
+    "Green Slime": {
+        "class": "Green Slime",
+        "arsenal": [
+            {
+                "name": "Slime",
+                "weaponType": "dagger",
+                "attackType": "melee",
+                "range": {
+                    "min": 1,
+                    "max": 2,
+                    "radius": 1
+                },
+                "accuracy": 105,
+                "damageRange": {
+                    "min": 0,
+                    "max": 2
+                },
+                "criticalHit": 0,
+                "lifesteal": 0,
+                "readinessCost": 5,
+                "staminaCost": 5
+            }
+        ],
+        "maxHP": 16,
+        "maxStamina": 100,
+        "dodge": 0,
+        "protection": 0.5,
+        "speed": 5,
+        "maxMove": 1,
+        "iconURL": "images/class/green_slime_default.png",
+        "abilities": [],
+        "autoWeapons": [],
+        "botType": 1,
+        "lootInfo": [
+            {
+                "itemName": "[Green Slime]",
+                "chance": 1,
+                "materials": [
+                    {
+                        "materialName": "slime",
+                        "occupationDeviation": {
+                            "min": 0.79,
+                            "max": 0.887
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 0
+                        }
+                    },
+                    {
+                        "materialName": "slime",
+                        "occupationDeviation": {
+                            "min": 0.09,
+                            "max": 0.1
+                        },
+                        "gradeDeviation": {
+                            "min": 1,
+                            "max": 1
+                        }
+                    }
+                ],
+                "weightDeviation": {
+                    "min": 6,
+                    "max": 8
+                }
+            },
+            {
+                "itemName": "[Green Slime Trophy]",
+                "chance": 0.05,
+                "materials": [
+                    {
+                        "materialName": "diamond",
+                        "occupationDeviation": {
+                            "min": 0.7,
+                            "max": 0.8
+                        },
+                        "gradeDeviation": {
+                            "min": 0,
+                            "max": 10
+                        }
+                    }
+                ],
+                "weightDeviation": {
+                    "min": 1,
+                    "max": 2
+                }
+            }
+        ]
+    },
     "Cobalt Monster": {
         "class": "Cobalt Monster",
         "arsenal": [
@@ -117,7 +338,7 @@
                         }
                     },
                     {
-                        "materialName": "steel",
+                        "materialName": "iron",
                         "occupationDeviation": {
                             "min": 0.0005,
                             "max": 0.001
@@ -215,7 +436,7 @@
                         }
                     },
                     {
-                        "materialName": "steel",
+                        "materialName": "iron",
                         "occupationDeviation": {
                             "min": 0.0005,
                             "max": 0.001

@@ -90,7 +90,7 @@
                     }
                 },
                 {
-                    "materialName": "steel",
+                    "materialName": "iron",
                     "occupationDeviation": {
                         "min": 0.75,
                         "max": 0.8

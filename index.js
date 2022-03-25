@@ -100,7 +100,7 @@ function quickEmbark() {
                 case 2: return [4 /*yield*/, (_a.sent()).send("Stuff")];
                 case 3:
                     mes = _a.sent();
-                    Battle_js_1.Battle.Start((0, Utility_js_1.getNewObject)(jsons_js_1.areasData.farmstead_empty), Ike, mes, ["262871357455466496"], exports.BotClient, false);
+                    Battle_js_1.Battle.Start((0, Utility_js_1.getNewObject)(jsons_js_1.areasData.farmstead_walkers1), Ike, mes, ["262871357455466496"], exports.BotClient, false);
                     return [2 /*return*/];
             }
         });
@@ -148,6 +148,7 @@ exports.BotClient.on('ready', function () { return __awaiter(void 0, void 0, voi
         exports.BotClient.setMaxListeners(15);
         console.log("Ready.");
         importCommands();
+        quickEmbark();
         return [2 /*return*/];
     });
 }); });

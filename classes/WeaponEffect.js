@@ -127,23 +127,20 @@ var statusEffect_effects = new Map([
         "Wild Hunt",
         function (_action, _cR, _bd) {
             var returnString = "";
-            var _loop_1 = function (i) {
-                var coord = (0, Utility_1.getNewObject)(_action.attacker);
-                var numDir = i;
-                var dir = (0, Utility_1.numericDirectionToDirection)(numDir);
-                var magAxis = (0, Utility_1.translateDirectionToMagnitudeAxis)(dir);
-                coord[magAxis.axis] += magAxis.magnitude;
-                if (_bd.findEntity_coord(coord) === undefined) {
-                    (0, Utility_1.getStat)((0, Utility_1.getBaseEnemyStat)("Diana's Wolf")).then(function (wolf) {
-                        wolf.team = 'player';
-                        _bd.Spawn(wolf, coord);
-                        returnString += "🐺";
-                    });
-                }
-            };
-            for (var i = 0; i < 4; i++) {
-                _loop_1(i);
-            }
+            // for (let i = 0; i < 4; i++) {
+            //     const coord: Coordinate = getNewObject(_action.attacker);
+            //     const numDir: NumericDirection = i;
+            //     const dir: Direction = numericDirectionToDirection(numDir);
+            //     const magAxis = translateDirectionToMagnitudeAxis(dir);
+            //     coord[magAxis.axis] += magAxis.magnitude;
+            //     if (_bd.findEntity_coord(coord) === undefined) {
+            //         getStat(getBaseEnemyStat("Diana's Wolf")).then(wolf => {
+            //             wolf.team = 'player';
+            //             _bd.Spawn(wolf, coord);
+            //             returnString += "🐺"
+            //         })
+            //     }
+            // }
             return returnString;
         }
     ],

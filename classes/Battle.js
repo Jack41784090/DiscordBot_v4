@@ -105,8 +105,8 @@ var Battle = /** @class */ (function () {
         this.playerCount = 0;
         this.allIndex = new Map();
         // user cache
+        this.iem = InteractionEventManager_1.InteractionEventManager.getInstance();
         this.userCache = new Map();
-        this.userDataCache = new Map();
         this.interactionCache = new Map();
         // AFK players
         this.afkPlayers_ownerID = [];
@@ -115,7 +115,8 @@ var Battle = /** @class */ (function () {
         this.channel = _message.channel;
         this.client = _client;
         this.guild = _message.guild;
-        this.party = _party;
+        this.partyIDs = _party;
+        this.partyStats = _party.map(function (_) { return null; });
         this.mapData = _mapData;
         this.width = _mapData.map.width;
         this.height = _mapData.map.height;
@@ -299,8 +300,8 @@ var Battle = /** @class */ (function () {
                         i = 0;
                         _b.label = 1;
                     case 1:
-                        if (!(i < this.party.length)) return [3 /*break*/, 7];
-                        ownerID = this.party[i];
+                        if (!(i < this.partyIDs.length)) return [3 /*break*/, 7];
+                        ownerID = this.partyIDs[i];
                         interactEvent = this.interactionCache.set(ownerID, new InteractionEvent_1.InteractionEvent(ownerID, this.message, 'battle', {
                             battle: this
                         })).get(ownerID);
@@ -308,7 +309,6 @@ var Battle = /** @class */ (function () {
                     case 2:
                         userData = _b.sent();
                         if (!userData) return [3 /*break*/, 5];
-                        this.userDataCache.set(ownerID, userData);
                         return [4 /*yield*/, (0, Utility_1.getStat)((0, Utility_1.getBaseClassStat)(userData.equippedClass), ownerID)];
                     case 3:
                         blankStat = _b.sent();
@@ -323,7 +323,7 @@ var Battle = /** @class */ (function () {
                         return [3 /*break*/, 6];
                     case 5:
                         this.message.channel.send("<@" + ownerID + "> is busy (most possibly already in another battle) and cannot participate.");
-                        (0, Utility_1.arrayRemoveItemArray)(this.party, ownerID);
+                        (0, Utility_1.arrayRemoveItemArray)(this.partyIDs, ownerID);
                         _b.label = 6;
                     case 6:
                         i++;
@@ -339,10 +339,10 @@ var Battle = /** @class */ (function () {
         var _b, _c;
         // check player welfare
         (0, console_1.log)("Checking welfare...");
-        var playerStats = this.tobespawnedArray.filter(function (_s) { return _this.party.includes(_s.owner); });
+        var playerStats = this.tobespawnedArray.filter(function (_s) { return _this.partyIDs.includes(_s.owner); });
         for (var i = 0; i < playerStats.length; i++) {
             var player = playerStats[i];
-            var welfare = ((_b = this.userDataCache.get(player.owner)) === null || _b === void 0 ? void 0 : _b.welfare) || null;
+            var welfare = ((_b = InteractionEventManager_1.InteractionEventManager.userData(player.owner)) === null || _b === void 0 ? void 0 : _b.welfare) || null;
             (0, console_1.debug)("\t" + player.base.class, welfare);
             if (welfare !== null && welfare > 0) {
                 (0, console_1.log)("\t" + player.HP + " => " + player.base.maxHP * (0, Utility_1.clamp)(welfare, 0, 1));
@@ -662,23 +662,17 @@ var Battle = /** @class */ (function () {
         });
     };
     Battle.prototype.FinishRound = function () {
-        var _b, _c;
+        var _b;
         return __awaiter(this, void 0, void 0, function () {
-            var PVE, PVP, allStats, i, id, stat, userData, endEmbedFields_1, victoryTitle;
-            return __generator(this, function (_d) {
+            var PVE, PVP, allStats, i, endEmbedFields_1, victoryTitle;
+            return __generator(this, function (_c) {
                 (0, console_1.log)("Finishing Round...");
                 PVE = this.playerCount === 0 || (this.totalEnemyCount === 0 && this.tobespawnedArray.length === 0);
                 PVP = this.playerCount === 1;
                 if ((this.pvp && PVP) || (!this.pvp && PVE)) {
                     allStats = this.allStats();
-                    for (i = 0; i < this.party.length; i++) {
-                        id = this.party[i];
-                        stat = allStats[i];
-                        userData = this.userDataCache.get(id);
-                        if (userData) {
-                            userData.welfare = (0, Utility_1.clamp)(stat.HP / stat.base.maxHP, 0, 1);
-                        }
-                        (_b = this.interactionCache.get(id)) === null || _b === void 0 ? void 0 : _b.stop();
+                    for (i = 0; i < this.partyIDs.length; i++) {
+                        this.disconnectEvent(this.partyIDs[i]);
                     }
                     endEmbedFields_1 = [];
                     this.callbackOnParty(function (stat) {
@@ -690,7 +684,7 @@ var Battle = /** @class */ (function () {
                         });
                     });
                     victoryTitle = this.pvp ?
-                        (((_c = this.allStats().find(function (_s) { return _s.owner && _s.HP > 0; })) === null || _c === void 0 ? void 0 : _c.base.class) || "What? No one ") + " wins!" :
+                        (((_b = this.allStats().find(function (_s) { return _s.owner && _s.HP > 0; })) === null || _b === void 0 ? void 0 : _b.base.class) || "What? No one ") + " wins!" :
                         this.totalEnemyCount === 0 ? "VICTORY!" : "Defeat.";
                     this.channel.send({
                         embeds: [new discord_js_1.MessageEmbed({
@@ -709,8 +703,17 @@ var Battle = /** @class */ (function () {
     };
     /** Execute function on every stat of players */
     Battle.prototype.callbackOnParty = function (_callback) {
-        var playersArray = this.allStats().filter(function (_s) { return _s.owner; });
-        playersArray.forEach(_callback);
+        var _this = this;
+        var allStats = this.allStats(true);
+        this.partyStats.forEach(function (_s, _index) {
+            if (_s === null) {
+                _this.partyStats[_index] = allStats.find(function (_s) { return _s.owner === _this.partyIDs[_index]; }) || null;
+            }
+            var s = _this.partyStats[_index];
+            if (s) {
+                _callback(s);
+            }
+        });
     };
     /** Get array of all Stat, saved by reference */
     Battle.prototype.allStats = function (excludeBlock) {
@@ -1368,7 +1371,7 @@ var Battle = /** @class */ (function () {
             // for each lootbox on the tile
             for (var i = 0; i < allLoot.length; i++) {
                 var loot = allLoot[i];
-                var userData = this.userDataCache.get(_owner) || null;
+                var userData = InteractionEventManager_1.InteractionEventManager.userData(_owner) || null;
                 // for each item in the lootbox
                 for (var i_2 = 0; i_2 < loot.items.length; i_2++) {
                     var item = loot.items[i_2];
@@ -1403,6 +1406,11 @@ var Battle = /** @class */ (function () {
         unit.x = coords.x;
         unit.y = coords.y;
         this.CSMap.set((0, Utility_1.getCoordString)(coords), unit);
+        // update partyStats as players spawn in
+        if (unit.owner && this.partyIDs.includes(unit.owner)) {
+            var index = this.partyIDs.indexOf(unit.owner);
+            this.partyStats[index] = unit;
+        }
     };
     Battle.prototype.SpawnOnSpawner = function (unit) {
         var _this = this;
@@ -2365,6 +2373,17 @@ var Battle = /** @class */ (function () {
     Battle.prototype.queueRemovePlayer = function (_id) {
         (0, console_1.debug)("Queued remove", _id);
         this.afkPlayers_ownerID.push(_id);
+    };
+    // event
+    Battle.prototype.disconnectEvent = function (_id) {
+        var _b;
+        var disconnectingUserData = InteractionEventManager_1.InteractionEventManager.userData(_id) || null;
+        var disconnectingStat = this.partyStats.find(function (_s) { return (_s === null || _s === void 0 ? void 0 : _s.owner) === _id; }) || null;
+        if (disconnectingUserData && disconnectingStat) {
+            disconnectingUserData.welfare =
+                (0, Utility_1.clamp)(disconnectingStat.HP / disconnectingStat.base.maxHP, 0, 1);
+        }
+        (_b = this.interactionCache.get(_id)) === null || _b === void 0 ? void 0 : _b.stop();
     };
     Battle.prototype.validateTarget = function (_stat_aa, _weapon, _ability, _target) {
         var eM = {

@@ -42,7 +42,6 @@ var Database_1 = require("../classes/Database");
 var InteractionEventManager_1 = require("../classes/InteractionEventManager");
 var InteractionEvent_1 = require("../classes/InteractionEvent");
 var jsons_1 = require("../jsons");
-var console_1 = require("console");
 module.exports = {
     commands: ['info'],
     expectedArgs: '[class name]',
@@ -152,7 +151,6 @@ module.exports = {
                     if (!(jsons_1.classData[args[0]] === undefined)) return [3 /*break*/, 6];
                     message.react(typedef_1.EMOJI_CROSS)
                         .catch(function (_err) { return console.log; });
-                    (0, console_1.log)("dne stop");
                     event.stop();
                     return [3 /*break*/, 9];
                 case 6:
@@ -216,7 +214,6 @@ module.exports = {
                                     case 7:
                                         _err_2 = _e.sent();
                                         console.log(_err_2);
-                                        (0, console_1.log)("error stop");
                                         event.stop();
                                         return [3 /*break*/, 8];
                                     case 8: return [2 /*return*/];

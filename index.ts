@@ -25,7 +25,7 @@ export const BotClient = new Client({
 async function quickEmbark() {
     const Ike = await BotClient.users.fetch("262871357455466496");
     const mes = await (await BotClient.channels.fetch("926372977539424296") as TextChannel).send("Stuff");
-    Battle.Start(getNewObject(areasData.farmstead_empty) as MapData, Ike, mes, ["262871357455466496"], BotClient, false);
+    Battle.Start(getNewObject(areasData.farmstead_walkers1) as MapData, Ike, mes, ["262871357455466496"], BotClient, false);
 }
 
 function importCommands() {
@@ -57,7 +57,7 @@ BotClient.on('ready', async () => {
     BotClient.setMaxListeners(15);
     console.log("Ready.");
     importCommands();
-    // quickEmbark();
+    quickEmbark();
     // Test();
 });
 

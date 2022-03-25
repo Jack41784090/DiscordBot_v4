@@ -6,7 +6,7 @@
                 {
                     "spawns": "player",
                     "x": 0,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
@@ -37,12 +37,12 @@
                 {
                     "spawns": "player",
                     "x": 0,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
                     "x": 1,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
@@ -72,46 +72,46 @@
                 {
                     "spawns": "player",
                     "x": 0,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
                     "x": 1,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
                     "x": 2,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
                     "x": 3,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 7,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 8,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 6,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 9,
-                    "y": 0
+                    "y": 1
                 }
             ],
             "width": 10,
-            "height": 1
+            "height": 3
         },
         "enemiesInfo": {
             "Cobalt Monster": {
@@ -121,65 +121,6 @@
             "Cobalt Archer": {
                 "min": 1,
                 "max": 1
-            }
-        }
-    },
-    "farmstead_archers": {
-        "map": {
-            "coordStat": {},
-            "spawners": [
-                {
-                    "spawns": "player",
-                    "x": 0,
-                    "y": 0
-                },
-                {
-                    "spawns": "player",
-                    "x": 1,
-                    "y": 0
-                },
-                {
-                    "spawns": "player",
-                    "x": 2,
-                    "y": 0
-                },
-                {
-                    "spawns": "player",
-                    "x": 3,
-                    "y": 0
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 7,
-                    "y": 0
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 8,
-                    "y": 0
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 6,
-                    "y": 0
-                },
-                {
-                    "spawns": "enemy",
-                    "x": 9,
-                    "y": 0
-                }
-            ],
-            "width": 10,
-            "height": 1
-        },
-        "enemiesInfo": {
-            "Cobalt Monster": {
-                "min": 1,
-                "max": 1
-            },
-            "Cobalt Archer": {
-                "min": 3,
-                "max": 3
             }
         }
     },
@@ -190,46 +131,46 @@
                 {
                     "spawns": "player",
                     "x": 0,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
                     "x": 1,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
                     "x": 2,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
                     "x": 3,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 7,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 8,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 6,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 9,
-                    "y": 0
+                    "y": 1
                 }
             ],
             "width": 10,
-            "height": 1
+            "height": 3
         },
         "enemiesInfo": {
             "Cobalt Monster": {
@@ -242,6 +183,65 @@
             }
         }
     },
+    "farmstead_archers": {
+        "map": {
+            "coordStat": {},
+            "spawners": [
+                {
+                    "spawns": "player",
+                    "x": 0,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 1,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 2,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 3,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 7,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 8,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 6,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 9,
+                    "y": 1
+                }
+            ],
+            "width": 10,
+            "height": 3
+        },
+        "enemiesInfo": {
+            "Cobalt Monster": {
+                "min": 1,
+                "max": 1
+            },
+            "Cobalt Archer": {
+                "min": 3,
+                "max": 3
+            }
+        }
+    },
     "farmstead_horde1": {
         "map": {
             "coordStat": {},
@@ -249,46 +249,46 @@
                 {
                     "spawns": "player",
                     "x": 0,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
                     "x": 1,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
                     "x": 2,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "player",
                     "x": 3,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 7,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 8,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 6,
-                    "y": 0
+                    "y": 1
                 },
                 {
                     "spawns": "enemy",
                     "x": 9,
-                    "y": 0
+                    "y": 1
                 }
             ],
             "width": 10,
-            "height": 1
+            "height": 3
         },
         "enemiesInfo": {
             "Cobalt Monster": {

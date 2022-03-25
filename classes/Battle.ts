@@ -2599,12 +2599,13 @@ Average Rolls: ${roundToDecimalPlace(statAcco.rollAverage) || "N/A"}`;
         const fullPath: Coordinate[] = [];
         if (!AINode) {
             // if node is null, find the closest node to destination
-            AINode = results.reduce((lvN, n) =>
-                n.distanceToDestination < lvN.distanceToDestination?
+            AINode = results.reduce((lvN, n) => {
+                return n.distanceToDestination < lvN.distanceToDestination?
                     n:
-                    lvN,
-            results[0]);
+                    lvN;
+            }, results[0]);
         }
+
         while (AINode) {
             const coord = { x: AINode.x, y: AINode.y };
             fullPath.unshift(coord);

@@ -136,21 +136,21 @@ const statusEffect_effects = new Map<AbilityName | UniversalAbilityName, Ability
         (_action: Action, _cR: ClashResult, _bd: Battle) => {
             let returnString = "";
 
-            for (let i = 0; i < 4; i++) {
-                const coord: Coordinate = getNewObject(_action.attacker);
-                const numDir: NumericDirection = i;
-                const dir: Direction = numericDirectionToDirection(numDir);
-                const magAxis = translateDirectionToMagnitudeAxis(dir);
+            // for (let i = 0; i < 4; i++) {
+            //     const coord: Coordinate = getNewObject(_action.attacker);
+            //     const numDir: NumericDirection = i;
+            //     const dir: Direction = numericDirectionToDirection(numDir);
+            //     const magAxis = translateDirectionToMagnitudeAxis(dir);
                 
-                coord[magAxis.axis] += magAxis.magnitude;
-                if (_bd.findEntity_coord(coord) === undefined) {
-                    getStat(getBaseEnemyStat("Diana's Wolf")).then(wolf => {
-                        wolf.team = 'player';
-                        _bd.Spawn(wolf, coord);
-                        returnString += "🐺"
-                    })
-                }
-            }
+            //     coord[magAxis.axis] += magAxis.magnitude;
+            //     if (_bd.findEntity_coord(coord) === undefined) {
+            //         getStat(getBaseEnemyStat("Diana's Wolf")).then(wolf => {
+            //             wolf.team = 'player';
+            //             _bd.Spawn(wolf, coord);
+            //             returnString += "🐺"
+            //         })
+            //     }
+            // }
 
             return returnString;
         }

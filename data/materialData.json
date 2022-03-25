@@ -1,6 +1,7 @@
 {
+    // cooking material
     "flesh": {
-        "ppu": 0.05,
+        "ppu": 1,
 
         "accuracy": 0.05,
         "damageRange": [
@@ -13,8 +14,48 @@
 
         "protection": 0.001
     },
+    "slime": {
+        "ppu": 1,
+        "accuracy": 0.05,
+        "damageRange": [
+            0.05,
+            0.06
+        ],
+        "speed": 0.005,
+        "criticalHit": 0.05,
+        "lifesteal": 0.05,
+        "protection": 0.001
+    },
+
+    // magic enchantment
+    "force_of_nature": {
+        "ppu": 50,
+        "accuracy": 0,
+        "damageRange": [
+            0,
+            0
+        ],
+        "speed": 0,
+        "criticalHit": 0,
+        "lifesteal": 0,
+        "protection": 0.0012
+    },
+
+    // metals
+    "diamond": {
+        "ppu": 100,
+        "accuracy": 1,
+        "damageRange": [
+            0.55,
+            0.6
+        ],
+        "speed": 0.165,
+        "criticalHit": 0.1,
+        "lifesteal": 0,
+        "protection": 0.000065
+    },
     "cobalt": {
-        "ppu": 20,
+        "ppu": 50,
 
         "accuracy": 1.5,
         "damageRange": [
@@ -25,10 +66,22 @@
         "criticalHit": 0,
         "lifesteal": 0,
 
-        "protection": 0.001
+        "protection": 0.0012
     },
-    "steel": {
-        "ppu": 10,
+    "silver": {
+        "ppu": 45,
+        "accuracy": 1.5,
+        "damageRange": [
+            0.45,
+            0.5
+        ],
+        "speed": 0.15,
+        "criticalHit": 0.1,
+        "lifesteal": 0,
+        "protection": 0.0008
+    },
+    "iron": {
+        "ppu": 15,
 
         "accuracy": 1.65,
         "damageRange": [
@@ -41,6 +94,20 @@
 
         "protection": 0.001
     },
+    "copper": {
+        "ppu": 12,
+        "accuracy": 1.75,
+        "damageRange": [
+            0.35,
+            0.4
+        ],
+        "speed": 0.12,
+        "criticalHit": 0.03,
+        "lifesteal": 0,
+        "protection": 0.0008
+    },
+
+    // miscellaneous
     "coal": {
         "ppu": 5,
 
@@ -53,7 +120,7 @@
         "protection": 0.001
     },
     "wood": {
-        "ppu": 5,
+        "ppu": 3,
 
         "accuracy": 2,
         "damageRange": [
