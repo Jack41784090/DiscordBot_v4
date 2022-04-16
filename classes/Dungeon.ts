@@ -342,12 +342,19 @@ export class Dungeon {
 
     async readAction() {
         const returnMapMessage = () => {
-            // const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
-            //     return {
-            //         label: `${formalize(_dItem.type)} x${_dItem.uses}`,
-            //         value: _dItem.type,
-            //     }
-            // });
+            const eligibleItemTypes: Array<ItemType> = [
+                'torch',
+                'scout',
+            ]
+            const itemsMenuOptionData: MessageSelectOptionData[] =
+                this.inventory
+                .filter(_item => eligibleItemTypes.includes(_item.getItemType()))
+                .map(_dItem => {
+                    return {
+                        label: `${_dItem.getDisplayName()}`,
+                        value: _dItem.getItemType(),
+                    }
+                });
             const buttons: Array<MessageButtonOptions> = [...Battle.MOVEMENT_BUTTONOPTIONS];
             buttons[buttons.length - 1] = {
                 label: this.displayMode === 'pc' ?
@@ -359,9 +366,10 @@ export class Dungeon {
             const messagePayload: MessageOptions = {
                 components: [getButtonsActionRow(buttons)],
             }
-            // if (selectMenuOptions.length > 0) {
-            //     messagePayload.components!.push(getSelectMenuActionRow(selectMenuOptions));
-            // }
+
+            if (itemsMenuOptionData.length > 0) {
+                messagePayload.components?.push(getSelectMenuActionRow(itemsMenuOptionData));
+            }
 
             return this.getImageEmbedMessageOptions(messagePayload);
         }
@@ -388,58 +396,57 @@ export class Dungeon {
             }, 1);
         }
         const handleItem = (_itr: SelectMenuInteraction) => {
-            const itemSelected: ItemType = _itr.values[0] as ItemType;
+            const itemTypeSelected: ItemType = _itr.values[0] as ItemType;
 
             // find item used
-            // let itemIndex: number | null = null;
-            // const invItem = this.inventory.find((_it, _i) => {
-            //     const valid = _it.type === itemSelected && _it.uses > 0;
-            //     if (valid) {
-            //         itemIndex = _i;
-            //     }
-            //     return valid;
-            // });
+            let itemIndex: number | null = null;
+            const invItem = this.inventory.find((_it, _i) => {
+                const valid = _it.getItemType() === itemTypeSelected;
+                if (valid) {
+                    itemIndex = _i;
+                }
+                return valid;
+            });
 
-            // if (invItem && itemIndex !== null) {
-            //     // consume item
-            //     invItem.uses--;
-            //     if (invItem.uses <= 0) {
-            //         this.inventory.splice(itemIndex, 1);
-            //     }
+            if (invItem && itemIndex !== null) {
+                // consume item
+                invItem.chip(uniformRandom(0,1), 0.2);
 
-            //     // execute action
-            //     switch (itemSelected) {
-            //         case "torch":
-            //             const discoveredRooms = breadthFirstSearch(
-            //                 this.getRoom(this.leaderCoordinate)!,
-            //                 _ => _.directions,
-            //                 (_q, _c) => {
-            //                     return getDistance(_c.coordinate, this.leaderCoordinate) <= 1;
-            //                 },
-            //                 (_c) => true
-            //             );
-            //             discoveredRooms.forEach(_r => _r.isDiscovered = true);
-            //             break;
+                // execute action
+                switch (invItem.getItemType()) {
+                    case "torch":
+                        const discoveredRooms = breadthFirstSearch(
+                            this.getRoom(this.leaderCoordinate)!,
+                            _ => _.directions,
+                            (_q, _c) => {
+                                return getDistance(_c.coordinate, this.leaderCoordinate) <= 1;
+                            },
+                            (_c) => true
+                        );
+                        discoveredRooms.forEach(_r => _r.isDiscovered = true);
+                        break;
 
-            //         case "scout":
-            //             const battleRooms = this.rooms.filter(_r => _r.isBattleRoom);
-            //             const closestBattle = battleRooms.reduce((_closest: Room | null, _c: Room) => {
-            //                 if (_c.isDiscovered) {
-            //                     return _closest
-            //                 }
-            //                 else {
-            //                     return _closest === null||
-            //                         getDistance(_closest.coordinate, this.leaderCoordinate) > getDistance(_c.coordinate, this.leaderCoordinate)?
-            //                             _c:
-            //                             _closest;
-            //                 }
-            //             }, null);
-            //             if (closestBattle) {
-            //                 closestBattle.isDiscovered = true;
-            //             }
-            //             break;
-            //     }
-            // }
+                    case "scout":
+                        const battleRooms = this.rooms.filter(_r => _r.isBattleRoom);
+                        const closestBattle = battleRooms.reduce((_closest: Room | null, _c: Room) => {
+                            if (_c.isDiscovered) {
+                                return _closest
+                            }
+                            else {
+                                return _closest === null||
+                                    getDistance(_closest.coordinate, this.leaderCoordinate) > getDistance(_c.coordinate, this.leaderCoordinate)?
+                                        _c:
+                                        _closest;
+                            }
+                        }, null);
+                        if (closestBattle) {
+                            closestBattle.isDiscovered = true;
+                        }
+                        break;
+                }
+            }
+
+            invItem?.cleanUp();
 
             listenToQueue();
         }

@@ -24,3 +24,34 @@ var interactionEventData_json_1 = __importDefault(require("./data/interactionEve
 exports.interactionEventData = interactionEventData_json_1.default;
 var forgeWeaponData_json_1 = __importDefault(require("./data/forgeWeaponData.json"));
 exports.forgeWeaponData = forgeWeaponData_json_1.default;
+// const readJSON = (path: string) => {
+//     const { minify, parse } = JSON;
+//     return new Promise<unknown>((resolve, reject) => {
+//         fs.readFile(require.resolve(path), (_err, _buffer) => {
+//             if (_err) {
+//                 console.log(_err);
+//                 reject(_err);
+//             }
+//             else {
+//                 resolve(parse(minify(_buffer.toString())));
+//             }
+//         });
+//     });
+// }
+// export 
+// const _ = [
+//     "itemData",
+//     "areasData",
+//     "classData",
+//     "dungeonData",
+//     "enemiesData",
+//     "materialData",
+//     "universalAbilitiesData",
+//     "universalWeaponsData",
+//     "interactionEventData",
+//     "forgeWeaponData",
+// ]
+// module.exports = _.map(_fileName => {
+//     return readJSON(`./data/${_fileName}.json`)
+//         .then()
+// });

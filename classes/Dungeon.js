@@ -330,12 +330,19 @@ var Dungeon = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         returnMapMessage = function () {
-                            // const selectMenuOptions: MessageSelectOptionData[] = this.inventory.map(_dItem => {
-                            //     return {
-                            //         label: `${formalize(_dItem.type)} x${_dItem.uses}`,
-                            //         value: _dItem.type,
-                            //     }
-                            // });
+                            var _a;
+                            var eligibleItemTypes = [
+                                'torch',
+                                'scout',
+                            ];
+                            var itemsMenuOptionData = _this.inventory
+                                .filter(function (_item) { return eligibleItemTypes.includes(_item.getItemType()); })
+                                .map(function (_dItem) {
+                                return {
+                                    label: "" + _dItem.getDisplayName(),
+                                    value: _dItem.getItemType(),
+                                };
+                            });
                             var buttons = __spreadArray([], __read(Battle_1.Battle.MOVEMENT_BUTTONOPTIONS), false);
                             buttons[buttons.length - 1] = {
                                 label: _this.displayMode === 'pc' ?
@@ -347,9 +354,9 @@ var Dungeon = /** @class */ (function () {
                             var messagePayload = {
                                 components: [(0, Utility_1.getButtonsActionRow)(buttons)],
                             };
-                            // if (selectMenuOptions.length > 0) {
-                            //     messagePayload.components!.push(getSelectMenuActionRow(selectMenuOptions));
-                            // }
+                            if (itemsMenuOptionData.length > 0) {
+                                (_a = messagePayload.components) === null || _a === void 0 ? void 0 : _a.push((0, Utility_1.getSelectMenuActionRow)(itemsMenuOptionData));
+                            }
                             return _this.getImageEmbedMessageOptions(messagePayload);
                         };
                         listenToQueue = function () { return __awaiter(_this, void 0, void 0, function () {
@@ -394,54 +401,47 @@ var Dungeon = /** @class */ (function () {
                             });
                         }); };
                         handleItem = function (_itr) {
-                            var itemSelected = _itr.values[0];
+                            var itemTypeSelected = _itr.values[0];
                             // find item used
-                            // let itemIndex: number | null = null;
-                            // const invItem = this.inventory.find((_it, _i) => {
-                            //     const valid = _it.type === itemSelected && _it.uses > 0;
-                            //     if (valid) {
-                            //         itemIndex = _i;
-                            //     }
-                            //     return valid;
-                            // });
-                            // if (invItem && itemIndex !== null) {
-                            //     // consume item
-                            //     invItem.uses--;
-                            //     if (invItem.uses <= 0) {
-                            //         this.inventory.splice(itemIndex, 1);
-                            //     }
-                            //     // execute action
-                            //     switch (itemSelected) {
-                            //         case "torch":
-                            //             const discoveredRooms = breadthFirstSearch(
-                            //                 this.getRoom(this.leaderCoordinate)!,
-                            //                 _ => _.directions,
-                            //                 (_q, _c) => {
-                            //                     return getDistance(_c.coordinate, this.leaderCoordinate) <= 1;
-                            //                 },
-                            //                 (_c) => true
-                            //             );
-                            //             discoveredRooms.forEach(_r => _r.isDiscovered = true);
-                            //             break;
-                            //         case "scout":
-                            //             const battleRooms = this.rooms.filter(_r => _r.isBattleRoom);
-                            //             const closestBattle = battleRooms.reduce((_closest: Room | null, _c: Room) => {
-                            //                 if (_c.isDiscovered) {
-                            //                     return _closest
-                            //                 }
-                            //                 else {
-                            //                     return _closest === null||
-                            //                         getDistance(_closest.coordinate, this.leaderCoordinate) > getDistance(_c.coordinate, this.leaderCoordinate)?
-                            //                             _c:
-                            //                             _closest;
-                            //                 }
-                            //             }, null);
-                            //             if (closestBattle) {
-                            //                 closestBattle.isDiscovered = true;
-                            //             }
-                            //             break;
-                            //     }
-                            // }
+                            var itemIndex = null;
+                            var invItem = _this.inventory.find(function (_it, _i) {
+                                var valid = _it.getItemType() === itemTypeSelected;
+                                if (valid) {
+                                    itemIndex = _i;
+                                }
+                                return valid;
+                            });
+                            if (invItem && itemIndex !== null) {
+                                // consume item
+                                invItem.chip((0, Utility_1.uniformRandom)(0, 1), 0.2);
+                                // execute action
+                                switch (invItem.getItemType()) {
+                                    case "torch":
+                                        var discoveredRooms = (0, Utility_1.breadthFirstSearch)(_this.getRoom(_this.leaderCoordinate), function (_) { return _.directions; }, function (_q, _c) {
+                                            return (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) <= 1;
+                                        }, function (_c) { return true; });
+                                        discoveredRooms.forEach(function (_r) { return _r.isDiscovered = true; });
+                                        break;
+                                    case "scout":
+                                        var battleRooms = _this.rooms.filter(function (_r) { return _r.isBattleRoom; });
+                                        var closestBattle = battleRooms.reduce(function (_closest, _c) {
+                                            if (_c.isDiscovered) {
+                                                return _closest;
+                                            }
+                                            else {
+                                                return _closest === null ||
+                                                    (0, Utility_1.getDistance)(_closest.coordinate, _this.leaderCoordinate) > (0, Utility_1.getDistance)(_c.coordinate, _this.leaderCoordinate) ?
+                                                    _c :
+                                                    _closest;
+                                            }
+                                        }, null);
+                                        if (closestBattle) {
+                                            closestBattle.isDiscovered = true;
+                                        }
+                                        break;
+                                }
+                            }
+                            invItem === null || invItem === void 0 ? void 0 : invItem.cleanUp();
                             listenToQueue();
                         };
                         handleMovement = function (_itr) { return __awaiter(_this, void 0, void 0, function () {

@@ -22,5 +22,28 @@
         "eliteMaps": [
             "farmstead_horde1"
         ]
+    },
+    "greenland": {
+        "name": "Greenland",
+        "maxLength": 3,
+        "minLength": 1,
+        "maxRoom": 12,
+        "minRoom": 15,
+        "maxBattle": 3,
+        "minBattle": 5,
+        "width": 14,
+        "height": 14,
+        "start": {
+            "x": 6,
+            "y": 6
+        },
+        "encounterMaps": [
+            "greenland_slimes1",
+            "greenland_bats1",
+            "greenland_slimebats1"
+        ],
+        "eliteMaps": [
+            "farmstead_horde1"
+        ]
     }
 }

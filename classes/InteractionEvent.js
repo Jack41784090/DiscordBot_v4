@@ -120,6 +120,7 @@ var InteractionEvent = /** @class */ (function () {
         return this.timerPromise;
     };
     InteractionEvent.prototype.activity = function () {
+        console.log('===========================activity');
         clearTimeout(this.timerPromise_timeout);
         this.timerPromise_timeout = this.generateTimeout();
     };
@@ -177,7 +178,7 @@ var InteractionEvent = /** @class */ (function () {
             });
         }); }, InteractionEvent.STANDARD_TIMEOUT);
     };
-    InteractionEvent.STANDARD_TIMEOUT = 2 * 1000;
+    InteractionEvent.STANDARD_TIMEOUT = 10 * 1000;
     return InteractionEvent;
 }());
 exports.InteractionEvent = InteractionEvent;

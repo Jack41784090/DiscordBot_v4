@@ -11,7 +11,7 @@ import { Room } from "./Room";
 import { BotClient } from "..";
 
 export class InteractionEvent {
-    static STANDARD_TIMEOUT = 2 * 1000;
+    static STANDARD_TIMEOUT = 10 * 1000;
 
     battle?: Battle;
     dungeon?: Dungeon;
@@ -106,6 +106,7 @@ export class InteractionEvent {
     }
 
     activity() {
+        console.log('===========================activity');
         clearTimeout(this.timerPromise_timeout);
         this.timerPromise_timeout = this.generateTimeout();
     }

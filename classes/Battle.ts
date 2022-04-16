@@ -824,6 +824,15 @@ Average Rolls: ${roundToDecimalPlace(statAcco.rollAverage) || "N/A"}`;
     // action reader methods
     async readActions(_givenSeconds: number, _ownerTextChannel: TextChannel, _vS: VirtualStat, _rS: Stat) {
         let possibleError: string = '';
+        
+        const ie: InteractionEvent | null = this.interactionCache.get(_rS.owner) || null;
+
+        if (ie) {
+            ie.activity();
+        }
+        else {
+            return;
+        }
 
         // Map out the current battlefield's loot boxes. Entries are deleted when looted in readAction to simulate looting.
         const tempLootMap: Map<StringCoordinate, boolean> = new Map<StringCoordinate, boolean>(

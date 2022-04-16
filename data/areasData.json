@@ -30,6 +30,175 @@
         },
         "enemiesInfo": {}
     },
+    "greenland_slimes1": {
+        "map": {
+            "coordStat": {},
+            "spawners": [
+                {
+                    "spawns": "player",
+                    "x": 0,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 1,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 2,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 3,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 7,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 8,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 6,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 9,
+                    "y": 1
+                }
+            ],
+            "width": 10,
+            "height": 3
+        },
+        "enemiesInfo": {
+            "Green Slime": {
+                "min": 3,
+                "max": 3
+            }
+        }
+    },
+    "greenland_bats1": {
+        "map": {
+            "coordStat": {},
+            "spawners": [
+                {
+                    "spawns": "player",
+                    "x": 0,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 1,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 2,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 3,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 7,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 8,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 6,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 9,
+                    "y": 1
+                }
+            ],
+            "width": 10,
+            "height": 3
+        },
+        "enemiesInfo": {
+            "Overgrown Bat": {
+                "min": 3,
+                "max": 3
+            }
+        }
+    },
+    "greenland_slimebats1": {
+        "map": {
+            "coordStat": {},
+            "spawners": [
+                {
+                    "spawns": "player",
+                    "x": 0,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 1,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 2,
+                    "y": 1
+                },
+                {
+                    "spawns": "player",
+                    "x": 3,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 7,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 8,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 6,
+                    "y": 1
+                },
+                {
+                    "spawns": "enemy",
+                    "x": 9,
+                    "y": 1
+                }
+            ],
+            "width": 10,
+            "height": 3
+        },
+        "enemiesInfo": {
+            "Overgrown Bat": {
+                "min": 1,
+                "max": 2
+            },
+            "Green Slime": {
+                "min": 2,
+                "max": 2
+            }
+        }
+    },
     "farmstead_empty": {
         "map": {
             "coordStat": {},

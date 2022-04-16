@@ -1,5 +1,4 @@
 {
-    // cooking material
     "flesh": {
         "ppu": 1,
 
@@ -27,7 +26,6 @@
         "protection": 0.001
     },
 
-    // magic enchantment
     "force_of_nature": {
         "ppu": 50,
         "accuracy": 0,
@@ -41,7 +39,6 @@
         "protection": 0.0012
     },
 
-    // metals
     "diamond": {
         "ppu": 100,
         "accuracy": 1,
@@ -107,7 +104,6 @@
         "protection": 0.0008
     },
 
-    // miscellaneous
     "coal": {
         "ppu": 5,
 

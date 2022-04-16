@@ -944,12 +944,19 @@ var Battle = /** @class */ (function () {
     // action reader methods
     Battle.prototype.readActions = function (_givenSeconds, _ownerTextChannel, _vS, _rS) {
         return __awaiter(this, void 0, void 0, function () {
-            var possibleError, tempLootMap, domain, returnMessageInteractionMenus, dealWithUndoAction, playerInfoMessage, _b, _c;
+            var possibleError, ie, tempLootMap, domain, returnMessageInteractionMenus, dealWithUndoAction, playerInfoMessage, _b, _c;
             var _this = this;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
                         possibleError = '';
+                        ie = this.interactionCache.get(_rS.owner) || null;
+                        if (ie) {
+                            ie.activity();
+                        }
+                        else {
+                            return [2 /*return*/];
+                        }
                         tempLootMap = new Map(__spreadArray([], __read(this.LootMap.keys()), false).map(function (_k) {
                             return [
                                 _k,
