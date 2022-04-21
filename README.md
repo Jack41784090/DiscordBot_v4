@@ -8,13 +8,25 @@ The Discord bot came from a desire to gamify combat situations during group ["ro
 ## Highlights
 ### Embark on an Adventure
 ![image](https://user-images.githubusercontent.com/39062670/163757057-f3fdc665-1c4b-401f-b766-667682dca131.png)
+
 After entering the command ";go \[specified location]", the bot will send an embedded Discord text message that allows the user to go in any directions in the randomly-generated dungeon (Dungeons are randomly generated with code in class "Dungeon", static function named "Generate"). When traversing the dungeon, the player and their party could possibly encounter enemies and trigger a battle. 
+
 ![image](https://user-images.githubusercontent.com/39062670/163757362-c7ae5e1a-7ee8-49e4-b5b0-eeead6a03f95.png)
+
 The bot, given administrative powers in the Discord server, will then create a text channel, in which the player's control panel will reside.
+
 ![image](https://user-images.githubusercontent.com/39062670/163757466-6092ff8d-7ce4-44e2-a16b-a14e53f40ecb.png)
 
 ### Combat
 The combat system has evolved [over my years of role-playing](https://docs.google.com/document/d/18vgB1IHM3dt2d_LvsGOtGUaINESZtlxuH07klgowGpQ/edit?usp=sharing). A lot of complexities had been removed to encourage a simple-to-learn yet difficult-to-master system. The character stat contains _HP_, _Readiness_, and three major _Tokens_: _Sword_, _Shield_, and _Sprint_. When the player uses an ability that their class has, it will consume one or more of these stats. All offensive abilities will damage the target's HP (which, when reaching 0 or below, kills the target). Readiness determines the order of actions (e.g., Aaron has 15 Readiness and Bob has 10 Readiness. They both try to attack each other. Aaron will attack first). Swords are essential for using most offensive abilities. Shields are used to reduce damage taken when attacked. Sprints allow the player to move more than just once per turn. 
 
-### Path-finding Enemies
-Enemies have their unique path-finding AIs depending on their class. Most simply finding the closest path towards the player (A* Algorithm, a modified version of Dijkstra's Algorithm). Some enemies don't have offensive abilities, therefore, they rely on finding the best way to position themselves for their friendly abilities to land on the most allies as possible. 
+#### Various Path-finding Enemies
+Enemies have their unique path-finding AIs depending on their class. Most simply **find the closest path towards the player** (A* Algorithm, a modified version of Dijkstra's Algorithm). Some enemies don't have offensive abilities, therefore, they rely on **finding the best way to position themselves for their friendly abilities to land on the most allies as possible**. In a work-in-progress enemy AI (an enemy coded in JavaScript, version 3. Note that the version you are viewing right now is version 4), four units would try to come together with one assigned as the "captain". The other three would try to surround the one in the middle. Once the captain detects that every other units are in formation, the captain would transform into a stronger monster and killing all of its friends. This was inspired by body-horror movies like "The Thing". Details of the code could be found [here](https://replit.com/@ikech/DISCORDBOTV3HIVEMIND#index.js).
+
+| "Strange Meat" marching together to form a cross. (version 3)         |
+:-------------------------:
+| ![](https://user-images.githubusercontent.com/39062670/164554688-a15596d6-e360-411f-a662-62560be97b0c.png) |
+| The crosses represent perished entities. "The Thing" had just spawned from consuming its former friends. (version 3) |
+| ![image](https://user-images.githubusercontent.com/39062670/164555730-bb4adf88-f74d-4615-88b7-f89a5519018a.png) |
+| "The Thing" attempting to attack our character, using the same ability that consumed its friends. (version 3) |
+|![image](https://user-images.githubusercontent.com/39062670/164555918-33cb6624-8cf9-4acb-953e-bfca50fe8f24.png)|
