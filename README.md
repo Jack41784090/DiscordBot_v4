@@ -56,4 +56,14 @@ Enemies have their unique path-finding AIs depending on their class. Most simply
 #### Canvas-Drawn Attack/Movement Mapping
 When attempting to represent the actions of both players and enemies, the bot went through several iterations of representations throughout the years. At the beginning, it was only words, but as the demand of the users grew larger, I opted for a more graphical representation, first using custom Discord emotes (version 3), and then Canvas image (version 4).
 
+| Version 2 (Radar Vision) |
+-
+![image](https://user-images.githubusercontent.com/39062670/164882467-07ba288a-dd3a-4f6c-8c1b-bb79242f2f66.png)
+
+| Version 3 (Graphics using Emojis) |
+-
+![image](https://user-images.githubusercontent.com/39062670/164883892-5dc3eadf-3195-4c44-b04c-860d0a23265e.png)
+
+| Version 4 (Graphics using Canvas API) |
+-
 ![image](https://user-images.githubusercontent.com/39062670/164877544-365febf3-3ecc-461c-8da9-96a1f45c3c24.png)
