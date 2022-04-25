@@ -11,7 +11,7 @@ The Discord bot came from a desire to gamify combat situations during group ["ro
 
 #### Traversal
 
-After entering the command ";go \[specified location]", the bot will send an embedded Discord text message that allows the user to go in any directions in the randomly-generated dungeon (Dungeons are randomly generated with code in class "Dungeon", static function named "Generate"). When traversing the dungeon, the player and their party could possibly encounter enemies and trigger a battle. 
+After entering the command ";go \[specified location]", the bot will send an embedded Discord text message that allows the user to go in any directions in the randomly-generated dungeon (`Dungeon.Generate` [static]). When traversing the dungeon, the player and their party could possibly encounter enemies and trigger a battle. 
 
 #### Using Items
 
@@ -41,7 +41,7 @@ When an enemy is ran into, unexpectedly or not (when the enemy location is revea
 | A Normal Encounter |
 | --- |
 | ![image](https://user-images.githubusercontent.com/39062670/164997858-a56fece0-e4ec-4f88-bd87-ea842e5c9889.png) |
-
+st
 | An Ambush, where the player ran into an enemy without revealing their location |
 | --- |
 | ![image](https://user-images.githubusercontent.com/39062670/163757362-c7ae5e1a-7ee8-49e4-b5b0-eeead6a03f95.png) |
@@ -87,8 +87,39 @@ When attempting to represent the actions of both players and enemies, the bot we
 
 ### RPG Elements
 #### Looting Monsters
-When a monster perishes, a player can walk on top of its tile and pick up its remains. In this game, the "loot" of monsters will not consist of singular items, but a complex compound of materials, randomly generated when the monster perishes. 
+When a monster perishes, a player can walk on top of its tile and pick up its remains. In this game, the "loot" of monsters will not consist of singular items, but a complex compound of elements, like a chemical compound, randomly generated when the monster perishes.
+
+|The Monster type "Crystal Zombie" contains majoritively the element "Flesh", with some "Cometarite" mixed into it. Narratively speaking, the Cometarite is an alien mineral that came from a comet, therefore it is naturally more expensive despite only weighing 0.6µ (4.4% of total weight). |
+|-|
+| ![image](https://user-images.githubusercontent.com/39062670/165172045-ebd56b1b-d42c-4f7c-97e3-43c5aa90d3eb.png) |
+
+Item is generated using an array of JSON objects as input (refer to data/enemiesData.json for details). Each object contains:
+- materialName: string
+    - Used to identify the element / material.
+- occupationDeviation: { min, max }
+    - This element occupies [min * 100]% to [max * 100]% of the item.
+- gradeDeviation: { min, max }
+    - This material can be [min (rarity)] to [max (rarity)] quality, using standard deviation (more below).
+
+When every object has been iterated and the item still hasn't reached 100% in occupation, random elements are filled in (`Item.fillJunk`) in minimum amounts (10e-5 * 100%) until so.
+
 
 ##### Rarity
+As you might have found out, there is a rarity system installed in item generation. I utilised the normal distribution its deviation probabilities to determine the quality of some elements. Using the example from the last image, "Poor" Flesh is the most common because it lands within the 1 standard deviation mark (\~68%). "Common" Flesh is 1 standard deviation away (\~27.2%), and so on. 
+
+A list of all rarities is ordered as:
+1. Poor
+2. Common
+3. Good
+4. Rare
+5. Very Rare
+6. Very Very Rare
+7. Unique
+8. Epic
+9. Mythical
+10. Legendary
+11. God
+
+It is highly unlikely that any material would go beyond the fifth or even the fourth deviation, though I included them anyways to allow for those "very very rare" lotteries to come true.
 
 #### Crafting Weapons
