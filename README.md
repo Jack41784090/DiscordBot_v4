@@ -123,3 +123,40 @@ A list of all rarities is ordered as:
 It is highly unlikely that any material would go beyond the fifth or even the fourth deviation, though I included them anyways to allow for those "very very rare" lotteries to come true.
 
 #### Crafting Weapons
+![image](https://user-images.githubusercontent.com/39062670/165359270-73ddc558-5975-4eaf-ab99-17579ab0a551.png)
+
+Monster items don't only serve as trophy or something to be sold. They can be used to forge greater weapons and make efficient the monster-slaying process, like all RPG games.
+
+When calculating the statistics of a forged weapon, several factors are taken into consideration:
+- How heavy is the item (used as material)? Players cannot use heavy items to forge a dagger because knives aren't meant to be heavy!
+- What elements are occupying the item? Each element has its own properties per µ (note that µ is the weight unit).
+    - Example:
+    ```
+    diamond:
+    {
+        "ppu": 100, // price per unit
+        "accuracy": 1, // +1 Accuracy per µ
+        "damageRange": [
+            0.55,
+            0.6
+        ],
+        "speed": 0.165, // +0.165 speed per µ, etc.
+        "criticalHit": 0.1,
+        "lifesteal": 0,
+        "protection": 0.000065
+    }
+    ```
+- Does the weapon type provide statistical *scaling* (more below)?
+
+
+There are several types of weapons players can forge, seperated by Melee and Ranged type. They each have properties of `range`, `damageScale`, `critScale`, `accScale`, and `spdScale`. 
+
+`range`, as the name suggests, represents the distance which the weapon can reach. `damageScale` scales up the total damage value that the materials provide. `critScale` scales up the total critical hit chance, `accScale`, accuracy, `spdScale`, speed.
+- Melee
+    - Dagger: Shorter range and lower damage, but high in accuracy, speed, and critical hit chance.
+    - Arming Sword: Balanced in every aspect, a bit higher than average accuracy.
+    - Greatsword: Heaviest, allowing for the player to use the most out of its materials.
+- Ranged
+    - Crossbow
+    - Shortbow
+    - Longbow
